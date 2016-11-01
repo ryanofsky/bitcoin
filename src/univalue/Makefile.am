@@ -20,7 +20,7 @@ libunivalue_la_LDFLAGS = \
 	-no-undefined
 libunivalue_la_CXXFLAGS = -I$(top_srcdir)/include
 
-TESTS = test/unitester
+TESTS = test/unitester test/test_json
 
 GENBIN = gen/gen$(BUILD_EXEEXT)
 GEN_SRCS = gen/gen.cpp
@@ -41,6 +41,11 @@ test_unitester_SOURCES = test/unitester.cpp
 test_unitester_LDADD = libunivalue.la
 test_unitester_CXXFLAGS = -I$(top_srcdir)/include -DJSON_TEST_SRC=\"$(srcdir)/$(TEST_DATA_DIR)\"
 test_unitester_LDFLAGS = -static $(LIBTOOL_APP_LDFLAGS)
+
+test_test_json_SOURCES = test/test_json.cpp
+test_test_json_LDADD = libunivalue.la
+test_test_json_CXXFLAGS = -I$(top_srcdir)/include
+test_test_json_LDFLAGS = -static $(LIBTOOL_APP_LDFLAGS)
 
 TEST_FILES = \
 	$(TEST_DATA_DIR)/fail10.json \
