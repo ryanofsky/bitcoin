@@ -1209,6 +1209,9 @@ static UniValue ProcessImport(CWallet& wallet, const UniValue& data, const int64
     } catch (const UniValue& e) {
         result.pushKV("success", UniValue(false));
         result.pushKV("error", e);
+    } catch (const std::exception& e) {
+        result.pushKV("success", UniValue(false));
+        result.pushKV("error", JSONRPCError(RPC_MISC_ERROR, e.what()));
     } catch (...) {
         result.pushKV("success", UniValue(false));
 
