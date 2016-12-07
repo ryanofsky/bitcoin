@@ -242,6 +242,7 @@ protected:
     /* Cached dynamic memory usage for the inner Coin objects. */
     mutable size_t cachedCoinsUsage{0};
 
+    class Modifier;
 public:
     CCoinsViewCache(CCoinsView *baseIn, bool deterministic = false);
 
