@@ -155,6 +155,42 @@ namespace {
     set<int> setDirtyFileInfo;
 } // anon namespace
 
+/* Use this class to start tracking transactions that are removed from the
+ * mempool (for reasons other than being included in a block) and pass all
+ * those transactions through SyncTransaction when the object goes out of
+ * scope. This allows notifications for all transactions leaving the
+ * mempool.  Currently applied at:
+ * ActivateBestChain around ActivateBestStep which calls:
+ *     - removeForReorg
+ *     - LimitMemPoolSize
+ *     - DisconnectTip->removeRecursive
+ *     - ConnectTip->removeForBlock->removeConflicts
+ * InvalidateBlock which calls:
+ *     - RemoveForReorg
+ *     - LimitMemPoolSize
+ *     - DisconnectTip->removeRecursive
+ * AcceptToMemoryPoolWorker which calls:
+ *     - LimitMemPoolSize
+ *     - RemoveStaged
+ * It is fine for multiple MemPoolRemovalTracker objects to be in existence
+ * at the same time and the notifications will happen when the last one goes
+ * out of scope.
+ */
+class MemPoolRemovalTracker
+{
+private:
+    CTxMemPool &pool;
+public:
+    MemPoolRemovalTracker(CTxMemPool &_pool) :pool(_pool) {
+        pool.startTrackingRemovals();
+    }
+    ~MemPoolRemovalTracker() {
+        for (const auto& tx : pool.stopTrackingRemovals()) {
+            GetMainSignals().SyncTransaction(*tx, NULL, CMainSignals::SYNC_TRANSACTION_NOT_IN_BLOCK);
+        }
+    }
+};
+
 CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& locator)
 {
     // Find the first block the caller has in the main chain
@@ -528,6 +564,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
                               bool* pfMissingInputs, int64_t nAcceptTime, bool fOverrideMempoolLimit, const CAmount& nAbsurdFee,
                               std::vector<uint256>& vHashTxnToUncache)
 {
+    MemPoolRemovalTracker mrt(pool);
     const uint256 hash = tx.GetHash();
     AssertLockHeld(cs_main);
     if (pfMissingInputs)
@@ -2396,6 +2433,14 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
         const CBlockIndex *pindexFork;
         ConnectTrace connectTrace;
         bool fInitialDownload;
+        { // TODO: Tempoarily ensure that mempool removals are notified before
+          // connected transactions.  This shouldn't matter, but the abandoned
+          // state of transactions in our wallet is currently cleared when we
+          // receive another notification and there is a race condition where
+          // notification of a connected conflict might cause an outside process
+          // to abandon a transaction and then have it inadvertantly cleared by
+          // the notification that the conflicted transaction was evicted.
+        MemPoolRemovalTracker mrt(mempool);
         {
             LOCK(cs_main);
             CBlockIndex *pindexOldTip = chainActive.Tip();
@@ -2423,7 +2468,7 @@ bool ActivateBestChain(CValidationState &state, const CChainParams& chainparams,
         // When we reach this point, we switched to a new tip (stored in pindexNewTip).
 
         // Notifications/callbacks that can run without cs_main
-
+        } // MemPoolRemovalTracker destroyed and evictions are notified
         // throw all transactions though the signal-interface
         // while _not_ holding the cs_main lock
         for (const auto& pair : connectTrace.blocksConnected) {
@@ -2489,7 +2534,12 @@ bool InvalidateBlock(CValidationState& state, const CChainParams& chainparams, C
     pindex->nStatus |= BLOCK_FAILED_VALID;
     setDirtyBlockIndex.insert(pindex);
     setBlockIndexCandidates.erase(pindex);
-
+    // TODO: If cs_main lock can be moved inside InvalidateBlock, then
+    // we should have the scope of MemPoolRemovalTracker outside of
+    // it, so that the notifications can happen without cs_main.  As
+    // it is, InvalidateBlock is only in response to an RPC call, so
+    // it's probably ok that it holds cs_main.
+    MemPoolRemovalTracker mrt(mempool);
     while (chainActive.Contains(pindex)) {
         CBlockIndex *pindexWalk = chainActive.Tip();
         pindexWalk->nStatus |= BLOCK_FAILED_CHILD;

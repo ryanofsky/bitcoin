@@ -27,6 +27,7 @@
 
 class CAutoFile;
 class CBlockIndex;
+class MemPoolRemovalTracker;
 
 inline double AllowFreeThreshold()
 {
@@ -416,6 +417,7 @@ struct TxMempoolInfo
  */
 class CTxMemPool
 {
+    friend class MemPoolRemovalTracker;
 private:
     uint32_t nCheckFrequency; //!< Value n means that n times in 2^32 we check.
     unsigned int nTransactionsUpdated;
@@ -499,6 +501,14 @@ private:
 
     std::vector<indexed_transaction_set::const_iterator> GetSortedDepthAndScore() const;
 
+    /* Used by MemPoolRemovalTracker class to return a vector of transactions
+     * removed from the mempool for reasons other than being included in a
+     * block.*/
+    unsigned int trackRemovalsCount;
+    std::vector<CTransactionRef> removedTxs;
+    void startTrackingRemovals();
+    std::vector<CTransactionRef> stopTrackingRemovals();
+
 public:
     indirectmap<COutPoint, const CTransaction*> mapNextTx;
     std::map<uint256, std::pair<double, CAmount> > mapDeltas;
@@ -555,10 +565,11 @@ public:
      *  If a transaction is in this set, then all in-mempool descendants must
      *  also be in the set, unless this transaction is being removed for being
      *  in a block.
-     *  Set updateDescendants to true when removing a tx that was in a block, so
-     *  that any in-mempool descendants have their ancestor state updated.
+     *  Set minedInBlock to true when removing a tx that was in a block, so
+     *  that any in-mempool descendants have their ancestor state updated, and
+     *  so that we don't report the transaction in mempool removal tracking.
      */
-    void RemoveStaged(setEntries &stage, bool updateDescendants);
+    void RemoveStaged(setEntries &stage, bool minedInBlock);
 
     /** When adding transactions from a disconnected block back to the mempool,
      *  new mempool entries may have children in the mempool (which is generally
@@ -687,7 +698,7 @@ private:
      *  transactions in a chain before we've updated all the state for the
      *  removal.
      */
-    void removeUnchecked(txiter entry);
+    void removeUnchecked(txiter entry, bool minedInBlock);
 };
 
 /** 

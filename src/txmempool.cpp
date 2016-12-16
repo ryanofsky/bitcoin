@@ -349,7 +349,7 @@ void CTxMemPoolEntry::UpdateAncestorState(int64_t modifySize, CAmount modifyFee,
 }
 
 CTxMemPool::CTxMemPool(const CFeeRate& _minReasonableRelayFee) :
-    nTransactionsUpdated(0)
+    nTransactionsUpdated(0), trackRemovalsCount(0)
 {
     _clear(); //lock free clear
 
@@ -450,7 +450,7 @@ bool CTxMemPool::addUnchecked(const uint256& hash, const CTxMemPoolEntry &entry,
     return true;
 }
 
-void CTxMemPool::removeUnchecked(txiter it)
+void CTxMemPool::removeUnchecked(txiter it, bool minedInBlock)
 {
     const uint256 hash = it->GetTx().GetHash();
     BOOST_FOREACH(const CTxIn& txin, it->GetTx().vin)
@@ -469,10 +469,42 @@ void CTxMemPool::removeUnchecked(txiter it)
     cachedInnerUsage -= it->DynamicMemoryUsage();
     cachedInnerUsage -= memusage::DynamicUsage(mapLinks[it].parents) + memusage::DynamicUsage(mapLinks[it].children);
     mapLinks.erase(it);
+    if (!minedInBlock) {
+        if (trackRemovalsCount) {
+            removedTxs.emplace_back(it->GetSharedTx());
+        }
+        else {
+            // If there are ever intentionally removals that are not
+            // meant to be tracked (so they can be notified on), then
+            // this log message can be removed.
+            LogPrint("mempool", "MemPoolRemovalTracker not tracking removed transaction %s\n",hash.ToString());
+        }
+    }
     mapTx.erase(it);
     nTransactionsUpdated++;
     minerPolicyEstimator->removeTx(hash);
 }
+
+void CTxMemPool::startTrackingRemovals()
+{
+    LOCK(cs);
+    trackRemovalsCount++;
+}
+
+std::vector<CTransactionRef>  CTxMemPool::stopTrackingRemovals() {
+    LOCK(cs);
+    assert(trackRemovalsCount);
+    trackRemovalsCount--;
+    if (trackRemovalsCount == 0) {
+        std::vector<CTransactionRef> temp(std::move(removedTxs));
+        removedTxs.clear();
+        return std::move(temp);
+    }
+    else {
+        return {};
+    }
+}
+
 
 // Calculates descendants of entry that are not already in setDescendants, and adds to
 // setDescendants. Assumes entryit is already a tx in the mempool and setMemPoolChildren
@@ -632,6 +664,7 @@ void CTxMemPool::_clear()
     blockSinceLastRollingFeeBump = false;
     rollingMinimumFeeRate = 0;
     ++nTransactionsUpdated;
+    removedTxs.clear();
 }
 
 void CTxMemPool::clear()
@@ -991,11 +1024,11 @@ size_t CTxMemPool::DynamicMemoryUsage() const {
     return memusage::MallocUsage(sizeof(CTxMemPoolEntry) + 15 * sizeof(void*)) * mapTx.size() + memusage::DynamicUsage(mapNextTx) + memusage::DynamicUsage(mapDeltas) + memusage::DynamicUsage(mapLinks) + memusage::DynamicUsage(vTxHashes) + cachedInnerUsage;
 }
 
-void CTxMemPool::RemoveStaged(setEntries &stage, bool updateDescendants) {
+void CTxMemPool::RemoveStaged(setEntries &stage, bool minedInBlock) {
     AssertLockHeld(cs);
-    UpdateForRemoveFromMempool(stage, updateDescendants);
+    UpdateForRemoveFromMempool(stage, minedInBlock);
     BOOST_FOREACH(const txiter& it, stage) {
-        removeUnchecked(it);
+        removeUnchecked(it, minedInBlock);
     }
 }
 
