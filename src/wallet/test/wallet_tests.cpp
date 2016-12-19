@@ -293,6 +293,7 @@ BOOST_FIXTURE_TEST_CASE(coin_mark_dirty_immature_credit, TestChain100Setup)
 static int64_t AddTx(CWallet& wallet, uint32_t lockTime, int64_t mockTime, int64_t blockTime)
 {
     CMutableTransaction tx;
+    CWalletTx::Confirmation confirm;
     tx.nLockTime = lockTime;
     SetMockTime(mockTime);
     CBlockIndex* block = nullptr;
@@ -305,24 +306,18 @@ static int64_t AddTx(CWallet& wallet, uint32_t lockTime, int64_t mockTime, int64
         block = inserted.first->second;
         block->nTime = blockTime;
         block->phashBlock = &hash;
+        confirm = {CWalletTx::Status::CONFIRMED, block->nHeight, hash, 0};
     }
 
-    CWalletTx wtx(&wallet, MakeTransactionRef(tx));
-    LOCK(cs_main);
-    LOCK(wallet.cs_wallet);
     // If transaction is already in map, to avoid inconsistencies, unconfirmation
     // is needed before confirm again with different block.
-    std::map<uint256, CWalletTx>::iterator it = wallet.mapWallet.find(wtx.GetHash());
-    if (it != wallet.mapWallet.end()) {
+    LOCK(cs_main);
+    wallet.AddToWallet(MakeTransactionRef(tx), confirm, [&](CWalletTx& wtx, bool /* new_tx */) {
         wtx.setUnconfirmed();
-        wallet.AddToWallet(wtx);
-    }
-    if (block) {
-        CWalletTx::Confirmation confirm(CWalletTx::Status::CONFIRMED, block->nHeight, block->GetBlockHash(), 0);
-        wtx.m_confirm = confirm;
-    }
-    wallet.AddToWallet(wtx);
-    return wallet.mapWallet.at(wtx.GetHash()).nTimeSmart;
+        return true;
+    });
+
+    return wallet.GetWalletTx(tx.GetHash())->nTimeSmart;
 }
 
 // Simple test to verify assignment of CWalletTx::nSmartTime value. Could be
