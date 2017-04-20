@@ -31,7 +31,7 @@ DisableFormat:   false
 IndentCaseLabels: false
 IndentFunctionDeclarationAfterType: false
 IndentWidth:     4
-KeepEmptyLinesAtTheStartOfBlocks: false
+KeepEmptyLinesAtTheStartOfBlocks: true
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
 PointerAlignment: Left
