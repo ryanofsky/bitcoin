@@ -15,7 +15,6 @@ EXPECTED_CIRCULAR_DEPENDENCIES=(
     "index/blockfilterindex -> node/blockstorage -> validation -> index/blockfilterindex"
     "index/base -> validation -> index/blockfilterindex -> index/base"
     "index/coinstatsindex -> node/coinstats -> index/coinstatsindex"
-    "policy/fees -> txmempool -> policy/fees"
     "qt/addresstablemodel -> qt/walletmodel -> qt/addresstablemodel"
     "qt/bitcoingui -> qt/walletframe -> qt/bitcoingui"
     "qt/recentrequeststablemodel -> qt/walletmodel -> qt/recentrequeststablemodel"
