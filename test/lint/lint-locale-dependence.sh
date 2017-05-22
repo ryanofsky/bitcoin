@@ -22,7 +22,12 @@ KNOWN_VIOLATIONS=(
     "src/test/blockchain_tests.cpp.*std::to_string"
     "src/test/dbwrapper_tests.cpp:.*snprintf"
     "src/test/denialofservice_tests.cpp.*std::to_string"
+<<<<<<< HEAD
     "src/test/fuzz/locale.cpp"
+||||||| merged common ancestors
+=======
+    "src/test/fee_est/fee_est.cpp:.*printf"
+>>>>>>> Add fee_est tool for debugging fee estimation code
     "src/test/fuzz/parse_numbers.cpp:.*atoi"
     "src/test/key_tests.cpp.*std::to_string"
     "src/test/net_tests.cpp.*std::to_string"
