@@ -14,6 +14,13 @@ KNOWN_VIOLATIONS=(
     "src/qt/rpcconsole.cpp:.*atoi"
     "src/rest.cpp:.*strtol"
     "src/test/dbwrapper_tests.cpp:.*snprintf"
+<<<<<<< HEAD
+||||||| merged common ancestors
+    "src/test/denialofservice_tests.cpp.*std::to_string"
+=======
+    "src/test/denialofservice_tests.cpp.*std::to_string"
+    "src/test/fee_est/fee_est.cpp:.*printf"
+>>>>>>> Add fee_est tool for debugging fee estimation code
     "src/test/fuzz/locale.cpp"
     "src/test/fuzz/parse_numbers.cpp:.*atoi"
     "src/torcontrol.cpp:.*atoi"
