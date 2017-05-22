@@ -23,6 +23,7 @@
 #include <node/ui_interface.h>
 #include <optional.h>
 #include <policy/fees.h>
+#include <policy/fees_input.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <pow.h>
@@ -148,6 +149,13 @@ arith_uint256 nMinimumChainWork;
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 
 CBlockPolicyEstimator feeEstimator;
+<<<<<<< HEAD
+||||||| merged common ancestors
+CTxMemPool mempool(&feeEstimator);
+=======
+FeeEstInput feeEstimatorInput(feeEstimator);
+CTxMemPool mempool(&feeEstimatorInput);
+>>>>>>> Add -estlog option for saving live fee estimation data
 
 // Internal stuff
 namespace {

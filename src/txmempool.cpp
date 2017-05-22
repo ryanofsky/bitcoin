@@ -10,8 +10,8 @@
 #include <consensus/validation.h>
 #include <optional.h>
 #include <validation.h>
+#include <policy/fees_input.h>
 #include <policy/policy.h>
-#include <policy/fees.h>
 #include <policy/settings.h>
 #include <reverse_iterator.h>
 #include <util/system.h>
@@ -331,7 +331,7 @@ void CTxMemPoolEntry::UpdateAncestorState(int64_t modifySize, CAmount modifyFee,
     assert(int(nSigOpCostWithAncestors) >= 0);
 }
 
-CTxMemPool::CTxMemPool(CBlockPolicyEstimator* estimator)
+CTxMemPool::CTxMemPool(FeeEstInput* estimator)
     : nTransactionsUpdated(0), minerPolicyEstimator(estimator), m_epoch(0), m_has_epoch_guard(false)
 {
     _clear(); //lock free clear
@@ -401,7 +401,10 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
 
     nTransactionsUpdated++;
     totalTxSize += entry.GetTxSize();
-    if (minerPolicyEstimator) {minerPolicyEstimator->processTransaction(entry, validFeeEstimate);}
+    if (minerPolicyEstimator) {
+        minerPolicyEstimator->processTx(
+            entry.GetTx().GetHash(), entry.GetHeight(), entry.GetFee(), entry.GetTxSize(), validFeeEstimate);
+    }
 
     vTxHashes.emplace_back(tx.GetWitnessHash(), newit);
     newit->vTxHashesIdx = vTxHashes.size() - 1;
@@ -560,17 +563,18 @@ void CTxMemPool::removeConflicts(const CTransaction &tx)
 void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight)
 {
     AssertLockHeld(cs);
-    std::vector<const CTxMemPoolEntry*> entries;
-    for (const auto& tx : vtx)
-    {
-        uint256 hash = tx->GetHash();
-
-        indexed_transaction_set::iterator i = mapTx.find(hash);
-        if (i != mapTx.end())
-            entries.push_back(&*i);
-    }
     // Before the txs in the new block have been removed from the mempool, update policy estimates
-    if (minerPolicyEstimator) {minerPolicyEstimator->processBlock(nBlockHeight, entries);}
+    if (minerPolicyEstimator) {
+        minerPolicyEstimator->processBlock(nBlockHeight, [&](const AddTxFn& add_tx) EXCLUSIVE_LOCKS_REQUIRED(cs) {
+            for (const auto& tx : vtx) {
+                const auto& hash = tx->GetHash();
+                indexed_transaction_set::iterator i = mapTx.find(hash);
+                if (i != mapTx.end()) {
+                    add_tx(i->GetTx().GetHash(), i->GetHeight(), i->GetFee(), i->GetTxSize());
+                }
+            }
+        });
+    }
     for (const auto& tx : vtx)
     {
         txiter it = mapTx.find(tx->GetHash());
