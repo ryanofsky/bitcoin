@@ -14,8 +14,13 @@ EXPECTED_CIRCULAR_DEPENDENCIES=(
     "node/blockstorage -> validation -> node/blockstorage"
     "index/blockfilterindex -> node/blockstorage -> validation -> index/blockfilterindex"
     "index/base -> validation -> index/blockfilterindex -> index/base"
+<<<<<<< HEAD
     "index/coinstatsindex -> node/coinstats -> index/coinstatsindex"
     "policy/fees -> txmempool -> policy/fees"
+||||||| merged common ancestors
+    "policy/fees -> txmempool -> policy/fees"
+=======
+>>>>>>> Add -estlog option for saving live fee estimation data
     "qt/addresstablemodel -> qt/walletmodel -> qt/addresstablemodel"
     "qt/bitcoingui -> qt/walletframe -> qt/bitcoingui"
     "qt/recentrequeststablemodel -> qt/walletmodel -> qt/recentrequeststablemodel"
