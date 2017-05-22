@@ -51,6 +51,7 @@ class CConnman;
 class CScriptCheck;
 class CTxMemPool;
 class ChainstateManager;
+class FeeEstInput;
 struct ChainTxData;
 
 struct DisconnectedBlockTransactions;
