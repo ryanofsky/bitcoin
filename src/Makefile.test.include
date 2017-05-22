@@ -73,7 +73,11 @@ FUZZ_TARGETS = \
 if ENABLE_FUZZ
 noinst_PROGRAMS += $(FUZZ_TARGETS:=)
 else
+# Avoid link errors (multiple defintion of `main', undefined reference to
+# `LLVMFuzzerTestOneInput') trying to build these binaries when fuzzing is
+# enabled, by excluding them from the default make target.
 bin_PROGRAMS += test/test_bitcoin
+noinst_PROGRAMS += test/fee_est/fee_est
 endif
 
 TEST_SRCDIR = test
@@ -637,6 +641,40 @@ test_fuzz_txundo_deserialize_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_
 test_fuzz_txundo_deserialize_SOURCES = $(FUZZ_SUITE) test/fuzz/deserialize.cpp
 
 endif # ENABLE_FUZZ
+
+# fee_est/fee_est binary #
+test_fee_est_fee_est_SOURCES = test/fee_est/fee_est.cpp
+test_fee_est_fee_est_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+test_fee_est_fee_est_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+test_fee_est_fee_est_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fee_est_fee_est_LDADD = \
+  $(LIBBITCOIN_SERVER)
+
+if ENABLE_WALLET
+test_fee_est_fee_est_LDADD += \
+  $(LIBBITCOIN_WALLET)
+endif
+
+test_fee_est_fee_est_LDADD += \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBBITCOIN_CRYPTO_SSE41) \
+  $(LIBBITCOIN_CRYPTO_AVX2) \
+  $(LIBLEVELDB) $(LIBLEVELDB_SSE42) $(LIBMEMENV) \
+  $(LIBSECP256K1) \
+  $(LIBUNIVALUE) \
+  $(BDB_LIBS) \
+  $(BOOST_LIBS) \
+  $(CRYPTO_LIBS) \
+  $(EVENT_LIBS) $(EVENT_PTHREADS_LIBS) \
+  $(MINIUPNPC_LIBS)
+
+if ENABLE_ZMQ
+test_fee_est_fee_est_LDADD += $(LIBBITCOIN_ZMQ) $(ZMQ_LIBS)
+endif
+#
 
 nodist_test_test_bitcoin_SOURCES = $(GENERATED_TEST_FILES)
 
