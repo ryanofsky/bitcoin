@@ -45,6 +45,7 @@ class CScriptCheck;
 class CBlockPolicyEstimator;
 class CTxMemPool;
 class ChainstateManager;
+class FeeEstInput;
 class TxValidationState;
 struct ChainTxData;
 
@@ -112,6 +113,7 @@ enum class SynchronizationState {
 };
 
 extern RecursiveMutex cs_main;
+extern FeeEstInput feeEstimatorInput;
 extern CBlockPolicyEstimator feeEstimator;
 extern CTxMemPool mempool;
 typedef std::unordered_map<uint256, CBlockIndex*, BlockHasher> BlockMap;
