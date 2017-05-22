@@ -43,7 +43,12 @@ class CConnman;
 class CScriptCheck;
 class CBlockPolicyEstimator;
 class CTxMemPool;
+<<<<<<< HEAD
 class ChainstateManager;
+||||||| merged common ancestors
+=======
+class FeeEstInput;
+>>>>>>> Add -estlog option for saving live fee estimation data
 class TxValidationState;
 struct ChainTxData;
 
@@ -112,6 +117,7 @@ enum class SynchronizationState {
 };
 
 extern RecursiveMutex cs_main;
+extern FeeEstInput feeEstimatorInput;
 extern CBlockPolicyEstimator feeEstimator;
 extern CTxMemPool mempool;
 typedef std::unordered_map<uint256, CBlockIndex*, BlockHasher> BlockMap;
