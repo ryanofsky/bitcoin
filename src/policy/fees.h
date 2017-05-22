@@ -11,6 +11,7 @@
 #include <random.h>
 #include <sync.h>
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -72,6 +73,9 @@ struct FeeCalculation
     int desiredTarget = 0;
     int returnedTarget = 0;
 };
+
+using AddTxFn = std::function<void(const uint256& hash, unsigned int height, CAmount fee, size_t size)>;
+using AddTxsFn = std::function<void(const AddTxFn&)>;
 
 /** \class CBlockPolicyEstimator
  * The BlockPolicyEstimator is used for estimating the feerate needed
@@ -178,11 +182,10 @@ public:
     ~CBlockPolicyEstimator();
 
     /** Process all the transactions that have been included in a block */
-    void processBlock(unsigned int nBlockHeight,
-                      std::vector<const CTxMemPoolEntry*>& entries);
+    void processBlock(unsigned int nBlockHeight, const AddTxsFn& add_txs);
 
     /** Process a transaction accepted to the mempool*/
-    void processTransaction(const CTxMemPoolEntry& entry, bool validFeeEstimate);
+    void processTx(const uint256& hash, unsigned int txHeight, CAmount fee, size_t size, bool validFeeEstimate);
 
     /** Remove a transaction from the mempool tracking stats*/
     bool removeTx(uint256 hash, bool inBlock);
@@ -211,6 +214,15 @@ public:
 
     /** Empty mempool transactions on shutdown to record failure to confirm for txs still in mempool */
     void FlushUnconfirmed();
+
+    /** Get highest target that reasonable estimate can be provided for. */
+    unsigned int getMaxTarget() const;
+
+    /**
+     * Get sorted list of targets the estimator can directly calculate feerates
+     * for (without rounding up the nearest supported target).
+     */
+    static std::vector<unsigned int> getUniqueTargets();
 
     /** Calculation of highest target that estimates are tracked for */
     unsigned int HighestTargetTracked(FeeEstimateHorizon horizon) const;
@@ -245,7 +257,7 @@ private:
     std::map<double, unsigned int> bucketMap GUARDED_BY(m_cs_fee_estimator); // Map of bucket upper-bound to index into all vectors by bucket
 
     /** Process a transaction confirmed in a block*/
-    bool processBlockTx(unsigned int nBlockHeight, const CTxMemPoolEntry* entry) EXCLUSIVE_LOCKS_REQUIRED(m_cs_fee_estimator);
+    bool processBlockTx(unsigned int nBlockHeight, const uint256& hash, unsigned int height, CAmount fee, size_t size) EXCLUSIVE_LOCKS_REQUIRED(m_cs_fee_estimator);
 
     /** Helper for estimateSmartFee */
     double estimateCombinedFee(unsigned int confTarget, double successThreshold, bool checkShorterHorizon, EstimationResult *result) const EXCLUSIVE_LOCKS_REQUIRED(m_cs_fee_estimator);

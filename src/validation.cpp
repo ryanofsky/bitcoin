@@ -23,6 +23,7 @@
 #include <node/ui_interface.h>
 #include <optional.h>
 #include <policy/fees.h>
+#include <policy/fees_input.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <pow.h>
@@ -149,6 +150,7 @@ arith_uint256 nMinimumChainWork;
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 
 CBlockPolicyEstimator feeEstimator;
+FeeEstInput feeEstimatorInput(feeEstimator);
 
 // Internal stuff
 namespace {

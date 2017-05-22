@@ -34,7 +34,7 @@
 #include <node/context.h>
 #include <node/ui_interface.h>
 #include <policy/feerate.h>
-#include <policy/fees.h>
+#include <policy/fees_input.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <protocol.h>
@@ -238,15 +238,13 @@ void Shutdown(NodeContext& node)
 
     if (fFeeEstimatesInitialized)
     {
-        ::feeEstimator.FlushUnconfirmed();
+        ::feeEstimatorInput.flushUnconfirmed();
         fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
-        CAutoFile est_fileout(fsbridge::fopen(est_path, "wb"), SER_DISK, CLIENT_VERSION);
-        if (!est_fileout.IsNull())
-            ::feeEstimator.Write(est_fileout);
-        else
-            LogPrintf("%s: Failed to write fee estimates to %s\n", __func__, est_path.string());
+        ::feeEstimatorInput.writeData(est_path);
         fFeeEstimatesInitialized = false;
     }
+
+    ::feeEstimatorInput.writeLog({});
 
     // FlushStateToDisk generates a ChainStateFlushed callback, which we should avoid missing
     if (node.chainman) {
@@ -527,6 +525,7 @@ void SetupServerArgs(NodeContext& node)
     argsman.AddArg("-limitdescendantcount=<n>", strprintf("Do not accept transactions if any ancestor would have <n> or more in-mempool descendants (default: %u)", DEFAULT_DESCENDANT_LIMIT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-limitdescendantsize=<n>", strprintf("Do not accept transactions if any ancestor would have more than <n> kilobytes of in-mempool descendants (default: %u).", DEFAULT_DESCENDANT_SIZE_LIMIT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-addrmantest", "Allows to test address relay on localhost", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
+    argsman.AddArg("-estlog=<est.log>", "Generate newline-delimited json file with fee estimation data. See test/fee_est/README.md for more information.", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-debug=<category>", "Output debugging information (default: -nodebug, supplying <category> is optional). "
         "If <category> is not supplied or if <category> = 1, output all debugging information. <category> can be: " + LogInstance().LogCategoriesString() + ".",
         ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
@@ -1196,10 +1195,18 @@ bool AppInitParameterInteraction(const ArgsManager& args)
 
     nMaxTipAge = args.GetArg("-maxtipage", DEFAULT_MAX_TIP_AGE);
 
+<<<<<<< HEAD
     if (args.IsArgSet("-proxy") && args.GetArg("-proxy", "").empty()) {
         return InitError(_("No proxy server specified. Use -proxy=<ip> or -proxy=<ip:port>."));
     }
 
+||||||| merged common ancestors
+=======
+    if (!::feeEstimatorInput.writeLog(gArgs.GetArg("-estlog", ""))) {
+        return InitError(Untranslated("Could not open -estlog file for appending."));
+    }
+
+>>>>>>> Add -estlog option for saving live fee estimation data
     return true;
 }
 
@@ -1392,7 +1399,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
     // Make mempool generally available in the node context. For example the connection manager, wallet, or RPC threads,
     // which are all started after this, may use it from the node context.
     assert(!node.mempool);
-    node.mempool = MakeUnique<CTxMemPool>(&::feeEstimator);
+    node.mempool = MakeUnique<CTxMemPool>(&::feeEstimatorInput);
     if (node.mempool) {
         int ratio = std::min<int>(std::max<int>(args.GetArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
         if (ratio != 0) {
@@ -1793,10 +1800,8 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
     }
 
     fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
-    CAutoFile est_filein(fsbridge::fopen(est_path, "rb"), SER_DISK, CLIENT_VERSION);
     // Allowed to fail as this file IS missing on first startup.
-    if (!est_filein.IsNull())
-        ::feeEstimator.Read(est_filein);
+    ::feeEstimatorInput.readData(est_path);
     fFeeEstimatesInitialized = true;
 
     // ********************************************************* Step 8: start indexers
