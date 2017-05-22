@@ -17,6 +17,7 @@ class CConnman;
 class CScheduler;
 class CTxMemPool;
 class ChainstateManager;
+class FeeEstInput;
 class PeerManager;
 namespace interfaces {
 class Chain;
@@ -37,6 +38,7 @@ class WalletClient;
 struct NodeContext {
     std::unique_ptr<CConnman> connman;
     std::unique_ptr<CTxMemPool> mempool;
+    std::unique_ptr<FeeEstInput> fee_estimator_input;
     std::unique_ptr<CBlockPolicyEstimator> fee_estimator;
     std::unique_ptr<PeerManager> peerman;
     ChainstateManager* chainman{nullptr}; // Currently a raw pointer because the memory is not managed by this struct
