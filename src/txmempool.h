@@ -366,7 +366,7 @@ struct entry_time {};
 struct ancestor_score {};
 struct index_by_wtxid {};
 
-class CBlockPolicyEstimator;
+class FeeEstInput;
 
 /**
  * Information about a mempool transaction.
@@ -477,9 +477,19 @@ enum class MemPoolRemovalReason {
 class CTxMemPool
 {
 private:
+<<<<<<< HEAD
     const int m_check_ratio; //!< Value n means that 1 times in n we check.
     std::atomic<unsigned int> nTransactionsUpdated{0}; //!< Used by getblocktemplate to trigger CreateNewBlock() invocation
     CBlockPolicyEstimator* minerPolicyEstimator;
+||||||| merged common ancestors
+    uint32_t nCheckFrequency GUARDED_BY(cs); //!< Value n means that n times in 2^32 we check.
+    std::atomic<unsigned int> nTransactionsUpdated; //!< Used by getblocktemplate to trigger CreateNewBlock() invocation
+    CBlockPolicyEstimator* minerPolicyEstimator;
+=======
+    uint32_t nCheckFrequency GUARDED_BY(cs); //!< Value n means that n times in 2^32 we check.
+    std::atomic<unsigned int> nTransactionsUpdated; //!< Used by getblocktemplate to trigger CreateNewBlock() invocation
+    FeeEstInput* minerPolicyEstimator;
+>>>>>>> Add -estlog option for saving live fee estimation data
 
     uint64_t totalTxSize GUARDED_BY(cs);      //!< sum of all mempool tx's virtual sizes. Differs from serialized tx size since witness data is discounted. Defined in BIP 141.
     CAmount m_total_fee GUARDED_BY(cs);       //!< sum of all mempool tx's fees (NOT modified fee)
@@ -597,7 +607,13 @@ public:
      * @param[in] estimator is used to estimate appropriate transaction fees.
      * @param[in] check_ratio is the ratio used to determine how often sanity checks will run.
      */
+<<<<<<< HEAD
     explicit CTxMemPool(CBlockPolicyEstimator* estimator = nullptr, int check_ratio = 0);
+||||||| merged common ancestors
+    explicit CTxMemPool(CBlockPolicyEstimator* estimator = nullptr);
+=======
+    explicit CTxMemPool(FeeEstInput* estimator = nullptr);
+>>>>>>> Add -estlog option for saving live fee estimation data
 
     /**
      * If sanity-checking is turned on, check makes sure the pool is

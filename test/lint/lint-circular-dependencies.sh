@@ -11,8 +11,13 @@ export LC_ALL=C
 EXPECTED_CIRCULAR_DEPENDENCIES=(
     "chainparamsbase -> util/system -> chainparamsbase"
     "index/txindex -> validation -> index/txindex"
+<<<<<<< HEAD
     "index/blockfilterindex -> validation -> index/blockfilterindex"
     "policy/fees -> txmempool -> policy/fees"
+||||||| merged common ancestors
+    "policy/fees -> txmempool -> policy/fees"
+=======
+>>>>>>> Add -estlog option for saving live fee estimation data
     "qt/addresstablemodel -> qt/walletmodel -> qt/addresstablemodel"
     "qt/bitcoingui -> qt/walletframe -> qt/bitcoingui"
     "qt/recentrequeststablemodel -> qt/walletmodel -> qt/recentrequeststablemodel"
@@ -21,7 +26,12 @@ EXPECTED_CIRCULAR_DEPENDENCIES=(
     "txmempool -> validation -> txmempool"
     "wallet/fees -> wallet/wallet -> wallet/fees"
     "wallet/wallet -> wallet/walletdb -> wallet/wallet"
+<<<<<<< HEAD
     "node/coinstats -> validation -> node/coinstats"
+||||||| merged common ancestors
+    "policy/fees -> txmempool -> validation -> policy/fees"
+=======
+>>>>>>> Add -estlog option for saving live fee estimation data
 )
 
 EXIT_CODE=0

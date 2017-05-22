@@ -136,8 +136,16 @@ ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::ve
 
     pblocktree.reset(new CBlockTreeDB(1 << 20, true));
 
+<<<<<<< HEAD
     m_node.fee_estimator = std::make_unique<CBlockPolicyEstimator>();
     m_node.mempool = std::make_unique<CTxMemPool>(m_node.fee_estimator.get(), 1);
+||||||| merged common ancestors
+    m_node.mempool = MakeUnique<CTxMemPool>(&::feeEstimator);
+    m_node.mempool->setSanityCheck(1.0);
+=======
+    m_node.mempool = MakeUnique<CTxMemPool>(&::feeEstimatorInput);
+    m_node.mempool->setSanityCheck(1.0);
+>>>>>>> Add -estlog option for saving live fee estimation data
 
     m_node.chainman = &::g_chainman;
 

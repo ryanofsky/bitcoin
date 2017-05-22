@@ -35,7 +35,7 @@
 #include <node/context.h>
 #include <node/ui_interface.h>
 #include <policy/feerate.h>
-#include <policy/fees.h>
+#include <policy/fees_input.h>
 #include <policy/policy.h>
 #include <policy/settings.h>
 #include <protocol.h>
@@ -233,8 +233,32 @@ void Shutdown(NodeContext& node)
         DumpMempool(*node.mempool);
     }
 
+<<<<<<< HEAD
     // Drop transactions we were still watching, and record fee estimations.
     if (node.fee_estimator) node.fee_estimator->Flush();
+||||||| merged common ancestors
+    if (fFeeEstimatesInitialized)
+    {
+        ::feeEstimator.FlushUnconfirmed();
+        fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
+        CAutoFile est_fileout(fsbridge::fopen(est_path, "wb"), SER_DISK, CLIENT_VERSION);
+        if (!est_fileout.IsNull())
+            ::feeEstimator.Write(est_fileout);
+        else
+            LogPrintf("%s: Failed to write fee estimates to %s\n", __func__, est_path.string());
+        fFeeEstimatesInitialized = false;
+    }
+=======
+    if (fFeeEstimatesInitialized)
+    {
+        ::feeEstimatorInput.flushUnconfirmed();
+        fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
+        ::feeEstimatorInput.writeData(est_path);
+        fFeeEstimatesInitialized = false;
+    }
+>>>>>>> Add -estlog option for saving live fee estimation data
+
+    ::feeEstimatorInput.writeLog({});
 
     // FlushStateToDisk generates a ChainStateFlushed callback, which we should avoid missing
     if (node.chainman) {
@@ -524,7 +548,12 @@ void SetupServerArgs(NodeContext& node)
     argsman.AddArg("-limitdescendantcount=<n>", strprintf("Do not accept transactions if any ancestor would have <n> or more in-mempool descendants (default: %u)", DEFAULT_DESCENDANT_LIMIT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-limitdescendantsize=<n>", strprintf("Do not accept transactions if any ancestor would have more than <n> kilobytes of in-mempool descendants (default: %u).", DEFAULT_DESCENDANT_SIZE_LIMIT), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-addrmantest", "Allows to test address relay on localhost", ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
+<<<<<<< HEAD
     argsman.AddArg("-capturemessages", "Capture all P2P messages to disk", ArgsManager::ALLOW_BOOL | ArgsManager::DEBUG_ONLY, OptionsCategory::DEBUG_TEST);
+||||||| merged common ancestors
+=======
+    argsman.AddArg("-estlog=<est.log>", "Generate newline-delimited json file with fee estimation data. See test/fee_est/README.md for more information.", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+>>>>>>> Add -estlog option for saving live fee estimation data
     argsman.AddArg("-debug=<category>", "Output debugging information (default: -nodebug, supplying <category> is optional). "
         "If <category> is not supplied or if <category> = 1, output all debugging information. <category> can be: " + LogInstance().LogCategoriesString() + ". This option can be specified multiple times to output multiple categories.",
         ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
@@ -1216,6 +1245,10 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         return InitError(_("No proxy server specified. Use -proxy=<ip> or -proxy=<ip:port>."));
     }
 
+    if (!::feeEstimatorInput.writeLog(gArgs.GetArg("-estlog", ""))) {
+        return InitError(Untranslated("Could not open -estlog file for appending."));
+    }
+
     return true;
 }
 
@@ -1413,8 +1446,26 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
     if (!ignores_incoming_txs) node.fee_estimator = std::make_unique<CBlockPolicyEstimator>();
 
     assert(!node.mempool);
+<<<<<<< HEAD
     int check_ratio = std::min<int>(std::max<int>(args.GetArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
     node.mempool = std::make_unique<CTxMemPool>(node.fee_estimator.get(), check_ratio);
+||||||| merged common ancestors
+    node.mempool = MakeUnique<CTxMemPool>(&::feeEstimator);
+    if (node.mempool) {
+        int ratio = std::min<int>(std::max<int>(args.GetArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
+        if (ratio != 0) {
+            node.mempool->setSanityCheck(1.0 / ratio);
+        }
+    }
+=======
+    node.mempool = MakeUnique<CTxMemPool>(&::feeEstimatorInput);
+    if (node.mempool) {
+        int ratio = std::min<int>(std::max<int>(args.GetArg("-checkmempool", chainparams.DefaultConsistencyChecks() ? 1 : 0), 0), 1000000);
+        if (ratio != 0) {
+            node.mempool->setSanityCheck(1.0 / ratio);
+        }
+    }
+>>>>>>> Add -estlog option for saving live fee estimation data
 
     assert(!node.chainman);
     node.chainman = &g_chainman;
@@ -1799,6 +1850,22 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
         return false;
     }
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+    fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
+    CAutoFile est_filein(fsbridge::fopen(est_path, "rb"), SER_DISK, CLIENT_VERSION);
+    // Allowed to fail as this file IS missing on first startup.
+    if (!est_filein.IsNull())
+        ::feeEstimator.Read(est_filein);
+    fFeeEstimatesInitialized = true;
+
+=======
+    fs::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
+    // Allowed to fail as this file IS missing on first startup.
+    ::feeEstimatorInput.readData(est_path);
+    fFeeEstimatesInitialized = true;
+
+>>>>>>> Add -estlog option for saving live fee estimation data
     // ********************************************************* Step 8: start indexers
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
         g_txindex = std::make_unique<TxIndex>(nTxIndexCache, false, fReindex);

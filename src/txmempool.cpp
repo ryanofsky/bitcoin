@@ -8,8 +8,20 @@
 #include <consensus/consensus.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+<<<<<<< HEAD
 #include <policy/fees.h>
 #include <policy/policy.h>
+||||||| merged common ancestors
+#include <optional.h>
+#include <validation.h>
+#include <policy/policy.h>
+#include <policy/fees.h>
+=======
+#include <optional.h>
+#include <validation.h>
+#include <policy/fees_input.h>
+#include <policy/policy.h>
+>>>>>>> Add -estlog option for saving live fee estimation data
 #include <policy/settings.h>
 #include <reverse_iterator.h>
 #include <util/moneystr.h>
@@ -332,8 +344,16 @@ void CTxMemPoolEntry::UpdateAncestorState(int64_t modifySize, CAmount modifyFee,
     assert(int(nSigOpCostWithAncestors) >= 0);
 }
 
+<<<<<<< HEAD
 CTxMemPool::CTxMemPool(CBlockPolicyEstimator* estimator, int check_ratio)
     : m_check_ratio(check_ratio), minerPolicyEstimator(estimator)
+||||||| merged common ancestors
+CTxMemPool::CTxMemPool(CBlockPolicyEstimator* estimator)
+    : nTransactionsUpdated(0), minerPolicyEstimator(estimator), m_epoch(0), m_has_epoch_guard(false)
+=======
+CTxMemPool::CTxMemPool(FeeEstInput* estimator)
+    : nTransactionsUpdated(0), minerPolicyEstimator(estimator), m_epoch(0), m_has_epoch_guard(false)
+>>>>>>> Add -estlog option for saving live fee estimation data
 {
     _clear(); //lock free clear
 }
@@ -397,10 +417,19 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
 
     nTransactionsUpdated++;
     totalTxSize += entry.GetTxSize();
+<<<<<<< HEAD
     m_total_fee += entry.GetFee();
     if (minerPolicyEstimator) {
         minerPolicyEstimator->processTransaction(entry, validFeeEstimate);
     }
+||||||| merged common ancestors
+    if (minerPolicyEstimator) {minerPolicyEstimator->processTransaction(entry, validFeeEstimate);}
+=======
+    if (minerPolicyEstimator) {
+        minerPolicyEstimator->processTx(
+            entry.GetTx().GetHash(), entry.GetHeight(), entry.GetFee(), entry.GetTxSize(), validFeeEstimate);
+    }
+>>>>>>> Add -estlog option for saving live fee estimation data
 
     vTxHashes.emplace_back(tx.GetWitnessHash(), newit);
     newit->vTxHashesIdx = vTxHashes.size() - 1;
@@ -566,17 +595,18 @@ void CTxMemPool::removeConflicts(const CTransaction &tx)
 void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight)
 {
     AssertLockHeld(cs);
-    std::vector<const CTxMemPoolEntry*> entries;
-    for (const auto& tx : vtx)
-    {
-        uint256 hash = tx->GetHash();
-
-        indexed_transaction_set::iterator i = mapTx.find(hash);
-        if (i != mapTx.end())
-            entries.push_back(&*i);
-    }
     // Before the txs in the new block have been removed from the mempool, update policy estimates
-    if (minerPolicyEstimator) {minerPolicyEstimator->processBlock(nBlockHeight, entries);}
+    if (minerPolicyEstimator) {
+        minerPolicyEstimator->processBlock(nBlockHeight, [&](const AddTxFn& add_tx) EXCLUSIVE_LOCKS_REQUIRED(cs) {
+            for (const auto& tx : vtx) {
+                const auto& hash = tx->GetHash();
+                indexed_transaction_set::iterator i = mapTx.find(hash);
+                if (i != mapTx.end()) {
+                    add_tx(i->GetTx().GetHash(), i->GetHeight(), i->GetFee(), i->GetTxSize());
+                }
+            }
+        });
+    }
     for (const auto& tx : vtx)
     {
         txiter it = mapTx.find(tx->GetHash());
