@@ -193,6 +193,7 @@ BITCOIN_CORE_H = \
   outputtype.h \
   policy/feerate.h \
   policy/fees.h \
+  policy/fees_input.h \
   policy/packages.h \
   policy/policy.h \
   policy/rbf.h \
@@ -351,7 +352,12 @@ libbitcoin_server_a_SOURCES = \
   node/ui_interface.cpp \
   noui.cpp \
   policy/fees.cpp \
+<<<<<<< HEAD
   policy/packages.cpp \
+||||||| merged common ancestors
+=======
+  policy/fees_input.cpp \
+>>>>>>> Add -estlog option for saving live fee estimation data
   policy/rbf.cpp \
   policy/settings.cpp \
   pow.cpp \
