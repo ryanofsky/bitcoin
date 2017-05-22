@@ -3,7 +3,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <policy/fees.h>
+<<<<<<< HEAD
 #include <policy/policy.h>
+||||||| merged common ancestors
+=======
+#include <policy/fees_input.h>
+>>>>>>> Add -estlog option for saving live fee estimation data
 #include <txmempool.h>
 #include <uint256.h>
 #include <util/time.h>
@@ -17,7 +22,8 @@ BOOST_FIXTURE_TEST_SUITE(policyestimator_tests, BasicTestingSetup)
 BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
 {
     CBlockPolicyEstimator feeEst;
-    CTxMemPool mpool(&feeEst);
+    FeeEstInput feeEstInput(feeEst);
+    CTxMemPool mpool(&feeEstInput);
     LOCK2(cs_main, mpool.cs);
     TestMemPoolEntryHelper entry;
     CAmount basefee(2000);
