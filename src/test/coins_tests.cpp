@@ -642,6 +642,7 @@ void GetCoinsMapEntry(const CCoinsMap& map, CAmount& value, char& flags, const C
             value = SPENT;
         } else {
             value = it->second.coin.out.nValue;
+            assert(value != ABSENT);
         }
         flags = it->second.flags;
         assert(flags != NO_ENTRY);
