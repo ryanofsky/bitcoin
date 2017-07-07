@@ -1,5 +1,14 @@
 # JSON-RPC Interface
 
+The JSON-RPC API can be enabled with the `-server` option.
+
+The interface runs by default port 8332 for mainnet and port 18332 for testnet and can be accessed by the `bitcoin-cli` command line client.
+
+For more information and API documentation you can run `bitcoin-cli help` or see
+
+* https://bitcoin.org/en/developer-reference#remote-procedure-calls-rpcs
+* https://en.bitcoin.it/wiki/API_reference_(JSON-RPC)
+
 The headless daemon `bitcoind` has the JSON-RPC API enabled by default, the GUI
 `bitcoin-qt` has it disabled by default. This can be changed with the `-server`
 option. In the GUI it is possible to execute RPC methods in the Debug Console
