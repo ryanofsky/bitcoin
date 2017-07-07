@@ -447,7 +447,6 @@ static inline JSONRPCRequest transformNamedArguments(const JSONRPCRequest& in, c
         argsIn[keys[i]] = &values[i];
     }
     // Process expected parameters.
-    int hole = 0;
     for (const std::string &argNamePattern: argNames) {
         std::vector<std::string> vargNames;
         boost::algorithm::split(vargNames, argNamePattern, boost::algorithm::is_any_of("|"));
@@ -459,17 +458,10 @@ static inline JSONRPCRequest transformNamedArguments(const JSONRPCRequest& in, c
             }
         }
         if (fr != argsIn.end()) {
-            for (int i = 0; i < hole; ++i) {
-                // Fill hole between specified parameters with JSON nulls,
-                // but not at the end (for backwards compatibility with calls
-                // that act based on number of specified parameters).
-                out.params.push_back(UniValue());
-            }
-            hole = 0;
             out.params.push_back(*fr->second);
             argsIn.erase(fr);
         } else {
-            hole += 1;
+            out.params.push_back(UniValue());
         }
     }
     // If there are still arguments in the argsIn map, this is an error.
