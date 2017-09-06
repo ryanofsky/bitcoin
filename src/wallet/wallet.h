@@ -503,6 +503,9 @@ public:
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
 
+    //! Return a const pointer to wallet transaction. Caller should acquire
+    //! cs_wallet lock before calling this, and hold it while using the pointer
+    //! to prevent another thread from changing the transaction.
     const CWalletTx* GetWalletTx(const uint256& hash) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     std::set<uint256> GetTxConflicts(const CWalletTx& wtx) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
