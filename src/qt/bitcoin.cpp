@@ -102,7 +102,6 @@ static void RegisterMetaTypes()
     qRegisterMetaType<CAmount>("CAmount");
     qRegisterMetaType<size_t>("size_t");
 
-    qRegisterMetaType<std::function<void()>>("std::function<void()>");
     qRegisterMetaType<QMessageBox::Icon>("QMessageBox::Icon");
     qRegisterMetaType<interfaces::BlockAndHeaderTipInfo>("interfaces::BlockAndHeaderTipInfo");
 
