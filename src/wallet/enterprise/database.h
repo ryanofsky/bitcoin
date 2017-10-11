@@ -5,7 +5,7 @@
 #include <odb/pgsql/database.hxx>
 
 inline std::auto_ptr<odb::database>
-create_database ()
+create_enterprise_database ()
 {
     using namespace std;
     using namespace odb::core;
@@ -13,9 +13,9 @@ create_database ()
     int argc(5);
     char *argv[] = {"./driver", "--user", "odb_test", "--database", "odb_test"};
 
-    auto_ptr<database> db (new odb::pgsql::database (argc, argv));
+    auto_ptr<database> enterprise_database (new odb::pgsql::database (argc, argv));
 
-    return db;
+    return enterprise_database;
 }
 
 #endif

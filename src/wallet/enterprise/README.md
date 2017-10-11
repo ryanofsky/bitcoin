@@ -11,6 +11,8 @@ macOS
 
 3. In your shell config (zshrc in my case), add the ODB bin subdirectory to your path, like so <code>export PATH=/Users/pierrerochard/src/odb-2.4.0-i686-macosx/bin:$HOME/.cargo/bin:$HOME/bin:/usr/local/bin:$PATH</code>
 
-4. In libodb run the usual <code>./configure && make && make install</code>
+4. In libodb run <code>./configure CXXFLAGS=-m64 && make && make install</code>
 
 5. If you want to install the examples configure with these flags <code>./configure --with-database=pgsql CXXFLAGS=-std=c++0x </code>
+
+6. <code>odb -d pgsql --generate-query --generate-schema -o src/wallet/enterprise src/wallet/enterprise/transactions.h</code>

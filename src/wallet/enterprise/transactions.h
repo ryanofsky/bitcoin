@@ -5,9 +5,9 @@
 
 #pragma db object
 
-class transaction {
+class etransactions {
 public:
-    transaction(const std::string &txid,
+    etransactions(const std::string &txid,
                 unsigned int satoshis)
             : txid_(txid), satoshis_(satoshis) {
     }
@@ -25,7 +25,7 @@ public:
 private:
     friend class odb::access;
 
-    transaction() {}
+    etransactions() {}
 
 #pragma db id auto
     unsigned int id_;
