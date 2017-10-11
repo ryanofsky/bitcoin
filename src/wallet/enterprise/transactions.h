@@ -2,6 +2,7 @@
 #define ENTERPRISE_TRANSACTIONS_H
 
 #include <odb/core.hxx>
+#include <string>
 
 #pragma db object
 
