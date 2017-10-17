@@ -14,7 +14,11 @@ import subprocess
 import time
 
 from .authproxy import JSONRPCException
-from .mininode import NodeConn
+from .mininode import (
+    NodeConn,
+    NodeConnCB,
+    NODE_NETWORK,
+)
 from .util import (
     assert_equal,
     get_rpc_proxy,
@@ -163,17 +167,13 @@ class TestNode():
 
         This method adds the p2p connection to the self.p2ps list and also
         returns the connection to the caller."""
-
-        # Create the NodeConnCB
-        p2p_conn = p2p_conn_type()
-        self.p2ps.append(p2p_conn)
-
         if 'dstport' not in kwargs:
             kwargs['dstport'] = p2p_port(self.index)
         if 'dstaddr' not in kwargs:
             kwargs['dstaddr'] = '127.0.0.1'
-        kwargs.update({'callback': p2p_conn})
-        p2p_conn.add_connection(NodeConn(**kwargs))
+
+        p2p_conn = p2p_conn_type(**kwargs)
+        self.p2ps.append(p2p_conn)
 
         return p2p_conn
 
@@ -190,8 +190,8 @@ class TestNode():
         """Close all p2p connections to the node."""
         for p in self.p2ps:
             # Connection could have already been closed by other end.
-            if p.connection is not None:
-                p.connection.disconnect_node()
+            if p.state == "connected":
+                p.disconnect_node()
         self.p2ps = []
 
 
