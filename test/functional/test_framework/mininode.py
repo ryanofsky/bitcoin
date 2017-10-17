@@ -83,18 +83,6 @@ class NodeConn(asyncore.dispatcher):
         self.state = "connecting"
         self.network = net
         self.disconnect = False
-        self.nServices = 0
-
-        if send_version:
-            # stuff version msg into sendbuf
-            # TODO: this is P2P payload-level logic. It should live in NodeConnCB
-            vt = msg_version()
-            vt.nServices = services
-            vt.addrTo.ip = self.dstaddr
-            vt.addrTo.port = self.dstport
-            vt.addrFrom.ip = "0.0.0.0"
-            vt.addrFrom.port = 0
-            self.send_message(vt, True)
 
         logger.info('Connecting to Bitcoin Node: %s:%d' % (self.dstaddr, self.dstport))
 
@@ -257,7 +245,17 @@ class NodeConnCB(NodeConn):
     TODO: rename this class P2PInterface"""
 
     def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK|NODE_WITNESS, send_version=True):
-        super().__init__(dstaddr, dstport, net, services, send_version)
+        super().__init__(dstaddr, dstport, net)
+
+        if send_version:
+            # send a version msg
+            vt = msg_version()
+            vt.nServices = services
+            vt.addrTo.ip = self.dstaddr
+            vt.addrTo.port = self.dstport
+            vt.addrFrom.ip = "0.0.0.0"
+            vt.addrFrom.port = 0
+            self.send_message(vt, True)
 
         # Track number of messages of each type received and the most recent
         # message of each type
@@ -333,7 +331,7 @@ class NodeConnCB(NodeConn):
     # Connection helper methods
 
     def wait_for_disconnect(self, timeout=60):
-        test_function = lambda: not self.connected
+        test_function = lambda: self.state != "connected"
         wait_until(test_function, timeout=timeout, lock=mininode_lock)
 
     # Message receiving helper methods
