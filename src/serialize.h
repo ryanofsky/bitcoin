@@ -376,7 +376,8 @@ I ReadVarInt(Stream& is)
 }
 
 #define FLATDATA(obj) REF(CFlatData((char*)&(obj), (char*)&(obj) + sizeof(obj)))
-#define VARINT(obj, ...) REF(WrapVarInt<__VA_ARGS__>(REF(obj)))
+#define _PREPEND(first, second, ...) first second
+#define VARINT(obj, ...) REF(WrapVarInt<_PREPEND(VarIntMode::, ##__VA_ARGS__, DEFAULT)>(REF(obj)))
 #define COMPACTSIZE(obj) REF(CCompactSize(REF(obj)))
 #define LIMITED_STRING(obj,n) REF(LimitedString< n >(REF(obj)))
 
@@ -486,7 +487,7 @@ public:
     }
 };
 
-template<VarIntMode Mode=VarIntMode::DEFAULT, typename I>
+template<VarIntMode Mode, typename I>
 CVarInt<Mode, I> WrapVarInt(I& n) { return {n}; }
 
 /**
