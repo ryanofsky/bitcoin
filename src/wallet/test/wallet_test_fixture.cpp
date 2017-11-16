@@ -13,11 +13,8 @@ std::unique_ptr<CWallet> pwalletMain;
 WalletTestingSetup::WalletTestingSetup(const std::string& chainName):
     TestingSetup(chainName)
 {
-    bitdb.MakeMock();
-
     bool fFirstRun;
-    std::unique_ptr<CWalletDBWrapper> dbw(new CWalletDBWrapper(&bitdb, "wallet_test.dat"));
-    pwalletMain = MakeUnique<CWallet>(std::move(dbw));
+    pwalletMain = MakeUnique<CWallet>(CWallet::Mock());
     pwalletMain->LoadWallet(fFirstRun);
     RegisterValidationInterface(pwalletMain.get());
 
@@ -28,7 +25,4 @@ WalletTestingSetup::~WalletTestingSetup()
 {
     UnregisterValidationInterface(pwalletMain.get());
     pwalletMain.reset();
-
-    bitdb.Flush(true);
-    bitdb.Reset();
 }

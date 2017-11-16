@@ -18,6 +18,7 @@
 #include <wallet/crypter.h>
 #include <wallet/walletdb.h>
 #include <wallet/rpcwallet.h>
+#include <util.h>
 
 #include <algorithm>
 #include <atomic>
@@ -65,8 +66,6 @@ static const unsigned int DEFAULT_TX_CONFIRM_TARGET = 6;
 static const bool DEFAULT_WALLET_RBF = false;
 static const bool DEFAULT_WALLETBROADCAST = true;
 static const bool DEFAULT_DISABLE_WALLET = false;
-
-extern const char * DEFAULT_WALLET_DAT;
 
 static const int64_t TIMESTAMP_MIN = 0;
 
@@ -719,6 +718,14 @@ private:
      */
     bool AddWatchOnly(const CScript& dest) override;
 
+    /**
+     * Wallet filename from wallet=<path> command line or config option.
+     * Used in debug logs and to send RPCs to the right wallet instance when
+     * more than one wallet is loaded.
+     */
+    std::string m_name;
+
+    /** Internal database handle. */
     std::unique_ptr<CWalletDBWrapper> dbw;
 
     /**
@@ -732,6 +739,12 @@ private:
      * Protected by cs_main (see BlockUntilSyncedToCurrentChain)
      */
     const CBlockIndex* m_last_block_processed;
+
+    /** Private constructor */
+    CWallet(std::string name, std::unique_ptr<CWalletDBWrapper> dbw) : m_name(std::move(name)), dbw(std::move(dbw))
+    {
+        SetNull();
+    }
 
 public:
     /*
@@ -750,14 +763,7 @@ public:
 
     /** Get a name for this wallet for logging/debugging purposes.
      */
-    std::string GetName() const
-    {
-        if (dbw) {
-            return dbw->GetName();
-        } else {
-            return "dummy";
-        }
-    }
+    const std::string& GetName() const { return m_name; }
 
     void LoadKeyPool(int64_t nIndex, const CKeyPool &keypool);
 
@@ -769,17 +775,16 @@ public:
     MasterKeyMap mapMasterKeys;
     unsigned int nMasterKeyMaxID;
 
-    // Create wallet with dummy database handle
-    CWallet(): dbw(new CWalletDBWrapper())
-    {
-        SetNull();
-    }
+    /** Construct wallet with specified name and path. */
+    CWallet(std::string name, const fs::path& path) : CWallet(std::move(name), MakeUnique<CWalletDBWrapper>(path)) {}
 
-    // Create wallet with passed-in database handle
-    explicit CWallet(std::unique_ptr<CWalletDBWrapper> dbw_in) : dbw(std::move(dbw_in))
-    {
-        SetNull();
-    }
+    /** Construct dummy wallet for testing with no underlying database. */
+    struct Dummy{};
+    CWallet(Dummy) : CWallet("wallet_dummy.dat", MakeUnique<CWalletDBWrapper>()) {}
+
+    /** Construct mock wallet for testing with temporary in-memory database. */
+    struct Mock{};
+    CWallet(Mock) : CWallet("wallet_mock.dat", MakeUnique<CWalletDBWrapper>("", true /* mock */)) {}
 
     ~CWallet()
     {
@@ -1093,7 +1098,7 @@ public:
     bool MarkReplaced(const uint256& originalHash, const uint256& newHash);
 
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
-    static CWallet* CreateWalletFromFile(const std::string walletFile);
+    static CWallet* CreateWalletFromFile(const std::string& name, const fs::path& path);
 
     /**
      * Wallet post-init setup
