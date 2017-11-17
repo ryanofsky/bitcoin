@@ -79,9 +79,9 @@ class AcceptBlockTest(BitcoinTestFramework):
     def run_test(self):
         # Setup the p2p connections and start up the network thread.
         # test_node connects to node0 (not whitelisted)
-        test_node = self.nodes[0].add_p2p_connection(NodeConnCB())
+        test_node = self.nodes[0].add_p2p_connection(NodeConnCB)
         # min_work_node connects to node1
-        min_work_node = self.nodes[1].add_p2p_connection(NodeConnCB())
+        min_work_node = self.nodes[1].add_p2p_connection(NodeConnCB)
 
         NetworkThread().start() # Start up network handling in another thread
 
@@ -207,7 +207,7 @@ class AcceptBlockTest(BitcoinTestFramework):
         # disconnect/reconnect first
 
         self.nodes[0].disconnect_p2ps()
-        test_node = self.nodes[0].add_p2p_connection(NodeConnCB())
+        test_node = self.nodes[0].add_p2p_connection(NodeConnCB)
 
         test_node.wait_for_verack()
         test_node.send_message(msg_block(block_h1f))
@@ -292,7 +292,7 @@ class AcceptBlockTest(BitcoinTestFramework):
             test_node.wait_for_disconnect()
 
             self.nodes[0].disconnect_p2ps()
-            test_node = self.nodes[0].add_p2p_connection(NodeConnCB())
+            test_node = self.nodes[0].add_p2p_connection(NodeConnCB)
 
             NetworkThread().start() # Start up network handling in another thread
             test_node.wait_for_verack()

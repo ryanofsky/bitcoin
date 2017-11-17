@@ -158,16 +158,20 @@ class TestNode():
         self.encryptwallet(passphrase)
         self.wait_until_stopped()
 
-    def add_p2p_connection(self, p2p_conn, **kwargs):
+    def add_p2p_connection(self, p2p_conn_type, **kwargs):
         """Add a p2p connection to the node.
 
         This method adds the p2p connection to the self.p2ps list and also
         returns the connection to the caller."""
+
+        # Create the NodeConnCB
+        p2p_conn = p2p_conn_type()
+        self.p2ps.append(p2p_conn)
+
         if 'dstport' not in kwargs:
             kwargs['dstport'] = p2p_port(self.index)
         if 'dstaddr' not in kwargs:
             kwargs['dstaddr'] = '127.0.0.1'
-        self.p2ps.append(p2p_conn)
         kwargs.update({'callback': p2p_conn})
         p2p_conn.add_connection(NodeConn(**kwargs))
 

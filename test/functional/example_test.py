@@ -132,7 +132,7 @@ class ExampleTest(BitcoinTestFramework):
         """Main test logic"""
 
         # Create a P2P connection to one of the nodes
-        self.nodes[0].add_p2p_connection(BaseNode())
+        self.nodes[0].add_p2p_connection(BaseNode)
 
         # Start up network handling in another thread. This needs to be called
         # after the P2P connections have been created.
@@ -188,7 +188,7 @@ class ExampleTest(BitcoinTestFramework):
         connect_nodes(self.nodes[1], 2)
 
         self.log.info("Add P2P connection to node2")
-        self.nodes[2].add_p2p_connection(BaseNode())
+        self.nodes[2].add_p2p_connection(BaseNode)
         self.nodes[2].p2p.wait_for_verack()
 
         self.log.info("Wait for node2 reach current tip. Test that it has propagated all the blocks to us")

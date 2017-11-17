@@ -48,7 +48,7 @@ class FeeFilterTest(BitcoinTestFramework):
         sync_blocks(self.nodes)
 
         # Setup the p2p connections and start up the network thread.
-        self.nodes[0].add_p2p_connection(TestNode())
+        self.nodes[0].add_p2p_connection(TestNode)
         NetworkThread().start()
         self.nodes[0].p2p.wait_for_verack()
 

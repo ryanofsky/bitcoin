@@ -788,9 +788,9 @@ class CompactBlocksTest(BitcoinTestFramework):
 
     def run_test(self):
         # Setup the p2p connections and start up the network thread.
-        self.test_node = self.nodes[0].add_p2p_connection(TestNode())
-        self.segwit_node = self.nodes[1].add_p2p_connection(TestNode(), services=NODE_NETWORK|NODE_WITNESS)
-        self.old_node = self.nodes[1].add_p2p_connection(TestNode(), services=NODE_NETWORK)
+        self.test_node = self.nodes[0].add_p2p_connection(TestNode)
+        self.segwit_node = self.nodes[1].add_p2p_connection(TestNode, services=NODE_NETWORK|NODE_WITNESS)
+        self.old_node = self.nodes[1].add_p2p_connection(TestNode, services=NODE_NETWORK)
 
         NetworkThread().start()  # Start up network handling in another thread
 
