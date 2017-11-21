@@ -22,7 +22,6 @@ from test_framework.mininode import (
     mininode_lock,
     msg_block,
     msg_getdata,
-    NODE_NETWORK,
 )
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
@@ -35,7 +34,7 @@ from test_framework.util import (
 # message is received from the node-under-test. Subclass NodeConnCB and
 # override the on_*() methods if you need custom behaviour.
 class BaseNode(NodeConnCB):
-    def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK, send_version=True):
+    def __init__(self):
         """Initialize the NodeConnCB
 
         Used to inialize custom properties for the Node that aren't
@@ -46,7 +45,7 @@ class BaseNode(NodeConnCB):
 
         Call super().__init__() first for standard initialization and then
         initialize custom properties."""
-        super().__init__(dstaddr, dstport, net, services, send_version)
+        super().__init__()
         # Stores a dictionary of all blocks received
         self.block_receive_map = defaultdict(int)
 
@@ -133,7 +132,7 @@ class ExampleTest(BitcoinTestFramework):
         """Main test logic"""
 
         # Create a P2P connection to one of the nodes
-        self.nodes[0].add_p2p_connection(BaseNode)
+        self.nodes[0].add_p2p_connection(BaseNode())
 
         # Start up network handling in another thread. This needs to be called
         # after the P2P connections have been created.
@@ -189,7 +188,7 @@ class ExampleTest(BitcoinTestFramework):
         connect_nodes(self.nodes[1], 2)
 
         self.log.info("Add P2P connection to node2")
-        self.nodes[2].add_p2p_connection(BaseNode)
+        self.nodes[2].add_p2p_connection(BaseNode())
         self.nodes[2].p2p.wait_for_verack()
 
         self.log.info("Wait for node2 reach current tip. Test that it has propagated all the blocks to us")

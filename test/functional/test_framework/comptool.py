@@ -41,8 +41,8 @@ class RejectResult():
 
 class TestNode(NodeConnCB):
 
-    def __init__(self, block_store, tx_store, dstaddr, dstport, net="regtest", services=NODE_NETWORK|NODE_WITNESS, send_version=True):
-        super().__init__(dstaddr, dstport, net, services, send_version)
+    def __init__(self, block_store, tx_store):
+        super().__init__()
         self.bestblockhash = None
         self.block_store = block_store
         self.block_request_map = {}
@@ -170,7 +170,9 @@ class TestManager():
     def add_all_connections(self, nodes):
         for i in range(len(nodes)):
             # Create a p2p connection to each node
-            self.p2p_connections.append(TestNode(self.block_store, self.tx_store, '127.0.0.1', p2p_port(i),))
+            node = TestNode(self.block_store, self.tx_store)
+            node.peer_connect('127.0.0.1', p2p_port(i))
+            self.p2p_connections.append(node)
 
     def clear_all_connections(self):
         self.p2p_connections = []

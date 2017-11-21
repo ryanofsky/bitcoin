@@ -96,7 +96,7 @@ class AssumeValidTest(BitcoinTestFramework):
     def run_test(self):
 
         # Connect to node0
-        p2p0 = self.nodes[0].add_p2p_connection(BaseNode)
+        p2p0 = self.nodes[0].add_p2p_connection(BaseNode())
 
         NetworkThread().start()  # Start up network handling in another thread
         self.nodes[0].p2p.wait_for_verack()
@@ -161,11 +161,11 @@ class AssumeValidTest(BitcoinTestFramework):
 
         # Start node1 and node2 with assumevalid so they accept a block with a bad signature.
         self.start_node(1, extra_args=["-assumevalid=" + hex(block102.sha256)])
-        p2p1 = self.nodes[1].add_p2p_connection(BaseNode)
+        p2p1 = self.nodes[1].add_p2p_connection(BaseNode())
         p2p1.wait_for_verack()
 
         self.start_node(2, extra_args=["-assumevalid=" + hex(block102.sha256)])
-        p2p2 = self.nodes[2].add_p2p_connection(BaseNode)
+        p2p2 = self.nodes[2].add_p2p_connection(BaseNode())
         p2p2.wait_for_verack()
 
         # send header lists to all three nodes

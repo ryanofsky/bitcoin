@@ -60,8 +60,8 @@ def test_witness_block(node, p2p, block, accepted, with_witness=True):
     assert_equal(node.rpc.getbestblockhash() == block.hash, accepted)
 
 class TestNode(NodeConnCB):
-    def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK, send_version=True):
-        super().__init__(dstaddr, dstport, net, services, send_version)
+    def __init__(self):
+        super().__init__()
         self.getdataset = set()
 
     def on_getdata(self, message):
@@ -1876,11 +1876,11 @@ class SegWitTest(BitcoinTestFramework):
     def run_test(self):
         # Setup the p2p connections and start up the network thread.
         # self.test_node sets NODE_WITNESS|NODE_NETWORK
-        self.test_node = self.nodes[0].add_p2p_connection(TestNode, services=NODE_NETWORK|NODE_WITNESS)
+        self.test_node = self.nodes[0].add_p2p_connection(TestNode(), services=NODE_NETWORK|NODE_WITNESS)
         # self.old_node sets only NODE_NETWORK
-        self.old_node = self.nodes[0].add_p2p_connection(TestNode, services=NODE_NETWORK)
+        self.old_node = self.nodes[0].add_p2p_connection(TestNode(), services=NODE_NETWORK)
         # self.std_node is for testing node1 (fRequireStandard=true)
-        self.std_node = self.nodes[1].add_p2p_connection(TestNode, services=NODE_NETWORK|NODE_WITNESS)
+        self.std_node = self.nodes[1].add_p2p_connection(TestNode(), services=NODE_NETWORK|NODE_WITNESS)
 
         NetworkThread().start() # Start up network handling in another thread
 

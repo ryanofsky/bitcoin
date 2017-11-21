@@ -93,8 +93,8 @@ from test_framework.blocktools import create_block, create_coinbase
 direct_fetch_response_time = 0.05
 
 class TestNode(NodeConnCB):
-    def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK, send_version=True):
-        super().__init__(dstaddr, dstport, net, services, send_version)
+    def __init__(self):
+        super().__init__()
         self.block_announced = False
         self.last_blockhash_announced = None
 
@@ -217,10 +217,10 @@ class SendHeadersTest(BitcoinTestFramework):
 
     def run_test(self):
         # Setup the p2p connections and start up the network thread.
-        inv_node = self.nodes[0].add_p2p_connection(TestNode)
+        inv_node = self.nodes[0].add_p2p_connection(TestNode())
         # Set nServices to 0 for test_node, so no block download will occur outside of
         # direct fetching
-        test_node = self.nodes[0].add_p2p_connection(TestNode, services=NODE_WITNESS)
+        test_node = self.nodes[0].add_p2p_connection(TestNode(), services=NODE_WITNESS)
 
         NetworkThread().start() # Start up network handling in another thread
 

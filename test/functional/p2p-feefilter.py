@@ -23,8 +23,8 @@ def allInvsMatch(invsExpected, testnode):
     return False
 
 class TestNode(NodeConnCB):
-    def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK, send_version=True):
-        super().__init__(dstaddr, dstport, net, services, send_version)
+    def __init__(self):
+        super().__init__()
         self.txinvs = []
 
     def on_inv(self, message):
@@ -48,7 +48,7 @@ class FeeFilterTest(BitcoinTestFramework):
         sync_blocks(self.nodes)
 
         # Setup the p2p connections and start up the network thread.
-        self.nodes[0].add_p2p_connection(TestNode)
+        self.nodes[0].add_p2p_connection(TestNode())
         NetworkThread().start()
         self.nodes[0].p2p.wait_for_verack()
 

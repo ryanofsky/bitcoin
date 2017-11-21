@@ -16,8 +16,8 @@ from test_framework.script import CScript, OP_TRUE
 
 # TestNode: A peer we use to send messages to bitcoind, and store responses.
 class TestNode(NodeConnCB):
-    def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK, send_version=True):
-        super().__init__(dstaddr, dstport, net, services, send_version)
+    def __init__(self):
+        super().__init__()
         self.last_sendcmpct = []
         self.block_announced = False
         # Store the hashes of blocks we've seen announced.
@@ -788,9 +788,9 @@ class CompactBlocksTest(BitcoinTestFramework):
 
     def run_test(self):
         # Setup the p2p connections and start up the network thread.
-        self.test_node = self.nodes[0].add_p2p_connection(TestNode)
-        self.segwit_node = self.nodes[1].add_p2p_connection(TestNode, services=NODE_NETWORK|NODE_WITNESS)
-        self.old_node = self.nodes[1].add_p2p_connection(TestNode, services=NODE_NETWORK)
+        self.test_node = self.nodes[0].add_p2p_connection(TestNode())
+        self.segwit_node = self.nodes[1].add_p2p_connection(TestNode(), services=NODE_NETWORK|NODE_WITNESS)
+        self.old_node = self.nodes[1].add_p2p_connection(TestNode(), services=NODE_NETWORK)
 
         NetworkThread().start()  # Start up network handling in another thread
 

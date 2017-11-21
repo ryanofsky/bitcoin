@@ -72,8 +72,10 @@ class NodeConn(asyncore.dispatcher):
 
     TODO: rename this class P2PConnection."""
 
-    def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK|NODE_WITNESS, send_version=True):
+    def __init__(self):
         super().__init__(map=mininode_socket_map)
+
+    def peer_connect(self, dstaddr, dstport, net="regtest"):
         self.dstaddr = dstaddr
         self.dstport = dstport
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -87,6 +89,11 @@ class NodeConn(asyncore.dispatcher):
         logger.info('Connecting to Bitcoin Node: %s:%d' % (self.dstaddr, self.dstport))
 
         self.connect((dstaddr, dstport))
+
+    def peer_disconnect(self):
+        # Connection could have already been closed by other end.
+        if self.state == "connected":
+            self.disconnect_node()
 
     # Connection and disconnection methods
 
@@ -243,9 +250,8 @@ class NodeConnCB(NodeConn):
     if they want to alter message handling behaviour.
 
     TODO: rename this class P2PInterface"""
-
-    def __init__(self, dstaddr, dstport, net="regtest", services=NODE_NETWORK|NODE_WITNESS, send_version=True):
-        super().__init__(dstaddr, dstport, net)
+    def peer_connect(self, *args, services=NODE_NETWORK|NODE_WITNESS, send_version=True, **kwargs):
+        super().peer_connect(*args, **kwargs)
 
         if send_version:
             # send a version msg

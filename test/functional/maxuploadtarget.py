@@ -18,8 +18,8 @@ from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 
 class TestNode(NodeConnCB):
-    def __init__(self, dstaddr, dstport):
-        super().__init__(dstaddr, dstport)
+    def __init__(self):
+        super().__init__()
         self.block_receive_map = defaultdict(int)
 
     def on_inv(self, message):
@@ -55,7 +55,7 @@ class MaxUploadTest(BitcoinTestFramework):
         p2p_conns = []
 
         for _ in range(3):
-            p2p_conns.append(self.nodes[0].add_p2p_connection(TestNode))
+            p2p_conns.append(self.nodes[0].add_p2p_connection(TestNode()))
 
         NetworkThread().start() # Start up network handling in another thread
         for p2pc in p2p_conns:
@@ -147,7 +147,7 @@ class MaxUploadTest(BitcoinTestFramework):
         self.start_node(0, ["-whitelist=127.0.0.1", "-maxuploadtarget=1", "-blockmaxsize=999000"])
 
         # Reconnect to self.nodes[0]
-        self.nodes[0].add_p2p_connection(TestNode)
+        self.nodes[0].add_p2p_connection(TestNode())
 
         NetworkThread().start() # Start up network handling in another thread
         self.nodes[0].p2p.wait_for_verack()
