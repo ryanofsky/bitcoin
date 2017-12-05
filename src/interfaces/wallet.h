@@ -5,6 +5,8 @@
 #ifndef BITCOIN_INTERFACES_WALLET_H
 #define BITCOIN_INTERFACES_WALLET_H
 
+#include <interfaces/base.h>
+
 #include <amount.h>                    // For CAmount
 #include <interfaces/chain.h>          // For ChainClient
 #include <pubkey.h>                    // For CKeyID and CScriptID (definitions needed in CTxDestination instantiation)
@@ -49,7 +51,7 @@ using WalletOrderForm = std::vector<std::pair<std::string, std::string>>;
 using WalletValueMap = std::map<std::string, std::string>;
 
 //! Interface for accessing a wallet.
-class Wallet
+class Wallet : public Base
 {
 public:
     virtual ~Wallet() {}
