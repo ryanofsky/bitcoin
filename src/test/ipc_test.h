@@ -8,12 +8,18 @@
 #include <primitives/transaction.h>
 #include <univalue.h>
 
+struct CustomStruct
+{
+    int value;
+};
+
 class FooImplementation
 {
 public:
     int add(int a, int b) { return a + b; }
     COutPoint passOutPoint(COutPoint o) { return o; }
     UniValue passUniValue(UniValue v) { return v; }
+    CustomStruct passCustom(CustomStruct t) { return t; }
 };
 
 void IpcTest();
