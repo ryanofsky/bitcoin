@@ -8,7 +8,12 @@
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemGroup>
+<<<<<<< HEAD
     <ClCompile Include="..\..\src\init\bitcoind.cpp" />
+||||||| merged common ancestors
+=======
+    <ClCompile Include="..\..\src\init\bitcoin-qt.cpp" />
+>>>>>>> Add new bitcoin-gui, bitcoin-qt, bitcoin-wallet init implementations
     <ClCompile Include="..\..\src\test\util\setup_common.cpp" />
     <ClCompile Include="..\..\src\qt\test\addressbooktests.cpp" />
     <ClCompile Include="..\..\src\qt\test\apptests.cpp" />

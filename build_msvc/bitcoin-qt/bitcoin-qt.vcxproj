@@ -9,7 +9,12 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qt\main.cpp" />
+<<<<<<< HEAD
     <ClCompile Include="..\..\src\init\bitcoind.cpp" />
+||||||| merged common ancestors
+=======
+    <ClCompile Include="..\..\src\init\bitcoin-qt.cpp" />
+>>>>>>> Add new bitcoin-gui, bitcoin-qt, bitcoin-wallet init implementations
     <ResourceCompile Include="..\..\src\qt\res\bitcoin-qt-res.rc" />
   </ItemGroup>
   <ItemGroup>
