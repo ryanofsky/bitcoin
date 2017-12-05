@@ -19,10 +19,15 @@ interface FooInterface $Proxy.wrap("FooImplementation") {
     passUniValue @2 (arg :Text) -> (result :Text);
 <<<<<<< HEAD
     passTransaction @3 (arg :Data) -> (result :Data);
+<<<<<<< HEAD
     passVectorChar @4 (arg :Data) -> (result :Data);
     passBlockState @5 (arg :Mining.BlockValidationState) -> (result :Mining.BlockValidationState);
 ||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
 =======
     passTransaction @3 (arg :Data) -> (result :Data);
 >>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+||||||| parent of 731219aee8ee (multiprocess: Add serialization code for vector<char>)
+=======
+    passVectorChar @4 (arg :Data) -> (result :Data);
+>>>>>>> 731219aee8ee (multiprocess: Add serialization code for vector<char>)
 }

@@ -18,12 +18,17 @@ public:
     UniValue passUniValue(UniValue v) { return v; }
 <<<<<<< HEAD
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
+<<<<<<< HEAD
     std::vector<char> passVectorChar(std::vector<char> v) { return v; }
     BlockValidationState passBlockState(BlockValidationState s) { return s; }
 ||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
 =======
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
 >>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+||||||| parent of 731219aee8ee (multiprocess: Add serialization code for vector<char>)
+=======
+    std::vector<char> passVectorChar(std::vector<char> v) { return v; }
+>>>>>>> 731219aee8ee (multiprocess: Add serialization code for vector<char>)
 };
 
 void IpcPipeTest();

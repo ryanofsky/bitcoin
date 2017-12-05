@@ -105,6 +105,7 @@ void IpcPipeTest()
     CTransactionRef tx2{foo->passTransaction(tx1)};
     BOOST_CHECK(*Assert(tx1) == *Assert(tx2));
 
+<<<<<<< HEAD
     std::vector<char> vec1{'H', 'e', 'l', 'l', 'o'};
     std::vector<char> vec2{foo->passVectorChar(vec1)};
     BOOST_CHECK_EQUAL(std::string_view(vec1.begin(), vec1.end()), std::string_view(vec2.begin(), vec2.end()));
@@ -140,6 +141,13 @@ void IpcPipeTest()
     BOOST_CHECK(*Assert(tx1) == *Assert(tx2));
 
 >>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+||||||| parent of 731219aee8ee (multiprocess: Add serialization code for vector<char>)
+=======
+    std::vector<char> vec1{'H', 'e', 'l', 'l', 'o'};
+    std::vector<char> vec2{foo->passVectorChar(vec1)};
+    BOOST_CHECK_EQUAL(std::string_view(vec1.begin(), vec1.end()), std::string_view(vec2.begin(), vec2.end()));
+
+>>>>>>> 731219aee8ee (multiprocess: Add serialization code for vector<char>)
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();
     thread.join();
