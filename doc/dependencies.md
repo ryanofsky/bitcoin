@@ -7,7 +7,14 @@ These are the dependencies currently used by Bitcoin Core. You can find instruct
 | --- | --- | --- | --- | --- | --- |
 | Berkeley DB | [4.8.30](https://www.oracle.com/technetwork/database/database-technologies/berkeleydb/downloads/index.html) | 4.8.x | No |  |  |
 | Boost | [1.71.0](https://www.boost.org/users/download/) | [1.64.0](https://github.com/bitcoin/bitcoin/pull/22320) | No |  |  |
+<<<<<<< HEAD
 | Clang<sup>[ \* ](#note1)</sup> |  | [5.0+](https://releases.llvm.org/download.html) (C++17 support) |  |  |  |
+||||||| merged common ancestors
+| Clang |  | [5.0+](https://releases.llvm.org/download.html) (C++17 support) |  |  |  |
+=======
+| Cap'n Proto | [0.6.1](https://capnproto.org/install.html) | 0.5.3 | Yes |  |  |
+| Clang |  | [5.0+](https://releases.llvm.org/download.html) (C++17 support) |  |  |  |
+>>>>>>> doc: Multiprocess misc doc and comment updates
 | Expat | [2.2.7](https://libexpat.github.io/) |  | No | Yes |  |
 | fontconfig | [2.12.1](https://www.freedesktop.org/software/fontconfig/release/) |  | No | Yes |  |
 | FreeType | [2.7.1](https://download.savannah.gnu.org/releases/freetype) |  | No |  | [Yes](https://github.com/bitcoin/bitcoin/blob/master/depends/packages/qt.mk) (Android only) |
