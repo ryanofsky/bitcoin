@@ -1064,8 +1064,13 @@ if HARDEN
 endif
 
 libbitcoin_ipc_mpgen_input = \
+<<<<<<< HEAD
   ipc/capnp/chain.capnp \
   ipc/capnp/common.capnp \
+||||||| parent of 3427e7e0a965 (Add capnp serialization code for bitcoin types)
+=======
+  ipc/capnp/common.capnp \
+>>>>>>> 3427e7e0a965 (Add capnp serialization code for bitcoin types)
   ipc/capnp/echo.capnp \
   ipc/capnp/handler.capnp \
   ipc/capnp/init.capnp
@@ -1074,15 +1079,26 @@ EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 
 # Explicitly list dependencies on generated headers as described in
 # https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html#Recording-Dependencies-manually
+<<<<<<< HEAD
 ipc/capnp/libbitcoin_ipc_a-chain.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 ipc/capnp/libbitcoin_ipc_a-common.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
+||||||| parent of 3427e7e0a965 (Add capnp serialization code for bitcoin types)
+=======
+ipc/capnp/libbitcoin_ipc_a-common.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
+>>>>>>> 3427e7e0a965 (Add capnp serialization code for bitcoin types)
 ipc/capnp/libbitcoin_ipc_a-protocol.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 
 if BUILD_MULTIPROCESS
 LIBBITCOIN_IPC=libbitcoin_ipc.a
 libbitcoin_ipc_a_SOURCES = \
+<<<<<<< HEAD
   ipc/capnp/chain.cpp \
   ipc/capnp/chain-types.h \
+||||||| parent of 3427e7e0a965 (Add capnp serialization code for bitcoin types)
+=======
+  ipc/capnp/common.cpp \
+  ipc/capnp/common.h \
+>>>>>>> 3427e7e0a965 (Add capnp serialization code for bitcoin types)
   ipc/capnp/common-types.h \
   ipc/capnp/context.h \
   ipc/capnp/init-types.h \
