@@ -16,9 +16,11 @@ $Proxy.include("interfaces/node.h");
 $Proxy.includeTypes("ipc/capnp/init-types.h");
 
 using Chain = import "chain.capnp";
+using Common = import "common.capnp";
 using Echo = import "echo.capnp";
 using Mining = import "mining.capnp";
 using Node = import "node.capnp";
+using Wallet = import "wallet.capnp";
 
 interface Init $Proxy.wrap("interfaces::Init") {
     construct @0 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
@@ -26,6 +28,7 @@ interface Init $Proxy.wrap("interfaces::Init") {
     makeMining @3 (context :Proxy.Context) -> (result :Mining.Mining);
     makeChain @4 (context :Proxy.Context) -> (result :Chain.Chain);
     makeNode @5 (context :Proxy.Context) -> (result :Node.Node);
+    makeWalletLoader @6 (context :Proxy.Context, globalArgs :Common.GlobalArgs, chain :Chain.Chain) -> (result :Wallet.WalletLoader);
 
     # DEPRECATED: no longer supported; server returns an error.
     makeMiningOld2 @2 () -> ();
