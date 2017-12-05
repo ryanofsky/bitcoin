@@ -69,7 +69,14 @@ struct CNodeStateStats {
     ServiceFlags their_services;
     int64_t presync_height{-1};
     std::chrono::seconds time_offset{0};
+<<<<<<< HEAD
     NodeClock::time_point m_last_block_announcement;
+||||||| parent of 99442afacb2 (multiprocess: Add capnp wrapper for Node interface)
+=======
+    // Note: If you add fields to this struct, you should also consider updating
+    // the getpeerinfo RPC in rpc/net.cpp and the NodeStateStat struct in
+    // ipc/capnp/node.capnp.
+>>>>>>> 99442afacb2 (multiprocess: Add capnp wrapper for Node interface)
 };
 
 struct PeerManagerInfo {
