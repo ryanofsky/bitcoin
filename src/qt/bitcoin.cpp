@@ -10,6 +10,8 @@
 #include <qt/bitcoingui.h>
 
 #include <chainparams.h>
+#include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
@@ -30,7 +32,6 @@
 #include <init.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
-#include <node/context.h>
 #include <node/ui_interface.h>
 #include <noui.h>
 #include <uint256.h>
@@ -276,10 +277,25 @@ void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
     connect(this, &BitcoinApplication::requestedShutdown, m_splash, &QWidget::close);
 }
 
-void BitcoinApplication::setNode(interfaces::Node& node)
+void BitcoinApplication::createNode(interfaces::Init& init)
 {
     assert(!m_node);
-    m_node = &node;
+    m_node = init.makeNode();
+    if (!m_node) {
+        // If node is not part of current process, need to initialize logging.
+        // TODO in future PR: dedup this logging code with code in AppInit.
+        if (!LogInstance().StartLogging()) {
+            throw std::runtime_error(
+                strprintf("Could not open debug log file %s", LogInstance().m_file_path.string()));
+        }
+        if (!LogInstance().m_log_timestamps) LogPrintf("Startup time: %s\n", FormatISO8601DateTime(GetTime()));
+
+        // If node is not part of current process, spawn new bitcoin-node
+        // process.
+        auto node_init = init.ipc()->spawnProcess("bitcoin-node");
+        m_node = node_init->makeNode();
+        init.ipc()->addCleanup(*m_node, [node_init = node_init.release()] { delete node_init; });
+    }
     if (optionsModel) optionsModel->setNode(*m_node);
     if (m_splash) m_splash->setNode(*m_node);
 }
@@ -354,6 +370,11 @@ void BitcoinApplication::requestShutdown()
 
     delete clientModel;
     clientModel = nullptr;
+
+#ifdef ENABLE_WALLET
+    delete m_wallet_controller;
+    m_wallet_controller = nullptr;
+#endif // ENABLE_WALLET
 
     // Request shutdown from core thread
     Q_EMIT requestedShutdown();
@@ -458,11 +479,11 @@ int GuiMain(int argc, char* argv[])
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
+
     SetupEnvironment();
     util::ThreadSetInternalName("main");
-
-    NodeContext node_context;
-    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(&node_context);
 
     // Subscribe to global signals from core
     boost::signals2::scoped_connection handler_message_box = ::uiInterface.ThreadSafeMessageBox_connect(noui_ThreadSafeMessageBox);
@@ -490,7 +511,7 @@ int GuiMain(int argc, char* argv[])
 
     /// 2. Parse command-line options. We do this after qt in order to show an error if there are problems parsing these
     // Command-line options take precedence:
-    SetupServerArgs(node_context);
+    SetupServerArgs(gArgs);
     SetupUIArgs(gArgs);
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {
@@ -621,7 +642,7 @@ int GuiMain(int argc, char* argv[])
     if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
         app.createSplashScreen(networkStyle.data());
 
-    app.setNode(*node);
+    app.createNode(*init);
 
     int rv = EXIT_SUCCESS;
     try
