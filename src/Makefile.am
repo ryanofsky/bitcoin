@@ -718,6 +718,16 @@ if HARDEN
 	$(AM_V_at) READELF=$(READELF) OBJDUMP=$(OBJDUMP) OTOOL=$(OTOOL) $(PYTHON) $(top_srcdir)/contrib/devtools/security-check.py $(bin_PROGRAMS)
 endif
 
+libtypes_input = \
+  interfaces/capnp/chain.capnp \
+  interfaces/capnp/common.capnp \
+  interfaces/capnp/handler.capnp \
+  interfaces/capnp/init.capnp \
+  interfaces/capnp/node.capnp \
+  interfaces/capnp/wallet.capnp
+EXTRA_DIST += $(libtypes_input)
+%.capnp:
+
 if EMBEDDED_LEVELDB
 include Makefile.leveldb.include
 endif
