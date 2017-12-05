@@ -68,6 +68,8 @@ void ReadGlobalArgs(mp::InvokeContext& invoke_context, const messages::GlobalArg
         mp::ReadField(mp::TypeList<GlobalArgs>(), invoke_context, mp::Make<mp::ValueField>(reader),
                       mp::ReadDestValue(args));
     }
+    Context& ipc_context = *static_cast<Context*>(invoke_context.connection.m_loop.m_context);
+    ipc_context.init_process();
 }
 
 std::string GlobalArgsNetwork()
