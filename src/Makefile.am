@@ -1080,6 +1080,7 @@ endif
 libbitcoin_ipc_mpgen_input = \
   ipc/capnp/common.capnp \
   ipc/capnp/echo.capnp \
+  ipc/capnp/handler.capnp \
   ipc/capnp/init.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 %.capnp:
