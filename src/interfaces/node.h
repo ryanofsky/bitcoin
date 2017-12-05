@@ -37,7 +37,14 @@ struct bilingual_str;
 
 namespace interfaces {
 class Handler;
+<<<<<<< HEAD
 class WalletClient;
+||||||| merged common ancestors
+class Wallet;
+=======
+class LocalInit;
+class Wallet;
+>>>>>>> multiprocess: Add basic spawn and IPC support
 struct BlockTip;
 
 //! Block and header tip information
@@ -230,7 +237,7 @@ public:
 };
 
 //! Return implementation of Node interface.
-std::unique_ptr<Node> MakeNode(NodeContext* context = nullptr);
+std::unique_ptr<Node> MakeNode(LocalInit& init);
 
 //! Block tip (could be a header or not, depends on the subscribed signal).
 struct BlockTip {

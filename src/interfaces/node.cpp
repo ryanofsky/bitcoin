@@ -11,6 +11,7 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
+#include <interfaces/init.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <net_processing.h>
@@ -48,7 +49,7 @@ namespace {
 class NodeImpl : public Node
 {
 public:
-    NodeImpl(NodeContext* context) { setContext(context); }
+    explicit NodeImpl(LocalInit& init) : m_init(init) { setContext(&m_init.node()); }
     void initLogging() override { InitLogging(*Assert(m_context->args)); }
     void initParameterInteraction() override { InitParameterInteraction(*Assert(m_context->args)); }
     bilingual_str getWarnings() override { return GetWarnings(true); }
@@ -292,12 +293,13 @@ public:
             m_context_ref.Clear();
         }
     }
+    LocalInit& m_init;
     NodeContext* m_context{nullptr};
     util::Ref m_context_ref;
 };
 
 } // namespace
 
-std::unique_ptr<Node> MakeNode(NodeContext* context) { return MakeUnique<NodeImpl>(context); }
+std::unique_ptr<Node> MakeNode(LocalInit& init) { return MakeUnique<NodeImpl>(init); }
 
 } // namespace interfaces

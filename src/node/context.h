@@ -20,7 +20,12 @@ class PeerLogicValidation;
 namespace interfaces {
 class Chain;
 class ChainClient;
+<<<<<<< HEAD
 class WalletClient;
+||||||| merged common ancestors
+=======
+class LocalInit;
+>>>>>>> multiprocess: Add basic spawn and IPC support
 } // namespace interfaces
 
 //! NodeContext struct containing references to chain state and connection
@@ -48,6 +53,7 @@ struct NodeContext {
     interfaces::WalletClient* wallet_client{nullptr};
     std::unique_ptr<CScheduler> scheduler;
     std::function<void()> rpc_interruption_point = [] {};
+    interfaces::LocalInit* init{nullptr};
 
     //! Declare default constructor and destructor that are not inline, so code
     //! instantiating the NodeContext struct doesn't need to #include class
