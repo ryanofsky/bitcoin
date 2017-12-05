@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <interfaces/init.h>
+#include <ipc/capnp/context.h>
 #include <ipc/capnp/init.capnp.h>
 #include <ipc/capnp/init.capnp.proxy.h>
 #include <ipc/capnp/protocol.h>
@@ -36,7 +37,7 @@ void IpcLogFn(bool raise, std::string message)
 class CapnpProtocol : public Protocol
 {
 public:
-    CapnpProtocol(const char* exe_name, interfaces::Init& init) : m_exe_name(exe_name), m_init(init) {}
+    CapnpProtocol(const char* exe_name, interfaces::Init& init) : m_exe_name(exe_name), m_context(init) {}
     ~CapnpProtocol() noexcept(true)
     {
         if (m_loop) {
@@ -55,18 +56,19 @@ public:
     {
         assert(!m_loop);
         mp::g_thread_context.thread_name = mp::ThreadName(m_exe_name);
-        m_loop.emplace(m_exe_name, &IpcLogFn, nullptr);
-        mp::ServeStream<messages::Init>(*m_loop, fd, m_init);
+        m_loop.emplace(m_exe_name, &IpcLogFn, &m_context);
+        mp::ServeStream<messages::Init>(*m_loop, fd, m_context.init);
         m_loop->loop();
         m_loop.reset();
     }
+    Context& context() override { return m_context; }
     void startLoop()
     {
         if (m_loop) return;
         std::promise<void> promise;
         m_loop_thread = std::thread([&] {
             util::ThreadRename("capnp-loop");
-            m_loop.emplace(m_exe_name, &IpcLogFn, nullptr);
+            m_loop.emplace(m_exe_name, &IpcLogFn, &m_context);
             {
                 std::unique_lock<std::mutex> lock(m_loop->m_mutex);
                 m_loop->addClient(lock);
@@ -78,7 +80,7 @@ public:
         promise.get_future().wait();
     }
     const char* m_exe_name;
-    interfaces::Init& m_init;
+    Context m_context;
     std::thread m_loop_thread;
     boost::optional<mp::EventLoop> m_loop;
 };
