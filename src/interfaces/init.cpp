@@ -7,4 +7,7 @@
 
 namespace interfaces {
 std::unique_ptr<Echo> Init::makeEcho() { return {}; }
+std::unique_ptr<Node> Init::makeNode() { return {}; }
+std::unique_ptr<Chain> Init::makeChain() { return {}; }
+std::unique_ptr<WalletClient> Init::makeWalletClient(Chain& chain) { return {}; }
 } // namespace interfaces

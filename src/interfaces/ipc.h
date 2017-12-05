@@ -10,6 +10,10 @@
 #include <functional>
 #include <memory>
 
+namespace ipc {
+class Context;
+} // namespace ipc
+
 namespace interfaces {
 class Init;
 
@@ -57,6 +61,9 @@ public:
     //! Serve requests if current process is a spawned subprocess. Blocks until
     //! parent process is disconnected.
     virtual bool serveProcess(const char* exe_name, int argc, char* argv[], int& exit_status) = 0;
+
+    //! Context accessor.
+    virtual ipc::Context& context() = 0;
 };
 
 //! Return implementation of Ipc interface.

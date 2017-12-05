@@ -203,8 +203,27 @@ private:
 
     int64_t m_stale_tip_check_time; //!< Next time to check for stale tip
 
+<<<<<<< HEAD
     //* Whether this node is running in blocks only mode */
     const bool m_ignore_incoming_txs;
+||||||| merged common ancestors
+struct CNodeStateStats {
+    int m_misbehavior_score = 0;
+    int nSyncHeight = -1;
+    int nCommonHeight = -1;
+    std::vector<int> vHeightInFlight;
+};
+=======
+struct CNodeStateStats {
+    int m_misbehavior_score = 0;
+    int nSyncHeight = -1;
+    int nCommonHeight = -1;
+    std::vector<int> vHeightInFlight;
+    // Note: If you add fields to this struct, you should also consider updating
+    // the getpeerinfo RPC (in rpc/net.cpp), and the IPC serialization code (in
+    // ipc/capnp/common-types.cpp and ipc/capnp/common.capnp).
+};
+>>>>>>> Multiprocess bitcoin
 
     /** Protects m_peer_map */
     mutable Mutex m_peer_mutex;
