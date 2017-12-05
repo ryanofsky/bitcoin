@@ -119,6 +119,7 @@ void IpcPipeTest()
     UniValue uni2{foo->passUniValue(uni1)};
     BOOST_CHECK_EQUAL(uni1.write(), uni2.write());
 
+<<<<<<< HEAD
     CMutableTransaction mtx;
     mtx.version = 2;
     mtx.nLockTime = 3;
@@ -144,6 +145,18 @@ void IpcPipeTest()
     CBlockTemplate temp2{foo->passBlockTemplate(temp1)};
     BOOST_CHECK_EQUAL(temp1.block.nTime, temp2.block.nTime);
 
+||||||| parent of d7a784df9449 (multiprocess: Add serialization code for CTransaction)
+=======
+    CMutableTransaction mtx;
+    mtx.version = 2;
+    mtx.nLockTime = 3;
+    mtx.vin.emplace_back(txout1);
+    mtx.vout.emplace_back(COIN, CScript());
+    CTransactionRef tx1{MakeTransactionRef(mtx)};
+    CTransactionRef tx2{foo->passTransaction(tx1)};
+    BOOST_CHECK(*Assert(tx1) == *Assert(tx2));
+
+>>>>>>> d7a784df9449 (multiprocess: Add serialization code for CTransaction)
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();
     thread.join();

@@ -22,10 +22,15 @@ public:
     int add(int a, int b) { return a + b; }
     COutPoint passOutPoint(COutPoint o) { return o; }
     UniValue passUniValue(UniValue v) { return v; }
+<<<<<<< HEAD
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
     BlockValidationState passBlockState(BlockValidationState s) { return s; }
     std::vector<char> passVectorChar(std::vector<char> v) { return v; }
     node::CBlockTemplate passBlockTemplate(node::CBlockTemplate t) { return t; }
+||||||| parent of d7a784df9449 (multiprocess: Add serialization code for CTransaction)
+=======
+    CTransactionRef passTransaction(CTransactionRef t) { return t; }
+>>>>>>> d7a784df9449 (multiprocess: Add serialization code for CTransaction)
 };
 
 void IpcPipeTest();
