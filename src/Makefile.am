@@ -1084,6 +1084,7 @@ if HARDEN
 endif
 
 libbitcoin_ipc_mpgen_input = \
+  ipc/capnp/common.capnp \
   ipc/capnp/echo.capnp \
   ipc/capnp/init.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
@@ -1096,7 +1097,14 @@ ipc/capnp/libbitcoin_ipc_a-protocol.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 if BUILD_MULTIPROCESS
 LIBBITCOIN_IPC=libbitcoin_ipc.a
 libbitcoin_ipc_a_SOURCES = \
+<<<<<<< HEAD
   ipc/capnp/common-types.h \
+||||||| parent of 21abaa9bba14 (Add capnp serialization code for bitcoin types)
+=======
+  ipc/capnp/common-types.h \
+  ipc/capnp/common.cpp \
+  ipc/capnp/common.h \
+>>>>>>> 21abaa9bba14 (Add capnp serialization code for bitcoin types)
   ipc/capnp/context.h \
   ipc/capnp/init-types.h \
   ipc/capnp/protocol.cpp \
