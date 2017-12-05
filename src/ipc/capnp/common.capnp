@@ -82,6 +82,11 @@ struct Pair(Key, Value) {
     value @1 :Value;
 }
 
+struct PairInt64(Key) {
+    key @0 :Key;
+    value @1 :Int64;
+}
+
 struct PairUInt64(Key) {
     key @0 :Key;
     value @1 :UInt64;
