@@ -5,6 +5,8 @@
 #ifndef BITCOIN_INTERFACES_CHAIN_H
 #define BITCOIN_INTERFACES_CHAIN_H
 
+#include <interfaces/base.h>
+
 #include <optional.h>               // For Optional and nullopt
 #include <primitives/transaction.h> // For CTransactionRef
 #include <util/settings.h>          // For util::SettingsValue
@@ -86,7 +88,7 @@ public:
 //! * `guessVerificationProgress` and similar methods can go away if rescan
 //!   logic moves out of the wallet, and the wallet just requests scans from the
 //!   node (https://github.com/bitcoin/bitcoin/issues/11756)
-class Chain
+class Chain : public Base
 {
 public:
     virtual ~Chain() {}
@@ -227,7 +229,7 @@ public:
     virtual void showProgress(const std::string& title, int progress, bool resume_possible) = 0;
 
     //! Chain notifications.
-    class Notifications
+    class Notifications : public Base
     {
     public:
         virtual ~Notifications() {}
@@ -278,7 +280,7 @@ public:
 
 //! Interface to let node manage chain clients (wallets, or maybe tools for
 //! monitoring and analysis in the future).
-class ChainClient
+class ChainClient : public Base
 {
 public:
     virtual ~ChainClient() {}
