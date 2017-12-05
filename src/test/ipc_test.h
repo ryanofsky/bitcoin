@@ -23,6 +23,7 @@ public:
     CustomStruct passCustom(CustomStruct t) { return t; }
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
     BlockValidationState passBlockState(BlockValidationState s) { return s; }
+    std::vector<char> passVectorChar(std::vector<char> v) { return v; }
 };
 
 void IpcTest();

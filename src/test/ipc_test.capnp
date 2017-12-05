@@ -20,6 +20,7 @@ interface FooInterface $Proxy.wrap("FooImplementation") {
     passCustom @3 (arg :CustomStruct) -> (result :CustomStruct);
     passTransaction @4 (arg :Data) -> (result :Data);
     passBlockState @5 (arg :Mining.BlockValidationState) -> (result :Mining.BlockValidationState);
+    passVectorChar @6 (arg :Data) -> (result :Data);
 }
 
 struct CustomStruct {
