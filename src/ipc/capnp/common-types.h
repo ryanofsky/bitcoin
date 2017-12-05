@@ -256,6 +256,146 @@ decltype(auto) CustomReadField(TypeList<util::Result<LocalType>>, Priority<1>, I
         }
     });
 }
+
+//! Overload CustomBuildField and CustomReadField to serialize other types of
+//! objects that have CustomBuildMessage and CustomReadMessage overloads.
+//! Defining BuildMessage and ReadMessage overloads is simpler than defining
+//! BuildField and ReadField overloads because these overloads can be normal
+//! functions instead of template functions, and defined in a .cpp file instead
+//! of a header.
+template <typename LocalType, typename Value, typename Output>
+void CustomBuildField(TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Value&& value, Output&& output,
+                      decltype(CustomBuildMessage(invoke_context, value, std::move(output.get())))* enable = nullptr)
+{
+    CustomBuildMessage(invoke_context, value, std::move(output.init()));
+}
+
+template <typename LocalType, typename Reader, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Reader&& reader,
+                               ReadDest&& read_dest,
+                               decltype(CustomReadMessage(invoke_context, reader.get(),
+                                                          std::declval<LocalType&>()))* enable = nullptr)
+{
+    return read_dest.update([&](auto& value) { CustomReadMessage(invoke_context, reader.get(), value); });
+}
+
+//! Helper for CustomPassField below. Call Accessor::get method if it has one,
+//! otherwise return capnp::Void.
+template <typename Accessor, typename Message>
+decltype(auto) MaybeGet(Message&& message, decltype(Accessor::get(message))* enable = nullptr)
+{
+    return Accessor::get(message);
+}
+
+template <typename Accessor>
+::capnp::Void MaybeGet(...)
+{
+    return {};
+}
+
+//! Helper for CustomPassField below. Call Accessor::init method if it has one,
+//! otherwise do nothing.
+template <typename Accessor, typename Message>
+decltype(auto) MaybeInit(Message&& message, decltype(Accessor::get(message))* enable = nullptr)
+{
+    return Accessor::init(message);
+}
+
+template <typename Accessor>
+::capnp::Void MaybeInit(...)
+{
+    return {};
+}
+
+//! Overload CustomPassField to serialize types of objects that have
+//! CustomPassMessage overloads. Defining PassMessage overloads is simpler than
+//! defining PassField overloads, because PassMessage overloads can be normal
+//! functions instead of template functions, and defined in a .cpp file instead
+//! of a header.
+//!
+//! Defining a PassField or PassMessage overload is useful for input/output
+//! parameters. If an overload is not defined these parameters will just be
+//! deserialized on the server side with ReadField into a temporary variable,
+//! then the server method will be called passing the temporary variable as a
+//! parameter, then the temporary variable will be serialized and sent back to
+//! the client with BuildField. But if a PassField or PassMessage overload is
+//! defined, the overload is called with a callback to invoke and pass
+//! parameters to the server side function, and run arbitrary code before and
+//! after invoking the function.
+template <typename Accessor, typename... LocalTypes, typename ServerContext, typename Fn, typename... Args>
+auto CustomPassField(TypeList<LocalTypes...>, ServerContext& server_context, Fn&& fn, Args&&... args)
+    -> decltype(CustomPassMessage(server_context, MaybeGet<Accessor>(server_context.call_context.getParams()),
+                                  MaybeGet<Accessor>(server_context.call_context.getResults()), nullptr))
+{
+    CustomPassMessage(server_context, MaybeGet<Accessor>(server_context.call_context.getParams()),
+                      MaybeInit<Accessor>(server_context.call_context.getResults()),
+                      [&](LocalTypes... param) { fn.invoke(server_context, std::forward<Args>(args)..., param...); });
+}
+
+//! Generic ::capnp::Data field builder for any class that a Span can be
+//! constructed from, particularly BaseHash and base_blob classes and
+//! subclasses. It's also used to serialize vector<unsigned char>
+//! set elements in GCSFilter::ElementSet.
+//!
+//! There is currently no corresponding ::capnp::Data CustomReadField function
+//! that works using Spans, because the bitcoin classes in the codebase like
+//! BaseHash and blob_blob that can converted /to/ Span don't currently have
+//! Span constructors that allow them to be constructed /from/ Span. For example
+//! CustomReadField function could be written that would allow dropping
+//! specialized CustomReadField functions for types like PKHash.
+//!
+//! For the LocalType = vector<unsigned char> case, it's also not necessary to
+//! have ::capnp::Data CustomReadField function corresponding to this
+//! CustomBuildField function because ::capnp::Data inherits from
+//! ::capnp::ArrayPtr, and libmultiprocess already provides a generic
+//! CustomReadField function that can read from ::capnp::ArrayPtr into
+//! std::vector.
+template <typename LocalType, typename Value, typename Output>
+void CustomBuildField(
+    TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Value&& value, Output&& output,
+    typename std::enable_if_t<!ipc::capnp::Serializable<typename std::remove_cv<
+        typename std::remove_reference<Value>::type>::type>::value>* enable_not_serializable = nullptr,
+    typename std::enable_if_t<std::is_same_v<decltype(output.get()), ::capnp::Data::Builder>>* enable_output =
+        nullptr,
+    decltype(Span{value})* enable_value = nullptr)
+{
+    auto data = Span{value};
+    auto result = output.init(data.size());
+    memcpy(result.begin(), data.data(), data.size());
+}
+
+// libmultiprocess only provides read/build functions for std::set, not
+// std::unordered_set, so copy and paste those functions here.
+// TODO: Move these to libmultiprocess and dedup std::set, std::unordered_set,
+// and std::vector implementations.
+template <typename LocalType, typename Hash, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>,
+                               InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        auto data = input.get();
+        value.clear();
+        for (auto item : data) {
+            ReadField(TypeList<LocalType>(), invoke_context, Make<ValueField>(item),
+                      ReadDestEmplace(
+                          TypeList<const LocalType>(), [&](auto&&... args) -> auto& {
+                              return *value.emplace(std::forward<decltype(args)>(args)...).first;
+                          }));
+        }
+    });
+}
+
+template <typename LocalType, typename Hash, typename Value, typename Output>
+void CustomBuildField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    auto list = output.init(value.size());
+    size_t i = 0;
+    for (const auto& elem : value) {
+        BuildField(TypeList<LocalType>(), invoke_context, ListOutput<typename decltype(list)::Builds>(list, i), elem);
+        ++i;
+    }
+}
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_COMMON_TYPES_H
