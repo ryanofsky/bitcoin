@@ -304,6 +304,82 @@ decltype(auto) CustomReadField(TypeList<CMutableTransaction>, Priority<2>, Invok
         SpanReader stream(CLIENT_VERSION, {data.begin(), data.end()});
         TX_WITH_WITNESS(value).Unserialize(stream);
     });
+
+}
+
+// Custom builder and reader. CAddress is serializable but requires a
+// serialization parameter so the generic builder and readers above for
+// serializable types don't work and these overrides are required.
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<CAddress>, Priority<2>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    CDataStream stream(SER_NETWORK, CLIENT_VERSION);
+    CAddress::V2_NETWORK(value).Serialize(stream);
+    auto result = output.init(stream.size());
+    memcpy(result.begin(), stream.data(), stream.size());
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<CAddress>, Priority<2>, InvokeContext& invoke_context,
+                                Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        if (!input.has()) return;
+        auto data = input.get();
+        SpanReader stream(CLIENT_VERSION, {data.begin(), data.end()});
+        CAddress::V2_NETWORK(value).Unserialize(stream);
+    });
+}
+
+// Custom builder and reader. CNetAddr is serializable but requires a
+// serialization parameter so the generic builder and readers below for
+// serializable types don't work and these overrides are required.
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<CNetAddr>, Priority<2>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    CDataStream stream(SER_NETWORK, CLIENT_VERSION);
+    CNetAddr::V2(value).Serialize(stream);
+    auto result = output.init(stream.size());
+    memcpy(result.begin(), stream.data(), stream.size());
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<CNetAddr>, Priority<2>, InvokeContext& invoke_context,
+                                Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        if (!input.has()) return;
+        auto data = input.get();
+        SpanReader stream(CLIENT_VERSION, {data.begin(), data.end()});
+        CNetAddr::V2(value).Unserialize(stream);
+    });
+}
+
+// Custom builder and reader. CService is serializable but requires a
+// serialization parameter so the generic builder and readers below for
+// serializable types don't work and these overrides are required.
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<CService>, Priority<2>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    CDataStream stream(SER_NETWORK, CLIENT_VERSION);
+    CService::V2(value).Serialize(stream);
+    auto result = output.init(stream.size());
+    memcpy(result.begin(), stream.data(), stream.size());
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<CService>, Priority<2>, InvokeContext& invoke_context,
+                                Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        if (!input.has()) return;
+        auto data = input.get();
+        SpanReader stream(CLIENT_VERSION, {data.begin(), data.end()});
+        CService::V2(value).Unserialize(stream);
+    });
 }
 
 template <typename Output>
