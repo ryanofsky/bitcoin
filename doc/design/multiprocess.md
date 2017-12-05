@@ -2,10 +2,17 @@
 
 Guide to the design and architecture of the Bitcoin Core multiprocess feature
 
+<<<<<<< HEAD
 _This document describes the design of the multiprocess feature. For usage information, see the top-level [multiprocess.md](../multiprocess.md) file._
+||||||| parent of 518f41fb1571 (doc: Multiprocess misc doc and comment updates)
+`bitcoin-node` is a drop-in replacement for `bitcoind`, and `bitcoin-gui` is a drop-in replacement for `bitcoin-qt`, and there are no differences in use or external behavior between the new and old executables. But internally (after [#10102](https://github.com/bitcoin/bitcoin/pull/10102)), `bitcoin-gui` will spawn a `bitcoin-node` process to run P2P and RPC code, communicating with it across a socket pair, and `bitcoin-node` will spawn `bitcoin-wallet` to run wallet code, also communicating over a socket pair. This will let node, wallet, and GUI code run in separate address spaces for better isolation, and allow future improvements like being able to start and stop components independently on different machines and environments.
+=======
+`bitcoin-node` is a drop-in replacement for `bitcoind`, and `bitcoin-gui` is a drop-in replacement for `bitcoin-qt`, and there are no differences in use or external behavior between the new and old executables. But internally `bitcoin-gui` will spawn a `bitcoin-node` process to run P2P and RPC code, communicating with it across a socket pair, and `bitcoin-node` will spawn `bitcoin-wallet` to run wallet code, also communicating over a socket pair. This lets node, wallet, and GUI code run in separate address spaces for better isolation, and allow future improvements like being able to start and stop components independently on different machines and environments.
+>>>>>>> 518f41fb1571 (doc: Multiprocess misc doc and comment updates)
 
 ## Table of contents
 
+<<<<<<< HEAD
 - [Introduction](#introduction)
 - [Current Architecture](#current-architecture)
 - [Proposed Architecture](#proposed-architecture)
@@ -26,6 +33,19 @@ _This document describes the design of the multiprocess feature. For usage infor
 - [Acknowledgements](#acknowledgements)
 
 ## Introduction
+||||||| parent of 518f41fb1571 (doc: Multiprocess misc doc and comment updates)
+Specific next steps after [#10102](https://github.com/bitcoin/bitcoin/pull/10102) will be:
+
+- [ ] Adding `-ipcbind` and `-ipcconnect` options to `bitcoin-node`, `bitcoin-wallet`, and `bitcoin-gui` executables so they can listen and connect to TCP ports and unix socket paths. This will allow separate processes to be started and stopped any time and connect to each other.
+- [ ] Adding `-server` and `-rpcbind` options to the `bitcoin-wallet` executable so wallet processes can handle RPC requests directly without going through the node.
+- [ ] Supporting windows, not just unix systems. The existing socket code is already cross-platform, so the only windows-specific code that needs to be written is code spawning a process and passing a socket descriptor. This can be implemented with `CreateProcess` and `WSADuplicateSocket`. Example: https://memset.wordpress.com/2010/10/13/win32-api-passing-socket-with-ipc-method/.
+- [ ] Adding sandbox features, restricting subprocess access to resources and data. See [https://eklitzke.org/multiprocess-bitcoin](https://eklitzke.org/multiprocess-bitcoin).
+=======
+- [ ] Adding `-ipcbind` and `-ipcconnect` options to `bitcoin-node`, `bitcoin-wallet`, and `bitcoin-gui` executables so they can listen and connect to TCP ports and unix socket paths. This will allow separate processes to be started and stopped any time and connect to each other.
+- [ ] Adding `-server` and `-rpcbind` options to the `bitcoin-wallet` executable so wallet processes can handle RPC requests directly without going through the node.
+- [ ] Supporting windows, not just unix systems. The existing socket code is already cross-platform, so the only windows-specific code that needs to be written is code spawning a process and passing a socket descriptor. This can be implemented with `CreateProcess` and `WSADuplicateSocket`. Example: https://memset.wordpress.com/2010/10/13/win32-api-passing-socket-with-ipc-method/.
+- [ ] Adding sandbox features, restricting subprocess access to resources and data. See [https://eklitzke.org/multiprocess-bitcoin](https://eklitzke.org/multiprocess-bitcoin).
+>>>>>>> 518f41fb1571 (doc: Multiprocess misc doc and comment updates)
 
 The Bitcoin Core software has historically employed a monolithic architecture. The existing design has integrated functionality like P2P network operations, wallet management, and a GUI into a single executable. While effective, it has limitations in flexibility, security, and scalability. This project introduces changes that transition Bitcoin Core to a more modular architecture. It aims to enhance security, improve usability, and facilitate maintenance and development of the software in the long run.
 
@@ -60,7 +80,19 @@ Processes and socket connection.
 
 ## Component Overview: Navigating the IPC Framework
 
+<<<<<<< HEAD
 This section describes the major components of the Inter-Process Communication (IPC) framework covering the relevant source files, generated files, tools, and libraries.
+||||||| parent of 518f41fb1571 (doc: Multiprocess misc doc and comment updates)
+## IPC implementation details
+=======
+## Known issues
+
+- Unexpected socket disconnects aren't handled cleanly many places. Interface calls that used to never throw can now throw exceptions if a socket is disconnected (typically because a process on the other side of the connection has crashed or been killed), leading to errors.
+
+- Internally spawned bitcoin-node and bitcoin-wallet processes don't currently install signal handlers and so won't shut down cleanly if terminated with [CTRL-C](https://github.com/bitcoin/bitcoin/pull/10102#issuecomment-595353238). Shutting down with `bitcoin-cli stop` should still shut down cleanly, and is a suggested alternative.
+
+## IPC implementation details
+>>>>>>> 518f41fb1571 (doc: Multiprocess misc doc and comment updates)
 
 ### Abstract C++ Classes in [`src/interfaces/`](../../src/interfaces/)
 - The foundation of the IPC implementation lies in the abstract C++ classes within the [`src/interfaces/`](../../src/interfaces/) directory. These classes define pure virtual methods that code in [`src/node/`](../../src/node/), [`src/wallet/`](../../src/wallet/), and [`src/qt/`](../../src/qt/) directories call to interact with each other.
