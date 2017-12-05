@@ -26,6 +26,8 @@
 #include <vector>
 
 namespace ipc {
+class Context;
+
 namespace {
 //! Close hook that encapsulates a function to be called on close.
 class CloseFn : public interfaces::CloseHook
@@ -65,6 +67,7 @@ public:
         }
         return false;
     }
+    Context& context() override { return m_protocol->context(); }
     std::unique_ptr<Protocol> m_protocol;
     std::unique_ptr<Process> m_process;
 };
