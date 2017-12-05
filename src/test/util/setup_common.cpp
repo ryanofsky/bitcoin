@@ -89,7 +89,14 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
     gArgs.ForceSetArg("-datadir", m_path_root.string());
     ClearDatadirCache();
     {
+<<<<<<< HEAD
         SetupServerArgs(*m_node.args);
+||||||| merged common ancestors
+        SetupServerArgs(m_node);
+=======
+        m_node.args = &gArgs;
+        SetupServerArgs(*m_node.args);
+>>>>>>> Multiprocess bitcoin
         std::string error;
         const bool success{m_node.args->ParseParameters(arguments.size(), arguments.data(), error)};
         assert(success);
@@ -108,7 +115,6 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
     InitSignatureCache();
     InitScriptExecutionCache();
     m_node.chain = interfaces::MakeChain(m_node);
-    g_wallet_init_interface.Construct(m_node);
     fCheckBlockIndex = true;
     static bool noui_connected = false;
     if (!noui_connected) {
