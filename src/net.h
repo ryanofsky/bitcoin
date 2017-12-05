@@ -226,6 +226,9 @@ public:
     Network m_network;
     uint32_t m_mapped_as;
     ConnectionType m_conn_type;
+    // Note: If you add fields to this class, you should also consider updating
+    // the CNode::CopyStats() method, the getpeerinfo RPC in rpc/net.cpp, and
+    // the NodeStats struct in ipc/capnp/node.capnp.
 };
 
 
