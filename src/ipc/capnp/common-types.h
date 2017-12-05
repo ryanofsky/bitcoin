@@ -257,6 +257,39 @@ requires
     auto result = output.init(data.size());
     memcpy(result.begin(), data.data(), data.size());
 }
+
+// libmultiprocess only provides read/build functions for std::set, not
+// std::unordered_set, so copy and paste those functions here.
+// TODO: Move these to libmultiprocess and dedup std::set, std::unordered_set,
+// and std::vector implementations.
+template <typename LocalType, typename Hash, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>,
+                               InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        auto data = input.get();
+        value.clear();
+        for (auto item : data) {
+            ReadField(TypeList<LocalType>(), invoke_context, Make<ValueField>(item),
+                      ReadDestEmplace(
+                          TypeList<const LocalType>(), [&](auto&&... args) -> auto& {
+                              return *value.emplace(std::forward<decltype(args)>(args)...).first;
+                          }));
+        }
+    });
+}
+
+template <typename LocalType, typename Hash, typename Value, typename Output>
+void CustomBuildField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    auto list = output.init(value.size());
+    size_t i = 0;
+    for (const auto& elem : value) {
+        BuildField(TypeList<LocalType>(), invoke_context, ListOutput<typename decltype(list)::Builds>(list, i), elem);
+        ++i;
+    }
+}
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_COMMON_TYPES_H
