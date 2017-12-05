@@ -25,6 +25,12 @@
 #include <tuple>
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
+<<<<<<< HEAD
+||||||| parent of f3349a24e5ac (Make bitcoin-node spawn a bitcoin-wallet process)
+UrlDecodeFn* const URL_DECODE = nullptr;
+=======
+UrlDecodeFn* const URL_DECODE = urlDecode;
+>>>>>>> f3349a24e5ac (Make bitcoin-node spawn a bitcoin-wallet process)
 
 static void SetupWalletToolArgs(ArgsManager& argsman)
 {
