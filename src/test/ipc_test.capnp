@@ -16,6 +16,7 @@ interface FooInterface $Proxy.wrap("FooImplementation") {
     passOutPoint @1 (arg :Data) -> (result :Data);
     passUniValue @2 (arg :Text) -> (result :Text);
     passCustom @3 (arg :CustomStruct) -> (result :CustomStruct);
+    passTransaction @4 (arg :Data) -> (result :Data);
 }
 
 struct CustomStruct {

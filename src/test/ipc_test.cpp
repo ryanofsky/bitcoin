@@ -83,6 +83,15 @@ void IpcTest()
     CustomStruct custom2{foo->passCustom(custom1)};
     BOOST_CHECK_EQUAL(custom1.value, custom2.value);
 
+    CMutableTransaction mtx;
+    mtx.version = 2;
+    mtx.nLockTime = 3;
+    mtx.vin.emplace_back(txout1);
+    mtx.vout.emplace_back(COIN, CScript());
+    CTransactionRef tx1{MakeTransactionRef(mtx)};
+    CTransactionRef tx2{foo->passTransaction(tx1)};
+    BOOST_CHECK(*Assert(tx1) == *Assert(tx2));
+
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();
     thread.join();
