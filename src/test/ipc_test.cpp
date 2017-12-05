@@ -15,6 +15,23 @@
 
 #include <boost/test/unit_test.hpp>
 
+namespace mp {
+//! Custom conversion functions between C++ and capnp CustomStructs
+//! Shift value by 100 to make conversion a little more interesting.
+void CustomBuildMessage(InvokeContext& invoke_context,
+                        const CustomStruct& src,
+                        gen::CustomStruct::Builder&& builder)
+{
+    builder.setValue(src.value + 100);
+}
+void CustomReadMessage(InvokeContext& invoke_context,
+                       const gen::CustomStruct::Reader& reader,
+                       CustomStruct& dest)
+{
+    dest.value = reader.getValue() - 100;
+}
+} // namespace mp
+
 //! Unit test that tests execution of IPC calls without actually creating a
 //! separate process. This test is primarily intended to verify behavior of type
 //! conversion code that converts C++ objects to Cap'n Proto messages and vice
@@ -60,6 +77,11 @@ void IpcTest()
     uni1.pushKV("s", "two");
     UniValue uni2{foo->passUniValue(uni1)};
     BOOST_CHECK_EQUAL(uni1.write(), uni2.write());
+
+    CustomStruct custom1;
+    custom1.value = 5;
+    CustomStruct custom2{foo->passCustom(custom1)};
+    BOOST_CHECK_EQUAL(custom1.value, custom2.value);
 
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();

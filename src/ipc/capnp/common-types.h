@@ -103,6 +103,28 @@ decltype(auto) CustomReadField(TypeList<UniValue>, Priority<1>, InvokeContext& i
         value.read(std::string_view{data.begin(), data.size()});
     });
 }
+
+//! Overload CustomBuildField and CustomReadField to serialize other types of
+//! objects that have CustomBuildMessage and CustomReadMessage overloads.
+//! Defining BuildMessage and ReadMessage overloads is simpler than defining
+//! BuildField and ReadField overloads because these overloads can be normal
+//! functions instead of template functions, and defined in a .cpp file instead
+//! of a header.
+template <typename LocalType, typename Value, typename Output>
+void CustomBuildField(TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Value&& value, Output&& output,
+                      decltype(CustomBuildMessage(invoke_context, value, std::move(output.get())))* enable = nullptr)
+{
+    CustomBuildMessage(invoke_context, value, std::move(output.init()));
+}
+
+template <typename LocalType, typename Reader, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Reader&& reader,
+                               ReadDest&& read_dest,
+                               decltype(CustomReadMessage(invoke_context, reader.get(),
+                                                          std::declval<LocalType&>()))* enable = nullptr)
+{
+    return read_dest.update([&](auto& value) { if (reader.has()) CustomReadMessage(invoke_context, reader.get(), value); });
+}
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_COMMON_TYPES_H

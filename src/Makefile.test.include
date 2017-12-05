@@ -231,7 +231,8 @@ LIBBITCOIN_IPC_TEST=libbitcoin_ipc_test.a
 EXTRA_LIBRARIES += $(LIBBITCOIN_IPC_TEST)
 libbitcoin_ipc_test_a_SOURCES = \
   test/ipc_test.cpp \
-  test/ipc_test.h
+  test/ipc_test.h \
+  test/ipc_test_types.h
 libbitcoin_ipc_test_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 libbitcoin_ipc_test_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(LIBMULTIPROCESS_CFLAGS)
 
