@@ -74,9 +74,15 @@ GUI dependencies:
 Bitcoin Core includes a GUI built with the cross-platform Qt Framework. To compile the GUI, we need to install
 the necessary parts of Qt, the libqrencode and pass `-DBUILD_GUI=ON`. Skip if you don't intend to use the GUI.
 
+<<<<<<< HEAD
     sudo apt-get install qt6-base-dev qt6-tools-dev qt6-l10n-tools qt6-tools-dev-tools libgl-dev
 
 For Qt 6.5 and later, the `libxcb-cursor0` package must be installed at runtime.
+||||||| parent of bbcbe85cef21 (doc: Multiprocess misc doc and comment updates)
+    sudo apt-get install qtbase5-dev qttools5-dev qttools5-dev-tools
+=======
+    sudo apt-get install qtbase5-dev qttools5-dev qttools5-dev-tools libcapnp-dev capnproto
+>>>>>>> bbcbe85cef21 (doc: Multiprocess misc doc and comment updates)
 
 Additionally, to support Wayland protocol for modern desktop environments:
 
