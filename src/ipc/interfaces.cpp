@@ -61,9 +61,14 @@ public:
     {
         m_protocol->addCleanup(type, iface, std::move(cleanup));
     }
+<<<<<<< HEAD
     const char* m_exe_name;
     const char* m_arg0;
     interfaces::Init& m_init;
+||||||| merged common ancestors
+=======
+    Context& context() override { return m_protocol->context(); }
+>>>>>>> Multiprocess bitcoin
     std::unique_ptr<Protocol> m_protocol;
     std::unique_ptr<Process> m_process;
 };

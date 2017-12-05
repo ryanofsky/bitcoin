@@ -9,6 +9,10 @@
 #include <memory>
 #include <typeindex>
 
+namespace ipc {
+struct Context;
+} // namespace ipc
+
 namespace interfaces {
 class Init;
 
@@ -57,11 +61,18 @@ public:
     {
         addCleanup(typeid(Interface), &iface, std::move(cleanup));
     }
+<<<<<<< HEAD
 
 protected:
     //! Internal implementation of addCleanup as a type-erased virtual function,
     //! since template functions can't be virtual.
     virtual void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) = 0;
+||||||| merged common ancestors
+=======
+
+    //! Context accessor.
+    virtual ipc::Context& context() = 0;
+>>>>>>> Multiprocess bitcoin
 };
 
 //! Return implementation of Ipc interface.

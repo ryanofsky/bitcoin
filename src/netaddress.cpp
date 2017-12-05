@@ -22,7 +22,6 @@
 #include <tuple>
 
 constexpr size_t CNetAddr::V1_SERIALIZATION_SIZE;
-constexpr size_t CNetAddr::MAX_ADDRV2_SIZE;
 
 CNetAddr::BIP155Network CNetAddr::GetBIP155Network() const
 {
