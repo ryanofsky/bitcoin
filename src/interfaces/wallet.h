@@ -193,11 +193,25 @@ public:
         int& num_blocks) = 0;
 
     //! Fill PSBT.
+<<<<<<< HEAD
     virtual TransactionError fillPSBT(PartiallySignedTransaction& psbtx,
         bool& complete,
         int sighash_type = 1 /* SIGHASH_ALL */,
         bool sign = true,
         bool bip32derivs = false) const = 0;
+||||||| merged common ancestors
+    virtual TransactionError fillPSBT(PartiallySignedTransaction& psbtx,
+        bool& complete,
+        int sighash_type = 1 /* SIGHASH_ALL */,
+        bool sign = true,
+        bool bip32derivs = false) = 0;
+=======
+    virtual TransactionError fillPSBT(int sighash_type,
+        bool sign,
+        bool bip32derivs,
+        PartiallySignedTransaction& psbtx,
+        bool& complete) = 0;
+>>>>>>> refactor: Change createWallet, fillPSBT argument order
 
     //! Get balances.
     virtual WalletBalances getBalances() = 0;

@@ -352,11 +352,25 @@ public:
         }
         return {};
     }
+<<<<<<< HEAD
     TransactionError fillPSBT(PartiallySignedTransaction& psbtx,
         bool& complete,
         int sighash_type = 1 /* SIGHASH_ALL */,
         bool sign = true,
         bool bip32derivs = false) const override
+||||||| merged common ancestors
+    TransactionError fillPSBT(PartiallySignedTransaction& psbtx,
+        bool& complete,
+        int sighash_type = 1 /* SIGHASH_ALL */,
+        bool sign = true,
+        bool bip32derivs = false) override
+=======
+    TransactionError fillPSBT(int sighash_type,
+        bool sign,
+        bool bip32derivs,
+        PartiallySignedTransaction& psbtx,
+        bool& complete) override
+>>>>>>> refactor: Change createWallet, fillPSBT argument order
     {
         return m_wallet->FillPSBT(psbtx, complete, sighash_type, sign, bip32derivs);
     }
