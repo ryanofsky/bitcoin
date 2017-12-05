@@ -83,6 +83,7 @@ class FullBlockTest(BitcoinTestFramework):
         self.num_nodes = 1
         self.setup_clean_chain = True
         self.extra_args = [['-acceptnonstdtxn=1']]  # This is a consensus block test, we don't care about tx policy
+        self.rpc_timeout = 1500
 
     def run_test(self):
         node = self.nodes[0]  # convenience reference to the node
@@ -1261,7 +1262,13 @@ class FullBlockTest(BitcoinTestFramework):
             self.save_spendable_output()
             spend = self.get_spendable_output()
 
+<<<<<<< HEAD
         self.send_blocks(blocks, True, timeout=1920)
+||||||| merged common ancestors
+        self.send_blocks(blocks, True, timeout=960)
+=======
+        self.send_blocks(blocks, True, timeout=1500)
+>>>>>>> Increase feature_block.py timeouts
         chain1_tip = i
 
         # now create alt chain of same length
@@ -1269,18 +1276,30 @@ class FullBlockTest(BitcoinTestFramework):
         blocks2 = []
         for i in range(89, LARGE_REORG_SIZE + 89):
             blocks2.append(self.next_block("alt" + str(i), version=4))
-        self.send_blocks(blocks2, False, force_send=True)
+        self.send_blocks(blocks2, False, force_send=True, timeout=1500)
 
         # extend alt chain to trigger re-org
         block = self.next_block("alt" + str(chain1_tip + 1), version=4)
+<<<<<<< HEAD
         self.send_blocks([block], True, timeout=1920)
+||||||| merged common ancestors
+        self.send_blocks([block], True, timeout=960)
+=======
+        self.send_blocks([block], True, timeout=1500)
+>>>>>>> Increase feature_block.py timeouts
 
         # ... and re-org back to the first chain
         self.move_tip(chain1_tip)
         block = self.next_block(chain1_tip + 1, version=4)
-        self.send_blocks([block], False, force_send=True)
+        self.send_blocks([block], False, force_send=True, timeout=1500)
         block = self.next_block(chain1_tip + 2, version=4)
+<<<<<<< HEAD
         self.send_blocks([block], True, timeout=1920)
+||||||| merged common ancestors
+        self.send_blocks([block], True, timeout=960)
+=======
+        self.send_blocks([block], True, timeout=1500)
+>>>>>>> Increase feature_block.py timeouts
 
         self.log.info("Reject a block with an invalid block header version")
         b_v1 = self.next_block('b_v1', version=1)
@@ -1293,6 +1312,13 @@ class FullBlockTest(BitcoinTestFramework):
         b_cb34.hashMerkleRoot = b_cb34.calc_merkle_root()
         b_cb34.solve()
         self.send_blocks([b_cb34], success=False, reject_reason='bad-cb-height', reconnect=True)
+
+        # Flush the notification queue before shutting down, so the
+        # FlushBackgroundCallbacks call made during shutdown won't exceed the
+        # test framework's 60 second shutdown timeout on slow systems, due to
+        # all the BlockConnected notifications generated during the test.
+        self.log.info("Wait for BlockConnected notifications to be processed before shutdown")
+        self.nodes[0].syncwithvalidationinterfacequeue()
 
     # Helper methods
     ################
