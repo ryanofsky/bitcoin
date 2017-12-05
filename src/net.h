@@ -220,10 +220,17 @@ public:
     Network m_network;
     uint32_t m_mapped_as;
     ConnectionType m_conn_type;
+<<<<<<< HEAD
     /** Transport protocol type. */
     TransportProtocolType m_transport_type;
     /** BIP324 session id string in hex, if any. */
     std::string m_session_id;
+||||||| parent of 3e01462e7984 (Add capnp wrapper for Node interface)
+=======
+    // Note: If you add fields to this class, you should also consider updating
+    // the CNode::CopyStats() method, the getpeerinfo RPC in rpc/net.cpp, and
+    // the NodeStats struct in ipc/capnp/node.capnp.
+>>>>>>> 3e01462e7984 (Add capnp wrapper for Node interface)
 };
 
 

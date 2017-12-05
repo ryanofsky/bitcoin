@@ -1086,6 +1086,7 @@ libbitcoin_ipc_mpgen_input = \
   ipc/capnp/echo.capnp \
   ipc/capnp/handler.capnp \
   ipc/capnp/init.capnp \
+  ipc/capnp/node.capnp \
   ipc/capnp/wallet.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 %.capnp:
@@ -1105,6 +1106,9 @@ libbitcoin_ipc_a_SOURCES = \
   ipc/capnp/common.h \
   ipc/capnp/context.h \
   ipc/capnp/init-types.h \
+  ipc/capnp/node-types.h \
+  ipc/capnp/node.cpp \
+  ipc/capnp/node.h \
   ipc/capnp/protocol.cpp \
   ipc/capnp/protocol.h \
   ipc/capnp/wallet-types.h \
