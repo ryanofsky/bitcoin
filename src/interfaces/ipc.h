@@ -9,6 +9,10 @@
 #include <memory>
 #include <typeindex>
 
+namespace ipc {
+class Context;
+} // namespace ipc
+
 namespace interfaces {
 class Init;
 
@@ -60,6 +64,9 @@ public:
     {
         addCleanup(typeid(Interface), &interface, std::move(cleanup));
     }
+
+    //! Context accessor.
+    virtual ipc::Context& context() = 0;
 };
 
 //! Return implementation of Ipc interface.
