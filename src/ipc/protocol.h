@@ -16,6 +16,11 @@ namespace ipc {
 //!
 //! There may be different implementations of this interface for different IPC
 //! protocols (e.g. Cap'n Proto, gRPC, JSON-RPC, or custom protocols).
+//!
+//! An implementation of this interface needs to provide an `interface::Init`
+//! object that translates method calls into requests sent over a socket, and it
+//! needs to implement a handler that translates requests received over a socket
+//! into method calls on a provided `interface::Init` object.
 class Protocol
 {
 public:
