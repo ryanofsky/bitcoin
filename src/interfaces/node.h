@@ -35,6 +35,7 @@ enum class WalletCreationStatus;
 
 namespace interfaces {
 class Handler;
+class LocalInit;
 class Wallet;
 
 //! Top-level interface for a bitcoin node (bitcoind process).
@@ -263,7 +264,7 @@ public:
 };
 
 //! Return implementation of Node interface.
-std::unique_ptr<Node> MakeNode();
+std::unique_ptr<Node> MakeNode(LocalInit& init);
 
 } // namespace interfaces
 

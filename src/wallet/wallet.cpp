@@ -10,6 +10,7 @@
 #include <consensus/validation.h>
 #include <fs.h>
 #include <interfaces/chain.h>
+#include <interfaces/ipc.h>
 #include <interfaces/wallet.h>
 #include <key.h>
 #include <key_io.h>
@@ -109,6 +110,16 @@ static void ReleaseWallet(CWallet* wallet)
 {
     const std::string name = wallet->GetName();
     wallet->WalletLogPrintf("Releasing wallet\n");
+<<<<<<< HEAD
+||||||| merged common ancestors
+    wallet->BlockUntilSyncedToCurrentChain();
+=======
+    try {
+        wallet->BlockUntilSyncedToCurrentChain();
+    } catch (const interfaces::IpcException&) {
+        // Not an error if disconnected from node.
+    }
+>>>>>>> Multiprocess bitcoin
     wallet->Flush();
     delete wallet;
     // Wallet is now released, notify UnloadWallet, if any.
