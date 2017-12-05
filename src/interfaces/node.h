@@ -5,6 +5,8 @@
 #ifndef BITCOIN_INTERFACES_NODE_H
 #define BITCOIN_INTERFACES_NODE_H
 
+#include <interfaces/base.h>
+
 #include <amount.h>     // For CAmount
 #include <net.h>        // For CConnman::NumConnections
 #include <net_types.h>  // For banmap_t
@@ -36,7 +38,7 @@ class Handler;
 class Wallet;
 
 //! Top-level interface for a bitcoin node (bitcoind process).
-class Node
+class Node : public Base
 {
 public:
     virtual ~Node() {}
