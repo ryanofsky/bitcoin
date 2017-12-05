@@ -5,6 +5,8 @@
 #ifndef BITCOIN_INTERFACES_CHAIN_H
 #define BITCOIN_INTERFACES_CHAIN_H
 
+#include <interfaces/wallet.h>
+
 #include <optional.h>               // For Optional and nullopt
 #include <primitives/transaction.h> // For CTransactionRef
 
@@ -72,7 +74,7 @@ public:
 //! * The handleRpc, registerRpcs, rpcEnableDeprecated methods and other RPC
 //!   methods can go away if wallets listen for HTTP requests on their own
 //!   ports instead of registering to handle requests on the node HTTP port.
-class Chain
+class Chain : public Base
 {
 public:
     virtual ~Chain() {}
@@ -82,7 +84,7 @@ public:
     //! the Lock interface and instead call higher-level Chain methods
     //! that return more information so the chain doesn't need to stay locked
     //! between calls.
-    class Lock
+    class Lock : public Base
     {
     public:
         virtual ~Lock() {}
@@ -253,7 +255,7 @@ public:
     virtual void showProgress(const std::string& title, int progress, bool resume_possible) = 0;
 
     //! Chain notifications.
-    class Notifications
+    class Notifications : public Base
     {
     public:
         virtual ~Notifications() {}
@@ -298,7 +300,7 @@ public:
 
 //! Interface to let node manage chain clients (wallets, or maybe tools for
 //! monitoring and analysis in the future).
-class ChainClient
+class ChainClient : public Base
 {
 public:
     virtual ~ChainClient() {}
