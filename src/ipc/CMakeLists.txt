@@ -6,6 +6,7 @@ add_library(bitcoin_ipc STATIC EXCLUDE_FROM_ALL
   capnp/chain.cpp
   capnp/common.cpp
   capnp/mining.cpp
+  capnp/node.cpp
   capnp/protocol.cpp
   interfaces.cpp
   process.cpp
@@ -18,7 +19,12 @@ target_capnp_sources(bitcoin_ipc ${CMAKE_CURRENT_SOURCE_DIR}
   capnp/handler.capnp
   capnp/init.capnp
   capnp/mining.capnp
+<<<<<<< HEAD
   capnp/rpc.capnp
+||||||| parent of cfbbb6d3c09 (multiprocess: Add capnp wrapper for Node interface)
+=======
+  capnp/node.capnp
+>>>>>>> cfbbb6d3c09 (multiprocess: Add capnp wrapper for Node interface)
 )
 
 if (ENABLE_WALLET)
