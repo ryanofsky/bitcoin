@@ -19,4 +19,5 @@ interface FooInterface $Proxy.wrap("FooImplementation") {
     passUniValue @2 (arg :Text) -> (result :Text);
     passTransaction @3 (arg :Data) -> (result :Data);
     passBlockState @4 (arg :Mining.BlockValidationState) -> (result :Mining.BlockValidationState);
+    passVectorChar @5 (arg :Data) -> (result :Data);
 }
