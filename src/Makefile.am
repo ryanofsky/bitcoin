@@ -423,7 +423,6 @@ libbitcoin_node_a_SOURCES = \
   node/context.cpp \
   node/database_args.cpp \
   node/eviction.cpp \
-  node/interface_ui.cpp \
   node/interfaces.cpp \
   node/kernel_notifications.cpp \
   node/mempool_args.cpp \
@@ -693,6 +692,7 @@ libbitcoin_common_a_SOURCES = \
   netaddress.cpp \
   netbase.cpp \
   net_permissions.cpp \
+  node/interface_ui.cpp \
   outputtype.cpp \
   policy/feerate.cpp \
   policy/policy.cpp \
@@ -808,7 +808,7 @@ bitcoin_node_SOURCES = $(bitcoin_daemon_sources) init/bitcoin-node.cpp
 bitcoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
-bitcoin_node_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
+bitcoin_node_LDADD = $(LIBBITCOIN_NODE) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS) $(LIBBITCOIN_WALLET)
 
 # bitcoin-cli binary #
 bitcoin_cli_SOURCES = bitcoin-cli.cpp
@@ -851,21 +851,24 @@ bitcoin_tx_LDADD = \
 
 # bitcoin-wallet binary #
 bitcoin_wallet_SOURCES = bitcoin-wallet.cpp
+if BUILD_MULTIPROCESS
+bitcoin_wallet_SOURCES += init/bitcoin-wallet-ipc.cpp
+# FIX: Dependency on kernel should be dropped. See BitcoinWalletInit constructor comment.
+bitcoin_wallet_SOURCES += kernel/context.cpp
+else
 bitcoin_wallet_SOURCES += init/bitcoin-wallet.cpp
+endif
 bitcoin_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
 bitcoin_wallet_LDADD = \
   $(LIBBITCOIN_WALLET_TOOL) \
-  $(LIBBITCOIN_WALLET) \
+  $(bitcoin_bin_ldadd) \
+  $(LIBBITCOIN_IPC) \
   $(LIBBITCOIN_COMMON) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBUNIVALUE) \
-  $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_CRYPTO) \
-  $(LIBSECP256K1) \
-  $(BDB_LIBS) \
-  $(SQLITE_LIBS)
+  $(LIBBITCOIN_UTIL) \
+  $(LIBMULTIPROCESS_LIBS)
 
 if TARGET_WINDOWS
 bitcoin_wallet_SOURCES += bitcoin-wallet-res.rc
@@ -1109,6 +1112,7 @@ libbitcoin_ipc_a_SOURCES = \
   ipc/capnp/common-types.h \
   ipc/capnp/context.h \
   ipc/capnp/init-types.h \
+  ipc/capnp/init.cpp \
   ipc/capnp/node-types.h \
   ipc/capnp/node.cpp \
   ipc/capnp/node.h \
