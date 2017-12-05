@@ -46,6 +46,13 @@ static void WaitForShutdown(NodeContext& node)
 static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
 {
     NodeContext& node = init.node();
+<<<<<<< HEAD
+||||||| merged common ancestors
+    node.chain = interfaces::MakeChain(node);
+=======
+    node.args = &gArgs;
+    node.chain = interfaces::MakeChain(node);
+>>>>>>> Multiprocess bitcoin
 
     bool fRet = false;
 

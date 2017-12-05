@@ -5,7 +5,12 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+<<<<<<< HEAD
 #include <interfaces/wallet.h>
+||||||| merged common ancestors
+=======
+#include <interfaces/init.h>
+>>>>>>> Multiprocess bitcoin
 #include <net.h>
 #include <node/context.h>
 #include <node/ui_interface.h>
@@ -116,7 +121,13 @@ void WalletInit::Construct(NodeContext& node) const
             settings.rw_settings["wallet"] = wallets;
         });
     }
+<<<<<<< HEAD
     auto wallet_client = interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet"));
     node.wallet_client = wallet_client.get();
     node.chain_clients.emplace_back(std::move(wallet_client));
+||||||| merged common ancestors
+    node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet")));
+=======
+    node.chain_clients.emplace_back(node.init->makeWalletClient(*node.chain, args.GetArgs("-wallet")));
+>>>>>>> Multiprocess bitcoin
 }
