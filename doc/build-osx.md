@@ -48,7 +48,13 @@ See [dependencies.md](dependencies.md) for a complete overview.
 To install, run the following from your terminal:
 
 ``` bash
+<<<<<<< HEAD
 brew install cmake boost pkgconf libevent
+||||||| parent of 4c4273615adb (doc: Multiprocess misc doc and comment updates)
+brew install cmake boost pkg-config libevent
+=======
+brew install cmake boost pkg-config libevent capnp
+>>>>>>> 4c4273615adb (doc: Multiprocess misc doc and comment updates)
 ```
 
 ### 4. Clone Bitcoin repository
