@@ -12,11 +12,13 @@ $Proxy.include("interfaces/chain.h");
 $Proxy.include("interfaces/echo.h");
 $Proxy.include("interfaces/init.h");
 $Proxy.include("interfaces/mining.h");
+$Proxy.include("interfaces/node.h");
 $Proxy.includeTypes("ipc/capnp/init-types.h");
 
 using Chain = import "chain.capnp";
 using Echo = import "echo.capnp";
 using Mining = import "mining.capnp";
+using Node = import "node.capnp";
 using Rpc = import "rpc.capnp";
 
 interface Init $Proxy.wrap("interfaces::Init") {
@@ -25,10 +27,15 @@ interface Init $Proxy.wrap("interfaces::Init") {
     makeMining @3 (context :Proxy.Context) -> (result :Mining.Mining);
     makeRpc @4 (context :Proxy.Context) -> (result :Rpc.Rpc);
     makeChain @5 (context :Proxy.Context) -> (result :Chain.Chain);
+<<<<<<< HEAD
     # Unstable chain interface for Bitcoin Core's own clients. This method is
     # renumbered whenever UnstableChain changes incompatibly, so old clients
     # get an error instead of calling the wrong methods.
     makeUnstableChain @6 (context :Proxy.Context) -> (result :Chain.UnstableChain) $Proxy.name("makeChain");
+||||||| parent of 6cd132fc0bc (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
+=======
+    makeNode @6 (context :Proxy.Context) -> (result :Node.Node);
+>>>>>>> 6cd132fc0bc (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
 
     # DEPRECATED: no longer supported; server returns an error.
     makeMiningOld2 @2 () -> ();
