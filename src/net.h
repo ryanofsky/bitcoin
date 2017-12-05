@@ -699,7 +699,15 @@ public:
     // Bind address of our side of the connection
     CAddress addrBind;
     uint32_t m_mapped_as;
+<<<<<<< HEAD
     std::string m_conn_type_string;
+||||||| merged common ancestors
+=======
+    // Note: If you add fields to this class, you should also consider updating
+    // the CNode::copyStats() method, the getpeerinfo RPC (in rpc/net.cpp), and
+    // the IPC serialization code (in interfaces/capnp/common-types.cpp and
+    // interfaces/capnp/common.capnp).
+>>>>>>> Multiprocess bitcoin
 };
 
 

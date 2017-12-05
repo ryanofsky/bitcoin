@@ -280,7 +280,10 @@ obj/build.h: FORCE
 	  "$(abs_top_srcdir)"
 libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
+# Explicitly list dependencies on generated headers as described
+# https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html#Recording-Dependencies-manually
 interfaces/capnp/libbitcoin_ipc_a-ipc.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
+interfaces/capnp/libbitcoin_ipc_a-chain.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 
 # server: shared between bitcoind and bitcoin-qt
 # Contains code accessing mempool and chain state that is meant to be separated
@@ -610,7 +613,7 @@ bitcoin_node_SOURCES = $(bitcoin_daemon_sources) interfaces/init_bitcoin-node.cp
 bitcoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
-bitcoin_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
+bitcoin_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBBITCOIN_WALLET) $(LIBMULTIPROCESS_LIBS)
 
 # bitcoin-cli binary #
 bitcoin_cli_SOURCES = bitcoin-cli.cpp
@@ -654,10 +657,15 @@ bitcoin_tx_LDADD += $(BOOST_LIBS)
 
 # bitcoin-wallet binary #
 bitcoin_wallet_SOURCES = bitcoin-wallet.cpp
+if BUILD_MULTIPROCESS
+bitcoin_wallet_SOURCES += interfaces/init_bitcoin-wallet.cpp
+else
+bitcoin_wallet_SOURCES += interfaces/init_default.cpp
+endif
 bitcoin_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
-bitcoin_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
+bitcoin_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBBITCOIN_COMMON) $(LIBMULTIPROCESS_LIBS)
 
 if TARGET_WINDOWS
 bitcoin_wallet_SOURCES += bitcoin-wallet-res.rc
@@ -754,21 +762,41 @@ if HARDEN
 endif
 
 libbitcoin_ipc_mpgen_input = \
+  interfaces/capnp/chain.capnp \
+  interfaces/capnp/common.capnp \
   interfaces/capnp/echo.capnp \
-  interfaces/capnp/init.capnp
+  interfaces/capnp/handler.capnp \
+  interfaces/capnp/init.capnp \
+  interfaces/capnp/node.capnp \
+  interfaces/capnp/wallet.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 %.capnp:
 
 if BUILD_MULTIPROCESS
 LIBBITCOIN_IPC=libbitcoin_ipc.a
 libbitcoin_ipc_a_SOURCES = \
+  interfaces/capnp/chain-types.h \
+  interfaces/capnp/chain.cpp \
+  interfaces/capnp/chain.h \
+  interfaces/capnp/common-types.h \
+  interfaces/capnp/common.cpp \
+  interfaces/capnp/common.h \
   interfaces/capnp/echo-types.h \
   interfaces/capnp/echo.h \
+  interfaces/capnp/handler-types.h \
+  interfaces/capnp/handler.cpp \
+  interfaces/capnp/handler.h \
   interfaces/capnp/init-types.h \
   interfaces/capnp/init.cpp \
   interfaces/capnp/init.h \
   interfaces/capnp/ipc.cpp \
   interfaces/capnp/ipc.h \
+  interfaces/capnp/node-types.h \
+  interfaces/capnp/node.cpp \
+  interfaces/capnp/node.h \
+  interfaces/capnp/wallet-types.h \
+  interfaces/capnp/wallet.cpp \
+  interfaces/capnp/wallet.h \
   interfaces/ipc.cpp \
   interfaces/ipc.h
 libbitcoin_ipc_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
