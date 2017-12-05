@@ -59,6 +59,9 @@ public:
     int m_max_depth = DEFAULT_MAX_DEPTH;
     //! SigningProvider that has pubkeys and scripts to do spend size estimation for external inputs
     FlatSigningProvider m_external_provider;
+    // Note: If you add fields to this struct, you should also update the
+    // CoinControl struct in ipc/capnp/wallet.capnp and IPC serialization code
+    // in src/ipc/capnp/wallet.cpp.
 
     CCoinControl();
 
