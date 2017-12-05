@@ -20,6 +20,7 @@ public:
     COutPoint passOutPoint(COutPoint o) { return o; }
     UniValue passUniValue(UniValue v) { return v; }
     CustomStruct passCustom(CustomStruct t) { return t; }
+    CTransactionRef passTransaction(CTransactionRef t) { return t; }
 };
 
 void IpcTest();
