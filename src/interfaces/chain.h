@@ -256,10 +256,10 @@ public:
     virtual util::Result<void> checkChainLimits(const CTransactionRef& tx) = 0;
 
     //! Estimate a fee rate.
-    virtual util::Expected<FeeRateEstimation, FeeRateEstimationError> getFeeRateEstimate(int num_blocks, bool conservative) const = 0;
+    virtual util::Expected<FeeRateEstimation, FeeRateEstimationError> getFeeRateEstimate(int num_blocks, bool conservative) = 0;
 
     //! Fee estimator max target.
-    virtual unsigned int maximumFeeEstimationTargetBlocks() const = 0;
+    virtual unsigned int maximumFeeEstimationTargetBlocks() = 0;
 
     //! Mempool minimum fee.
     virtual CFeeRate mempoolMinFee() = 0;
@@ -358,10 +358,16 @@ public:
     //! support for writing null values to settings.json.
     //! Depending on the action returned by the update function, this will either
     //! update the setting in memory or write the updated settings to disk.
+<<<<<<< HEAD
     //! Returns false if the update function returned no action, or if the
     //! settings could not be written to disk, including when settings are
     //! disabled with -nosettings. In-memory changes are kept either way.
     virtual bool updateRwSetting(const std::string& name, const SettingsUpdate& update_function) = 0;
+||||||| parent of 057763be698 (Add capnp wrapper for Chain interface)
+    virtual bool updateRwSetting(const std::string& name, const SettingsUpdate& update_function) = 0;
+=======
+    virtual bool updateRwSetting(const std::string& name, SettingsUpdate update_function) = 0;
+>>>>>>> 057763be698 (Add capnp wrapper for Chain interface)
 
     //! Replace a setting in <datadir>/settings.json with a new value.
     //! Null can be passed to erase the setting.
@@ -410,7 +416,8 @@ public:
     //! Load saved state.
     virtual bool load() = 0;
 
-    //! Start client execution and provide a scheduler.
+    //! Start client execution and provide a scheduler. (Scheduler is
+    //! ignored if client is out-of-process).
     virtual void start(CScheduler& scheduler) = 0;
 
     //! Shut down client.
