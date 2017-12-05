@@ -52,8 +52,16 @@ int main(int argc, char* argv[])
         BasicTestingSetup dummy{CBaseChainParams::REGTEST};
     }
 
+<<<<<<< HEAD
     NodeContext node_context;
     std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(&node_context);
+||||||| merged common ancestors
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(*init);
+=======
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = init->makeNode();
+>>>>>>> Multiprocess bitcoin
 
     bool fInvalid = false;
 

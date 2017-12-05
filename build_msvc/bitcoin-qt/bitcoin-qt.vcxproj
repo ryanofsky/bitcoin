@@ -9,6 +9,12 @@
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qt\main.cpp" />
+<<<<<<< HEAD
+||||||| merged common ancestors
+    <ClCompile Include="..\..\src\interfaces\init_bitcoind.cpp" />
+=======
+    <ClCompile Include="..\..\src\interfaces\init_bitcoin-qt.cpp" />
+>>>>>>> Multiprocess bitcoin
     <ResourceCompile Include="..\..\src\qt\res\bitcoin-qt-res.rc" />
   </ItemGroup>
   <ItemGroup>

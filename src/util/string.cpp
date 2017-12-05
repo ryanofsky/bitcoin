@@ -1,5 +1,26 @@
 // Copyright (c) 2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+<<<<<<< HEAD:src/util/string.cpp
 
 #include <util/string.h>
+||||||| merged common ancestors
+=======
+
+#include <init.h>
+#include <interfaces/capnp/init-types.h>
+#include <interfaces/init.h>
+
+namespace mp {
+std::unique_ptr<interfaces::WalletClient>
+ProxyServerMethodTraits<interfaces::capnp::messages::Init::MakeWalletClientParams>::invoke(Context& context)
+{
+    auto params = context.call_context.getParams();
+    auto chain = MakeUnique<ProxyClient<interfaces::capnp::messages::Chain>>(
+        params.getChain(), &context.proxy_server.m_connection, /* destroy_connection= */ false);
+    auto client = context.proxy_server.m_impl->makeWalletClient(*chain);
+    client->addCloseHook(MakeUnique<interfaces::Deleter<std::unique_ptr<interfaces::Chain>>>(std::move(chain)));
+    return client;
+}
+} // namespace mp
+>>>>>>> Multiprocess bitcoin:src/interfaces/capnp/init.cpp
