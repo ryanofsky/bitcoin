@@ -15,7 +15,7 @@ Specific next steps after [#10102](https://github.com/bitcoin/bitcoin/pull/10102
 
 ## Debugging
 
-After [#10102](https://github.com/bitcoin/bitcoin/pull/10102), the `-debug=ipc` command line option can be used to see requests and responses between processes.
+The `-debug=ipc` command line option can be used to see requests and responses between processes.
 
 ## Installation
 
