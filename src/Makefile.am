@@ -428,7 +428,6 @@ libbitcoin_node_a_SOURCES = \
   node/context.cpp \
   node/database_args.cpp \
   node/eviction.cpp \
-  node/interface_ui.cpp \
   node/interfaces.cpp \
   node/kernel_notifications.cpp \
   node/mempool_args.cpp \
@@ -704,6 +703,7 @@ libbitcoin_common_a_SOURCES = \
   netaddress.cpp \
   netbase.cpp \
   net_permissions.cpp \
+  node/interface_ui.cpp \
   outputtype.cpp \
   policy/feerate.cpp \
   policy/policy.cpp \
