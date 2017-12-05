@@ -711,6 +711,9 @@ public:
     CAddress addrBind;
     uint32_t m_mapped_as;
     std::string m_conn_type_string;
+    // Note: If you add fields to this class, you should also consider updating
+    // the CNode::copyStats() method, the getpeerinfo RPC (in rpc/net.cpp), and
+    // the IPC serialization (in interfaces/capnp/common.capnp).
 };
 
 
