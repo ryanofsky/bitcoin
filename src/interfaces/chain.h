@@ -104,13 +104,6 @@ public:
     //! pruned), and contains transactions.
     virtual bool haveBlockOnDisk(int height) = 0;
 
-    //! Return height of the first block in the chain with timestamp equal
-    //! or greater than the given time and height equal or greater than the
-    //! given height, or nullopt if there is no block with a high enough
-    //! timestamp and height. Also return the block hash as an optional output parameter
-    //! (to avoid the cost of a second lookup in case this information is needed.)
-    virtual Optional<int> findFirstBlockWithTimeAndHeight(int64_t time, int height, uint256* hash) = 0;
-
     //! Get locator for the current chain tip.
     virtual CBlockLocator getTipLocator() = 0;
 
@@ -272,11 +265,18 @@ public:
     //! Current RPC serialization flags.
     virtual int rpcSerializationFlags() = 0;
 
+    //! Get settings value.
+    virtual util::SettingsValue getSetting(const std::string& arg) = 0;
+
+    //! Get list of settings values.
+    virtual std::vector<util::SettingsValue> getSettingsList(const std::string& arg) = 0;
+
     //! Return <datadir>/settings.json setting value.
     virtual util::SettingsValue getRwSetting(const std::string& name) = 0;
 
-    //! Write a setting to <datadir>/settings.json.
-    virtual bool updateRwSetting(const std::string& name, const util::SettingsValue& value) = 0;
+    //! Write a setting to <datadir>/settings.json. Optionally just update the
+    //! setting in memory and do not write the file.
+    virtual bool updateRwSetting(const std::string& name, const util::SettingsValue& value, bool write=true) = 0;
 
     //! Synchronously send transactionAddedToMempool notifications about all
     //! current mempool transactions to the specified handler and return after
@@ -305,7 +305,8 @@ public:
     //! Load saved state.
     virtual bool load() = 0;
 
-    //! Start client execution and provide a scheduler.
+    //! Start client execution and provide a scheduler. (Scheduler is
+    //! ignored if client is out-of-process).
     virtual void start(CScheduler& scheduler) = 0;
 
     //! Save state to disk.
