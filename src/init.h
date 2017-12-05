@@ -14,6 +14,9 @@ struct NodeContext;
 namespace boost {
 class thread_group;
 } // namespace boost
+namespace interfaces {
+class LocalInit;
+} // namespace interfaces
 
 /** Interrupt threads */
 void Interrupt(NodeContext& node);
@@ -51,7 +54,7 @@ bool AppInitLockDataDirectory();
  * @note This should only be done after daemonization. Call Shutdown() if this function fails.
  * @pre Parameters should be parsed and config file should be read, AppInitLockDataDirectory should have been called.
  */
-bool AppInitMain(NodeContext& node);
+bool AppInitMain(interfaces::LocalInit& init);
 
 /**
  * Register all arguments with the ArgsManager

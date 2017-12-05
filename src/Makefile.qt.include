@@ -320,6 +320,7 @@ endif
 bitcoin_qt_ldadd += $(LIBBITCOIN_CLI) $(LIBBITCOIN_COMMON) $(LIBBITCOIN_UTIL) $(LIBBITCOIN_CONSENSUS) $(LIBBITCOIN_CRYPTO) $(LIBUNIVALUE) $(LIBLEVELDB) $(LIBLEVELDB_SSE42) $(LIBMEMENV) \
   $(BOOST_LIBS) $(QT_LIBS) $(QT_DBUS_LIBS) $(QR_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(LIBSECP256K1) \
   $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS)
+<<<<<<< HEAD
 bitcoin_qt_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(QT_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 bitcoin_qt_libtoolflags = $(AM_LIBTOOLFLAGS) --tag CXX
 
@@ -336,6 +337,41 @@ bitcoin_gui_SOURCES = $(bitcoin_qt_sources)
 bitcoin_gui_LDADD = $(bitcoin_qt_ldadd)
 bitcoin_gui_LDFLAGS = $(bitcoin_qt_ldflags)
 bitcoin_gui_LIBTOOLFLAGS = $(bitcoin_qt_libtoolflags)
+||||||| merged common ancestors
+bitcoin_qt_common_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(QT_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+bitcoin_qt_common_libtoolflags = $(AM_LIBTOOLFLAGS) --tag CXX
+
+qt_bitcoin_qt_CPPFLAGS = $(bitcoin_qt_common_cppflags)
+qt_bitcoin_qt_CXXFLAGS = $(bitcoin_qt_common_cxxflags)
+qt_bitcoin_qt_SOURCES = $(bitcoin_qt_common_sources)
+qt_bitcoin_qt_LDADD = $(bitcoin_qt_common_ldadd)
+qt_bitcoin_qt_LDFLAGS = $(bitcoin_qt_common_ldflags)
+qt_bitcoin_qt_LIBTOOLFLAGS = $(bitcoin_qt_common_libtoolflags)
+
+bitcoin_gui_CPPFLAGS = $(bitcoin_qt_common_cppflags)
+bitcoin_gui_CXXFLAGS = $(bitcoin_qt_common_cxxflags)
+bitcoin_gui_SOURCES = $(bitcoin_qt_common_sources)
+bitcoin_gui_LDADD = $(bitcoin_qt_common_ldadd)
+bitcoin_gui_LDFLAGS = $(bitcoin_qt_common_ldflags)
+bitcoin_gui_LIBTOOLFLAGS = $(bitcoin_qt_common_libtoolflags)
+=======
+bitcoin_qt_common_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(QT_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+bitcoin_qt_common_libtoolflags = $(AM_LIBTOOLFLAGS) --tag CXX
+
+qt_bitcoin_qt_CPPFLAGS = $(bitcoin_qt_common_cppflags)
+qt_bitcoin_qt_CXXFLAGS = $(bitcoin_qt_common_cxxflags)
+qt_bitcoin_qt_SOURCES = $(bitcoin_qt_common_sources) interfaces/init_bitcoin-qt.cpp
+qt_bitcoin_qt_LDADD = $(bitcoin_qt_common_ldadd)
+qt_bitcoin_qt_LDFLAGS = $(bitcoin_qt_common_ldflags)
+qt_bitcoin_qt_LIBTOOLFLAGS = $(bitcoin_qt_common_libtoolflags)
+
+bitcoin_gui_CPPFLAGS = $(bitcoin_qt_common_cppflags)
+bitcoin_gui_CXXFLAGS = $(bitcoin_qt_common_cxxflags)
+bitcoin_gui_SOURCES = $(bitcoin_qt_common_sources) interfaces/init_bitcoin-gui.cpp
+bitcoin_gui_LDADD = $(bitcoin_qt_common_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
+bitcoin_gui_LDFLAGS = $(bitcoin_qt_common_ldflags)
+bitcoin_gui_LIBTOOLFLAGS = $(bitcoin_qt_common_libtoolflags)
+>>>>>>> Multiprocess bitcoin
 
 #locale/foo.ts -> locale/foo.qm
 QT_QM=$(QT_TS:.ts=.qm)
