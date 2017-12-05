@@ -1285,6 +1285,13 @@ class TaprootTest(BitcoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 1
         self.setup_clean_chain = True
+<<<<<<< HEAD
+||||||| parent of 1045047a73a0 (test: Increase feature_block.py and feature_taproot.py timeouts)
+        self.extra_args = [["-par=1"]]
+=======
+        self.extra_args = [["-par=1"]]
+        self.rpc_timeout = 120
+>>>>>>> 1045047a73a0 (test: Increase feature_block.py and feature_taproot.py timeouts)
 
     def block_submit(self, node, txs, msg, err_msg, cb_pubkey=None, fees=0, sigops_weight=0, witness=False, accept=False):
 
