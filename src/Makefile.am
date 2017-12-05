@@ -1080,6 +1080,8 @@ LIBBITCOIN_IPC=libbitcoin_ipc.a
 libbitcoin_ipc_a_SOURCES = \
   ipc/capnp/chain.cpp \
   ipc/capnp/chain-types.h \
+  ipc/capnp/common.cpp \
+  ipc/capnp/common.h \
   ipc/capnp/common-types.h \
   ipc/capnp/context.h \
   ipc/capnp/init-types.h \
