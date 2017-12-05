@@ -59,7 +59,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node);
 /**
  * Register all arguments with the ArgsManager
  */
-void SetupServerArgs(NodeContext& node);
+void SetupServerArgs(ArgsManager& argsman);
 
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();
