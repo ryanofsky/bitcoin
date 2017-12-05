@@ -11,6 +11,7 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
+#include <interfaces/init.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <net_processing.h>
@@ -56,9 +57,47 @@ namespace {
 class NodeImpl : public Node
 {
 public:
+<<<<<<< HEAD
     NodeImpl(NodeContext* context) { setContext(context); }
     void initLogging() override { InitLogging(*Assert(m_context->args)); }
     void initParameterInteraction() override { InitParameterInteraction(*Assert(m_context->args)); }
+||||||| merged common ancestors
+    NodeImpl(NodeContext* context) { setContext(context); }
+    void initError(const bilingual_str& message) override { InitError(message); }
+    bool parseParameters(int argc, const char* const argv[], std::string& error) override
+    {
+        return gArgs.ParseParameters(argc, argv, error);
+    }
+    bool readConfigFiles(std::string& error) override { return gArgs.ReadConfigFiles(error, true); }
+    void forceSetArg(const std::string& arg, const std::string& value) override { gArgs.ForceSetArg(arg, value); }
+    bool softSetArg(const std::string& arg, const std::string& value) override { return gArgs.SoftSetArg(arg, value); }
+    bool softSetBoolArg(const std::string& arg, bool value) override { return gArgs.SoftSetBoolArg(arg, value); }
+    void selectParams(const std::string& network) override { SelectParams(network); }
+    bool initSettings(std::string& error) override { return gArgs.InitSettings(error); }
+    uint64_t getAssumedBlockchainSize() override { return Params().AssumedBlockchainSize(); }
+    uint64_t getAssumedChainStateSize() override { return Params().AssumedChainStateSize(); }
+    std::string getNetwork() override { return Params().NetworkIDString(); }
+    void initLogging() override { InitLogging(); }
+    void initParameterInteraction() override { InitParameterInteraction(); }
+=======
+    explicit NodeImpl(LocalInit& init) : m_init(init) { setContext(&m_init.node()); }
+    void initError(const bilingual_str& message) override { InitError(message); }
+    bool parseParameters(int argc, const char* const argv[], std::string& error) override
+    {
+        return gArgs.ParseParameters(argc, argv, error);
+    }
+    bool readConfigFiles(std::string& error) override { return gArgs.ReadConfigFiles(error, true); }
+    void forceSetArg(const std::string& arg, const std::string& value) override { gArgs.ForceSetArg(arg, value); }
+    bool softSetArg(const std::string& arg, const std::string& value) override { return gArgs.SoftSetArg(arg, value); }
+    bool softSetBoolArg(const std::string& arg, bool value) override { return gArgs.SoftSetBoolArg(arg, value); }
+    void selectParams(const std::string& network) override { SelectParams(network); }
+    bool initSettings(std::string& error) override { return gArgs.InitSettings(error); }
+    uint64_t getAssumedBlockchainSize() override { return Params().AssumedBlockchainSize(); }
+    uint64_t getAssumedChainStateSize() override { return Params().AssumedChainStateSize(); }
+    std::string getNetwork() override { return Params().NetworkIDString(); }
+    void initLogging() override { InitLogging(); }
+    void initParameterInteraction() override { InitParameterInteraction(); }
+>>>>>>> multiprocess: Add basic spawn and IPC support
     bilingual_str getWarnings() override { return GetWarnings(true); }
     uint32_t getLogCategories() override { return LogInstance().GetCategoryMask(); }
     bool baseInitialize() override
@@ -332,12 +371,13 @@ public:
             m_context_ref.Clear();
         }
     }
+    LocalInit& m_init;
     NodeContext* m_context{nullptr};
     util::Ref m_context_ref;
 };
 
 } // namespace
 
-std::unique_ptr<Node> MakeNode(NodeContext* context) { return MakeUnique<NodeImpl>(context); }
+std::unique_ptr<Node> MakeNode(LocalInit& init) { return MakeUnique<NodeImpl>(init); }
 
 } // namespace interfaces
