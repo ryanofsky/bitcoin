@@ -48,4 +48,13 @@ struct Pair(Key, Value) {
     key @0 :Key;
     value @1 :Value;
 }
+<<<<<<< HEAD
 >>>>>>> be7eeca21bd5 (Add capnp serialization code for bitcoin types)
+||||||| parent of 65c4edda94ea (Add capnp wrapper for Chain interface)
+=======
+
+struct PairInt64(Key) {
+    key @0 :Key;
+    value @1 :Int64;
+}
+>>>>>>> 65c4edda94ea (Add capnp wrapper for Chain interface)
