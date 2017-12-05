@@ -22,6 +22,7 @@ public:
     UniValue passUniValue(UniValue v) { return v; }
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
     BlockValidationState passBlockState(BlockValidationState s) { return s; }
+    std::vector<char> passVectorChar(std::vector<char> v) { return v; }
 };
 
 void IpcPipeTest();
