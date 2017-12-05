@@ -59,7 +59,7 @@ class CVectorWriter
  * @param[in]  nPosIn Starting position. Vector index where writes should start. The vector will initially
  *                    grow as necessary to max(nPosIn, vec.size()). So to append, use vec.size().
 */
-    CVectorWriter(int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn) : nVersion{nVersionIn}, vchData{vchDataIn}, nPos{nPosIn}
+    CVectorWriter(int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn) : vchData{vchDataIn}, nPos{nPosIn}
     {
         if(nPos > vchData.size())
             vchData.resize(nPos);
@@ -91,13 +91,8 @@ class CVectorWriter
         ::Serialize(*this, obj);
         return (*this);
     }
-    int GetVersion() const
-    {
-        return nVersion;
-    }
 
 private:
-    const int nVersion;
     std::vector<unsigned char>& vchData;
     size_t nPos;
 };
@@ -107,7 +102,6 @@ private:
 class SpanReader
 {
 private:
-    const int m_version;
     Span<const unsigned char> m_data;
 
 public:
@@ -116,7 +110,7 @@ public:
      * @param[in]  data Referenced byte vector to overwrite/append
      */
     SpanReader(int version, Span<const unsigned char> data)
-        : m_version{version}, m_data{data} {}
+        : m_data{data} {}
 
     template<typename T>
     SpanReader& operator>>(T&& obj)
@@ -124,8 +118,6 @@ public:
         ::Unserialize(*this, obj);
         return (*this);
     }
-
-    int GetVersion() const { return m_version; }
 
     size_t size() const { return m_data.size(); }
     bool empty() const { return m_data.empty(); }
