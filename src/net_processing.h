@@ -41,6 +41,9 @@ struct CNodeStateStats {
     bool m_addr_relay_enabled{false};
     ServiceFlags their_services;
     int64_t presync_height{-1};
+    // Note: If you add fields to this struct, you should also consider updating
+    // the getpeerinfo RPC in rpc/net.cpp and the NodeStateStat struct in
+    // ipc/capnp/node.capnp.
 };
 
 class PeerManager : public CValidationInterface, public NetEventsInterface
