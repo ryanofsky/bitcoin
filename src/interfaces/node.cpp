@@ -11,6 +11,7 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
+#include <interfaces/init.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <net_processing.h>
@@ -56,6 +57,7 @@ namespace {
 class NodeImpl : public Node
 {
 public:
+    explicit NodeImpl(LocalInit& init) : m_init(init) {}
     void initError(const bilingual_str& message) override { InitError(message); }
     bool parseParameters(int argc, const char* const argv[], std::string& error) override
     {
@@ -107,7 +109,7 @@ public:
             StopMapPort();
         }
     }
-    void setupServerArgs() override { return SetupServerArgs(m_context); }
+    void setupServerArgs() override { return SetupServerArgs(m_init.node()); }
     bool getProxy(Network net, proxyType& proxy_info) override { return GetProxy(net, proxy_info); }
     size_t getNodeCount(CConnman::NumConnections flags) override
     {
@@ -336,12 +338,13 @@ public:
             }));
     }
     NodeContext* context() override { return &m_context; }
-    NodeContext m_context;
+    LocalInit& m_init;
+    NodeContext& m_context = m_init.node();
     util::Ref m_context_ref{m_context};
 };
 
 } // namespace
 
-std::unique_ptr<Node> MakeNode() { return MakeUnique<NodeImpl>(); }
+std::unique_ptr<Node> MakeNode(LocalInit& init) { return MakeUnique<NodeImpl>(init); }
 
 } // namespace interfaces

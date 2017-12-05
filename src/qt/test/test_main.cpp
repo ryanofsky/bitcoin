@@ -6,6 +6,7 @@
 #include <config/bitcoin-config.h>
 #endif
 
+#include <interfaces/init.h>
 #include <interfaces/node.h>
 #include <qt/bitcoin.h>
 #include <qt/test/apptests.h>
@@ -52,7 +53,8 @@ int main(int argc, char* argv[])
         BasicTestingSetup dummy{CBaseChainParams::REGTEST};
     }
 
-    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode();
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(*init);
 
     bool fInvalid = false;
 

@@ -12,6 +12,8 @@
 #include <compat.h>
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <node/context.h>
 #include <node/ui_interface.h>
 #include <noui.h>
@@ -41,9 +43,9 @@ static void WaitForShutdown(NodeContext& node)
 //
 // Start
 //
-static bool AppInit(int argc, char* argv[])
+static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
 {
-    NodeContext node;
+    NodeContext& node = init.node();
     node.chain = interfaces::MakeChain(node);
 
     bool fRet = false;
@@ -172,10 +174,20 @@ int main(int argc, char* argv[])
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+
+    // Check if bitcoind is being invoked as an IPC server. If so, then bypass
+    // normal execution and just respond to requests over the IPC channel.
+    int exit_status;
+    if (init->m_process && init->m_process->serve(exit_status)) {
+        return exit_status;
+    }
+
     SetupEnvironment();
 
     // Connect bitcoind signal handlers
     noui_connect();
 
-    return (AppInit(argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (AppInit(*init, argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE);
 }
