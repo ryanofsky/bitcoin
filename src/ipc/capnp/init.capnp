@@ -8,19 +8,28 @@ using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ipc::capnp::messages");
 
 using Proxy = import "/mp/proxy.capnp";
+$Proxy.include("interfaces/chain.h");
 $Proxy.include("interfaces/echo.h");
 $Proxy.include("interfaces/init.h");
 $Proxy.include("interfaces/mining.h");
 $Proxy.includeTypes("ipc/capnp/init-types.h");
 
+using Chain = import "chain.capnp";
 using Echo = import "echo.capnp";
 using Mining = import "mining.capnp";
 
 interface Init $Proxy.wrap("interfaces::Init") {
     construct @0 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
     makeEcho @1 (context :Proxy.Context) -> (result :Echo.Echo);
+<<<<<<< HEAD
     makeMining @3 (context :Proxy.Context) -> (result :Mining.Mining);
 
     # DEPRECATED: no longer supported; server returns an error.
     makeMiningOld2 @2 () -> ();
+||||||| parent of b7b6d6c3162 (multiprocess: Expose Chain interface)
+    makeMining @2 (context :Proxy.Context) -> (result :Mining.Mining);
+=======
+    makeMining @2 (context :Proxy.Context) -> (result :Mining.Mining);
+    makeChain @3 (context :Proxy.Context) -> (result :Chain.Chain);
+>>>>>>> b7b6d6c3162 (multiprocess: Expose Chain interface)
 }
