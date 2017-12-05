@@ -156,7 +156,12 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::QT, "qt"},
     {BCLog::LEVELDB, "leveldb"},
     {BCLog::VALIDATION, "validation"},
+<<<<<<< HEAD
     {BCLog::I2P, "i2p"},
+||||||| merged common ancestors
+=======
+    {BCLog::IPC, "ipc"},
+>>>>>>> multiprocess: Add Ipc interface implementation
     {BCLog::ALL, "1"},
     {BCLog::ALL, "all"},
 };

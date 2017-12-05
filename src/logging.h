@@ -57,7 +57,12 @@ namespace BCLog {
         QT          = (1 << 19),
         LEVELDB     = (1 << 20),
         VALIDATION  = (1 << 21),
+<<<<<<< HEAD
         I2P         = (1 << 22),
+||||||| merged common ancestors
+=======
+        IPC         = (1 << 22),
+>>>>>>> multiprocess: Add Ipc interface implementation
         ALL         = ~(uint32_t)0,
     };
 
