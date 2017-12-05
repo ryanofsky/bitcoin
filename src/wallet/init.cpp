@@ -5,6 +5,7 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <net.h>
 #include <node/context.h>
 #include <node/ui_interface.h>
@@ -118,6 +119,14 @@ void WalletInit::Construct(NodeContext& node) const
         LogPrintf("Wallet disabled!\n");
         return;
     }
+<<<<<<< HEAD
     args.SoftSetArg("-wallet", "");
     node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet")));
+||||||| merged common ancestors
+    gArgs.SoftSetArg("-wallet", "");
+    node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, gArgs.GetArgs("-wallet")));
+=======
+    gArgs.SoftSetArg("-wallet", "");
+    node.chain_clients.emplace_back(node.init->makeWalletClient(*node.chain, gArgs.GetArgs("-wallet")));
+>>>>>>> Multiprocess bitcoin
 }
