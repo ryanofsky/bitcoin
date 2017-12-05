@@ -8,6 +8,7 @@
 #include <ipc/capnp/chain.capnp.proxy.h>
 #include <ipc/capnp/common.capnp.proxy-types.h>
 #include <ipc/capnp/handler.capnp.proxy-types.h>
+#include <ipc/capnp/wallet.capnp.proxy.h>
 #include <rpc/server.h>
 
 #include <any>
@@ -33,6 +34,10 @@ struct mp::ProxyServerMethodTraits<ipc::capnp::messages::ChainClient::StartParam
                                        ipc::capnp::messages::ChainClient::StartParams,
                                        ipc::capnp::messages::ChainClient::StartResults>;
     static void invoke(ChainContext& context);
+    using WalletContext = ServerContext<ipc::capnp::messages::WalletLoader,
+                                        ipc::capnp::messages::ChainClient::StartParams,
+                                        ipc::capnp::messages::ChainClient::StartResults>;
+    static void invoke(WalletContext& context);
 };
 
 namespace mp {
