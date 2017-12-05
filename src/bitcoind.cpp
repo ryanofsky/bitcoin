@@ -12,6 +12,8 @@
 #include <compat.h>
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <node/context.h>
 #include <node/ui_interface.h>
 #include <noui.h>
@@ -37,17 +39,17 @@ static void WaitForShutdown(NodeContext& node)
     Interrupt(node);
 }
 
-static bool AppInit(int argc, char* argv[])
+static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
 {
-    NodeContext node;
+    NodeContext& node = init.node();
 
     bool fRet = false;
 
     util::ThreadSetInternalName("init");
 
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
-    SetupServerArgs(node);
     ArgsManager& args = *Assert(node.args);
+    SetupServerArgs(args);
     std::string error;
     if (!args.ParseParameters(argc, argv, error)) {
         return InitError(Untranslated(strprintf("Error parsing command line arguments: %s\n", error)));
@@ -164,10 +166,20 @@ int main(int argc, char* argv[])
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+
+    // Check if bitcoind is being invoked as an IPC server. If so, then bypass
+    // normal execution and just respond to requests over the IPC channel.
+    int exit_status;
+    if (init->m_process && init->m_process->serve(exit_status)) {
+        return exit_status;
+    }
+
     SetupEnvironment();
 
     // Connect bitcoind signal handlers
     noui_connect();
 
-    return (AppInit(argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (AppInit(*init, argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

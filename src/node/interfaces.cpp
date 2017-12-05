@@ -7,11 +7,21 @@
 #include <boost/signals2/signal.hpp>
 #include <chain.h>
 #include <chainparams.h>
+<<<<<<< HEAD:src/node/interfaces.cpp
 #include <init.h>
 #include <interfaces/chain.h>
+||||||| merged common ancestors
+=======
+#include <interfaces/base.h>
+>>>>>>> multiprocess: Add basic spawn and IPC support:src/interfaces/chain.cpp
 #include <interfaces/handler.h>
+<<<<<<< HEAD:src/node/interfaces.cpp
 #include <interfaces/node.h>
 #include <interfaces/wallet.h>
+||||||| merged common ancestors
+#include <interfaces/wallet.h>
+=======
+>>>>>>> multiprocess: Add basic spawn and IPC support:src/interfaces/chain.cpp
 #include <net.h>
 #include <net_processing.h>
 #include <netaddress.h>
