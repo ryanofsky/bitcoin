@@ -28,7 +28,7 @@
 #include <tuple>
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
-UrlDecodeFn* const URL_DECODE = nullptr;
+UrlDecodeFn* const URL_DECODE = urlDecode;
 
 static void SetupWalletToolArgs(ArgsManager& argsman)
 {
