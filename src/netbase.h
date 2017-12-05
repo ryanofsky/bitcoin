@@ -65,7 +65,15 @@ public:
     CService proxy;
     std::string m_unix_socket_path;
     bool m_is_unix_socket;
+<<<<<<< HEAD
     bool m_tor_stream_isolation;
+||||||| parent of 7b906e93a6bd (multiprocess: Add capnp wrapper for Node interface)
+    bool m_randomize_credentials;
+=======
+    bool m_randomize_credentials;
+    // Note: If you add fields to this class, you should also update the
+    // ProxyInfo struct in ipc/capnp/node.capnp.
+>>>>>>> 7b906e93a6bd (multiprocess: Add capnp wrapper for Node interface)
 
     bool IsValid() const
     {
