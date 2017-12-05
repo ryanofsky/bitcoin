@@ -12,19 +12,32 @@ $Proxy.include("interfaces/chain.h");
 $Proxy.include("interfaces/echo.h");
 $Proxy.include("interfaces/init.h");
 $Proxy.include("interfaces/mining.h");
+$Proxy.include("interfaces/node.h");
 $Proxy.includeTypes("ipc/capnp/init-types.h");
 
 using Chain = import "chain.capnp";
 using Echo = import "echo.capnp";
 using Mining = import "mining.capnp";
+<<<<<<< HEAD
 using Rpc = import "rpc.capnp";
+||||||| parent of 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
+=======
+using Node = import "node.capnp";
+>>>>>>> 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
 
 interface Init $Proxy.wrap("interfaces::Init") {
     construct @0 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
     makeEcho @1 (context :Proxy.Context) -> (result :Echo.Echo);
     makeMining @3 (context :Proxy.Context) -> (result :Mining.Mining);
+<<<<<<< HEAD
     makeRpc @4 (context :Proxy.Context) -> (result :Rpc.Rpc);
     makeChain @5 (context :Proxy.Context) -> (result :Chain.Chain);
+||||||| parent of 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
+    makeChain @4 (context :Proxy.Context) -> (result :Chain.Chain);
+=======
+    makeChain @4 (context :Proxy.Context) -> (result :Chain.Chain);
+    makeNode @5 (context :Proxy.Context) -> (result :Node.Node);
+>>>>>>> 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
 
     # DEPRECATED: no longer supported; server returns an error.
     makeMiningOld2 @2 () -> ();

@@ -8,6 +8,11 @@
 #include <ipc/capnp/chain.capnp.proxy-types.h>
 #include <ipc/capnp/echo.capnp.proxy-types.h>
 #include <ipc/capnp/mining.capnp.proxy-types.h>
+<<<<<<< HEAD
 #include <ipc/capnp/rpc.capnp.proxy-types.h>
+||||||| parent of 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
+=======
+#include <ipc/capnp/node.capnp.proxy-types.h>
+>>>>>>> 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
 
 #endif // BITCOIN_IPC_CAPNP_INIT_TYPES_H
