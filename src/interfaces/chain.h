@@ -5,6 +5,8 @@
 #ifndef BITCOIN_INTERFACES_CHAIN_H
 #define BITCOIN_INTERFACES_CHAIN_H
 
+#include <interfaces/wallet.h>
+
 #include <optional.h>               // For Optional and nullopt
 #include <primitives/transaction.h> // For CTransactionRef
 
@@ -280,12 +282,22 @@ public:
 
     //! Shut down client.
     virtual void stop() = 0;
+<<<<<<< HEAD
 
     //! Set mock time.
     virtual void setMockTime(int64_t time) = 0;
 
     //! Return interfaces for accessing wallets (if any).
     virtual std::vector<std::unique_ptr<Wallet>> getWallets() = 0;
+||||||| merged common ancestors
+=======
+
+    //! Set mock time.
+    virtual void setMockTime(int64_t time) = 0;
+
+    //! Return interfaces for accessing wallets (if any).
+    virtual std::vector<std::unique_ptr<Wallet>> getWallets() { return {}; }
+>>>>>>> Add ChainClient setMockTime, getWallets methods
 };
 
 //! Return implementation of Chain interface.

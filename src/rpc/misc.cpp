@@ -357,6 +357,7 @@ static UniValue setmocktime(const JSONRPCRequest& request)
     LOCK(cs_main);
 
     RPCTypeCheck(request.params, {UniValue::VNUM});
+<<<<<<< HEAD
     int64_t time = request.params[0].get_int64();
     SetMockTime(time);
     if (g_rpc_node) {
@@ -394,6 +395,17 @@ static UniValue mockscheduler(const JSONRPCRequest& request)
     CHECK_NONFATAL(g_rpc_node);
     CHECK_NONFATAL(g_rpc_node->scheduler);
     g_rpc_node->scheduler->MockForward(boost::chrono::seconds(delta_seconds));
+||||||| merged common ancestors
+    SetMockTime(request.params[0].get_int64());
+=======
+    int64_t time = request.params[0].get_int64();
+    SetMockTime(time);
+    if (g_rpc_node) {
+        for (const auto& chain_client : g_rpc_node->chain_clients) {
+            chain_client->setMockTime(time);
+        }
+    }
+>>>>>>> Add ChainClient setMockTime, getWallets methods
 
     return NullUniValue;
 }
