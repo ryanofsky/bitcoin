@@ -291,6 +291,8 @@ struct CRecipient
     CScript scriptPubKey;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
+    // Note: If you add fields to this struct, you should also update the
+    // Recipient struct in ipc/capnp/wallet.capnp.
 };
 
 class WalletRescanReserver; //forward declarations for ScanForWalletTransactions/RescanFromTime
