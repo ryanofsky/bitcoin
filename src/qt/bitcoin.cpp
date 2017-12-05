@@ -10,6 +10,7 @@
 #include <qt/bitcoingui.h>
 
 #include <chainparams.h>
+#include <interfaces/init.h>
 #include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
@@ -34,6 +35,7 @@
 #include <node/ui_interface.h>
 #include <noui.h>
 #include <uint256.h>
+#include <util/check.h>
 #include <util/system.h>
 #include <util/threadnames.h>
 #include <util/translation.h>
@@ -443,11 +445,12 @@ int GuiMain(int argc, char* argv[])
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(*init);
+
     SetupEnvironment();
     util::ThreadSetInternalName("main");
-
-    NodeContext node_context;
-    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(&node_context);
 
     // Subscribe to global signals from core
     boost::signals2::scoped_connection handler_message_box = ::uiInterface.ThreadSafeMessageBox_connect(noui_ThreadSafeMessageBox);
@@ -470,7 +473,7 @@ int GuiMain(int argc, char* argv[])
 
     /// 2. Parse command-line options. We do this after qt in order to show an error if there are problems parsing these
     // Command-line options take precedence:
-    SetupServerArgs(node_context);
+    SetupServerArgs(gArgs);
     SetupUIArgs(gArgs);
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {
