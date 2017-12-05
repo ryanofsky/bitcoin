@@ -11,6 +11,7 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
+#include <interfaces/init.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <net_processing.h>
@@ -56,7 +57,14 @@ namespace {
 class NodeImpl : public Node
 {
 public:
+<<<<<<< HEAD
     void initError(const std::string& message) override { InitError(Untranslated(message)); }
+||||||| merged common ancestors
+    void initError(const std::string& message) override { InitError(message); }
+=======
+    explicit NodeImpl(LocalInit& init) : m_init(init) {}
+    void initError(const std::string& message) override { InitError(message); }
+>>>>>>> Multiprocess bitcoin
     bool parseParameters(int argc, const char* const argv[], std::string& error) override
     {
         return gArgs.ParseParameters(argc, argv, error);
@@ -81,7 +89,13 @@ public:
     bool appInitMain() override
     {
         m_context.chain = MakeChain(m_context);
+<<<<<<< HEAD
         return AppInitMain(m_context_ref, m_context);
+||||||| merged common ancestors
+        return AppInitMain(m_context);
+=======
+        return AppInitMain(m_init);
+>>>>>>> Multiprocess bitcoin
     }
     void appShutdown() override
     {
@@ -107,7 +121,12 @@ public:
             StopMapPort();
         }
     }
-    void setupServerArgs() override { return SetupServerArgs(m_context); }
+    void setupServerArgs() override
+    {
+        assert(!m_context.args);
+        m_context.args = &gArgs;
+        return SetupServerArgs();
+    }
     bool getProxy(Network net, proxyType& proxy_info) override { return GetProxy(net, proxy_info); }
     size_t getNodeCount(CConnman::NumConnections flags) override
     {
@@ -336,12 +355,19 @@ public:
             }));
     }
     NodeContext* context() override { return &m_context; }
+<<<<<<< HEAD
     NodeContext m_context;
     util::Ref m_context_ref{m_context};
+||||||| merged common ancestors
+    NodeContext m_context;
+=======
+    LocalInit& m_init;
+    NodeContext& m_context = m_init.node();
+>>>>>>> Multiprocess bitcoin
 };
 
 } // namespace
 
-std::unique_ptr<Node> MakeNode() { return MakeUnique<NodeImpl>(); }
+std::unique_ptr<Node> MakeNode(LocalInit& init) { return MakeUnique<NodeImpl>(init); }
 
 } // namespace interfaces

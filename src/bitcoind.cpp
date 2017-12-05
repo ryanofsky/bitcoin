@@ -12,6 +12,8 @@
 #include <compat.h>
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <node/context.h>
 #include <noui.h>
 #include <shutdown.h>
@@ -41,9 +43,10 @@ static void WaitForShutdown(NodeContext& node)
 //
 // Start
 //
-static bool AppInit(int argc, char* argv[])
+static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
 {
-    NodeContext node;
+    NodeContext& node = init.node();
+    node.args = &gArgs;
     node.chain = interfaces::MakeChain(node);
 
     bool fRet = false;
@@ -54,7 +57,7 @@ static bool AppInit(int argc, char* argv[])
     // Parameters
     //
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
-    SetupServerArgs(node);
+    SetupServerArgs();
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {
         return InitError(Untranslated(strprintf("Error parsing command line arguments: %s\n", error)));
@@ -147,7 +150,13 @@ static bool AppInit(int argc, char* argv[])
             // If locking the data directory failed, exit immediately
             return false;
         }
+<<<<<<< HEAD
         fRet = AppInitMain(context, node);
+||||||| merged common ancestors
+        fRet = AppInitMain(node);
+=======
+        fRet = AppInitMain(init);
+>>>>>>> Multiprocess bitcoin
     }
     catch (const std::exception& e) {
         PrintExceptionContinue(&e, "AppInit()");
@@ -172,10 +181,20 @@ int main(int argc, char* argv[])
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+
+    // Check if bitcoind is being invoked as an IPC server. If so, then bypass
+    // normal execution and just respond to requests over the IPC channel.
+    int exit_status;
+    if (init->m_process && init->m_process->serve(exit_status)) {
+        return exit_status;
+    }
+
     SetupEnvironment();
 
     // Connect bitcoind signal handlers
     noui_connect();
 
-    return (AppInit(argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE);
+    return (AppInit(*init, argc, argv) ? EXIT_SUCCESS : EXIT_FAILURE);
 }

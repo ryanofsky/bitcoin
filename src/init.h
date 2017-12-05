@@ -14,9 +14,16 @@ struct NodeContext;
 namespace boost {
 class thread_group;
 } // namespace boost
+<<<<<<< HEAD
 namespace util {
 class Ref;
 } // namespace util
+||||||| merged common ancestors
+=======
+namespace interfaces {
+class LocalInit;
+} // namespace interfaces
+>>>>>>> Multiprocess bitcoin
 
 /** Interrupt threads */
 void Interrupt(NodeContext& node);
@@ -54,12 +61,18 @@ bool AppInitLockDataDirectory();
  * @note This should only be done after daemonization. Call Shutdown() if this function fails.
  * @pre Parameters should be parsed and config file should be read, AppInitLockDataDirectory should have been called.
  */
+<<<<<<< HEAD
 bool AppInitMain(const util::Ref& context, NodeContext& node);
+||||||| merged common ancestors
+bool AppInitMain(NodeContext& node);
+=======
+bool AppInitMain(interfaces::LocalInit& init);
+>>>>>>> Multiprocess bitcoin
 
 /**
  * Register all arguments with the ArgsManager
  */
-void SetupServerArgs(NodeContext& node);
+void SetupServerArgs();
 
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();

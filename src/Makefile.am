@@ -70,6 +70,7 @@ EXTRA_LIBRARIES += \
   $(LIBBITCOIN_CONSENSUS) \
   $(LIBBITCOIN_SERVER) \
   $(LIBBITCOIN_CLI) \
+  $(LIBBITCOIN_IPC) \
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_WALLET_TOOL) \
   $(LIBBITCOIN_ZMQ)
@@ -145,6 +146,7 @@ BITCOIN_CORE_H = \
   interfaces/base.h \
   interfaces/chain.h \
   interfaces/handler.h \
+  interfaces/init.h \
   interfaces/node.h \
   interfaces/wallet.h \
   key.h \
@@ -270,6 +272,8 @@ obj/build.h: FORCE
 	  "$(abs_top_srcdir)"
 libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
+interfaces/capnp/libbitcoin_ipc_a-ipc.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
+
 # server: shared between bitcoind and bitcoin-qt
 # Contains code accessing mempool and chain state that is meant to be separated
 # from wallet and gui code (see node/README.md). Shared code should go in
@@ -291,6 +295,7 @@ libbitcoin_server_a_SOURCES = \
   index/blockfilterindex.cpp \
   index/txindex.cpp \
   interfaces/chain.cpp \
+  interfaces/init.cpp \
   interfaces/node.cpp \
   init.cpp \
   dbwrapper.cpp \
@@ -605,18 +610,24 @@ bitcoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_L
 =======
 bitcoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
-bitcoind_SOURCES = $(bitcoin_daemon_sources)
+bitcoind_SOURCES = $(bitcoin_daemon_sources) interfaces/init_bitcoind.cpp
 bitcoind_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoind_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoind_LDFLAGS = $(bitcoin_bin_ldflags)
 bitcoind_LDADD = $(bitcoin_bin_ldadd)
 
-bitcoin_node_SOURCES = $(bitcoin_daemon_sources)
+bitcoin_node_SOURCES = $(bitcoin_daemon_sources) interfaces/init_bitcoin-node.cpp
 bitcoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
+<<<<<<< HEAD
 bitcoin_node_LDADD = $(bitcoin_bin_ldadd)
 >>>>>>> Multiprocess build changes
+||||||| merged common ancestors
+bitcoin_node_LDADD = $(bitcoin_bin_ldadd)
+=======
+bitcoin_node_LDADD = $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBMULTIPROCESS_LIBS)
+>>>>>>> Multiprocess bitcoin
 
 # bitcoin-cli binary #
 bitcoin_cli_SOURCES = bitcoin-cli.cpp
@@ -660,10 +671,15 @@ bitcoin_tx_LDADD += $(BOOST_LIBS)
 
 # bitcoin-wallet binary #
 bitcoin_wallet_SOURCES = bitcoin-wallet.cpp
+if BUILD_MULTIPROCESS
+bitcoin_wallet_SOURCES += interfaces/init_bitcoin-wallet.cpp
+else
+bitcoin_wallet_SOURCES += interfaces/init_default.cpp
+endif
 bitcoin_wallet_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_wallet_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_wallet_LDFLAGS = $(bitcoin_bin_ldflags)
-bitcoin_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd)
+bitcoin_wallet_LDADD = $(LIBBITCOIN_WALLET_TOOL) $(bitcoin_bin_ldadd) $(LIBBITCOIN_IPC) $(LIBBITCOIN_COMMON) $(LIBMULTIPROCESS_LIBS)
 
 if TARGET_WINDOWS
 bitcoin_wallet_SOURCES += bitcoin-wallet-res.rc
@@ -762,6 +778,47 @@ libbitcoin_ipc_mpgen_input = \
   interfaces/capnp/wallet.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 %.capnp:
+
+if BUILD_MULTIPROCESS
+LIBBITCOIN_IPC=libbitcoin_ipc.a
+libbitcoin_ipc_a_SOURCES = \
+  interfaces/capnp/ipc.cpp \
+  interfaces/capnp/ipc.h \
+  interfaces/capnp/chain-types.h \
+  interfaces/capnp/chain.cpp \
+  interfaces/capnp/chain.h \
+  interfaces/capnp/common-types.h \
+  interfaces/capnp/common.cpp \
+  interfaces/capnp/common.h \
+  interfaces/capnp/handler-types.h \
+  interfaces/capnp/handler.cpp \
+  interfaces/capnp/handler.h \
+  interfaces/capnp/init-types.h \
+  interfaces/capnp/init.cpp \
+  interfaces/capnp/init.h \
+  interfaces/capnp/node-types.h \
+  interfaces/capnp/node.cpp \
+  interfaces/capnp/node.h \
+  interfaces/capnp/wallet-types.h \
+  interfaces/capnp/wallet.cpp \
+  interfaces/capnp/wallet.h \
+  interfaces/ipc.cpp \
+  interfaces/ipc.h
+libbitcoin_ipc_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+libbitcoin_ipc_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS) $(LIBMULTIPROCESS_CFLAGS)
+
+include $(MPGEN_PREFIX)/include/mpgen.mk
+libbitcoin_ipc_mpgen_output = \
+  $(libbitcoin_ipc_mpgen_input:=.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.h) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-client.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-server.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-types.c++) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy-types.h) \
+  $(libbitcoin_ipc_mpgen_input:=.proxy.h)
+nodist_libbitcoin_ipc_a_SOURCES = $(libbitcoin_ipc_mpgen_output)
+CLEANFILES += $(libbitcoin_ipc_mpgen_output)
+endif
 
 if EMBEDDED_LEVELDB
 include Makefile.crc32c.include

@@ -23,6 +23,7 @@
 #include <index/blockfilterindex.h>
 #include <index/txindex.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <key.h>
 #include <miner.h>
 #include <net.h>
@@ -363,11 +364,8 @@ static void OnRPCStopped()
     LogPrint(BCLog::RPC, "RPC stopped.\n");
 }
 
-void SetupServerArgs(NodeContext& node)
+void SetupServerArgs()
 {
-    assert(!node.args);
-    node.args = &gArgs;
-
     SetupHelpOptions(gArgs);
     gArgs.AddArg("-help-debug", "Print help message with debugging options and exit", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST); // server-only for now
 
@@ -1239,7 +1237,13 @@ bool AppInitLockDataDirectory()
     return true;
 }
 
+<<<<<<< HEAD
 bool AppInitMain(const util::Ref& context, NodeContext& node)
+||||||| merged common ancestors
+bool AppInitMain(NodeContext& node)
+=======
+bool AppInitMain(interfaces::LocalInit& init)
+>>>>>>> Multiprocess bitcoin
 {
     const CChainParams& chainparams = Params();
     // ********************************************************* Step 4a: application initialization
@@ -1314,6 +1318,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node)
         }
     }
 
+    NodeContext& node = init.node();
     assert(!node.scheduler);
     node.scheduler = MakeUnique<CScheduler>();
 
@@ -1332,7 +1337,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node)
     // according to -wallet and -disablewallet options. This only constructs
     // the interfaces, it doesn't load wallet data. Wallets actually get loaded
     // when load() and start() interface methods are called below.
-    g_wallet_init_interface.Construct(node);
+    g_wallet_init_interface.Construct(init);
 
     /* Register RPC commands regardless of -server setting so they will be
      * available in the GUI RPC console even if external calls are disabled.
