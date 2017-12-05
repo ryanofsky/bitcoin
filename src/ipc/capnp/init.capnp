@@ -16,6 +16,7 @@ $Proxy.include("interfaces/node.h");
 $Proxy.includeTypes("ipc/capnp/init-types.h");
 
 using Chain = import "chain.capnp";
+using Common = import "common.capnp";
 using Echo = import "echo.capnp";
 using Mining = import "mining.capnp";
 <<<<<<< HEAD
@@ -23,7 +24,12 @@ using Rpc = import "rpc.capnp";
 ||||||| parent of 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
 =======
 using Node = import "node.capnp";
+<<<<<<< HEAD
 >>>>>>> 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
+||||||| parent of 00059c7726d (multiprocess: Make bitcoin-node spawn a bitcoin-wallet process)
+=======
+using Wallet = import "wallet.capnp";
+>>>>>>> 00059c7726d (multiprocess: Make bitcoin-node spawn a bitcoin-wallet process)
 
 interface Init $Proxy.wrap("interfaces::Init") {
     construct @0 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
@@ -37,7 +43,12 @@ interface Init $Proxy.wrap("interfaces::Init") {
 =======
     makeChain @4 (context :Proxy.Context) -> (result :Chain.Chain);
     makeNode @5 (context :Proxy.Context) -> (result :Node.Node);
+<<<<<<< HEAD
 >>>>>>> 3bcfd4eac03 (multiprocess: Make bitcoin-gui spawn a bitcoin-node process)
+||||||| parent of 00059c7726d (multiprocess: Make bitcoin-node spawn a bitcoin-wallet process)
+=======
+    makeWalletLoader @6 (context :Proxy.Context, globalArgs :Common.GlobalArgs, chain :Chain.Chain) -> (result :Wallet.WalletLoader);
+>>>>>>> 00059c7726d (multiprocess: Make bitcoin-node spawn a bitcoin-wallet process)
 
     # DEPRECATED: no longer supported; server returns an error.
     makeMiningOld2 @2 () -> ();
