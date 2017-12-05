@@ -53,6 +53,7 @@ namespace {
 class NodeImpl : public Node
 {
 public:
+    explicit NodeImpl(NodeContext& context) : m_context(context) {}
     void initError(const std::string& message) override { InitError(message); }
     bool parseParameters(int argc, const char* const argv[], std::string& error) override
     {
@@ -320,11 +321,11 @@ public:
             }));
     }
     NodeContext* context() override { return &m_context; }
-    NodeContext m_context;
+    NodeContext& m_context;
 };
 
 } // namespace
 
-std::unique_ptr<Node> MakeNode() { return MakeUnique<NodeImpl>(); }
+std::unique_ptr<Node> MakeNode(NodeContext& context) { return MakeUnique<NodeImpl>(context); }
 
 } // namespace interfaces

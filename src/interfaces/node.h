@@ -263,7 +263,7 @@ public:
 };
 
 //! Return implementation of Node interface.
-std::unique_ptr<Node> MakeNode();
+std::unique_ptr<Node> MakeNode(NodeContext& context);
 
 } // namespace interfaces
 
