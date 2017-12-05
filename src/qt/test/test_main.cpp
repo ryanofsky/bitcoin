@@ -6,6 +6,7 @@
 #include <config/bitcoin-config.h>
 #endif
 
+#include <interfaces/init.h>
 #include <interfaces/node.h>
 #include <qt/bitcoin.h>
 #include <qt/test/apptests.h>
@@ -52,8 +53,15 @@ int main(int argc, char* argv[])
         BasicTestingSetup dummy{CBaseChainParams::REGTEST};
     }
 
+<<<<<<< HEAD
     NodeContext node_context;
     std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(&node_context);
+||||||| merged common ancestors
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode();
+=======
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(*init);
+>>>>>>> multiprocess: Add basic spawn and IPC support
 
     bool fInvalid = false;
 
