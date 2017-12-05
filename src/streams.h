@@ -57,7 +57,13 @@ public:
  * @param[in]  nPosIn Starting position. Vector index where writes should start. The vector will initially
  *                    grow as necessary to max(nPosIn, vec.size()). So to append, use vec.size().
 */
+<<<<<<< HEAD
     VectorWriter(std::vector<unsigned char>& vchDataIn, size_t nPosIn) : vchData{vchDataIn}, nPos{nPosIn}
+||||||| parent of 9a9fe92b9439 (Add capnp wrapper for Wallet interface)
+    CVectorWriter(int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn) : nVersion{nVersionIn}, vchData{vchDataIn}, nPos{nPosIn}
+=======
+    CVectorWriter(int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn) : vchData{vchDataIn}, nPos{nPosIn}
+>>>>>>> 9a9fe92b9439 (Add capnp wrapper for Wallet interface)
     {
         if(nPos > vchData.size())
             vchData.resize(nPos);
@@ -106,7 +112,15 @@ public:
     /**
      * @param[in]  data Referenced byte vector to overwrite/append
      */
+<<<<<<< HEAD
     explicit SpanReader(Span<const unsigned char> data) : m_data{data} {}
+||||||| parent of 9a9fe92b9439 (Add capnp wrapper for Wallet interface)
+    SpanReader(int version, Span<const unsigned char> data)
+        : m_version{version}, m_data{data} {}
+=======
+    SpanReader(int version, Span<const unsigned char> data)
+        : m_data{data} {}
+>>>>>>> 9a9fe92b9439 (Add capnp wrapper for Wallet interface)
 
     template<typename T>
     SpanReader& operator>>(T&& obj)

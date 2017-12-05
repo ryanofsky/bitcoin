@@ -1131,6 +1131,7 @@ public:
     void read(Span<std::byte> dst) { m_substream.read(dst); }
     void ignore(size_t num) { m_substream.ignore(num); }
     bool eof() const { return m_substream.eof(); }
+    bool empty() const { return m_substream.empty(); }
     size_t size() const { return m_substream.size(); }
     template<typename P>
     const auto& GetParams() const
