@@ -63,6 +63,7 @@ public:
     explicit Proxy(const std::string path, bool _randomize_credentials = false) : m_unix_socket_path(path), m_is_unix_socket(true), m_randomize_credentials(_randomize_credentials) {}
 
     CService proxy;
+<<<<<<< HEAD
     std::string m_unix_socket_path;
     bool m_is_unix_socket;
     bool m_randomize_credentials;
@@ -86,6 +87,13 @@ public:
     }
 
     std::unique_ptr<Sock> Connect() const;
+||||||| parent of 329b34c85ac6 (Add capnp wrapper for Node interface)
+    bool randomize_credentials;
+=======
+    bool randomize_credentials;
+    // Note: If you add fields to this class, you should also update the
+    // ProxyInfo struct in ipc/capnp/node.capnp.
+>>>>>>> 329b34c85ac6 (Add capnp wrapper for Node interface)
 };
 
 /** Credentials for proxy authentication */

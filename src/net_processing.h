@@ -43,12 +43,19 @@ struct CNodeStateStats {
     bool m_addr_relay_enabled{false};
     ServiceFlags their_services;
     int64_t presync_height{-1};
+<<<<<<< HEAD
     std::chrono::seconds time_offset{0};
 };
 
 struct PeerManagerInfo {
     std::chrono::seconds median_outbound_time_offset{0s};
     bool ignores_incoming_txs{false};
+||||||| parent of 329b34c85ac6 (Add capnp wrapper for Node interface)
+=======
+    // Note: If you add fields to this struct, you should also consider updating
+    // the getpeerinfo RPC in rpc/net.cpp and the NodeStateStat struct in
+    // ipc/capnp/node.capnp.
+>>>>>>> 329b34c85ac6 (Add capnp wrapper for Node interface)
 };
 
 class PeerManager : public CValidationInterface, public NetEventsInterface
