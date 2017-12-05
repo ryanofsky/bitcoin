@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     }
 
     std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(*init);
+    std::unique_ptr<interfaces::Node> node = init->makeNode();
 
     bool fInvalid = false;
 
