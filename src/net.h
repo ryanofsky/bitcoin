@@ -583,6 +583,7 @@ public:
      * in CConnman::AttemptToEvictConnection. */
     std::atomic<int64_t> nLastTXTime{0};
 
+<<<<<<< HEAD
     // Ping time measurement:
     // The pong reply we're expecting, or 0 if no pong expected.
     std::atomic<uint64_t> nPingNonceSent{0};
@@ -594,6 +595,94 @@ public:
     std::atomic<int64_t> nMinPingUsecTime{std::numeric_limits<int64_t>::max()};
     // Whether a ping is requested.
     std::atomic<bool> fPingQueued{false};
+||||||| merged common ancestors
+class CNodeStats
+{
+public:
+    NodeId nodeid;
+    ServiceFlags nServices;
+    bool fRelayTxes;
+    int64_t nLastSend;
+    int64_t nLastRecv;
+    int64_t nLastTXTime;
+    int64_t nLastBlockTime;
+    int64_t nTimeConnected;
+    int64_t nTimeOffset;
+    std::string addrName;
+    int nVersion;
+    std::string cleanSubVer;
+    bool fInbound;
+    bool m_manual_connection;
+    bool m_bip152_highbandwidth_to;
+    bool m_bip152_highbandwidth_from;
+    int nStartingHeight;
+    uint64_t nSendBytes;
+    mapMsgCmdSize mapSendBytesPerMsgCmd;
+    uint64_t nRecvBytes;
+    mapMsgCmdSize mapRecvBytesPerMsgCmd;
+    NetPermissionFlags m_permissionFlags;
+    bool m_legacyWhitelisted;
+    int64_t m_ping_usec;
+    int64_t m_ping_wait_usec;
+    int64_t m_min_ping_usec;
+    CAmount minFeeFilter;
+    // Our address, as reported by the peer
+    std::string addrLocal;
+    // Address of this peer
+    CAddress addr;
+    // Bind address of our side of the connection
+    CAddress addrBind;
+    // Name of the network the peer connected through
+    std::string m_network;
+    uint32_t m_mapped_as;
+    std::string m_conn_type_string;
+};
+=======
+class CNodeStats
+{
+public:
+    NodeId nodeid;
+    ServiceFlags nServices;
+    bool fRelayTxes;
+    int64_t nLastSend;
+    int64_t nLastRecv;
+    int64_t nLastTXTime;
+    int64_t nLastBlockTime;
+    int64_t nTimeConnected;
+    int64_t nTimeOffset;
+    std::string addrName;
+    int nVersion;
+    std::string cleanSubVer;
+    bool fInbound;
+    bool m_manual_connection;
+    bool m_bip152_highbandwidth_to;
+    bool m_bip152_highbandwidth_from;
+    int nStartingHeight;
+    uint64_t nSendBytes;
+    mapMsgCmdSize mapSendBytesPerMsgCmd;
+    uint64_t nRecvBytes;
+    mapMsgCmdSize mapRecvBytesPerMsgCmd;
+    NetPermissionFlags m_permissionFlags;
+    bool m_legacyWhitelisted;
+    int64_t m_ping_usec;
+    int64_t m_ping_wait_usec;
+    int64_t m_min_ping_usec;
+    CAmount minFeeFilter;
+    // Our address, as reported by the peer
+    std::string addrLocal;
+    // Address of this peer
+    CAddress addr;
+    // Bind address of our side of the connection
+    CAddress addrBind;
+    // Name of the network the peer connected through
+    std::string m_network;
+    uint32_t m_mapped_as;
+    std::string m_conn_type_string;
+    // Note: If you add fields to this class, you should also consider updating
+    // the CNode::copyStats() method, the getpeerinfo RPC (in rpc/net.cpp), and
+    // the IPC serialization (in ipc/capnp/common.capnp).
+};
+>>>>>>> Multiprocess bitcoin
 
     CNode(NodeId id, ServiceFlags nLocalServicesIn, SOCKET hSocketIn, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress& addrBindIn, const std::string& addrNameIn, ConnectionType conn_type_in, bool inbound_onion = false);
     ~CNode();

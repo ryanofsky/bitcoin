@@ -13,5 +13,12 @@ std::unique_ptr<Node> Init::makeNode() { return {}; }
 std::unique_ptr<Chain> Init::makeChain() { return {}; }
 std::unique_ptr<WalletClient> Init::makeWalletClient(Chain& chain) { return {}; }
 std::unique_ptr<Echo> Init::makeEcho() { return {}; }
+<<<<<<< HEAD
 Ipc* Init::ipc() { return nullptr; }
+||||||| merged common ancestors
+=======
+std::unique_ptr<Node> Init::makeNode() { return {}; }
+std::unique_ptr<Chain> Init::makeChain() { return {}; }
+std::unique_ptr<WalletClient> Init::makeWalletClient(Chain& chain) { return {}; }
+>>>>>>> Multiprocess bitcoin
 } // namespace interfaces

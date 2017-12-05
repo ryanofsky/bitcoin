@@ -9,6 +9,10 @@
 #include <memory>
 #include <typeindex>
 
+namespace ipc {
+class Context;
+} // namespace ipc
+
 namespace interfaces {
 class Init;
 
@@ -49,6 +53,7 @@ public:
     //! process by forwarding them to this process's Init interface, then return
     //! true. If this is not a child process, return false.
     virtual bool serveProcess(const char* exe_name, int argc, char* argv[], int& exit_status) = 0;
+<<<<<<< HEAD
 
     //! Add cleanup callback to remote process interface that will run when the
     //! interface is deleted.
@@ -60,6 +65,12 @@ public:
     {
         addCleanup(typeid(Interface), &interface, std::move(cleanup));
     }
+||||||| merged common ancestors
+=======
+
+    //! Context accessor.
+    virtual ipc::Context& context() = 0;
+>>>>>>> Multiprocess bitcoin
 };
 
 //! Return implementation of Ipc interface.

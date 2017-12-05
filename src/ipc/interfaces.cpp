@@ -25,6 +25,8 @@
 #include <vector>
 
 namespace ipc {
+class Context;
+
 namespace {
 
 class IpcImpl : public interfaces::Ipc
@@ -55,10 +57,15 @@ public:
         }
         return false;
     }
+<<<<<<< HEAD
     void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) override
     {
         m_protocol->addCleanup(type, iface, std::move(cleanup));
     }
+||||||| merged common ancestors
+=======
+    Context& context() override { return m_protocol->context(); }
+>>>>>>> Multiprocess bitcoin
     std::unique_ptr<Protocol> m_protocol;
     std::unique_ptr<Process> m_process;
 };

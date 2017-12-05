@@ -5,6 +5,8 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <node/context.h>
@@ -120,7 +122,16 @@ void WalletInit::Construct(NodeContext& node) const
         LogPrintf("Wallet disabled!\n");
         return;
     }
-    auto wallet_client = interfaces::MakeWalletClient(*node.chain, args);
+    auto wallet_client = node.init->makeWalletClient(*node.chain);
+    if (!wallet_client) {
+        // If the current process doesn't have wallet support linked in, spawn
+        // a new wallet process.
+        node.init->ipc()->spawnProcess("bitcoin-wallet", [&](interfaces::Init& init) -> interfaces::Base& {
+            wallet_client = init.makeWalletClient(*node.chain);
+            return *wallet_client;
+        });
+        assert(wallet_client.get());
+    }
     node.wallet_client = wallet_client.get();
     node.chain_clients.emplace_back(std::move(wallet_client));
 }
