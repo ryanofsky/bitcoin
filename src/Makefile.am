@@ -1084,6 +1084,7 @@ if HARDEN
 endif
 
 libbitcoin_ipc_mpgen_input = \
+  ipc/capnp/chain.capnp \
   ipc/capnp/common.capnp \
   ipc/capnp/echo.capnp \
   ipc/capnp/handler.capnp \
@@ -1093,11 +1094,14 @@ EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 
 # Explicitly list dependencies on generated headers as described in
 # https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html#Recording-Dependencies-manually
+ipc/capnp/libbitcoin_ipc_a-chain.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 ipc/capnp/libbitcoin_ipc_a-protocol.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 
 if BUILD_MULTIPROCESS
 LIBBITCOIN_IPC=libbitcoin_ipc.a
 libbitcoin_ipc_a_SOURCES = \
+  ipc/capnp/chain.cpp \
+  ipc/capnp/chain-types.h \
   ipc/capnp/common.cpp \
   ipc/capnp/common.h \
   ipc/capnp/common-types.h \
