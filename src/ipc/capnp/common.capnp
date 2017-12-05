@@ -8,6 +8,7 @@ using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ipc::capnp::messages");
 
 using Proxy = import "/mp/proxy.capnp";
+$Proxy.include("ipc/capnp/common.h");
 $Proxy.includeTypes("ipc/capnp/common-types.h");
 
 struct BlockRef $Proxy.wrap("interfaces::BlockRef") {
@@ -15,6 +16,74 @@ struct BlockRef $Proxy.wrap("interfaces::BlockRef") {
     height @1 :Int32;
 }
 
+<<<<<<< HEAD
+||||||| parent of cab1fa30632 (multiprocess: Add capnp serialization code for bitcoin types)
+struct FeeCalculation $Proxy.wrap("FeeCalculation") {
+    est @0 :EstimationResult;
+    reason @1 :Int32;
+    desiredTarget @2 :Int32;
+    returnedTarget @3 :Int32;
+    bestHeight @4 :UInt32  $Proxy.name("best_height");
+}
+
+struct EstimationResult $Proxy.wrap("EstimationResult")
+{
+    pass @0 :EstimatorBucket;
+    fail @1 :EstimatorBucket;
+    decay @2 :Float64;
+    scale @3 :UInt32;
+}
+
+struct EstimatorBucket $Proxy.wrap("EstimatorBucket")
+{
+    start @0 :Float64;
+    end @1 :Float64;
+    withinTarget @2 :Float64;
+    totalConfirmed @3 :Float64;
+    inMempool @4 :Float64;
+    leftMempool @5 :Float64;
+}
+
+=======
+struct FeeCalculation $Proxy.wrap("FeeCalculation") {
+    est @0 :EstimationResult;
+    reason @1 :Int32;
+    desiredTarget @2 :Int32;
+    returnedTarget @3 :Int32;
+    bestHeight @4 :UInt32  $Proxy.name("best_height");
+}
+
+struct EstimationResult $Proxy.wrap("EstimationResult")
+{
+    pass @0 :EstimatorBucket;
+    fail @1 :EstimatorBucket;
+    decay @2 :Float64;
+    scale @3 :UInt32;
+}
+
+struct EstimatorBucket $Proxy.wrap("EstimatorBucket")
+{
+    start @0 :Float64;
+    end @1 :Float64;
+    withinTarget @2 :Float64;
+    totalConfirmed @3 :Float64;
+    inMempool @4 :Float64;
+    leftMempool @5 :Float64;
+}
+
+struct Settings $Proxy.wrap("common::Settings") {
+   forcedSettings @0 :List(Pair(Text, Text)) $Proxy.name("forced_settings");
+   commandLineOptions @1 :List(Pair(Text, List(Text))) $Proxy.name("command_line_options");
+   rwSettings @2 :List(Pair(Text, Text)) $Proxy.name("rw_settings");
+   roConfig @3 :List(Pair(Text, List(Pair(Text, List(Text))))) $Proxy.name("ro_config");
+}
+
+struct GlobalArgs $Proxy.count(0) {
+   settings @0 :Settings;
+   configPath @1 : Text;
+}
+
+>>>>>>> cab1fa30632 (multiprocess: Add capnp serialization code for bitcoin types)
 struct BilingualStr $Proxy.wrap("bilingual_str") {
     original @0 :Text;
     translated @1 :Text;
