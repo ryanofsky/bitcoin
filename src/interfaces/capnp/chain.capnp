@@ -38,15 +38,14 @@ interface Chain $Proxy.wrap("interfaces::Chain") {
     initMessage @22 (context :Proxy.Context, message :Text) -> ();
     initWarning @23 (context :Proxy.Context, message :Text) -> ();
     initError @24 (context :Proxy.Context, message :Text) -> ();
-    loadWallet @25 (context :Proxy.Context, wallet :Wallet.Wallet) -> ();
-    showProgress @26 (context :Proxy.Context, title :Text, progress :Int32, resumePossible :Bool) -> ();
-    handleNotifications @27 (context :Proxy.Context, notifications :ChainNotifications) -> (result :Handler.Handler);
-    waitForNotificationsIfTipChanged @28 (context :Proxy.Context, oldTip :Data) -> ();
-    handleRpc @29 (context :Proxy.Context, command :RPCCommand) -> (result :Handler.Handler);
-    rpcEnableDeprecated @30 (context :Proxy.Context, method :Text) -> (result :Bool);
-    rpcRunLater @31 (context :Proxy.Context, name :Text, fn: RunLaterCallback, seconds: Int64) -> ();
-    rpcSerializationFlags @32 (context :Proxy.Context) -> (result :Int32);
-    requestMempoolTransactions @33 (context :Proxy.Context, notifications :ChainNotifications) -> ();
+    showProgress @25 (context :Proxy.Context, title :Text, progress :Int32, resumePossible :Bool) -> ();
+    handleNotifications @26 (context :Proxy.Context, notifications :ChainNotifications) -> (result :Handler.Handler);
+    waitForNotificationsIfTipChanged @27 (context :Proxy.Context, oldTip :Data) -> ();
+    handleRpc @28 (context :Proxy.Context, command :RPCCommand) -> (result :Handler.Handler);
+    rpcEnableDeprecated @29 (context :Proxy.Context, method :Text) -> (result :Bool);
+    rpcRunLater @30 (context :Proxy.Context, name :Text, fn: RunLaterCallback, seconds: Int64) -> ();
+    rpcSerializationFlags @31 (context :Proxy.Context) -> (result :Int32);
+    requestMempoolTransactions @32 (context :Proxy.Context, notifications :ChainNotifications) -> ();
 }
 
 interface ChainLock $Proxy.wrap("interfaces::Chain::Lock") {

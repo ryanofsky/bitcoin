@@ -5,6 +5,7 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <net.h>
 #include <node/context.h>
 #include <outputtype.h>
@@ -29,7 +30,7 @@ public:
     bool ParameterInteraction() const override;
 
     //! Add wallets that should be opened to list of chain clients.
-    void Construct(NodeContext& node) const override;
+    void Construct(interfaces::LocalInit& init) const override;
 };
 
 const WalletInitInterface& g_wallet_init_interface = WalletInit();
@@ -128,12 +129,13 @@ bool WalletInit::ParameterInteraction() const
     return true;
 }
 
-void WalletInit::Construct(NodeContext& node) const
+void WalletInit::Construct(interfaces::LocalInit& init) const
 {
     if (gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
         LogPrintf("Wallet disabled!\n");
         return;
     }
     gArgs.SoftSetArg("-wallet", "");
-    node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, gArgs.GetArgs("-wallet")));
+    NodeContext& node = init.node();
+    node.chain_clients.emplace_back(init.makeWalletClient(*node.chain, gArgs.GetArgs("-wallet")));
 }

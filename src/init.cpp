@@ -23,6 +23,7 @@
 #include <index/blockfilterindex.h>
 #include <index/txindex.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <key.h>
 #include <miner.h>
 #include <net.h>
@@ -1193,7 +1194,7 @@ bool AppInitLockDataDirectory()
     return true;
 }
 
-bool AppInitMain(NodeContext& node)
+bool AppInitMain(interfaces::LocalInit& init)
 {
     const CChainParams& chainparams = Params();
     // ********************************************************* Step 4a: application initialization
@@ -1286,12 +1287,13 @@ bool AppInitMain(NodeContext& node)
     // according to -wallet and -disablewallet options. This only constructs
     // the interfaces, it doesn't load wallet data. Wallets actually get loaded
     // when load() and start() interface methods are called below.
-    g_wallet_init_interface.Construct(node);
+    g_wallet_init_interface.Construct(init);
 
     /* Register RPC commands regardless of -server setting so they will be
      * available in the GUI RPC console even if external calls are disabled.
      */
     RegisterAllCoreRPCCommands(tableRPC);
+    NodeContext& node = init.node();
     for (const auto& client : node.chain_clients) {
         client->registerRpcs();
     }
