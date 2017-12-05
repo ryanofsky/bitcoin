@@ -5,6 +5,7 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <node/context.h>
@@ -116,7 +117,7 @@ void WalletInit::Construct(NodeContext& node) const
             settings.rw_settings["wallet"] = wallets;
         });
     }
-    auto wallet_client = interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet"));
+    auto wallet_client = node.init->makeWalletClient(*node.chain, args.GetArgs("-wallet"));
     node.wallet_client = wallet_client.get();
     node.chain_clients.emplace_back(std::move(wallet_client));
 }
