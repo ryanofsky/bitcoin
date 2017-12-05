@@ -8,11 +8,17 @@
 #include <ipc/protocol.h>
 #include <logging.h>
 #include <mp/proxy-types.h>
+#include <primitives/transaction.h>
 #include <test/ipc_test.capnp.h>
 #include <test/ipc_test.capnp.proxy.h>
 #include <test/ipc_test.h>
+<<<<<<< HEAD
 #include <tinyformat.h>
 #include <validation.h>
+||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+=======
+#include <util/check.h>
+>>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
 
 #include <future>
 #include <thread>
@@ -89,6 +95,7 @@ void IpcPipeTest()
     UniValue uni2{foo->passUniValue(uni1)};
     BOOST_CHECK_EQUAL(uni1.write(), uni2.write());
 
+<<<<<<< HEAD
     CMutableTransaction mtx;
     mtx.version = 2;
     mtx.nLockTime = 3;
@@ -121,6 +128,18 @@ void IpcPipeTest()
     BOOST_CHECK_EQUAL(bs3.GetRejectReason(), bs4.GetRejectReason());
     BOOST_CHECK_EQUAL(bs3.GetDebugMessage(), bs4.GetDebugMessage());
 
+||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+=======
+    CMutableTransaction mtx;
+    mtx.version = 2;
+    mtx.nLockTime = 3;
+    mtx.vin.emplace_back(txout1);
+    mtx.vout.emplace_back(COIN, CScript());
+    CTransactionRef tx1{MakeTransactionRef(mtx)};
+    CTransactionRef tx2{foo->passTransaction(tx1)};
+    BOOST_CHECK(*Assert(tx1) == *Assert(tx2));
+
+>>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();
     thread.join();

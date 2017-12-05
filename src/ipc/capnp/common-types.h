@@ -17,6 +17,7 @@
 
 namespace ipc {
 namespace capnp {
+<<<<<<< HEAD
 //! Construct a ParamStream wrapping a data stream with serialization parameters
 //! needed to pass transaction objects between bitcoin processes. In the future,
 //! more params may be added here to serialize other objects that require
@@ -28,6 +29,35 @@ auto Wrap(S& s)
 {
     return ParamsStream{s, TX_WITH_WITNESS};
 }
+||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+//! Use SFINAE to define Serializeable<T> trait which is true if type T has a
+//! Serialize(stream) method, false otherwise.
+template <typename T>
+struct Serializable {
+private:
+    template <typename C>
+    static std::true_type test(decltype(std::declval<C>().Serialize(std::declval<std::nullptr_t&>()))*);
+    template <typename>
+    static std::false_type test(...);
+=======
+//! Construct a ParamStream wrapping data stream with serialization parameters
+//! needed to pass transaction objects between bitcoin processes.
+template<typename S>
+auto Wrap(S& s)
+{
+    return ParamsStream{s, TX_WITH_WITNESS};
+}
+
+//! Use SFINAE to define Serializeable<T> trait which is true if type T has a
+//! Serialize(stream) method, false otherwise.
+template <typename T>
+struct Serializable {
+private:
+    template <typename C>
+    static std::true_type test(decltype(std::declval<C>().Serialize(std::declval<std::nullptr_t&>()))*);
+    template <typename>
+    static std::false_type test(...);
+>>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
 
 //! Detect if type has an Serialize method
 template <typename T>
@@ -40,12 +70,22 @@ template <typename T>
 concept Unserializable = requires(T t) {
     decltype(t.Unserialize(std::declval<std::nullptr_t&>()))();
 };
+<<<<<<< HEAD
 
 //! Detect if type has a deserialize_type constructor, which is
 //! used to deserialize types like CTransaction that can't be unserialized into
 //! existing objects because they are immutable.
 template <typename T>
 concept Deserializable = std::is_constructible_v<T, ::deserialize_type, ::DataStream&>;
+||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+=======
+
+//! Trait which is true if type has a deserialize_type constructor, which is
+//! used to deserialize types like CTransaction that can't be unserialized into
+//! existing objects because they are immutable.
+template <typename T>
+using Deserializable = std::is_constructible<T, ::deserialize_type, ::DataStream&>;
+>>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
 } // namespace capnp
 } // namespace ipc
 
@@ -76,8 +116,19 @@ requires ipc::capnp::Serializable<LocalType> && std::is_same_v<LocalType, std::r
 //! returned from capnproto interface. Use Priority<1> so this hook has medium
 //! priority, and higher priority hooks could take precedence over this one.
 template <typename LocalType, typename Input, typename ReadDest>
+<<<<<<< HEAD
 decltype(auto) CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
 requires ipc::capnp::Unserializable<LocalType> && (!ipc::capnp::Deserializable<LocalType>)
+||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+decltype(auto)
+CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest,
+                std::enable_if_t<ipc::capnp::Unserializable<LocalType>::value>* enable = nullptr)
+=======
+decltype(auto)
+CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest,
+                std::enable_if_t<ipc::capnp::Unserializable<LocalType>::value &&
+                                 !ipc::capnp::Deserializable<LocalType>::value>* enable = nullptr)
+>>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
 {
     return read_dest.update([&](auto& value) {
         if (!input.has()) return;
@@ -88,6 +139,7 @@ requires ipc::capnp::Unserializable<LocalType> && (!ipc::capnp::Deserializable<L
     });
 }
 
+<<<<<<< HEAD
 //! Overload multiprocess library's CustomReadField hook to allow any object
 //! with an deserialize constructor to be read from a capnproto Data field or
 //! returned from capnproto interface. Use Priority<1> so this hook has medium
@@ -105,6 +157,31 @@ requires ipc::capnp::Deserializable<LocalType>
 
 //! Overload CustomBuildField and CustomReadField to serialize UniValue
 //! parameters and return values as JSON strings.
+||||||| parent of 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
+=======
+//! Overload multiprocess library's CustomReadField hook to allow any object
+//! with an deserialize constructor to be read from a capnproto Data field or
+//! returned from canproto interface. Use Priority<1> so this hook has medium
+//! priority, and higher priority hooks could take precedence over this one.
+template <typename LocalType, typename Input, typename ReadDest>
+decltype(auto)
+CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest,
+                std::enable_if_t<ipc::capnp::Deserializable<LocalType>::value>* enable = nullptr)
+{
+    assert(input.has());
+    auto data = input.get();
+    SpanReader stream({data.begin(), data.end()});
+    // TODO: instead of always preferring Deserialize implementation over
+    // Unserialize should prefer Deserializing when emplacing, unserialize when
+    // updating. Can implement by adding read_dest.alreadyConstructed()
+    // constexpr bool method in libmultiprocess.
+    auto wrapper{ipc::capnp::Wrap(stream)};
+    return read_dest.construct(deserialize, wrapper);
+}
+
+//! Overload CustomBuildField and CustomReadField to serialize UniValue
+//! parameters and return values as JSON strings.
+>>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
 template <typename Value, typename Output>
 void CustomBuildField(TypeList<UniValue>, Priority<1>, InvokeContext& invoke_context, Value&& value, Output&& output)
 {
