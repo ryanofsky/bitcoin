@@ -262,6 +262,50 @@ decltype(auto) CustomReadField(TypeList<UniValue::type_error>, Priority<1>, Invo
     read_dest.construct(ReadField(TypeList<std::string>(), invoke_context, input, mp::ReadDestTemp<std::string>()));
 }
 
+// Custom builders and readers for transactions which are serializable but
+// require a serialization parameter so the generic builder and readers above
+// for serializable types don't work.
+template <typename LocalType, typename Output>
+void CustomBuildField(TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, const CTransaction& value, Output&& output)
+{
+    DataStream stream;
+    stream << TX_WITH_WITNESS(value);
+    auto result = output.init(stream.size());
+    memcpy(result.begin(), stream.data(), stream.size());
+}
+
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<CMutableTransaction>, Priority<2>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    DataStream stream;
+    stream << TX_WITH_WITNESS(value);
+    auto result = output.init(stream.size());
+    memcpy(result.begin(), stream.data(), stream.size());
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<CTransaction>, Priority<2>, InvokeContext& invoke_context,
+                                Input&& input, ReadDest&& read_dest)
+{
+    assert(input.has());
+    auto data = input.get();
+    SpanReader stream(CLIENT_VERSION, {data.begin(), data.end()});
+    return read_dest.construct(deserialize, TX_WITH_WITNESS, stream);
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<CMutableTransaction>, Priority<2>, InvokeContext& invoke_context,
+                                Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        if (!input.has()) return;
+        auto data = input.get();
+        SpanReader stream(CLIENT_VERSION, {data.begin(), data.end()});
+        TX_WITH_WITNESS(value).Unserialize(stream);
+    });
+}
+
 template <typename Output>
 void CustomBuildField(
     TypeList<>, Priority<1>, InvokeContext& invoke_context, Output&& output,
