@@ -311,6 +311,8 @@ obj/build.h: FORCE
 	  "$(abs_top_srcdir)"
 libbitcoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
+# Explicitly list dependencies on generated headers as described
+# https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html#Recording-Dependencies-manually
 ipc/capnp/libbitcoin_ipc_a-ipc.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 ipc/capnp/libbitcoin_ipc_a-chain.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
 
