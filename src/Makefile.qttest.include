@@ -33,7 +33,8 @@ qt_test_test_bitcoin_qt_SOURCES = \
   qt/test/test_main.cpp \
   qt/test/uritests.cpp \
   qt/test/util.cpp \
-  $(TEST_QT_H)
+  $(TEST_QT_H) \
+  init/bitcoin-qt.cpp
 if ENABLE_WALLET
 qt_test_test_bitcoin_qt_SOURCES += \
   qt/test/addressbooktests.cpp \
