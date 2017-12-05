@@ -31,6 +31,9 @@ struct CNodeStateStats {
     int m_starting_height = -1;
     std::chrono::microseconds m_ping_wait;
     std::vector<int> vHeightInFlight;
+    // Note: If you add fields to this struct, you should also consider updating
+    // the getpeerinfo RPC (in rpc/net.cpp), and the IPC serialization code (in
+    // ipc/capnp/common-types.cpp and ipc/capnp/common.capnp).
 };
 
 class PeerManager : public CValidationInterface, public NetEventsInterface

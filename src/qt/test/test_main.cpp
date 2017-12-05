@@ -6,6 +6,7 @@
 #include <config/bitcoin-config.h>
 #endif
 
+#include <interfaces/init.h>
 #include <interfaces/node.h>
 #include <qt/bitcoin.h>
 #include <qt/test/apptests.h>
@@ -52,6 +53,7 @@ int main(int argc, char* argv[])
         BasicTestingSetup dummy{CBaseChainParams::REGTEST};
     }
 
+<<<<<<< HEAD
     NodeContext node_context;
     std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(&node_context);
     gArgs.ForceSetArg("-listen", "0");
@@ -61,6 +63,13 @@ int main(int argc, char* argv[])
     gArgs.ForceSetArg("-fixedseeds", "0");
     gArgs.ForceSetArg("-upnp", "0");
     gArgs.ForceSetArg("-natpmp", "0");
+||||||| merged common ancestors
+    NodeContext node_context;
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(&node_context);
+=======
+    std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = init->makeNode();
+>>>>>>> Multiprocess bitcoin
 
     bool fInvalid = false;
 
