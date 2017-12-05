@@ -5,6 +5,7 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <net.h>
 #include <node/context.h>
 #include <node/ui_interface.h>
@@ -120,6 +121,7 @@ void WalletInit::Construct(NodeContext& node) const
         LogPrintf("Wallet disabled!\n");
         return;
     }
+<<<<<<< HEAD
     // If there's no -wallet setting with a list of wallets to load, set it to
     // load the default "" wallet.
     if (!args.IsArgSet("wallet")) {
@@ -130,4 +132,11 @@ void WalletInit::Construct(NodeContext& node) const
         });
     }
     node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet")));
+||||||| merged common ancestors
+    args.SoftSetArg("-wallet", "");
+    node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet")));
+=======
+    args.SoftSetArg("-wallet", "");
+    node.chain_clients.emplace_back(node.init->makeWalletClient(*node.chain, args.GetArgs("-wallet")));
+>>>>>>> Multiprocess bitcoin
 }
