@@ -86,7 +86,8 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
     gArgs.ForceSetArg("-datadir", m_path_root.string());
     ClearDatadirCache();
     {
-        SetupServerArgs(m_node);
+        m_node.args = &gArgs;
+        SetupServerArgs(*m_node.args);
         std::string error;
         const bool success{m_node.args->ParseParameters(arguments.size(), arguments.data(), error)};
         assert(success);

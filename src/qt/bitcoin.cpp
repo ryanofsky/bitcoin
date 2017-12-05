@@ -430,7 +430,7 @@ int GuiMain(int argc, char* argv[])
 #endif
 
     std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(*init);
+    std::unique_ptr<interfaces::Node> node = init->makeNode();
 
     SetupEnvironment();
     util::ThreadSetInternalName("main");
