@@ -2,13 +2,12 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_INTERFACES_CAPNP_INIT_H
-#define BITCOIN_INTERFACES_CAPNP_INIT_H
+#ifndef BITCOIN_INTERFACES_CAPNP_CHAIN_H
+#define BITCOIN_INTERFACES_CAPNP_CHAIN_H
 
+#include <interfaces/capnp/chain.capnp.h>
 #include <interfaces/chain.h>
-#include <interfaces/echo.h>
-#include <interfaces/init.h>
-#include <interfaces/node.h>
 #include <mp/proxy.h>
+#include <rpc/server.h>
 
-#endif // BITCOIN_INTERFACES_CAPNP_INIT_H
+#endif // BITCOIN_INTERFACES_CAPNP_CHAIN_H
