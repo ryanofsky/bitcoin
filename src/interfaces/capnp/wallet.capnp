@@ -24,7 +24,7 @@ interface Wallet $Proxy.wrap("interfaces::Wallet") {
     getWalletName @9 (context :Proxy.Context) -> (result :Text);
     getNewDestination @10 (context :Proxy.Context, outputType :Int32, label :Text) -> (dest :TxDestination, result :Bool);
     getPubKey @11 (context :Proxy.Context, script :Data, address :Data) -> (pubKey :Data, result :Bool);
-    getPrivKey @12 (context :Proxy.Context, script :Data, address :Data) -> (key :Key, result :Bool);
+    signMessage @12 (context :Proxy.Context, message :Text, pkhash :Data) -> (signature :Text, result :Int32);
     isSpendable @13 (context :Proxy.Context, dest :TxDestination) -> (result :Bool);
     haveWatchOnly @14 (context :Proxy.Context) -> (result :Bool);
     setAddressBook @15 (context :Proxy.Context, dest :TxDestination, name :Text, purpose :Text) -> (result :Bool);
