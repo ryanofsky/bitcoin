@@ -59,7 +59,7 @@ class CVectorWriter
  * @param[in]  nPosIn Starting position. Vector index where writes should start. The vector will initially
  *                    grow as necessary to max(nPosIn, vec.size()). So to append, use vec.size().
 */
-    CVectorWriter(int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn) : nVersion{nVersionIn}, vchData{vchDataIn}, nPos{nPosIn}
+    CVectorWriter(int nVersionIn, std::vector<unsigned char>& vchDataIn, size_t nPosIn) : vchData{vchDataIn}, nPos{nPosIn}
     {
         if(nPos > vchData.size())
             vchData.resize(nPos);
@@ -91,13 +91,8 @@ class CVectorWriter
         ::Serialize(*this, obj);
         return (*this);
     }
-    int GetVersion() const
-    {
-        return nVersion;
-    }
 
 private:
-    const int nVersion;
     std::vector<unsigned char>& vchData;
     size_t nPos;
 };
