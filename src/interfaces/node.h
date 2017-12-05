@@ -37,6 +37,7 @@ struct bilingual_str;
 
 namespace interfaces {
 class Handler;
+class LocalInit;
 class Wallet;
 struct BlockTip;
 
@@ -276,7 +277,7 @@ public:
 };
 
 //! Return implementation of Node interface.
-std::unique_ptr<Node> MakeNode();
+std::unique_ptr<Node> MakeNode(LocalInit& init);
 
 //! Block tip (could be a header or not, depends on the subscribed signal).
 struct BlockTip {
