@@ -100,6 +100,10 @@ void IpcTest()
     BOOST_CHECK_EQUAL(bs1.GetRejectReason(), bs2.GetRejectReason());
     BOOST_CHECK_EQUAL(bs1.GetDebugMessage(), bs2.GetDebugMessage());
 
+    std::vector<char> vec1{'H', 'e', 'l', 'l', 'o'};
+    std::vector<char> vec2{foo->passVectorChar(vec1)};
+    BOOST_CHECK_EQUAL(std::string_view(vec1.begin(), vec1.end()), std::string_view(vec2.begin(), vec2.end()));
+
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();
     thread.join();
