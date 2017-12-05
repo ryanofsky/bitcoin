@@ -6,8 +6,8 @@
 
 #include <chain.h>
 #include <chainparams.h>
+#include <interfaces/base.h>
 #include <interfaces/handler.h>
-#include <interfaces/wallet.h>
 #include <net.h>
 #include <net_processing.h>
 #include <node/coin.h>
