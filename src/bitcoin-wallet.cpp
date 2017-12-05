@@ -8,6 +8,8 @@
 
 #include <chainparams.h>
 #include <chainparamsbase.h>
+#include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <logging.h>
 #include <util/system.h>
 #include <util/translation.h>
@@ -17,7 +19,7 @@
 #include <functional>
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
-UrlDecodeFn* const URL_DECODE = nullptr;
+UrlDecodeFn* const URL_DECODE = urlDecode;
 
 static void SetupWalletToolArgs()
 {
@@ -74,6 +76,17 @@ int main(int argc, char* argv[])
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+
+    // Check if bitcoin-wallet is being invoked as an IPC server. If so, then
+    // bypass normal execution and just respond to requests over the IPC
+    // channel.
+    int exit_status;
+    if (init->m_process && init->m_process->serve(exit_status)) {
+        return exit_status;
+    }
+
     SetupEnvironment();
     RandomInit();
     try {
