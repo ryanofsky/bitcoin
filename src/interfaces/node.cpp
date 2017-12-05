@@ -110,7 +110,18 @@ public:
             StopMapPort();
         }
     }
+<<<<<<< HEAD
     void setupServerArgs() override { return SetupServerArgs(*m_context); }
+||||||| merged common ancestors
+    void setupServerArgs() override { return SetupServerArgs(m_init.node()); }
+=======
+    void setupServerArgs() override
+    {
+        assert(!m_context.args);
+        m_context.args = &gArgs;
+        return SetupServerArgs(*m_context.args);
+    }
+>>>>>>> Multiprocess bitcoin
     bool getProxy(Network net, proxyType& proxy_info) override { return GetProxy(net, proxy_info); }
     size_t getNodeCount(CConnman::NumConnections flags) override
     {
