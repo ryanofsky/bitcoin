@@ -5,6 +5,23 @@
 #ifndef BITCOIN_INTERFACES_CAPNP_INIT_TYPES_H
 #define BITCOIN_INTERFACES_CAPNP_INIT_TYPES_H
 
+#include <interfaces/capnp/chain-types.h>
 #include <interfaces/capnp/echo.capnp.proxy-types.h>
+#include <interfaces/capnp/node-types.h>
+
+namespace mp {
+//! Specialization of makeWalletClient needed because it takes a Chain& reference
+//! argument, not a unique_ptr<Chain> argument, so a manual addCloseHook()
+//! callback is needed to clean up the ProxyServer<messages::Chain> proxy object.
+template <>
+struct ProxyServerMethodTraits<interfaces::capnp::messages::Init::MakeWalletClientParams>
+{
+    using Context = ServerContext<interfaces::capnp::messages::Init,
+        interfaces::capnp::messages::Init::MakeWalletClientParams,
+        interfaces::capnp::messages::Init::MakeWalletClientResults>;
+    static std::unique_ptr<interfaces::WalletClient> invoke(Context& context,
+        std::vector<std::string> wallet_filenames);
+};
+} // namespace mp
 
 #endif // BITCOIN_INTERFACES_CAPNP_INIT_TYPES_H

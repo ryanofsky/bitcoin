@@ -5,6 +5,7 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <node/context.h>
@@ -107,7 +108,31 @@ void WalletInit::Construct(NodeContext& node) const
         LogPrintf("Wallet disabled!\n");
         return;
     }
+<<<<<<< HEAD
     auto wallet_client = interfaces::MakeWalletClient(*node.chain, args);
+||||||| merged common ancestors
+    // If there's no -wallet setting with a list of wallets to load, set it to
+    // load the default "" wallet.
+    if (!args.IsArgSet("wallet")) {
+        args.LockSettings([&](util::Settings& settings) {
+            util::SettingsValue wallets(util::SettingsValue::VARR);
+            wallets.push_back(""); // Default wallet name is ""
+            settings.rw_settings["wallet"] = wallets;
+        });
+    }
+    auto wallet_client = interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet"));
+=======
+    // If there's no -wallet setting with a list of wallets to load, set it to
+    // load the default "" wallet.
+    if (!args.IsArgSet("wallet")) {
+        args.LockSettings([&](util::Settings& settings) {
+            util::SettingsValue wallets(util::SettingsValue::VARR);
+            wallets.push_back(""); // Default wallet name is ""
+            settings.rw_settings["wallet"] = wallets;
+        });
+    }
+    auto wallet_client = node.init->makeWalletClient(*node.chain, args.GetArgs("-wallet"));
+>>>>>>> Multiprocess bitcoin
     node.wallet_client = wallet_client.get();
     node.chain_clients.emplace_back(std::move(wallet_client));
 }
