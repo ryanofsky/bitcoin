@@ -24,6 +24,8 @@
 #include <index/blockfilterindex.h>
 #include <index/txindex.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <key.h>
 #include <miner.h>
 #include <net.h>
@@ -1236,7 +1238,7 @@ bool AppInitLockDataDirectory()
     return true;
 }
 
-bool AppInitMain(const util::Ref& context, NodeContext& node)
+bool AppInitMain(interfaces::LocalInit& init)
 {
     const CChainParams& chainparams = Params();
     // ********************************************************* Step 4a: application initialization
@@ -1311,6 +1313,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node)
         }
     }
 
+    NodeContext& node = init.node();
     assert(!node.scheduler);
     node.scheduler = MakeUnique<CScheduler>();
 
@@ -1350,7 +1353,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node)
     if (gArgs.GetBoolArg("-server", false))
     {
         uiInterface.InitMessage_connect(SetRPCWarmupStatus);
-        if (!AppInitServers(context))
+        if (!AppInitServers(init.m_request_context))
             return InitError(_("Unable to start HTTP server. See debug log for details."));
     }
 
