@@ -6,6 +6,7 @@
 #define BITCOIN_IPC_CAPNP_COMMON_TYPES_H
 
 #include <clientversion.h>
+#include <primitives/transaction.h>
 #include <streams.h>
 #include <univalue.h>
 
@@ -16,6 +17,18 @@
 
 namespace ipc {
 namespace capnp {
+//! Construct a ParamStream wrapping a data stream with serialization parameters
+//! needed to pass transaction objects between bitcoin processes. In the future,
+//! more params may be added here to serialize other objects that require
+//! serialization parameters. Params should just be chosen to serialize objects
+//! completely and ensure that serializing and deserializing objects with the
+//! specified parameters produces equivalent objects.
+template <typename S>
+auto Wrap(S& s)
+{
+    return ParamsStream{s, TX_WITH_WITNESS};
+}
+
 //! Detect if type has an Serialize method
 template <typename T>
 concept Serializable = requires(T t) {
@@ -27,6 +40,12 @@ template <typename T>
 concept Unserializable = requires(T t) {
     decltype(t.Unserialize(std::declval<std::nullptr_t&>()))();
 };
+
+//! Detect if type has a deserialize_type constructor, which is
+//! used to deserialize types like CTransaction that can't be unserialized into
+//! existing objects because they are immutable.
+template <typename T>
+concept Deserializable = std::is_constructible_v<T, ::deserialize_type, ::DataStream&>;
 } // namespace capnp
 } // namespace ipc
 
@@ -46,7 +65,8 @@ void CustomBuildField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_co
 requires ipc::capnp::Serializable<LocalType> && std::is_same_v<LocalType, std::remove_cv_t<std::remove_reference_t<LocalType>>>
 {
     DataStream stream;
-    value.Serialize(stream);
+    auto wrapper{ipc::capnp::Wrap(stream)};
+    value.Serialize(wrapper);
     auto result = output.init(stream.size());
     memcpy(result.begin(), stream.data(), stream.size());
 }
@@ -57,14 +77,30 @@ requires ipc::capnp::Serializable<LocalType> && std::is_same_v<LocalType, std::r
 //! priority, and higher priority hooks could take precedence over this one.
 template <typename LocalType, typename Input, typename ReadDest>
 decltype(auto) CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
-requires ipc::capnp::Unserializable<LocalType>
+requires ipc::capnp::Unserializable<LocalType> && (!ipc::capnp::Deserializable<LocalType>)
 {
     return read_dest.update([&](auto& value) {
         if (!input.has()) return;
         auto data = input.get();
         SpanReader stream({data.begin(), data.end()});
-        value.Unserialize(stream);
+        auto wrapper{ipc::capnp::Wrap(stream)};
+        value.Unserialize(wrapper);
     });
+}
+
+//! Overload multiprocess library's CustomReadField hook to allow any object
+//! with an deserialize constructor to be read from a capnproto Data field or
+//! returned from capnproto interface. Use Priority<1> so this hook has medium
+//! priority, and higher priority hooks could take precedence over this one.
+template <typename LocalType, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
+requires ipc::capnp::Deserializable<LocalType>
+{
+    assert(input.has());
+    auto data = input.get();
+    SpanReader stream({data.begin(), data.end()});
+    auto wrapper{ipc::capnp::Wrap(stream)};
+    return read_dest.construct(::deserialize, wrapper);
 }
 
 //! Overload CustomBuildField and CustomReadField to serialize UniValue
