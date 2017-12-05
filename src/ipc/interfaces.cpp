@@ -25,6 +25,8 @@
 #include <vector>
 
 namespace ipc {
+class Context;
+
 namespace {
 
 class IpcImpl : public interfaces::Ipc
@@ -59,6 +61,7 @@ public:
     {
         m_protocol->addCleanup(type, iface, std::move(cleanup));
     }
+    Context& context() override { return m_protocol->context(); }
     std::unique_ptr<Protocol> m_protocol;
     std::unique_ptr<Process> m_process;
 };
