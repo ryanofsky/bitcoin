@@ -24,7 +24,7 @@ interface Wallet $Proxy.wrap("interfaces::Wallet") {
     getWalletName @9 (context :Proxy.Context) -> (result :Text);
     getNewDestination @10 (context :Proxy.Context, outputType :Int32, label :Text) -> (dest :TxDestination, result :Bool);
     getPubKey @11 (context :Proxy.Context, script :Data, address :Data) -> (pubKey :Data, result :Bool);
-    getPrivKey @12 (context :Proxy.Context, script :Data, address :Data) -> (key :Key, result :Bool);
+    signMessage @12 (context :Proxy.Context, message :Text, pkhash :Data) -> (signature :Text, result :Int32);
     isSpendable @13 (context :Proxy.Context, dest :TxDestination) -> (result :Bool);
     haveWatchOnly @14 (context :Proxy.Context) -> (result :Bool);
     setAddressBook @15 (context :Proxy.Context, dest :TxDestination, name :Text, purpose :Text) -> (result :Bool);
@@ -43,7 +43,7 @@ interface Wallet $Proxy.wrap("interfaces::Wallet") {
     transactionCanBeAbandoned @28 (context :Proxy.Context, txid :Data) -> (result :Bool);
     abandonTransaction @29 (context :Proxy.Context, txid :Data) -> (result :Bool);
     transactionCanBeBumped @30 (context :Proxy.Context, txid :Data) -> (result :Bool);
-    createBumpTransaction @31 (context :Proxy.Context, txid :Data, coinControl :CoinControl, totalFee :Int64) -> (errors :List(Text), oldFee :Int64, newFee :Int64, mtx :Data, result :Bool);
+    createBumpTransaction @31 (context :Proxy.Context, txid :Data, coinControl :CoinControl) -> (errors :List(Text), oldFee :Int64, newFee :Int64, mtx :Data, result :Bool);
     signBumpTransaction @32 (context :Proxy.Context, mtx :Data) -> (mtx :Data, result :Bool);
     commitBumpTransaction @33 (context :Proxy.Context, txid :Data, mtx :Data) -> (errors :List(Text), bumpedTxid :Data, result :Bool);
     getTx @34 (context :Proxy.Context, txid :Data) -> (result :Data);
