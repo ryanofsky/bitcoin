@@ -5,6 +5,7 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/init.h>
 #include <net.h>
 #include <node/context.h>
 #include <node/ui_interface.h>
@@ -119,5 +120,5 @@ void WalletInit::Construct(NodeContext& node) const
         return;
     }
     args.SoftSetArg("-wallet", "");
-    node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet")));
+    node.chain_clients.emplace_back(node.init->makeWalletClient(*node.chain, args.GetArgs("-wallet")));
 }
