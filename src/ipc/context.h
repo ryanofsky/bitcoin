@@ -27,10 +27,15 @@ struct Context
 #ifndef BITCOIN_IPC_CONTEXT_H
 #define BITCOIN_IPC_CONTEXT_H
 
+#include <functional>
+
 namespace ipc {
 //! Context to give IPC protocol hooks access to application state.
 struct Context
 {
+    //! Callback to initialize spawned process after receiving ArgsManager
+    //! configuration from parent.
+    std::function<void()> init_process;
 };
 } // namespace ipc
 
