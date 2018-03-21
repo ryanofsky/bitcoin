@@ -113,7 +113,7 @@ public:
     //! Add or update address.
     virtual bool setAddressBook(const CTxDestination& dest, const std::string& name, const std::optional<wallet::AddressPurpose>& purpose) = 0;
 
-    // Remove address.
+    //! Remove address.
     virtual bool delAddressBook(const CTxDestination& dest) = 0;
 
     //! Look up address in wallet, return whether exists.
@@ -258,22 +258,22 @@ public:
     //! Get tx confirm target.
     virtual unsigned int getConfirmTarget() = 0;
 
-    // Return whether HD enabled.
+    //! Return whether HD enabled.
     virtual bool hdEnabled() = 0;
 
-    // Return whether the wallet is blank.
+    //! Return whether the wallet is blank.
     virtual bool canGetAddresses() = 0;
 
-    // Return whether private keys enabled.
+    //! Return whether private keys enabled.
     virtual bool privateKeysDisabled() = 0;
 
-    // Return whether the wallet contains a Taproot scriptPubKeyMan
+    //! Return whether the wallet contains a Taproot scriptPubKeyMan
     virtual bool taprootEnabled() = 0;
 
-    // Return whether wallet uses an external signer.
+    //! Return whether wallet uses an external signer.
     virtual bool hasExternalSigner() = 0;
 
-    // Get default address type.
+    //! Return default address type.
     virtual OutputType getDefaultAddressType() = 0;
 
     //! Get max tx fee.
