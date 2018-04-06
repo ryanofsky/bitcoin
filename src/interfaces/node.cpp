@@ -43,8 +43,17 @@ class CWallet;
 fs::path GetWalletDir();
 std::vector<fs::path> ListWalletDir();
 std::vector<std::shared_ptr<CWallet>> GetWallets();
-std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings);
-WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result);
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain,
+    const std::string& name,
+    bilingual_str& error,
+    std::vector<bilingual_str>& warnings);
+WalletCreationStatus CreateWallet(interfaces::Chain& chain,
+    const SecureString& passphrase,
+    uint64_t wallet_creation_flags,
+    const std::string& name,
+    bilingual_str& error,
+    std::vector<bilingual_str>& warnings,
+    std::shared_ptr<CWallet>& result);
 std::unique_ptr<interfaces::Handler> HandleLoadWallet(interfaces::Node::LoadWalletFn load_wallet);
 
 namespace interfaces {
@@ -169,7 +178,10 @@ public:
     int64_t getTotalBytesRecv() override { return m_context.connman ? m_context.connman->GetTotalBytesRecv() : 0; }
     int64_t getTotalBytesSent() override { return m_context.connman ? m_context.connman->GetTotalBytesSent() : 0; }
     size_t getMempoolSize() override { return m_context.mempool ? m_context.mempool->size() : 0; }
-    size_t getMempoolDynamicUsage() override { return m_context.mempool ? m_context.mempool->DynamicMemoryUsage() : 0; }
+    size_t getMempoolDynamicUsage() override
+    {
+        return m_context.mempool ? m_context.mempool->DynamicMemoryUsage() : 0;
+    }
     bool getHeaderTip(int& height, int64_t& block_time) override
     {
         LOCK(::cs_main);
@@ -238,10 +250,7 @@ public:
         LOCK(::cs_main);
         return ::ChainstateActive().CoinsTip().GetCoin(output, coin);
     }
-    std::string getWalletDir() override
-    {
-        return GetWalletDir().string();
-    }
+    std::string getWalletDir() override { return GetWalletDir().string(); }
     std::vector<std::string> listWalletDir() override
     {
         std::vector<std::string> paths;
@@ -259,11 +268,18 @@ public:
         }
         return wallets;
     }
-    std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    std::unique_ptr<Wallet> loadWallet(const std::string& name,
+        bilingual_str& error,
+        std::vector<bilingual_str>& warnings) override
     {
         return MakeWallet(LoadWallet(*m_context.chain, name, error, warnings));
     }
-    std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, WalletCreationStatus& status) override
+    std::unique_ptr<Wallet> createWallet(const SecureString& passphrase,
+        uint64_t wallet_creation_flags,
+        const std::string& name,
+        bilingual_str& error,
+        std::vector<bilingual_str>& warnings,
+        WalletCreationStatus& status) override
     {
         std::shared_ptr<CWallet> wallet;
         status = CreateWallet(*m_context.chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
@@ -285,10 +301,7 @@ public:
     {
         return MakeHandler(::uiInterface.ShowProgress_connect(fn));
     }
-    std::unique_ptr<Handler> handleLoadWallet(LoadWalletFn fn) override
-    {
-        return HandleLoadWallet(std::move(fn));
-    }
+    std::unique_ptr<Handler> handleLoadWallet(LoadWalletFn fn) override { return HandleLoadWallet(std::move(fn)); }
     std::unique_ptr<Handler> handleNotifyNumConnectionsChanged(NotifyNumConnectionsChangedFn fn) override
     {
         return MakeHandler(::uiInterface.NotifyNumConnectionsChanged_connect(fn));
