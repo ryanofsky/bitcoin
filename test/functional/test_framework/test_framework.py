@@ -151,6 +151,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         except KeyboardInterrupt:
             self.log.warning("Exiting after keyboard interrupt")
             self.success = TestStatus.FAILED
+            raise
         finally:
             exit_code = self.shutdown()
             sys.exit(exit_code)
