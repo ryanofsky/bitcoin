@@ -386,7 +386,7 @@ void BitcoinApplication::initializeResult(bool success)
             QTimer::singleShot(100, paymentServer, &PaymentServer::uiReady);
         }
 #endif
-        pollShutdownTimer->start(200);
+        pollShutdownTimer->start(60000);
     } else {
         Q_EMIT splashFinished(); // Make sure splash screen doesn't stick around during shutdown
         quit(); // Exit first main loop invocation
