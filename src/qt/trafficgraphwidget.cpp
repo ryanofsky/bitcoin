@@ -148,9 +148,8 @@ void TrafficGraphWidget::updateRates()
 void TrafficGraphWidget::setGraphRange(std::chrono::minutes new_range)
 {
     m_range = new_range;
-    const auto msecs_per_sample{std::chrono::duration_cast<std::chrono::milliseconds>(m_range) / DESIRED_SAMPLES};
     timer->stop();
-    timer->setInterval(msecs_per_sample);
+    timer->setInterval(60000);
 
     clear();
 }
