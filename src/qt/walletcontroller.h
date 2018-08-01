@@ -21,6 +21,7 @@
 #include <QTimer>
 #include <QString>
 
+class ClientModel;
 class OptionsModel;
 class PlatformStyle;
 class WalletModel;
@@ -47,7 +48,7 @@ class WalletController : public QObject
     void removeAndDeleteWallet(WalletModel* wallet_model);
 
 public:
-    WalletController(interfaces::Node& node, const PlatformStyle* platform_style, OptionsModel* options_model, QObject* parent);
+    WalletController(interfaces::Node& node, const PlatformStyle* platform_style, OptionsModel* options_model, ClientModel* client_model, QObject* parent);
     ~WalletController();
 
     //! Returns wallet models currently open.
@@ -73,6 +74,7 @@ private:
     interfaces::Node& m_node;
     const PlatformStyle* const m_platform_style;
     OptionsModel* const m_options_model;
+    ClientModel* const m_client_model;
     mutable QMutex m_mutex;
     std::vector<WalletModel*> m_wallets;
     std::unique_ptr<interfaces::Handler> m_handler_load_wallet;
