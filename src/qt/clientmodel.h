@@ -77,7 +77,12 @@ public:
     // caches for the best header, number of blocks
     mutable std::atomic<int> cachedBestHeaderHeight;
     mutable std::atomic<int64_t> cachedBestHeaderTime;
+<<<<<<< HEAD
     mutable std::atomic<int> m_cached_num_blocks;
+||||||| merged common ancestors
+=======
+    mutable std::atomic<int> cachedNumBlocks;
+>>>>>>> gui: Avoid redundant tx status updates
 
 private:
     interfaces::Node& m_node;

@@ -336,7 +336,13 @@ void BitcoinApplication::initializeResult(bool success)
         window->setClientModel(clientModel);
 #ifdef ENABLE_WALLET
         if (WalletModel::isWalletEnabled()) {
+<<<<<<< HEAD
             m_wallet_controller = new WalletController(*clientModel, platformStyle, this);
+||||||| merged common ancestors
+            m_wallet_controller = new WalletController(m_node, platformStyle, optionsModel, this);
+=======
+            m_wallet_controller = new WalletController(m_node, platformStyle, optionsModel, clientModel, this);
+>>>>>>> gui: Avoid redundant tx status updates
             window->setWalletController(m_wallet_controller);
             if (paymentServer) {
                 paymentServer->setOptionsModel(optionsModel);

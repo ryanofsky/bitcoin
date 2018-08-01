@@ -53,7 +53,13 @@ class WalletModel : public QObject
     Q_OBJECT
 
 public:
+<<<<<<< HEAD
     explicit WalletModel(std::unique_ptr<interfaces::Wallet> wallet, ClientModel& client_model, const PlatformStyle *platformStyle, QObject *parent = nullptr);
+||||||| merged common ancestors
+    explicit WalletModel(std::unique_ptr<interfaces::Wallet> wallet, interfaces::Node& node, const PlatformStyle *platformStyle, OptionsModel *optionsModel, QObject *parent = nullptr);
+=======
+    explicit WalletModel(std::unique_ptr<interfaces::Wallet> wallet, interfaces::Node& node, const PlatformStyle *platformStyle, OptionsModel *optionsModel, ClientModel *clientModel, QObject *parent = nullptr);
+>>>>>>> gui: Avoid redundant tx status updates
     ~WalletModel();
 
     enum StatusCode // Returned by sendCoins

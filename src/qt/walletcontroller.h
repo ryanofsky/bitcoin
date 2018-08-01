@@ -48,7 +48,13 @@ class WalletController : public QObject
     void removeAndDeleteWallet(WalletModel* wallet_model);
 
 public:
+<<<<<<< HEAD
     WalletController(ClientModel& client_model, const PlatformStyle* platform_style, QObject* parent);
+||||||| merged common ancestors
+    WalletController(interfaces::Node& node, const PlatformStyle* platform_style, OptionsModel* options_model, QObject* parent);
+=======
+    WalletController(interfaces::Node& node, const PlatformStyle* platform_style, OptionsModel* options_model, ClientModel* client_model, QObject* parent);
+>>>>>>> gui: Avoid redundant tx status updates
     ~WalletController();
 
     //! Returns wallet models currently open.
@@ -75,6 +81,7 @@ private:
     interfaces::Node& m_node;
     const PlatformStyle* const m_platform_style;
     OptionsModel* const m_options_model;
+    ClientModel* const m_client_model;
     mutable QMutex m_mutex;
     std::vector<WalletModel*> m_wallets;
     std::unique_ptr<interfaces::Handler> m_handler_load_wallet;

@@ -109,7 +109,13 @@ void TestAddAddressesToSendBook(interfaces::Node& node)
     OptionsModel optionsModel(node);
     ClientModel clientModel(node, &optionsModel);
     AddWallet(wallet);
+<<<<<<< HEAD
     WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
+||||||| merged common ancestors
+    WalletModel walletModel(interfaces::MakeWallet(wallet), node, platformStyle.get(), &optionsModel);
+=======
+    WalletModel walletModel(interfaces::MakeWallet(wallet), node, platformStyle.get(), &optionsModel, &clientModel);
+>>>>>>> gui: Avoid redundant tx status updates
     RemoveWallet(wallet);
     EditAddressDialog editAddressDialog(EditAddressDialog::NewSendingAddress);
     editAddressDialog.setModel(walletModel.getAddressTableModel());

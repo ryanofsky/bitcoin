@@ -25,14 +25,27 @@
 #include <QTimer>
 #include <QWindow>
 
+<<<<<<< HEAD
 WalletController::WalletController(ClientModel& client_model, const PlatformStyle* platform_style, QObject* parent)
+||||||| merged common ancestors
+WalletController::WalletController(interfaces::Node& node, const PlatformStyle* platform_style, OptionsModel* options_model, QObject* parent)
+=======
+WalletController::WalletController(interfaces::Node& node, const PlatformStyle* platform_style, OptionsModel* options_model, ClientModel* client_model, QObject* parent)
+>>>>>>> gui: Avoid redundant tx status updates
     : QObject(parent)
     , m_activity_thread(new QThread(this))
     , m_activity_worker(new QObject)
     , m_client_model(client_model)
     , m_node(client_model.node())
     , m_platform_style(platform_style)
+<<<<<<< HEAD
     , m_options_model(client_model.getOptionsModel())
+||||||| merged common ancestors
+    , m_options_model(options_model)
+=======
+    , m_options_model(options_model)
+    , m_client_model(client_model)
+>>>>>>> gui: Avoid redundant tx status updates
 {
     m_handler_load_wallet = m_node.handleLoadWallet([this](std::unique_ptr<interfaces::Wallet> wallet) {
         getOrCreateWallet(std::move(wallet));
@@ -106,7 +119,13 @@ WalletModel* WalletController::getOrCreateWallet(std::unique_ptr<interfaces::Wal
     }
 
     // Instantiate model and register it.
+<<<<<<< HEAD
     WalletModel* wallet_model = new WalletModel(std::move(wallet), m_client_model, m_platform_style, nullptr);
+||||||| merged common ancestors
+    WalletModel* wallet_model = new WalletModel(std::move(wallet), m_node, m_platform_style, m_options_model, nullptr);
+=======
+    WalletModel* wallet_model = new WalletModel(std::move(wallet), m_node, m_platform_style, m_options_model, m_client_model, nullptr);
+>>>>>>> gui: Avoid redundant tx status updates
     // Handler callback runs in a different thread so fix wallet model thread affinity.
     wallet_model->moveToThread(thread());
     wallet_model->setParent(this);

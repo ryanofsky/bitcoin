@@ -35,7 +35,12 @@ ClientModel::ClientModel(interfaces::Node& node, OptionsModel *_optionsModel, QO
 {
     cachedBestHeaderHeight = -1;
     cachedBestHeaderTime = -1;
+<<<<<<< HEAD
     m_cached_num_blocks = -1;
+||||||| merged common ancestors
+=======
+    cachedNumBlocks = -1;
+>>>>>>> gui: Avoid redundant tx status updates
     peerTableModel = new PeerTableModel(m_node, this);
     banTableModel = new BanTableModel(m_node, this);
 
@@ -106,6 +111,7 @@ int64_t ClientModel::getHeaderTipTime() const
     return cachedBestHeaderTime;
 }
 
+<<<<<<< HEAD
 int ClientModel::getNumBlocks() const
 {
     if (m_cached_num_blocks == -1) {
@@ -114,6 +120,17 @@ int ClientModel::getNumBlocks() const
     return m_cached_num_blocks;
 }
 
+||||||| merged common ancestors
+=======
+int ClientModel::getNumBlocks() const
+{
+    if (cachedNumBlocks == -1) {
+        cachedNumBlocks = m_node.getNumBlocks();
+    }
+    return cachedNumBlocks;
+}
+
+>>>>>>> gui: Avoid redundant tx status updates
 void ClientModel::updateNumConnections(int numConnections)
 {
     Q_EMIT numConnectionsChanged(numConnections);
@@ -250,8 +267,14 @@ static void BlockTipChanged(ClientModel *clientmodel, bool initialSync, int heig
         // cache best headers time and height to reduce future cs_main locks
         clientmodel->cachedBestHeaderHeight = height;
         clientmodel->cachedBestHeaderTime = blockTime;
+<<<<<<< HEAD
     } else {
         clientmodel->m_cached_num_blocks = height;
+||||||| merged common ancestors
+=======
+    } else {
+        clientmodel->cachedNumBlocks = height;
+>>>>>>> gui: Avoid redundant tx status updates
     }
 
     // During initial sync, block notifications, and header notifications from reindexing are both throttled.

@@ -216,9 +216,10 @@ public:
     }
 };
 
-TransactionTableModel::TransactionTableModel(const PlatformStyle *_platformStyle, WalletModel *parent):
+TransactionTableModel::TransactionTableModel(const PlatformStyle *_platformStyle, ClientModel *clientModel, WalletModel *parent):
         QAbstractTableModel(parent),
         walletModel(parent),
+        clientModel(clientModel),
         priv(new TransactionTablePriv(this)),
         fProcessingQueuedTransactions(false),
         platformStyle(_platformStyle)
@@ -664,7 +665,13 @@ QVariant TransactionTableModel::headerData(int section, Qt::Orientation orientat
 QModelIndex TransactionTableModel::index(int row, int column, const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
+<<<<<<< HEAD
     TransactionRecord *data = priv->index(walletModel->wallet(), walletModel->clientModel().getNumBlocks(), row);
+||||||| merged common ancestors
+    TransactionRecord *data = priv->index(walletModel->wallet(), row);
+=======
+    TransactionRecord *data = priv->index(walletModel->wallet(), clientModel->getNumBlocks(), row);
+>>>>>>> gui: Avoid redundant tx status updates
     if(data)
     {
         return createIndex(row, column, data);

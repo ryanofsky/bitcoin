@@ -16,6 +16,7 @@ namespace interfaces {
 class Handler;
 }
 
+class ClientModel;
 class PlatformStyle;
 class TransactionRecord;
 class TransactionTablePriv;
@@ -28,7 +29,7 @@ class TransactionTableModel : public QAbstractTableModel
     Q_OBJECT
 
 public:
-    explicit TransactionTableModel(const PlatformStyle *platformStyle, WalletModel *parent = nullptr);
+    explicit TransactionTableModel(const PlatformStyle *platformStyle,  ClientModel* clientModel, WalletModel *parent);
     ~TransactionTableModel();
 
     enum ColumnIndex {
@@ -85,6 +86,7 @@ public:
 
 private:
     WalletModel *walletModel;
+    ClientModel *clientModel;
     std::unique_ptr<interfaces::Handler> m_handler_transaction_changed;
     std::unique_ptr<interfaces::Handler> m_handler_show_progress;
     QStringList columns;
