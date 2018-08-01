@@ -35,6 +35,7 @@ ClientModel::ClientModel(interfaces::Node& node, OptionsModel *_optionsModel, QO
 {
     cachedBestHeaderHeight = -1;
     cachedBestHeaderTime = -1;
+    cachedNumBlocks = -1;
     peerTableModel = new PeerTableModel(m_node, this);
     banTableModel = new BanTableModel(m_node, this);
 
@@ -103,6 +104,14 @@ int64_t ClientModel::getHeaderTipTime() const
         }
     }
     return cachedBestHeaderTime;
+}
+
+int ClientModel::getNumBlocks() const
+{
+    if (cachedNumBlocks == -1) {
+        cachedNumBlocks = m_node.getNumBlocks();
+    }
+    return cachedNumBlocks;
 }
 
 void ClientModel::updateNumConnections(int numConnections)
@@ -241,6 +250,8 @@ static void BlockTipChanged(ClientModel *clientmodel, bool initialSync, int heig
         // cache best headers time and height to reduce future cs_main locks
         clientmodel->cachedBestHeaderHeight = height;
         clientmodel->cachedBestHeaderTime = blockTime;
+    } else {
+        clientmodel->cachedNumBlocks = height;
     }
     // if we are in-sync or if we notify a header update, update the UI regardless of last update time
     if (fHeader || !initialSync || now - nLastUpdateNotification > MODEL_UPDATE_DELAY) {
