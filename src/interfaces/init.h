@@ -125,6 +125,10 @@ void SpawnProcess(IpcProcess& process,
     IpcProtocol& protocol,
     const std::string& new_exe_name,
     const MakeClientFn& make_client);
+
+//! Send stop signal to current process to aid debugging if directed by STOP
+//! environment variable.
+void DebugStop(int argc, char* argv[], const char* exe_name);
 } // namespace interfaces
 
 #endif // BITCOIN_INTERFACES_INIT_H
