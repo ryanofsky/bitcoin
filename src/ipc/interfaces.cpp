@@ -13,10 +13,12 @@
 #include <tinyformat.h>
 #include <util/fs.h>
 
+#include <boost/algorithm/string.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
 #include <memory>
+#include <signal.h>
 #include <stdexcept>
 #include <string.h>
 #include <string>
@@ -26,6 +28,29 @@
 
 namespace ipc {
 namespace {
+//! Send stop signal to current process to aid debugging if directed by STOP
+//! environment variable.
+void DebugStop(const char* exe_name, int argc, char* argv[])
+{
+    FILE* gdb = fsbridge::fopen("/tmp/gdb.txt", "a");
+    fprintf(gdb, "%i %s\n", getpid(), argv[0]);
+    fclose(gdb);
+    if (const char* env_stop = getenv("STOP")) {
+        std::string stop = env_stop;
+        std::vector<std::string> stops;
+        if (stop.size()) boost::split(stops, stop, boost::is_space(), boost::token_compress_on);
+        for (const auto& s : stops) {
+            if (strstr(exe_name, s.c_str())) {
+                printf("Pid %i stopping for GDB\n", getpid());
+                printf("sudo gdb -ex c %s %i\n", argv[0], getpid());
+                raise(SIGSTOP);
+                raise(SIGCONT);
+                break;
+            }
+        }
+    }
+}
+
 class IpcImpl : public interfaces::Ipc
 {
 public:
@@ -48,6 +73,7 @@ public:
     }
     bool startSpawnedProcess(int argc, char* argv[], int& exit_status) override
     {
+        DebugStop(m_exe_name, argc, argv);
         exit_status = EXIT_FAILURE;
         int32_t fd = -1;
         if (!m_process->checkSpawned(argc, argv, fd)) {
