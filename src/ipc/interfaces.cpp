@@ -14,8 +14,10 @@
 #include <util/memory.h>
 #include <util/system.h>
 
+#include <boost/algorithm/string.hpp>
 #include <functional>
 #include <memory>
+#include <signal.h>
 #include <stdexcept>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +31,28 @@ namespace ipc {
 class Context;
 
 namespace {
+//! Send stop signal to current process to aid debugging if directed by STOP
+//! environment variable.
+void DebugStop(int argc, char* argv[], const char* exe_name)
+{
+    FILE* gdb = fsbridge::fopen("/tmp/gdb.txt", "a");
+    fprintf(gdb, "%i %s\n", getpid(), argv[0]);
+    fclose(gdb);
+    if (const char* env_stop = getenv("STOP")) {
+        std::string stop = env_stop;
+        std::vector<std::string> stops;
+        if (stop.size()) boost::split(stops, stop, boost::is_space(), boost::token_compress_on);
+        for (const auto& s : stops) {
+            if (strstr(exe_name, s.c_str())) {
+                printf("Pid %i stopping for GDB\n", getpid());
+                printf("sudo gdb -ex c %s %i\n", argv[0], getpid());
+                raise(SIGSTOP);
+                break;
+            }
+        }
+    }
+}
+
 //! Close hook that encapsulates a function to be called on close.
 class CloseFn : public interfaces::CloseHook
 {
@@ -61,6 +85,7 @@ public:
     }
     bool serveProcess(const char* exe_name, int argc, char* argv[], int& exit_status) override
     {
+        DebugStop(argc, argv, exe_name);
         if (m_process->serve(exit_status)) {
             LogPrint(::BCLog::IPC, "Process %s exiting with status %i\n", exe_name, exit_status);
             return true;
