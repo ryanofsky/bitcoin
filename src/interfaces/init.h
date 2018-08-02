@@ -81,6 +81,10 @@ public:
 
 //! Create interface pointers used by current process.
 std::unique_ptr<LocalInit> MakeInit(int argc, char* argv[]);
+
+//! Send stop signal to current process to aid debugging if directed by STOP
+//! environment variable.
+void DebugStop(int argc, char* argv[], const char* exe_name);
 } // namespace interfaces
 
 #endif // BITCOIN_INTERFACES_INIT_H
