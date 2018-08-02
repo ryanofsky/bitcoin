@@ -10,6 +10,9 @@
 #include <logging.h>
 #include <util/memory.h>
 
+#include <boost/algorithm/string.hpp>
+#include <signal.h>
+
 namespace interfaces {
 namespace {
 //! Close hook that encapsulate and deletes a moveable object.
@@ -46,5 +49,25 @@ void LocalInit::spawnProcess(const std::string& new_exe_name, const MakeClientFn
         LogPrint(::BCLog::IPC, "%s pid %i exited with status %i\n", new_exe_name, pid, status);
     }));
     base.addCloseHook(MakeUnique<Deleter<std::unique_ptr<Init>>>(std::move(init)));
+}
+
+void DebugStop(int argc, char* argv[], const char* exe_name)
+{
+    FILE* gdb = fsbridge::fopen("/tmp/gdb.txt", "a");
+    fprintf(gdb, "%i %s\n", getpid(), argv[0]);
+    fclose(gdb);
+    if (const char* env_stop = getenv("STOP")) {
+        std::string stop = env_stop;
+        std::vector<std::string> stops;
+        if (stop.size()) boost::split(stops, stop, boost::is_space(), boost::token_compress_on);
+        for (const auto& s : stops) {
+            if (strstr(exe_name, s.c_str())) {
+                printf("Pid %i stopping for GDB\n", getpid());
+                printf("sudo gdb -ex c %s %i\n", argv[0], getpid());
+                raise(SIGSTOP);
+                break;
+            }
+        }
+    }
 }
 } // namespace interfaces
