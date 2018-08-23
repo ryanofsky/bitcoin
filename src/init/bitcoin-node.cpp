@@ -36,7 +36,7 @@ class BitcoinNodeInit : public interfaces::Init
 public:
     BitcoinNodeInit(NodeContext& node, int argc, char* argv[])
         : m_node(node),
-          m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this))
+          m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ false, /* can_listen= */ true))
     {
         m_node.args = &gArgs;
         m_node.init = this;

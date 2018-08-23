@@ -41,6 +41,11 @@ class Init;
 //!    to make other proxy objects calling other remote interfaces. It can also
 //!    destroy the initial interfaces::Init object to close the connection and
 //!    shut down the spawned process.
+//!
+//! When connecting to an existing process, the steps are similar to spawning a
+//! new process, except a socket is created instead of a socketpair, and
+//! destroying an Init interface doesn't end the process, since there can be
+//! multiple connections.
 class Ipc
 {
 public:
@@ -53,6 +58,19 @@ public:
     //! process by forwarding them to this process's Init interface, then return
     //! true. If this is not a child process, return false.
     virtual bool serveProcess(const char* exe_name, int argc, char* argv[], int& exit_status) = 0;
+
+    //! Connect to a socket address and make a client interface proxy object
+    //! using provided callback. connectAddress returns true if a connection was
+    //! established, returns false if a connection was refused but not required
+    //! ("auto" address), and throws an exception if there was an unexpected
+    //! error.
+    virtual bool canConnect() = 0;
+    virtual std::unique_ptr<Init> connectAddress(std::string& address) = 0;
+
+    //! Connect to a socket address and make a client interface proxy object
+    //! using provided callback.
+    virtual bool canListen() = 0;
+    virtual bool listenAddress(std::string& address, std::string& error) = 0;
 
     //! Add cleanup callback to remote process interface that will run when the
     //! interface is deleted.
@@ -70,7 +88,8 @@ public:
 };
 
 //! Return implementation of Ipc interface.
-std::unique_ptr<Ipc> MakeIpc(int argc, char* argv[], const char* exe_name, Init& init);
+std::unique_ptr<Ipc> MakeIpc(
+    int argc, char* argv[], const char* exe_name, Init& init, bool can_connect, bool can_listen);
 } // namespace interfaces
 
 #endif // BITCOIN_INTERFACES_IPC_H
