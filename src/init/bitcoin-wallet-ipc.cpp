@@ -40,7 +40,8 @@ const char* EXE_NAME = "bitcoin-wallet";
 class BitcoinWalletInit : public interfaces::Init
 {
 public:
-    BitcoinWalletInit(int argc, char* argv[]) : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this))
+    BitcoinWalletInit(int argc, char* argv[])
+        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ true, /* can_listen= */ false))
     {
         m_ipc->context().init_process = [] {
             // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInitSanityChecks
