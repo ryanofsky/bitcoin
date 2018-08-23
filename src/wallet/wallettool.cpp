@@ -20,14 +20,13 @@ static void WalletToolReleaseWallet(CWallet* wallet)
     delete wallet;
 }
 
-static std::shared_ptr<CWallet> CreateWallet(const std::string& name, const fs::path& path)
+static std::shared_ptr<CWallet> CreateWallet(interfaces::Chain* chain, const std::string& name, const fs::path& path)
 {
     if (fs::exists(path)) {
         tfm::format(std::cerr, "Error: File exists already\n");
         return nullptr;
     }
-    // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), WalletDatabase::Create(path)), WalletToolReleaseWallet);
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(chain, WalletLocation(name), WalletDatabase::Create(path)), WalletToolReleaseWallet);
     LOCK(wallet_instance->cs_wallet);
     bool first_run = true;
     DBErrors load_wallet_ret = wallet_instance->LoadWallet(first_run);
@@ -48,15 +47,14 @@ static std::shared_ptr<CWallet> CreateWallet(const std::string& name, const fs::
     return wallet_instance;
 }
 
-static std::shared_ptr<CWallet> LoadWallet(const std::string& name, const fs::path& path)
+static std::shared_ptr<CWallet> LoadWallet(interfaces::Chain* chain, const std::string& name, const fs::path& path)
 {
     if (!fs::exists(path)) {
         tfm::format(std::cerr, "Error: Wallet files does not exist\n");
         return nullptr;
     }
 
-    // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), WalletDatabase::Create(path)), WalletToolReleaseWallet);
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(chain, WalletLocation(name), WalletDatabase::Create(path)), WalletToolReleaseWallet);
     DBErrors load_wallet_ret;
     try {
         bool first_run;
@@ -103,12 +101,12 @@ static void WalletShowInfo(CWallet* wallet_instance)
     tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->m_address_book.size());
 }
 
-bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
+bool ExecuteWalletToolFunc(interfaces::Chain* chain, const std::string& command, const std::string& name)
 {
     fs::path path = fs::absolute(name, GetWalletDir());
 
     if (command == "create") {
-        std::shared_ptr<CWallet> wallet_instance = CreateWallet(name, path);
+        std::shared_ptr<CWallet> wallet_instance = CreateWallet(chain, name, path);
         if (wallet_instance) {
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Flush(true);
@@ -123,7 +121,7 @@ bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
             tfm::format(std::cerr, "%s\nError loading %s. Is wallet being used by other process?\n", error.original, name);
             return false;
         }
-        std::shared_ptr<CWallet> wallet_instance = LoadWallet(name, path);
+        std::shared_ptr<CWallet> wallet_instance = LoadWallet(chain, name, path);
         if (!wallet_instance) return false;
         WalletShowInfo(wallet_instance.get());
         wallet_instance->Flush(true);
