@@ -13,6 +13,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <signal.h>
+#include <tinyformat.h>
 
 namespace interfaces {
 namespace {
@@ -51,6 +52,27 @@ void LocalInit::spawnProcess(const std::string& new_exe_name, const MakeClientFn
         LogPrint(::BCLog::IPC, "%s pid %i exited with status %i\n", new_exe_name, pid, status);
     }));
     base.addCloseHook(MakeUnique<Deleter<std::unique_ptr<Init>>>(std::move(init)));
+}
+
+bool LocalInit::connectAddress(const fs::path& data_dir, std::string& address, const MakeClientFn& make_client)
+{
+    if (address.empty() || address == "0") return false;
+    int fd = -1;
+    std::string error;
+    if (address == "auto") {
+        // failure to connect with "auto" isn't an error. Caller can spawn a child process or just work offline.
+        address = "unix";
+        fd = m_process->connect(data_dir, "bitcoin-node", address, error);
+        if (fd < 0) return false;
+    } else {
+        fd = m_process->connect(data_dir, "bitcoin-node", address, error);
+    }
+    if (fd < 0) {
+        throw std::runtime_error(strprintf("Could not connect to bitcoin-node IPC address '%s'. %s", address, error));
+    }
+    std::unique_ptr<Init> init = m_protocol->connect(fd);
+    make_client(*init).addCloseHook(MakeUnique<Deleter<std::unique_ptr<Init>>>(std::move(init)));
+    return true;
 }
 
 void DebugStop(int argc, char* argv[], const char* exe_name)
