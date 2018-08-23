@@ -63,8 +63,13 @@ enum class OptionsCategory {
     GUI,
     COMMANDS,
     REGISTER_COMMANDS,
+<<<<<<< HEAD
     CLI_COMMANDS,
     IPC,
+||||||| parent of 3d703b62c2e1 (multiprocess: Add -ipcbind option to bitcoin-node)
+=======
+    IPC,
+>>>>>>> 3d703b62c2e1 (multiprocess: Add -ipcbind option to bitcoin-node)
 
     HIDDEN // Always the last option to avoid printing these in the help
 };

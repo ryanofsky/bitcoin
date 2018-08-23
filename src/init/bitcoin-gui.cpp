@@ -40,6 +40,7 @@ public:
     // options and will start the node with those options.
     bool canListenIpc() override { return true; }
     node::NodeContext m_node;
+    bool canListenIpc() override { return true; }
     std::unique_ptr<interfaces::Ipc> m_ipc;
 };
 } // namespace
