@@ -41,7 +41,7 @@ class BitcoinWalletInit : public interfaces::Init
 {
 public:
     BitcoinWalletInit(const char* arg0)
-        : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+        : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this, /* can_connect= */ true, /* can_listen= */ false))
     {
         m_ipc->context().init_process = [] {
             // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInitSanityChecks
