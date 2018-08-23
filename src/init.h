@@ -74,9 +74,15 @@ bool AppInitMain(node::NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip
 /**
  * Register all arguments with the ArgsManager
  */
+<<<<<<< HEAD
 void SetupServerArgs(ArgsManager& argsman, bool can_listen_ipc=false);
 
 /** Validates requirements to run the indexes and spawns each index initial sync thread */
 bool StartIndexBackgroundSync(node::NodeContext& node);
+||||||| parent of bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
+void SetupServerArgs(ArgsManager& argsman);
+=======
+void SetupServerArgs(ArgsManager& argsman, bool can_listen_ipc=false);
+>>>>>>> bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
 
 #endif // BITCOIN_INIT_H

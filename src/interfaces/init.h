@@ -37,7 +37,13 @@ public:
     virtual std::unique_ptr<WalletLoader> makeWalletLoader(Chain& chain) { return nullptr; }
     virtual std::unique_ptr<Echo> makeEcho() { return nullptr; }
     virtual Ipc* ipc() { return nullptr; }
+<<<<<<< HEAD
     virtual bool canListenIpc() { return false; }
+||||||| parent of bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
+=======
+    virtual bool canConnectIpc() { return false; }
+    virtual bool canListenIpc() { return false; }
+>>>>>>> bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
 };
 
 //! Return implementation of Init interface for the node process. If the argv

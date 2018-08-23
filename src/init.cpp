@@ -29,8 +29,13 @@
 #include <init/common.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+<<<<<<< HEAD
 #include <interfaces/ipc.h>
 #include <interfaces/mining.h>
+||||||| parent of bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
+=======
+#include <interfaces/ipc.h>
+>>>>>>> bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
 #include <interfaces/node.h>
 #include <kernel/context.h>
 #include <key.h>
@@ -668,9 +673,16 @@ void SetupServerArgs(ArgsManager& argsman, bool can_listen_ipc)
     argsman.AddArg("-rpcwhitelistdefault", "Sets default behavior for rpc whitelisting. Unless rpcwhitelistdefault is set to 0, if any -rpcwhitelist is set, the rpc server acts as if all rpc users are subject to empty-unless-otherwise-specified whitelists. If rpcwhitelistdefault is set to 1 and no -rpcwhitelist is set, rpc server acts as if all rpc users are subject to empty whitelists.", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
     argsman.AddArg("-rpcworkqueue=<n>", strprintf("Set the depth of the work queue to service RPC calls (default: %d)", DEFAULT_HTTP_WORKQUEUE), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
     argsman.AddArg("-server", "Accept command line and JSON-RPC commands", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+<<<<<<< HEAD
     if (can_listen_ipc) {
         argsman.AddArg("-ipcbind=<address>", "Bind to Unix socket address and listen for incoming connections. Valid address values are \"unix\" to listen on the default path, <datadir>/node.sock, or \"unix:/custom/path\" to specify a custom path. Can be specified multiple times to listen on multiple paths. Default behavior is not to listen on any path.", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
     }
+||||||| parent of bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
+=======
+    if (can_listen_ipc) {
+        argsman.AddArg("-ipcbind=<address>", "Bind bitcoin-node process to tcp or unix socket address.", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
+    }
+>>>>>>> bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
 
 #if HAVE_DECL_FORK
     argsman.AddArg("-daemon", strprintf("Run in the background as a daemon and accept commands (default: %d)", DEFAULT_DAEMON), ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);

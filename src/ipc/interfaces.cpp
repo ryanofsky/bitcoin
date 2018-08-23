@@ -2,8 +2,13 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+<<<<<<< HEAD
 #include <common/args.h>
 #include <common/system.h>
+||||||| parent of bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
+=======
+#include <common/args.h>
+>>>>>>> bbefbd3c199b (multiprocess: Add -ipcconnect and -ipcbind options)
 #include <interfaces/init.h>
 #include <interfaces/ipc.h>
 #include <ipc/capnp/protocol.h>
