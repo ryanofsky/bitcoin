@@ -29,8 +29,8 @@ namespace {
 class IpcImpl : public interfaces::Ipc
 {
 public:
-    IpcImpl(const char* exe_name, const char* arg0, interfaces::Init& init)
-        : m_exe_name(exe_name), m_arg0(arg0), m_init(init),
+    IpcImpl(const char* exe_name, const char* arg0, interfaces::Init& init, bool can_connect, bool can_listen)
+        : m_exe_name(exe_name), m_arg0(arg0), m_init(init), m_can_connect(can_connect), m_can_listen(can_listen),
           m_protocol(ipc::capnp::MakeCapnpProtocol()), m_process(ipc::MakeProcess())
     {
     }
@@ -57,6 +57,34 @@ public:
         exit_status = EXIT_SUCCESS;
         return true;
     }
+    bool canConnect() override { return m_can_connect; }
+    std::unique_ptr<interfaces::Init> connectAddress(std::string& address) override
+    {
+        if (address.empty() || address == "0") return nullptr;
+        int fd = -1;
+        std::string error;
+        if (address == "auto") {
+            // failure to connect with "auto" isn't an error. Caller can spawn a child process or just work offline.
+            address = "unix";
+            fd = m_process->connect(GetDataDir(), "bitcoin-node", address, error);
+            if (fd < 0) return nullptr;
+        } else {
+            fd = m_process->connect(GetDataDir(), "bitcoin-node", address, error);
+        }
+        if (fd < 0) {
+            throw std::runtime_error(
+                strprintf("Could not connect to bitcoin-node IPC address '%s'. %s", address, error));
+        }
+        return m_protocol->connect(fd, m_exe_name);
+    }
+    bool canListen() override { return m_can_listen; }
+    bool listenAddress(std::string& address, std::string& error) override
+    {
+        int fd = m_process->bind(GetDataDir(), m_exe_name, address, error);
+        if (fd < 0) return false;
+        m_protocol->listen(fd, m_exe_name, m_init);
+        return true;
+    }
     void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) override
     {
         m_protocol->addCleanup(type, iface, std::move(cleanup));
@@ -67,13 +95,15 @@ public:
     interfaces::Init& m_init;
     std::unique_ptr<Protocol> m_protocol;
     std::unique_ptr<Process> m_process;
+    bool m_can_connect;
+    bool m_can_listen;
 };
 } // namespace
 } // namespace ipc
 
 namespace interfaces {
-std::unique_ptr<Ipc> MakeIpc(const char* exe_name, const char* arg0, Init& init)
+std::unique_ptr<Ipc> MakeIpc(const char* exe_name, const char* arg0, Init& init, bool can_connect, bool can_listen)
 {
-    return MakeUnique<ipc::IpcImpl>(exe_name, arg0, init);
+    return MakeUnique<ipc::IpcImpl>(exe_name, arg0, init, can_connect, can_listen);
 }
 } // namespace interfaces
