@@ -22,6 +22,8 @@
 #include <mp/proxy-types.h>
 #include <mp/util.h>
 #include <string>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <thread>
 #include <utility>
 
@@ -52,6 +54,14 @@ public:
     {
         startLoop();
         return mp::ConnectStream<messages::Init>(*m_loop, fd);
+    }
+    void listen(int listen_fd) override
+    {
+        startLoop();
+        if (::listen(listen_fd, 5 /* backlog */) != 0) {
+            throw std::system_error(errno, std::system_category());
+        }
+        mp::ListenConnections<messages::Init>(*m_loop, listen_fd, m_init);
     }
     void serve(int fd) override
     {

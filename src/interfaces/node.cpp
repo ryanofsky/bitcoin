@@ -69,7 +69,7 @@ public:
     }
     bool appInitMain(interfaces::BlockAndHeaderTipInfo* tip_info) override
     {
-        m_context->chain = MakeChain(*m_context);
+        m_context->chain = m_init.makeChain();
         return AppInitMain(m_context_ref, *m_context, tip_info);
     }
     void appShutdown() override

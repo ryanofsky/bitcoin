@@ -62,7 +62,7 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
 /**
  * Register all arguments with the ArgsManager
  */
-void SetupServerArgs(ArgsManager& argsman);
+void SetupServerArgs(ArgsManager& argsman, bool include_ipc=false);
 
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();
