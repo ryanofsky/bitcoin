@@ -5,6 +5,7 @@
 #ifndef BITCOIN_INTERFACES_INIT_H
 #define BITCOIN_INTERFACES_INIT_H
 
+#include <fs.h>
 #include <functional>
 #include <memory>
 #include <string>
@@ -43,6 +44,7 @@ public:
     std::unique_ptr<ChainClient> makeWalletClient(Chain& chain, std::vector<std::string> wallet_filenames) override;
     using MakeClientFn = std::function<Base&(Init&)>;
     void spawnProcess(const std::string& new_exe_name, const MakeClientFn& make_client);
+    bool connectAddress(const fs::path& data_dir, std::string& address, const MakeClientFn& make_client);
     //! Do extra initialization needed to initialize the second gui/node/wallet
     //! process when code is running in a new process, instead of the process
     //! that called it.
@@ -81,6 +83,9 @@ public:
 
 //! Create interface pointers used by current process.
 std::unique_ptr<LocalInit> MakeInit(int argc, char* argv[]);
+
+//! Connect to chain in existing bitcoin-node process.
+std::unique_ptr<Chain> ConnectChain(LocalInit& local_init, const fs::path& data_dir, std::string& address);
 
 //! Send stop signal to current process to aid debugging if directed by STOP
 //! environment variable.
