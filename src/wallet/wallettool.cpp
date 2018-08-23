@@ -21,8 +21,29 @@ static void WalletToolReleaseWallet(CWallet* wallet)
     delete wallet;
 }
 
+<<<<<<< HEAD
 static void WalletCreate(CWallet* wallet_instance)
+||||||| merged common ancestors
+static std::shared_ptr<CWallet> CreateWallet(const std::string& name, const fs::path& path)
+=======
+static std::shared_ptr<CWallet> CreateWallet(interfaces::Chain* chain, const std::string& name, const fs::path& path)
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 {
+<<<<<<< HEAD
+||||||| merged common ancestors
+    if (fs::exists(path)) {
+        tfm::format(std::cerr, "Error: File exists already\n");
+        return nullptr;
+    }
+    // dummy chain interface
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+=======
+    if (fs::exists(path)) {
+        tfm::format(std::cerr, "Error: File exists already\n");
+        return nullptr;
+    }
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(chain, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     LOCK(wallet_instance->cs_wallet);
 
     wallet_instance->SetMinVersion(FEATURE_HD_SPLIT);
@@ -36,7 +57,13 @@ static void WalletCreate(CWallet* wallet_instance)
     wallet_instance->TopUpKeyPool();
 }
 
+<<<<<<< HEAD
 static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, bool create)
+||||||| merged common ancestors
+static std::shared_ptr<CWallet> LoadWallet(const std::string& name, const fs::path& path)
+=======
+static std::shared_ptr<CWallet> LoadWallet(interfaces::Chain* chain, const std::string& name, const fs::path& path)
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 {
     DatabaseOptions options;
     DatabaseStatus status;
@@ -52,8 +79,15 @@ static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::pa
         return nullptr;
     }
 
+<<<<<<< HEAD
     // dummy chain interface
     std::shared_ptr<CWallet> wallet_instance{new CWallet(nullptr /* chain */, name, std::move(database)), WalletToolReleaseWallet};
+||||||| merged common ancestors
+    // dummy chain interface
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+=======
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(chain, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     DBErrors load_wallet_ret;
     try {
         bool first_run;
@@ -102,19 +136,31 @@ static void WalletShowInfo(CWallet* wallet_instance)
     tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->m_address_book.size());
 }
 
-bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
+bool ExecuteWalletToolFunc(interfaces::Chain* chain, const std::string& command, const std::string& name)
 {
     fs::path path = fs::absolute(name, GetWalletDir());
 
     if (command == "create") {
+<<<<<<< HEAD
         std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ true);
+||||||| merged common ancestors
+        std::shared_ptr<CWallet> wallet_instance = CreateWallet(name, path);
+=======
+        std::shared_ptr<CWallet> wallet_instance = CreateWallet(chain, name, path);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
         if (wallet_instance) {
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Close();
         }
     } else if (command == "info" || command == "salvage") {
         if (command == "info") {
+<<<<<<< HEAD
             std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ false);
+||||||| merged common ancestors
+            std::shared_ptr<CWallet> wallet_instance = LoadWallet(name, path);
+=======
+            std::shared_ptr<CWallet> wallet_instance = LoadWallet(chain, name, path);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
             if (!wallet_instance) return false;
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Close();

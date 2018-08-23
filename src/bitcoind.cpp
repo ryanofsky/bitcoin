@@ -49,7 +49,7 @@ static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
 
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
     ArgsManager& args = *Assert(node.args);
-    SetupServerArgs(args);
+    SetupServerArgs(args, init.m_protocol.get());
     std::string error;
     if (!args.ParseParameters(argc, argv, error)) {
         return InitError(Untranslated(strprintf("Error parsing command line arguments: %s\n", error)));

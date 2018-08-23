@@ -7,10 +7,22 @@
 
 #include <wallet/wallet.h>
 
+namespace interfaces {
+class Chain;
+} // namespace interfaces
+
 namespace WalletTool {
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+std::shared_ptr<CWallet> CreateWallet(const std::string& name, const fs::path& path);
+std::shared_ptr<CWallet> LoadWallet(const std::string& name, const fs::path& path);
+=======
+std::shared_ptr<CWallet> CreateWallet(interfaces::Chain* chain, const std::string& name, const fs::path& path);
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain* chain, const std::string& name, const fs::path& path);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 void WalletShowInfo(CWallet* wallet_instance);
-bool ExecuteWalletToolFunc(const std::string& command, const std::string& file);
+bool ExecuteWalletToolFunc(interfaces::Chain* chain, const std::string& command, const std::string& file);
 
 } // namespace WalletTool
 
