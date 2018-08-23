@@ -5,6 +5,7 @@
 #include <interfaces/init.h>
 
 #include <chainparams.h>
+#include <init.h>
 #include <interfaces/capnp/ipc.h>
 #include <interfaces/chain.h>
 #include <interfaces/echo.h>
@@ -14,6 +15,9 @@
 
 namespace interfaces {
 void MakeProxy(NodeServerParam&);
+namespace capnp {
+std::string GlobalArgsNetwork();
+} // namespace capnp
 namespace {
 class LocalInitImpl : public LocalInit
 {
@@ -51,6 +55,13 @@ public:
             return *echo;
         });
         return echo;
+    }
+    void initProcess() override
+    {
+        // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInit.
+        SelectParams(interfaces::capnp::GlobalArgsNetwork());
+        InitLogging();
+        InitParameterInteraction();
     }
     void makeNodeServer(NodeServerParam& param) override { MakeProxy(param); }
     NodeContext& node() override { return m_node; };
