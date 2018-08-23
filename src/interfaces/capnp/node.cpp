@@ -89,60 +89,6 @@ void ProxyServerMethodTraits<interfaces::capnp::messages::Node::RpcUnsetTimerInt
     context.proxy_server.m_timer_interface.reset();
 }
 
-void ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::setupServerArgs()
-{
-    SetupServerArgs(true);
-    self().customSetupServerArgs();
-}
-
-bool ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::parseParameters(int argc,
-    const char* const argv[],
-    std::string& error)
-{
-    return gArgs.ParseParameters(argc, argv, error) & self().customParseParameters(argc, argv, error);
-}
-
-void ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::forceSetArg(const std::string& arg,
-    const std::string& value)
-{
-    gArgs.ForceSetArg(arg, value);
-    self().customForceSetArg(arg, value);
-}
-
-bool ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::softSetArg(const std::string& arg,
-    const std::string& value)
-{
-    gArgs.SoftSetArg(arg, value);
-    return self().customSoftSetArg(arg, value);
-}
-
-bool ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::softSetBoolArg(const std::string& arg,
-    bool value)
-{
-    gArgs.SoftSetBoolArg(arg, value);
-    return self().customSoftSetBoolArg(arg, value);
-}
-
-bool ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::readConfigFiles(std::string& error)
-{
-    return gArgs.ReadConfigFiles(error) & self().customReadConfigFiles(error);
-}
-
-void ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::selectParams(const std::string& network)
-{
-    SelectParams(network);
-    self().customSelectParams(network);
-}
-
-bool ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::baseInitialize()
-{
-    // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInit.
-    SelectParams(interfaces::capnp::GlobalArgsNetwork());
-    InitLogging();
-    InitParameterInteraction();
-    return self().customBaseInitialize();
-}
-
 void CustomReadMessage(InvokeContext& invoke_context,
     interfaces::capnp::messages::NodeStats::Reader const& reader,
     std::tuple<CNodeStats, bool, CNodeStateStats>& node_stats)

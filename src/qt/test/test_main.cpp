@@ -54,7 +54,6 @@ int main(int argc, char *argv[])
     }
 
     std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = init->makeNode();
 
     bool fInvalid = false;
 
@@ -69,8 +68,9 @@ int main(int argc, char *argv[])
 
     // Don't remove this, it's needed to access
     // QApplication:: and QCoreApplication:: in the tests
-    BitcoinApplication app(*node);
+    BitcoinApplication app;
     app.setApplicationName("Bitcoin-Qt-test");
+    app.createNode(*init);
 
     AppTests app_tests(app);
     if (QTest::qExec(&app_tests) != 0) {
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     if (QTest::qExec(&test1) != 0) {
         fInvalid = true;
     }
-    RPCNestedTests test3(*node);
+    RPCNestedTests test3(app.node());
     if (QTest::qExec(&test3) != 0) {
         fInvalid = true;
     }
@@ -89,11 +89,11 @@ int main(int argc, char *argv[])
         fInvalid = true;
     }
 #ifdef ENABLE_WALLET
-    WalletTests test5(*node);
+    WalletTests test5(app.node());
     if (QTest::qExec(&test5) != 0) {
         fInvalid = true;
     }
-    AddressBookTests test6(*node);
+    AddressBookTests test6(app.node());
     if (QTest::qExec(&test6) != 0) {
         fInvalid = true;
     }
