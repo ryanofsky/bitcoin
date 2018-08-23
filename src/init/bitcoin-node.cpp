@@ -36,7 +36,13 @@ class BitcoinNodeInit : public interfaces::Init
 public:
     BitcoinNodeInit(NodeContext& node, const char* arg0)
         : m_node(node),
+<<<<<<< HEAD
           m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+||||||| merged common ancestors
+          m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this))
+=======
+          m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ false, /* can_listen= */ true))
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     {
         m_node.args = &gArgs;
         m_node.init = this;

@@ -40,8 +40,15 @@ const char* EXE_NAME = "bitcoin-wallet";
 class BitcoinWalletInit : public interfaces::Init
 {
 public:
+<<<<<<< HEAD
     BitcoinWalletInit(const char* arg0)
         : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+||||||| merged common ancestors
+    BitcoinWalletInit(int argc, char* argv[]) : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this))
+=======
+    BitcoinWalletInit(int argc, char* argv[])
+        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ true, /* can_listen= */ false))
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     {
         m_ipc->context().init_process = [] {
             // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInitSanityChecks

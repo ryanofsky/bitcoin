@@ -30,8 +30,16 @@ const char* EXE_NAME = "bitcoin-gui";
 class BitcoinGuiInit : public interfaces::Init
 {
 public:
+<<<<<<< HEAD
     BitcoinGuiInit(const char* arg0)
         : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+||||||| merged common ancestors
+    BitcoinGuiInit(int argc, char* argv[])
+        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this))
+=======
+    BitcoinGuiInit(int argc, char* argv[])
+        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ false, /* can_listen= */ true))
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     {
         ipc::capnp::SetupNodeClient(m_ipc->context());
     }

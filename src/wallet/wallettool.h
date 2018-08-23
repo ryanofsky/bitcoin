@@ -7,10 +7,20 @@
 
 #include <wallet/wallet.h>
 
+namespace interfaces {
+class Chain;
+} // namespace interfaces
+
 namespace WalletTool {
 
 void WalletShowInfo(CWallet* wallet_instance);
+<<<<<<< HEAD
 bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command);
+||||||| merged common ancestors
+bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command, const std::string& file);
+=======
+bool ExecuteWalletToolFunc(const ArgsManager& args, interfaces::Chain* chain, const std::string& command, const std::string& file);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 
 } // namespace WalletTool
 

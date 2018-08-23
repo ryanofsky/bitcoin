@@ -24,6 +24,8 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <sys/socket.h>
+#include <system_error>
 #include <thread>
 
 namespace ipc {
@@ -52,7 +54,21 @@ public:
         startLoop(exe_name);
         return mp::ConnectStream<messages::Init>(*m_loop, fd);
     }
+<<<<<<< HEAD
     void serve(int fd, const char* exe_name, interfaces::Init& init) override
+||||||| merged common ancestors
+    void serve(int fd) override
+=======
+    void listen(int listen_fd) override
+    {
+        startLoop();
+        if (::listen(listen_fd, 5 /* backlog */) != 0) {
+            throw std::system_error(errno, std::system_category());
+        }
+        mp::ListenConnections<messages::Init>(*m_loop, listen_fd, m_context.init);
+    }
+    void serve(int fd) override
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     {
         assert(!m_loop);
         mp::g_thread_context.thread_name = mp::ThreadName(exe_name);
