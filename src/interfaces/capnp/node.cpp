@@ -91,7 +91,7 @@ void ProxyServerMethodTraits<interfaces::capnp::messages::Node::RpcUnsetTimerInt
 
 void ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::setupServerArgs()
 {
-    SetupServerArgs();
+    SetupServerArgs(true);
     self().customSetupServerArgs();
 }
 

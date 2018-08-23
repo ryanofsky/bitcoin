@@ -113,10 +113,11 @@ public:
 //! Create interface pointers used by current process.
 std::unique_ptr<LocalInit> MakeInit(int argc, char* argv[]);
 
-//! Callback provided to SpawnProcess to make a new client interface proxy
-//! object from an existing client Init interface proxy object. Callback needs
-//! to return a reference to the client it creates, so SpawnProcess can add
-//! close hooks and shut down the spawned process when the client is destroyed.
+//! Callback provided to SpawnProcess and ConnectAddress to make a new client
+//! interface proxy object from an existing client Init interface proxy object.
+//! Callback needs to return a reference to the client it creates, so
+//! SpawnProcess and ConnectAddress can add close hooks and shut down the
+//! connection when the client is destroyed.
 using MakeClientFn = std::function<Base&(Init&)>;
 
 //! Helper to spawn a process and make a client interface proxy object using
@@ -125,6 +126,13 @@ void SpawnProcess(IpcProcess& process,
     IpcProtocol& protocol,
     const std::string& new_exe_name,
     const MakeClientFn& make_client);
+
+//! Helper to connect to a socket address and make a client interface proxy
+//! object using provided callback.
+bool ConnectAddress(IpcProcess& process, IpcProtocol& protocol, const fs::path& data_dir, std::string& address, const MakeClientFn& make_client);
+
+//! Connect to chain in existing bitcoin-node process.
+std::unique_ptr<Chain> ConnectChain(LocalInit& local_init, const fs::path& data_dir, std::string& address);
 } // namespace interfaces
 
 #endif // BITCOIN_INTERFACES_INIT_H
