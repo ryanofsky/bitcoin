@@ -24,6 +24,7 @@
 #include <index/txindex.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+#include <interfaces/ipc.h>
 #include <key.h>
 #include <miner.h>
 #include <net.h>
@@ -362,7 +363,7 @@ static void OnRPCStopped()
     LogPrint(BCLog::RPC, "RPC stopped.\n");
 }
 
-void SetupServerArgs()
+void SetupServerArgs(interfaces::LocalInit& init)
 {
     SetupHelpOptions(gArgs);
     gArgs.AddArg("-help-debug", "Print help message with debugging options and exit", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST); // server-only for now
@@ -570,6 +571,10 @@ void SetupServerArgs()
     gArgs.AddArg("-rpcwhitelistdefault", "Sets default behavior for rpc whitelisting. Unless rpcwhitelistdefault is set to 0, if any -rpcwhitelist is set, the rpc server acts as if all rpc users are subject to empty-unless-otherwise-specified whitelists. If rpcwhitelistdefault is set to 1 and no -rpcwhitelist is set, rpc server acts as if all rpc users are subject to empty whitelists.", ArgsManager::ALLOW_BOOL, OptionsCategory::RPC);
     gArgs.AddArg("-rpcworkqueue=<n>", strprintf("Set the depth of the work queue to service RPC calls (default: %d)", DEFAULT_HTTP_WORKQUEUE), ArgsManager::ALLOW_ANY | ArgsManager::DEBUG_ONLY, OptionsCategory::RPC);
     gArgs.AddArg("-server", "Accept command line and JSON-RPC commands", ArgsManager::ALLOW_ANY, OptionsCategory::RPC);
+
+    if (init.m_protocol) {
+        gArgs.AddArg("-ipcbind=<address>", "Bind bitcoin-node process to tcp or unix socket address.", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
+    }
 
 #if HAVE_DECL_DAEMON
     gArgs.AddArg("-daemon", "Run in the background as a daemon and accept commands", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
@@ -1315,6 +1320,18 @@ bool AppInitMain(interfaces::LocalInit& init)
     // the interfaces, it doesn't load wallet data. Wallets actually get loaded
     // when load() and start() interface methods are called below.
     g_wallet_init_interface.Construct(init);
+
+    if (init.m_protocol) {
+        for (std::string address : gArgs.GetArgs("-ipcbind")) {
+            std::string error;
+            int fd = init.m_process->bind(GetDataDir(), address, error);
+            if (fd < 0) {
+                return InitError(strprintf("Unable to bind to IPC address '%s'. %s", address, error));
+            }
+            LogPrintf("Listening for IPC requests on address %s\n", address);
+            init.m_protocol->listen(fd);
+        }
+    }
 
     /* Register RPC commands regardless of -server setting so they will be
      * available in the GUI RPC console even if external calls are disabled.
