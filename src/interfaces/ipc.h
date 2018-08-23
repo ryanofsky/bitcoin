@@ -59,6 +59,7 @@ public:
     //! true. If this is not a spawned child process, return false.
     virtual bool startSpawnedProcess(int argc, char* argv[], int& exit_status) = 0;
 
+<<<<<<< HEAD
     //! Connect to a socket address and make a client interface proxy object
     //! using provided callback. connectAddress returns an interface pointer if
     //! the connection was established, returns null if address is empty ("") or
@@ -70,6 +71,20 @@ public:
     //! using provided callback. Throws an exception if there was an error.
     virtual void listenAddress(std::string& address) = 0;
 
+||||||| parent of 9d732323d8d3 (multiprocess: Add IPC connectAddress and listenAddress methods)
+=======
+    //! Connect to a socket address and make a client interface proxy object
+    //! using provided callback. connectAddress returns true if a connection was
+    //! established, returns false if a connection was refused but not required
+    //! ("auto" address), and throws an exception if there was an unexpected
+    //! error.
+    virtual std::unique_ptr<Init> connectAddress(std::string& address) = 0;
+
+    //! Connect to a socket address and make a client interface proxy object
+    //! using provided callback.
+    virtual bool listenAddress(std::string& address, std::string& error) = 0;
+
+>>>>>>> 9d732323d8d3 (multiprocess: Add IPC connectAddress and listenAddress methods)
     //! Add cleanup callback to remote interface that will run when the
     //! interface is deleted.
     template<typename Interface>

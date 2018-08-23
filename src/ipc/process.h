@@ -34,6 +34,7 @@ public:
     //! process. If so, return true and a file descriptor for communicating
     //! with the parent process.
     virtual bool checkSpawned(int argc, char* argv[], int& fd) = 0;
+<<<<<<< HEAD
 
     //! Canonicalize and connect to address, returning socket descriptor.
     virtual int connect(const fs::path& data_dir,
@@ -44,6 +45,21 @@ public:
     virtual int bind(const fs::path& data_dir,
                      const std::string& exe_name,
                      std::string& address) = 0;
+||||||| parent of 9d732323d8d3 (multiprocess: Add IPC connectAddress and listenAddress methods)
+=======
+
+    //! Canonicalize and connect to address, returning socket descriptor.
+    virtual int connect(const fs::path& data_dir,
+                        const std::string& dest_exe_name,
+                        std::string& address,
+                        std::string& error) = 0;
+
+    //! Create listening socket, bind and canonicalize address, and return socket descriptor.
+    virtual int bind(const fs::path& data_dir,
+                     const std::string& exe_name,
+                     std::string& address,
+                     std::string& error) = 0;
+>>>>>>> 9d732323d8d3 (multiprocess: Add IPC connectAddress and listenAddress methods)
 };
 
 //! Constructor for Process interface. Implementation will vary depending on
