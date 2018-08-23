@@ -42,6 +42,7 @@ public:
     //! Handle requests on provided socket descriptor, forwarding them to the
     //! provided Init interface. Socket communication is handled on the
     //! current thread, and this call blocks until the socket is closed.
+<<<<<<< HEAD
     //!
     //! @note: If this method is called, it needs be called before connect() or
     //! listen() methods, because for ease of implementation it's inflexible and
@@ -57,6 +58,19 @@ public:
     //! available, but should not be neccessary in normal code which starts
     //! clients and servers independently.
     virtual void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
+||||||| parent of 1e1e1bc44d4d (multiprocess: Add IPC connectAddress and listenAddress methods)
+    virtual void serve(int fd, const char* exe_name, interfaces::Init& init) = 0;
+=======
+    //!
+    //! @note: If this method is called, it needs be called before connect() or
+    //! listen() methods, because for ease of implementation it's inflexible and
+    //! always runs the event loop in the foreground thread. It can share its
+    //! event loop with the other methods but can't share an event loop that was
+    //! created by them. This isn't really a problem because serve() is only
+    //! called by spawned child processes that call it immediately to
+    //! communicate back with parent processes.
+    virtual void serve(int fd, const char* exe_name, interfaces::Init& init) = 0;
+>>>>>>> 1e1e1bc44d4d (multiprocess: Add IPC connectAddress and listenAddress methods)
 
     //! Add cleanup callback to interface that will run when the interface is
     //! deleted.
