@@ -47,24 +47,6 @@ public:
     //! Send init error.
     virtual void initError(const std::string& message) = 0;
 
-    //! Set command line arguments.
-    virtual bool parseParameters(int argc, const char* const argv[], std::string& error) = 0;
-
-    //! Set a command line argument
-    virtual void forceSetArg(const std::string& arg, const std::string& value) = 0;
-
-    //! Set a command line argument if it doesn't already have a value
-    virtual bool softSetArg(const std::string& arg, const std::string& value) = 0;
-
-    //! Set a command line boolean argument if it doesn't already have a value
-    virtual bool softSetBoolArg(const std::string& arg, bool value) = 0;
-
-    //! Load settings from configuration file.
-    virtual bool readConfigFiles(std::string& error) = 0;
-
-    //! Choose network parameters.
-    virtual void selectParams(const std::string& network) = 0;
-
     //! Get the (assumed) blockchain size.
     virtual uint64_t getAssumedBlockchainSize() = 0;
 
@@ -73,6 +55,9 @@ public:
 
     //! Get network name.
     virtual std::string getNetwork() = 0;
+
+    //! Get argument value.
+    virtual std::string getArg(const std::string& arg, const std::string& default_value) = 0;
 
     //! Init logging.
     virtual void initLogging() = 0;
@@ -100,9 +85,6 @@ public:
 
     //! Return whether shutdown was requested.
     virtual bool shutdownRequested() = 0;
-
-    //! Setup arguments
-    virtual void setupServerArgs() = 0;
 
     //! Map port.
     virtual void mapPort(bool use_upnp) = 0;

@@ -554,6 +554,7 @@ void SetupServerArgs(interfaces::LocalInit& init)
 
     if (init.m_protocol) {
         gArgs.AddArg("-ipcbind=<address>", "Bind bitcoin-node process to tcp or unix socket address.", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
+        gArgs.AddArg("-ipcconnect=<address>", "Instead of starting a bitcoin-node process in the background, connect to the an existing process listening at the specified address. Valid address values are 'unix<socket path>' to connect to '<datadir>/node.sock' socket, or 'unix:<socket path>' to connect to a different socket path.", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
     }
 
 #if HAVE_DECL_DAEMON
