@@ -40,7 +40,13 @@ static void WalletCreate(CWallet* wallet_instance, uint64_t wallet_creation_flag
     wallet_instance->TopUpKeyPool();
 }
 
+<<<<<<< HEAD
 static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, DatabaseOptions options)
+||||||| merged common ancestors
+static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, bool create)
+=======
+static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, interfaces::Chain* chain, bool create)
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 {
     DatabaseStatus status;
     bilingual_str error;
@@ -50,8 +56,7 @@ static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::pa
         return nullptr;
     }
 
-    // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance{new CWallet(nullptr /* chain */, name, std::move(database)), WalletToolReleaseWallet};
+    std::shared_ptr<CWallet> wallet_instance{new CWallet(chain, name, std::move(database)), WalletToolReleaseWallet};
     DBErrors load_wallet_ret;
     try {
         bool first_run;
@@ -103,7 +108,7 @@ static void WalletShowInfo(CWallet* wallet_instance)
     tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->m_address_book.size());
 }
 
-bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
+bool ExecuteWalletToolFunc(interfaces::Chain* chain, const std::string& command, const std::string& name)
 {
     fs::path path = fs::absolute(name, GetWalletDir());
 
@@ -119,6 +124,7 @@ bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
     }
 
     if (command == "create") {
+<<<<<<< HEAD
         DatabaseOptions options;
         options.require_create = true;
         if (gArgs.GetBoolArg("-descriptors", false)) {
@@ -127,10 +133,16 @@ bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
         }
 
         std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, options);
+||||||| merged common ancestors
+        std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ true);
+=======
+        std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, chain, /* create= */ true);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
         if (wallet_instance) {
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Close();
         }
+<<<<<<< HEAD
     } else if (command == "info") {
         DatabaseOptions options;
         options.require_existing = true;
@@ -139,6 +151,23 @@ bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
         WalletShowInfo(wallet_instance.get());
         wallet_instance->Close();
     } else if (command == "salvage") {
+||||||| merged common ancestors
+    } else if (command == "info" || command == "salvage") {
+        if (command == "info") {
+            std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ false);
+            if (!wallet_instance) return false;
+            WalletShowInfo(wallet_instance.get());
+            wallet_instance->Close();
+        } else if (command == "salvage") {
+=======
+    } else if (command == "info" || command == "salvage") {
+        if (command == "info") {
+            std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, chain, /* create= */ false);
+            if (!wallet_instance) return false;
+            WalletShowInfo(wallet_instance.get());
+            wallet_instance->Close();
+        } else if (command == "salvage") {
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 #ifdef USE_BDB
         bilingual_str error;
         std::vector<bilingual_str> warnings;

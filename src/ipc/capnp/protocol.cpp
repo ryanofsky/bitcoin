@@ -23,6 +23,8 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <sys/socket.h>
+#include <system_error>
 #include <thread>
 
 namespace ipc {
@@ -51,6 +53,14 @@ public:
     {
         startLoop();
         return mp::ConnectStream<messages::Init>(*m_loop, fd);
+    }
+    void listen(int listen_fd) override
+    {
+        startLoop();
+        if (::listen(listen_fd, 5 /* backlog */) != 0) {
+            throw std::system_error(errno, std::system_category());
+        }
+        mp::ListenConnections<messages::Init>(*m_loop, listen_fd, m_context.init);
     }
     void serve(int fd) override
     {
