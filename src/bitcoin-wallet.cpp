@@ -30,6 +30,7 @@ static void SetupWalletToolArgs()
     gArgs.AddArg("-wallet=<wallet-name>", "Specify wallet name", ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::OPTIONS);
     gArgs.AddArg("-debug=<category>", "Output debugging information (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
     gArgs.AddArg("-printtoconsole", "Send trace/debug info to console (default: 1 when no -debug is true, 0 otherwise).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+    gArgs.AddArg("-ipcconnect=<address>, -noipcconnect", "Connect to bitcoin-node process in the background to perform online operations. Valid <address> values are 'auto' to try connecting to default socket in <datadir>/sockets/node.sock, but proceed offline if it isn't available, 'unix' to connect to the default socket and fail if it isn't available, 'unix:<socket path>' to connect to a socket at a nonstandard path. Default value: auto", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
 
     gArgs.AddArg("info", "Get wallet info", ArgsManager::ALLOW_ANY, OptionsCategory::COMMANDS);
     gArgs.AddArg("create", "Create new wallet file", ArgsManager::ALLOW_ANY, OptionsCategory::COMMANDS);
@@ -126,7 +127,17 @@ int main(int argc, char* argv[])
 
     ECCVerifyHandle globalVerifyHandle;
     ECC_Start();
-    if (!WalletTool::ExecuteWalletToolFunc(method, name))
+
+    std::unique_ptr<interfaces::Chain> chain;
+    std::string address = gArgs.GetArg("-ipcconnect", "auto");
+    if (init->connectAddress(GetDataDir(), address, [&](interfaces::Init& init) -> interfaces::Base& {
+            chain = init.makeChain();
+            return *chain;
+        })) {
+        tfm::format(std::cout, "Connected to IPC address %s\n", address);
+    }
+
+    if (!WalletTool::ExecuteWalletToolFunc(chain.get(), method, name))
         return EXIT_FAILURE;
     ECC_Stop();
     return EXIT_SUCCESS;

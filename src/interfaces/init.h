@@ -7,6 +7,7 @@
 
 #include <util/ref.h>
 
+#include <fs.h>
 #include <functional>
 #include <memory>
 #include <string>
@@ -48,9 +49,7 @@ public:
     std::unique_ptr<ChainClient> makeWalletClient(Chain& chain, std::vector<std::string> wallet_filenames) override;
     using MakeClientFn = std::function<Base&(Init&)>;
     void spawnProcess(const std::string& new_exe_name, const MakeClientFn& make_client);
-    //! Make echo implementation for `echoipc` test RPC. Spawn new process if
-    //! supported.
-    virtual std::unique_ptr<Echo> makeEchoIpc();
+    bool connectAddress(const fs::path& data_dir, std::string& address, const MakeClientFn& make_client);
     //! Do extra initialization needed to initialize the second gui/node/wallet
     //! process when code is running in a new process, instead of the process
     //! that called it.
@@ -78,6 +77,9 @@ public:
     //!   spawned process for the node's initialization sequence of loading
     //!   wallet files and registering RPCs.
     virtual void initProcess() {}
+    //! Make echo implementation for `echoipc` test RPC. Spawn new process if
+    //! supported.
+    virtual std::unique_ptr<Echo> makeEchoIpc();
     virtual void makeNodeServer(NodeServerParam&) {}
     virtual void makeNodeClient(NodeClientParam&) {}
     virtual NodeContext& node();
@@ -90,6 +92,9 @@ public:
 
 //! Create interface pointers used by current process.
 std::unique_ptr<LocalInit> MakeInit(int argc, char* argv[]);
+
+//! Connect to chain in existing bitcoin-node process.
+std::unique_ptr<Chain> ConnectChain(LocalInit& local_init, const fs::path& data_dir, std::string& address);
 
 //! Send stop signal to current process to aid debugging if directed by STOP
 //! environment variable.

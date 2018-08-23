@@ -11,6 +11,7 @@
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
 #include <init.h>
+#include <interfaces/init.h>
 #include <miner.h>
 #include <net.h>
 #include <net_processing.h>
@@ -67,7 +68,9 @@ std::ostream& operator<<(std::ostream& os, const uint256& num)
 }
 
 BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::vector<const char*>& extra_args)
-    : m_path_root{fs::temp_directory_path() / "test_common_" PACKAGE_NAME / g_insecure_rand_ctx_temp_path.rand256().ToString()}
+    : m_path_root{fs::temp_directory_path() / "test_common_" PACKAGE_NAME / g_insecure_rand_ctx_temp_path.rand256().ToString()},
+      m_init{interfaces::MakeInit(0, nullptr)},
+      m_node{m_init->node()}
 {
     const std::vector<const char*> arguments = Cat(
         {
@@ -84,7 +87,7 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
     ClearDatadirCache();
     {
         m_node.args = &gArgs;
-        SetupServerArgs();
+        SetupServerArgs(*m_init);
         std::string error;
         const bool success{m_node.args->ParseParameters(arguments.size(), arguments.data(), error)};
         assert(success);

@@ -59,7 +59,7 @@ bool AppInitMain(interfaces::LocalInit& init);
 /**
  * Register all arguments with the ArgsManager
  */
-void SetupServerArgs();
+void SetupServerArgs(interfaces::LocalInit& init);
 
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();
