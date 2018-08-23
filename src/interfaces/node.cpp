@@ -87,7 +87,7 @@ public:
     }
     bool appInitMain() override
     {
-        m_context.chain = MakeChain(m_context);
+        m_context.chain = m_init.makeChain();
         return AppInitMain(m_init);
     }
     void appShutdown() override
@@ -106,7 +106,7 @@ public:
             StopMapPort();
         }
     }
-    void setupServerArgs() override { return SetupServerArgs(); }
+    void setupServerArgs() override { return SetupServerArgs(m_init); }
     bool getProxy(Network net, proxyType& proxy_info) override { return GetProxy(net, proxy_info); }
     size_t getNodeCount(CConnman::NumConnections flags) override
     {
