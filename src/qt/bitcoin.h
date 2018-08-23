@@ -10,6 +10,7 @@
 #endif
 
 #include <QApplication>
+#include <assert.h>
 #include <memory>
 
 class BitcoinGUI;
@@ -18,11 +19,13 @@ class NetworkStyle;
 class OptionsModel;
 class PaymentServer;
 class PlatformStyle;
+class SplashScreen;
 class WalletController;
 class WalletModel;
 
 namespace interfaces {
 class Handler;
+class LocalInit;
 class Node;
 } // namespace interfaces
 
@@ -56,7 +59,7 @@ class BitcoinApplication: public QApplication
 {
     Q_OBJECT
 public:
-    explicit BitcoinApplication(interfaces::Node& node);
+    explicit BitcoinApplication();
     ~BitcoinApplication();
 
 #ifdef ENABLE_WALLET
@@ -73,6 +76,8 @@ public:
     void createWindow(const NetworkStyle *networkStyle);
     /// Create splash screen
     void createSplashScreen(const NetworkStyle *networkStyle);
+    /// Create m_node instance
+    void createNode(interfaces::LocalInit& init);
     /// Basic initialization, before starting initialization/shutdown thread. Return true on success.
     bool baseInitialize();
 
@@ -90,6 +95,9 @@ public:
     /// Setup platform style
     void setupPlatformStyle();
 
+    interfaces::Node& node() const { assert(m_node); return *m_node; }
+    bool nodeExternal() const { return m_node_external; }
+
 public Q_SLOTS:
     void initializeResult(bool success);
     void shutdownResult();
@@ -104,7 +112,6 @@ Q_SIGNALS:
 
 private:
     QThread *coreThread;
-    interfaces::Node& m_node;
     OptionsModel *optionsModel;
     ClientModel *clientModel;
     BitcoinGUI *window;
@@ -116,6 +123,12 @@ private:
     int returnValue;
     const PlatformStyle *platformStyle;
     std::unique_ptr<QWidget> shutdownWindow;
+    SplashScreen* m_splash = nullptr;
+    std::unique_ptr<interfaces::Node> m_node;
+    //! Whether node is external to the application and running in a
+    //! pre-existing process, or internal and initialized and shutdown when the
+    //! application is.
+    bool m_node_external = false;
 
     void startThread();
 };
