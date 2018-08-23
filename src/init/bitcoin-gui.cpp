@@ -29,12 +29,12 @@ const char* EXE_NAME = "bitcoin-gui";
 class BitcoinGuiInit : public interfaces::Init
 {
 public:
-    BitcoinGuiInit(const char* arg0)
-        : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+    BitcoinGuiInit(const char* arg0) : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
     {
         ipc::capnp::SetupNodeClient(m_ipc->context());
     }
     interfaces::Ipc* ipc() override { return m_ipc.get(); }
+    bool canListenIpc() override { return true; }
     std::unique_ptr<interfaces::Ipc> m_ipc;
 };
 } // namespace
