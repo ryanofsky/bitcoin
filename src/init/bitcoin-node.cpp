@@ -34,8 +34,7 @@ class BitcoinNodeInit : public interfaces::Init
 {
 public:
     BitcoinNodeInit(NodeContext& node, const char* arg0)
-        : m_node(node),
-          m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+        : m_node(node), m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
     {
         m_node.args = &gArgs;
         m_node.init = this;
@@ -54,6 +53,7 @@ public:
     }
     std::unique_ptr<interfaces::Echo> makeEcho() override { return interfaces::MakeEcho(); }
     interfaces::Ipc* ipc() override { return m_ipc.get(); }
+    bool canListenIpc() override { return true; }
     NodeContext& m_node;
     std::unique_ptr<interfaces::Ipc> m_ipc;
 };
