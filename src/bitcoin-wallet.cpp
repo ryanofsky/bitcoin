@@ -21,24 +21,51 @@
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 UrlDecodeFn* const URL_DECODE = urlDecode;
 
+<<<<<<< HEAD
 static void SetupWalletToolArgs(ArgsManager& argsman)
+||||||| merged common ancestors
+static void SetupWalletToolArgs()
+=======
+static void SetupWalletToolArgs(bool include_ipc)
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 {
     SetupHelpOptions(argsman);
     SetupChainParamsBaseOptions(argsman);
 
+<<<<<<< HEAD
     argsman.AddArg("-datadir=<dir>", "Specify data directory", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
     argsman.AddArg("-wallet=<wallet-name>", "Specify wallet name", ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::OPTIONS);
     argsman.AddArg("-debug=<category>", "Output debugging information (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
     argsman.AddArg("-printtoconsole", "Send trace/debug info to console (default: 1 when no -debug is true, 0 otherwise).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+||||||| merged common ancestors
+    gArgs.AddArg("-datadir=<dir>", "Specify data directory", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-wallet=<wallet-name>", "Specify wallet name", ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-debug=<category>", "Output debugging information (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+    gArgs.AddArg("-printtoconsole", "Send trace/debug info to console (default: 1 when no -debug is true, 0 otherwise).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+=======
+    gArgs.AddArg("-datadir=<dir>", "Specify data directory", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-wallet=<wallet-name>", "Specify wallet name", ArgsManager::ALLOW_ANY | ArgsManager::NETWORK_ONLY, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-debug=<category>", "Output debugging information (default: 0).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+    gArgs.AddArg("-printtoconsole", "Send trace/debug info to console (default: 1 when no -debug is true, 0 otherwise).", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+    if (include_ipc) {
+        gArgs.AddArg("-ipcconnect=<address>", "Connect to bitcoin-node process in the background to perform online operations. Valid <address> values are 'auto' to try connecting to default socket in <datadir>/sockets/node.sock, but proceed offline if it isn't available, 'unix' to connect to the default socket and fail if it isn't available, 'unix:<socket path>' to connect to a socket at a nonstandard path, and -noipcconnect to not connect. Default value: auto", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
+    }
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 
     argsman.AddArg("info", "Get wallet info", ArgsManager::ALLOW_ANY, OptionsCategory::COMMANDS);
     argsman.AddArg("create", "Create new wallet file", ArgsManager::ALLOW_ANY, OptionsCategory::COMMANDS);
     argsman.AddArg("salvage", "Attempt to recover private keys from a corrupt wallet", ArgsManager::ALLOW_ANY, OptionsCategory::COMMANDS);
 }
 
-static bool WalletAppInit(int argc, char* argv[])
+static bool WalletAppInit(interfaces::LocalInit& init, int argc, char* argv[])
 {
+<<<<<<< HEAD
     SetupWalletToolArgs(gArgs);
+||||||| merged common ancestors
+    SetupWalletToolArgs();
+=======
+    SetupWalletToolArgs(init.m_protocol.get());
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     std::string error_message;
     if (!gArgs.ParseParameters(argc, argv, error_message)) {
         tfm::format(std::cerr, "Error parsing command line arguments: %s\n", error_message);
@@ -90,7 +117,7 @@ int main(int argc, char* argv[])
     SetupEnvironment();
     RandomInit();
     try {
-        if (!WalletAppInit(argc, argv)) return EXIT_FAILURE;
+        if (!WalletAppInit(*init, argc, argv)) return EXIT_FAILURE;
     } catch (const std::exception& e) {
         PrintExceptionContinue(&e, "WalletAppInit()");
         return EXIT_FAILURE;
@@ -125,7 +152,19 @@ int main(int argc, char* argv[])
 
     ECCVerifyHandle globalVerifyHandle;
     ECC_Start();
-    if (!WalletTool::ExecuteWalletToolFunc(method, name))
+
+    std::unique_ptr<interfaces::Chain> chain;
+    std::string address = gArgs.GetArg("-ipcconnect", "auto");
+    if (init->m_process && init->m_protocol &&
+        ConnectAddress(*init->m_process, *init->m_protocol, GetDataDir(), address,
+                       [&](interfaces::Init& init) -> interfaces::Base& {
+                           chain = init.makeChain();
+                           return *chain;
+                       })) {
+        tfm::format(std::cout, "Connected to IPC address %s\n", address);
+    }
+
+    if (!WalletTool::ExecuteWalletToolFunc(chain.get(), method, name))
         return EXIT_FAILURE;
     ECC_Stop();
     return EXIT_SUCCESS;

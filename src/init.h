@@ -59,7 +59,13 @@ bool AppInitMain(const util::Ref& context, NodeContext& node);
 /**
  * Register all arguments with the ArgsManager
  */
+<<<<<<< HEAD
 void SetupServerArgs(ArgsManager& argsman);
+||||||| merged common ancestors
+void SetupServerArgs();
+=======
+void SetupServerArgs(bool include_ipc=false);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
 
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();

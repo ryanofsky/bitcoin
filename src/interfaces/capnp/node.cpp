@@ -91,7 +91,13 @@ void ProxyServerMethodTraits<interfaces::capnp::messages::Node::RpcUnsetTimerInt
 
 void ProxyClientCustom<interfaces::capnp::messages::Node, interfaces::Node>::setupServerArgs()
 {
+<<<<<<< HEAD
     SetupServerArgs(gArgs);
+||||||| merged common ancestors
+    SetupServerArgs();
+=======
+    SetupServerArgs(true);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     self().customSetupServerArgs();
 }
 
