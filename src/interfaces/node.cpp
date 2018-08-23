@@ -69,8 +69,16 @@ public:
     }
     bool appInitMain(interfaces::BlockAndHeaderTipInfo* tip_info) override
     {
+<<<<<<< HEAD
         m_context->chain = MakeChain(*m_context);
         return AppInitMain(m_context_ref, *m_context, tip_info);
+||||||| merged common ancestors
+        m_context->chain = MakeChain(*m_context);
+        return AppInitMain(m_context_ref, *m_context);
+=======
+        m_context->chain = m_init.makeChain();
+        return AppInitMain(m_context_ref, *m_context);
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     }
     void appShutdown() override
     {
@@ -96,6 +104,22 @@ public:
             StopMapPort();
         }
     }
+<<<<<<< HEAD
+||||||| merged common ancestors
+    void setupServerArgs() override
+    {
+        assert(!m_context->args);
+        m_context->args = &gArgs;
+        return SetupServerArgs(*m_context->args);
+    }
+=======
+    void setupServerArgs() override
+    {
+        assert(!m_context->args);
+        m_context->args = &gArgs;
+        return SetupServerArgs(*m_context->args, m_init.m_protocol.get());
+    }
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     bool getProxy(Network net, proxyType& proxy_info) override { return GetProxy(net, proxy_info); }
     size_t getNodeCount(CConnman::NumConnections flags) override
     {

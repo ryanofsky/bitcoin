@@ -54,8 +54,14 @@ static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
     util::ThreadSetInternalName("init");
 
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
+<<<<<<< HEAD
     ArgsManager& args = *Assert(node.args);
     SetupServerArgs(args);
+||||||| merged common ancestors
+    SetupServerArgs(*node.args);
+=======
+    SetupServerArgs(*node.args, init.m_protocol.get());
+>>>>>>> multiprocess: Add -ipcconnect and -ipcbind options
     std::string error;
     if (!args.ParseParameters(argc, argv, error)) {
         return InitError(Untranslated(strprintf("Error parsing command line arguments: %s\n", error)));
