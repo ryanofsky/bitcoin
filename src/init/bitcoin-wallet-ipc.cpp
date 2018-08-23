@@ -39,8 +39,7 @@ const char* EXE_NAME = "bitcoin-wallet";
 class BitcoinWalletInit : public interfaces::Init
 {
 public:
-    BitcoinWalletInit(const char* arg0)
-        : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+    BitcoinWalletInit(const char* arg0) : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
     {
         m_ipc->context().init_process = [] {
             // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInitSanityChecks
@@ -96,6 +95,7 @@ public:
         return MakeWalletClient(chain, gArgs);
     }
     interfaces::Ipc* ipc() override { return m_ipc.get(); }
+    bool canConnectIpc() override { return true; }
     std::unique_ptr<interfaces::Ipc> m_ipc;
 };
 } // namespace
