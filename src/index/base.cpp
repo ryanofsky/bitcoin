@@ -109,6 +109,11 @@ void BaseIndex::ThreadSync()
                     Commit();
                     break;
                 }
+                if (pindex_next->pprev != pindex && !Rewind(pindex, pindex_next->pprev)) {
+                    FatalError("%s: Failed to rewind index %s to a previous chain tip",
+                               __func__, GetName());
+                    return;
+                }
                 pindex = pindex_next;
             }
 
@@ -203,6 +208,11 @@ void BaseIndex::BlockConnected(const std::shared_ptr<const CBlock>& block, const
                       "known best chain (tip=%s); not updating index\n",
                       __func__, pindex->GetBlockHash().ToString(),
                       best_block_index->GetBlockHash().ToString());
+            return;
+        }
+        if (best_block_index != pindex->pprev && !Rewind(best_block_index, pindex->pprev)) {
+            FatalError("%s: Failed to rewind index %s to a previous chain tip",
+                       __func__, GetName());
             return;
         }
     }
