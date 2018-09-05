@@ -33,6 +33,7 @@ from .util import (
     EncodeDecimal,
 )
 
+BITCOIND_PROC_WAIT_TIMEOUT = 10000000
 BITCOIND_PROC_WAIT_TIMEOUT = 60
 
 
