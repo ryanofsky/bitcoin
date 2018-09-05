@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#exec $PWD/src/bitcoin-node "$@"
+#exec $PWD/src/bitcoin-node -logtimemicros=1 -debug=1 "$@"
+
+OPT=()
+OPT+=(-ex "set follow-fork-mode child")
+OPT+=(-ex 'define please
+    catch syscall lseek
+    commands
+        bt
+    end
+    condition $bpnum $rdi == 0
+end
+please
+')
+OPT=()
+OPT+=(-ex "set follow-fork-mode parent")
+#OPT+=(-ex "b proxy-types.h:564")
+#OPT+=(-ex "catch throw")
+#OPT+=(-ex "b kj::Exception::Exception")
+screen -S "bitcoind_${PPID}_$$" -D -m gdb "${OPT[@]}" -ex run --args "$BITCOIN_NODE" "$@"
