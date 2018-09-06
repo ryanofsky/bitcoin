@@ -280,3 +280,19 @@ All RPCs in Bitcoin Core will include the checksum in their output. Only
 certain RPCs require checksums on input, including `deriveaddresses` and
 `importmulti`. The checksum for a descriptor without one can be computed
 using the `getdescriptorinfo` RPC.
+
+### Output Descriptors vs. Addresses
+
+Like a bitcoin address, a bitcoin output descriptor can be used as a human
+readable representation of a scriptPubKey that a given wallet knows how to
+spend. But by contrast with addresses, output descriptors are inappropriate
+for requesting payments because they:
+
+1. Can reveal more key information than a sender needs to send a payment,
+   reducing security and anonymity.
+2. Don't have checksums or error recovery.
+3. Don't have flags restricting usage to mainnet or testnet.
+4. Will refer to a collection of scriptPubKeys rather than a unique scriptPubKey
+   if `combo()` expressions or BIP32 wildcard ranges are used.
+5. Can more easily generate nonstandard transactions that won't be relayed on
+   the P2P network.
