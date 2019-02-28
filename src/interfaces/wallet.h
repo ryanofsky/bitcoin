@@ -337,7 +337,9 @@ struct WalletBalances
 struct WalletTx
 {
     CTransactionRef tx;
+    //! Vector has one entry per txin.
     std::vector<isminetype> txin_is_mine;
+    //! Vectors have one entry per txout.
     std::vector<isminetype> txout_is_mine;
     std::vector<CTxDestination> txout_address;
     std::vector<isminetype> txout_address_is_mine;
@@ -352,7 +354,7 @@ struct WalletTx
 //! Updated transaction status.
 struct WalletTxStatus
 {
-    int block_height;
+    int block_height; //!< Block height of transaction, INT_MAX if unconfirmed.
     int blocks_to_maturity;
     int depth_in_main_chain;
     unsigned int time_received;
