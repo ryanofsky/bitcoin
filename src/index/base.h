@@ -32,7 +32,7 @@ protected:
         bool ReadBestBlock(CBlockLocator& locator) const;
 
         /// Write block locator of the chain that the txindex is in sync with.
-        bool WriteBestBlock(const CBlockLocator& locator);
+        void WriteBestBlock(CDBBatch& batch, const CBlockLocator& locator);
     };
 
 private:
@@ -54,8 +54,8 @@ private:
     /// over and the sync thread exits.
     void ThreadSync();
 
-    /// Write the current chain block locator to the DB.
-    bool WriteBestBlock(const CBlockIndex* block_index);
+    /// Write the current chain block locator and other index state to the DB.
+    bool Commit();
 
 protected:
     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex,
@@ -68,6 +68,10 @@ protected:
 
     /// Write update index entries for a newly connected block.
     virtual bool WriteBlock(const CBlock& block, const CBlockIndex* pindex) { return true; }
+
+    /// Virtual method called internally that can be overridden to atomically
+    /// commit more index state.
+    virtual bool Commit(CDBBatch& batch);
 
     virtual DB& GetDB() const = 0;
 

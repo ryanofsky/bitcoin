@@ -41,9 +41,9 @@ bool BaseIndex::DB::ReadBestBlock(CBlockLocator& locator) const
     return success;
 }
 
-bool BaseIndex::DB::WriteBestBlock(const CBlockLocator& locator)
+void BaseIndex::DB::WriteBestBlock(CDBBatch& batch, const CBlockLocator& locator)
 {
-    return Write(DB_BEST_BLOCK, locator);
+    batch.Write(DB_BEST_BLOCK, locator);
 }
 
 BaseIndex::~BaseIndex()
@@ -95,7 +95,8 @@ void BaseIndex::ThreadSync()
         int64_t last_locator_write_time = 0;
         while (true) {
             if (m_interrupt) {
-                WriteBestBlock(pindex);
+                m_best_block_index = pindex;
+                Commit();
                 return;
             }
 
@@ -103,9 +104,9 @@ void BaseIndex::ThreadSync()
                 LOCK(cs_main);
                 const CBlockIndex* pindex_next = NextSyncBlock(pindex);
                 if (!pindex_next) {
-                    WriteBestBlock(pindex);
                     m_best_block_index = pindex;
                     m_synced = true;
+                    Commit();
                     break;
                 }
                 pindex = pindex_next;
@@ -119,8 +120,9 @@ void BaseIndex::ThreadSync()
             }
 
             if (last_locator_write_time + SYNC_LOCATOR_WRITE_INTERVAL < current_time) {
-                WriteBestBlock(pindex);
+                m_best_block_index = pindex;
                 last_locator_write_time = current_time;
+                Commit();
             }
 
             CBlock block;
@@ -144,12 +146,35 @@ void BaseIndex::ThreadSync()
     }
 }
 
-bool BaseIndex::WriteBestBlock(const CBlockIndex* block_index)
+bool BaseIndex::Commit()
+{
+    CDBBatch batch(GetDB());
+    if (!Commit(batch) || !GetDB().WriteBatch(batch)) {
+        return error("%s: Failed to commit latest %s state", __func__, GetName());
+    }
+    return true;
+}
+
+bool BaseIndex::Commit(CDBBatch& batch)
 {
     LOCK(cs_main);
-    if (!GetDB().WriteBestBlock(chainActive.GetLocator(block_index))) {
-        return error("%s: Failed to write locator to disk", __func__);
+    GetDB().WriteBestBlock(batch, chainActive.GetLocator(m_best_block_index));
+    return true;
+}
+
+bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip)
+{
+    assert(current_tip == m_best_block_index);
+    assert(current_tip->GetAncestor(new_tip->nHeight) == new_tip);
+
+    // In the case of a reorg, ensure persisted block locator is not stale.
+    m_best_block_index = new_tip;
+    if (!Commit()) {
+        // If commit fails, revert the best block index to avoid corruption.
+        m_best_block_index = current_tip;
+        return false;
     }
+
     return true;
 }
 
@@ -224,9 +249,7 @@ void BaseIndex::ChainStateFlushed(const CBlockLocator& locator)
         return;
     }
 
-    if (!GetDB().WriteBestBlock(locator)) {
-        error("%s: Failed to write locator to disk", __func__);
-    }
+    Commit();
 }
 
 bool BaseIndex::BlockUntilSyncedToCurrentChain()
