@@ -349,10 +349,12 @@ static void libevent_log_cb(int severity, const char *msg)
 // EVENT_LOG_WARN was added in 2.0.19; but before then _EVENT_LOG_WARN existed.
 # define EVENT_LOG_WARN _EVENT_LOG_WARN
 #endif
+#if 0
     if (severity >= EVENT_LOG_WARN) // Log warn messages and higher without debug category
         LogPrintf("libevent: %s\n", msg);
     else
         LogPrint(BCLog::LIBEVENT, "libevent: %s\n", msg);
+#endif
 }
 
 bool InitHTTPServer()
