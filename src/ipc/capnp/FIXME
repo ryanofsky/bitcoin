@@ -1,0 +1,45 @@
+- BB Get rid of FunctionTraits::Fields, ProxyMethodTraits::Fields move to ClientInvoke
+- BB Get rid of ProxyClientMethodTraits<>
+  - generated ProxyClient<...> : public ProxyClientCustom<...> classes should just have `using Base = ProxyClientCustom` and do FunctionTraits<&Base::methodName>
+  - ProxyMethod<>::impl members can maybe be dropped. ProxyMethod<>::Params and ProxyMethod::Results and ProxyMethod::Context should be added though and used to get rid of Context = ServerContext boilerplate below
+    - This will also require dropping codegen exception that omits ProxyMethod<> generation for construct and destroy
+- BC get rid of using Context = ServerContext boierpalte in custom method overloads
+  - Add Params and Results typedefs to codegen ProxyMethod structs
+  - Drop 'using Context =' and replace 'Context& context' with 'ServerContext<...Params>& context' in custom classes
+- CB simplify std::is_same<decltype... enable declarations
+  - should get rid of decltypes and just add proper typedefs to Accessor and Output classes
+  - maybe simplify enable_if<is_same construction
+- BB group readfield/buildfield by type
+- [ ] BB change CustomBuildField param order to put values after output for consistency with BuildField and so varargs values are supported
+- [ ] BB get rid of messages namespace
+need to s/Node/interfaces::Node/ and s/messages::Node/Node/
+similar for Chain, Wallet, Init etc
+- [ ] BB substitute custommakeproxyclient/custommakeproxyserver calls
+git grep -n Make.*ProxyClient
+git grep -ni kj::heap.*ProxyServer
+- [ ] BB proxy.capnp: split up X.name param
+  - current
+    - X.name only affects what server method is called
+    - client override is method name is unaffected, so necessary to implement manually for client class to get instantiated
+  - ideally
+    - X.name affects both client override (requires change) and server call (already done)
+    - X.name continues to be used for rename use case (Wallet notifications and for struct members)
+    - use separate annotation for custom client overrides probably X.clientName. change
+        customGet @1 (context :X.Context) -> (result :Data) $X.name("get");
+      to:
+        get @1 (context :X.Context) -> (result :Data) $X.clientName("_get");
+- [ ] BB get rid of generated -types files
+  - these only contain ProxyType<> overloads, which can be replaced by CustomBuildMessage / CustomReadMessage functions
+- [ ] BB capnp/proxy-impl.h: dedup map/set/vector BuildField
+- [ ] BB capnp/test/capnp_tests.cpp: connect code duplication
+- BB ReadDestReturn clientInvoke construct return value in place
+  - https://github.com/chaincodelabs/libmultiprocess/issues/32
+  - In addition to client return value, could also construct server arg inputs in place in PassField to get rid of boost::optional
+  - Can also use ReadDestReturn instead of ReadDestValue in HandleRpcParam server invoke ReadField calls for CRPCCommand::Actor and std::vector<std::string>
+- BB add 'constexpr bool exists;' true for ReadDestValue, false for ReadDestEmplace. if exists and choice of calling update() method or construct() method (example Desererializble and Unserializable type), should favor update over construct to avoid temporary
+  - "FIXME instead of always preferring Deserialize implementation over Unserialize"...
+- [ ] CA capnp/proxy.h: clean up functiontraits, pull out Fields crap, get rid of underscores
+- [ ] CA Avoid stream copies with 12254 VectorReader
+- [ ] CC Wipe SecureString copies, need RequestHook, ResponseHook, CallContextHook?
+  - hint https://github.com/capnproto/capnproto/issues/543
+- [ ] CB get rid of Chain::rpcRunLater method remote execution and just do it locally. instead just use capnp timer in proxyclient<chain> and schedule callback locally. or use cscheduler object inside the proxyserver<chainclient>. or move cscheduler object to proxycleint<chain>
