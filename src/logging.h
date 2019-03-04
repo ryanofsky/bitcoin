@@ -179,7 +179,7 @@ static inline void LogPrintf(const char* fmt, const Args&... args)
 // evaluating arguments when logging for the category is not enabled.
 #define LogPrint(category, ...)              \
     do {                                     \
-        if (LogAcceptCategory((category))) { \
+        if (1 || LogAcceptCategory((category))) { \
             LogPrintf(__VA_ARGS__);          \
         }                                    \
     } while (0)
