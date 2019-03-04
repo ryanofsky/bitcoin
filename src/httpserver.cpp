@@ -418,6 +418,7 @@ static void HTTPWorkQueueRun(WorkQueue<HTTPClosure>* queue, int worker_num)
 /** libevent event log callback */
 static void libevent_log_cb(int severity, const char *msg)
 {
+#if 0
     BCLog::Level level;
     switch (severity) {
     case EVENT_LOG_DEBUG:
@@ -434,6 +435,7 @@ static void libevent_log_cb(int severity, const char *msg)
         break;
     }
     LogPrintLevel(BCLog::LIBEVENT, level, "%s\n", msg);
+#endif
 }
 
 bool InitHTTPServer(const util::SignalInterrupt& interrupt)

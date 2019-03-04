@@ -279,7 +279,7 @@ inline void LogPrintFormatInternal(std::string_view logging_function, std::strin
 // Log conditionally, prefixing the output with the passed category name and severity level.
 #define LogPrintLevel(category, level, ...)               \
     do {                                                  \
-        if (LogAcceptCategory((category), (level))) {     \
+        if (1 || LogAcceptCategory((category), (level))) {     \
             LogPrintLevel_(category, level, __VA_ARGS__); \
         }                                                 \
     } while (0)

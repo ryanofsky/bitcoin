@@ -346,7 +346,11 @@ std::string BCLog::Logger::GetLogPrefix(BCLog::LogFlags category, BCLog::Level l
 
     std::string s{"["};
     if (has_category) {
-        s += LogCategoryToStr(category);
+        if (LOG_CATEGORIES_BY_FLAG.size()) {
+            s += LogCategoryToStr(category);
+        } else {
+            s += ToString(category);
+        }
     }
 
     if (m_always_print_category_level || !has_category || level != Level::Debug) {
