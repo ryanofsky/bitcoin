@@ -187,7 +187,7 @@ void TorControlConnection::eventcb(struct bufferevent *bev, short what, void *ct
         self->connected(*self);
     } else if (what & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
         if (what & BEV_EVENT_ERROR) {
-            LogPrint(BCLog::TOR, "tor: Error connecting to Tor control socket\n");
+            //LogPrint(BCLog::TOR, "tor: Error connecting to Tor control socket\n");
         } else {
             LogPrint(BCLog::TOR, "tor: End of stream\n");
         }
@@ -702,7 +702,7 @@ void TorController::disconnected_cb(TorControlConnection& _conn)
     if (!reconnect)
         return;
 
-    LogPrint(BCLog::TOR, "tor: Not connected to Tor control port %s, trying to reconnect\n", m_tor_control_center);
+    //LogPrint(BCLog::TOR, "tor: Not connected to Tor control port %s, trying to reconnect\n", m_tor_control_center);
 
     // Single-shot timer for reconnect. Use exponential backoff.
     struct timeval time = MillisToTimeval(int64_t(reconnect_timeout * 1000.0));
