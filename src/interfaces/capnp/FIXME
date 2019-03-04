@@ -1,0 +1,65 @@
+- <<>> stale todos <<>>
+- BB Get rid of ProxyClientMethodTraits<>
+  - generated ProxyClient<...> : public ProxyClientCustom<...> classes should just have `using Base = ProxyClientCustom` and do FunctionTraits<&Base::methodName>
+  - ProxyMethod<>::impl members can maybe be dropped. ProxyMethod<>::Params and ProxyMethod::Results and ProxyMethod::Context should be added though and used to get rid of Context = ServerContext boilerplate below
+    - This will also require dropping codegen exception that omits ProxyMethod<> generation for construct and destroy
+- BC get rid of using Context = ServerContext boierpalte in custom method overloads
+  - Add Params and Results typedefs to codegen ProxyMethod structs
+  - Drop 'using Context =' and replace 'Context& context' with 'ServerContext<...Params>& context' in custom classes
+- CB simplify std::is_same<decltype... enable declarations
+  - should get rid of decltypes and just add proper typedefs to Accessor and Output classes
+  - maybe simplify enable_if<is_same construction
+- BB group readfield/buildfield by type
+- BC get foo test working again (if 0)
+- [ ] BB change CustomBuildField param order to put values after output for consistency with BuildField and so varargs values are supported
+- [ ] BB get rid of messages namespace
+need to s/Node/interfaces::Node/ and s/messages::Node/Node/
+similar for Chain, Wallet, Init etc
+- [ ] BB substitute custommakeproxyclient/custommakeproxyserver calls
+git grep -n Make.*ProxyClient
+git grep -ni kj::heap.*ProxyServer
+- [ ] BB proxy.capnp: split up X.name param
+  - current
+    - X.name only affects what server method is called
+    - client override is method name is unaffected, so necessary to implement manually for client class to get instantiated
+  - ideally
+    - X.name affects both client override (requires change) and server call (already done)
+    - X.name continues to be used for rename use case (Wallet notifications and for struct members)
+    - use separate annotation for custom client overrides probably X.clientName. change
+        customGet @1 (context :X.Context) -> (result :Data) $X.name("get");
+      to:
+        get @1 (context :X.Context) -> (result :Data) $X.clientName("_get");
+- [ ] BB get rid of generated -types files
+  - these only contain ProxyType<> overloads, which can be replaced by CustomBuildMessage / CustomReadMessage functions
+- [ ] BB capnp/proxy-impl.h: dedup map/set/vector BuildField
+- [ ] BB capnp/test/capnp_tests.cpp: connect code duplication
+- [ ] BB Get rid of FunctionTraits::Fields, ProxyMethodTraits::Fields move to ClientInvoke
+- [ ] BC unify readfield forms. can have single ReadDest class with ReadDest::Return typedef, with ReadField taking ReadDest, RestDestArg... arguments and returning ReadDest::Construct(constructor arg, ReadDestArg...) and Return type either being real destination type or a proxy that emplaces into a vector, or a proxy that updates an existing variable
+   - could have ReadDest::Update(lambda) where lambda takes reference argument to object, this allows reading & updating for object types that can't be initialized by constructor. e.g. maps, sets, structs without unserializing constructors
+   - designgoal is just to have one ReadField per type, not confusing mix of readfieldupdate/emplace and maze of overloads to fall back to one when another isn't available
+   - other goal is to support return types. however i think this may be only useful for client side return values. server side value initialization in PassField could potentially use it to get rid of boost::optional, but this relies of type having move / copy constructor, even if it would be elided, and no guarantee of this for parameters
+   - call sequence: readfield pair calls readfield a, calls destfirst::construct, calls readfield b, calls destsecond::construct, calls destpair::construct, calls emplace/emplace/back whatever passed to original readfield
+   - class ReadDest
+     {
+         constexpr bool exists; // can be used to overload readfield more optimally, avoid constructing a temporary when assigning to existing objects for types that can be efficiently deserialized by poth construction or update. should always favor constructing unless this is true
+         using Return = ...
+         Return Construct(...) or using Construct = ...
+         Return Update(Callback) { callback(m_ref); or callback(Construct(); }
+
+     }
+
+     Dest::Return ReadField(...Dest...) {
+       return Dest::Update([&](obj) { Stream stream; stream >> obj; } )
+     }
+
+     Dest::Return ReadField(...Dest...) {
+       return Dest::Construct(unserialize, stream); )
+     }
+   - Should switch from ReadFieldUpdate to Dest::Return form in:
+     - HandleRpcParam server invoke for CRPCCommand::Actor and std::vector<std::string>
+- [ ] CA capnp/proxy.h: clean up functiontraits, pull out Fields crap, get rid of underscores
+- [ ] CA Avoid stream copies with 12254 VectorReader
+- [ ] CB Get rid of codegen client result variables, return directly from clientInvoke
+- [ ] CC Wipe SecureString copies, need RequestHook, ResponseHook, CallContextHook?
+  - hint https://github.com/capnproto/capnproto/issues/543
+- [ ] CB get rid of Chain::rpcRunLater method remote execution and just do it locally. instead just use capnp timer in proxyclient<chain> and schedule callback locally. or use cscheduler object inside the proxyserver<chainclient>. or move cscheduler object to proxycleint<chain>
