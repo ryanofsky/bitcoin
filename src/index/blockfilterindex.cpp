@@ -133,7 +133,7 @@ bool BlockFilterIndex::Commit(CDBBatch& batch)
     }
 
     batch.Write(DB_FILTER_POS, pos);
-    return BaseIndex::Commit(batch);
+    return true;
 }
 
 bool BlockFilterIndex::ReadFilterFromDisk(const FlatFilePos& pos, BlockFilter& filter) const
@@ -271,11 +271,10 @@ static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
     return true;
 }
 
-bool BlockFilterIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip)
+bool BlockFilterIndex::Rewind(CDBBatch& batch, const CBlockIndex* current_tip, const CBlockIndex* new_tip)
 {
     assert(current_tip->GetAncestor(new_tip->nHeight) == new_tip);
 
-    CDBBatch batch(*m_db);
     std::unique_ptr<CDBIterator> db_it(m_db->NewIterator());
 
     // During a reorg, we need to copy all filters for blocks that are getting disconnected from the
@@ -285,13 +284,11 @@ bool BlockFilterIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex*
         return false;
     }
 
-    // The latest filter position gets written in Commit by the call to the BaseIndex::Rewind.
-    // But since this creates new references to the filter, the position should get updated here
-    // atomically as well in case Commit fails.
+    // The latest filter position also gets written later in BlockFilterIndex::Commit.
+    // But since rewinding creates new references to the filter, the position should get updated here
+    // as well in case Commit fails.
     batch.Write(DB_FILTER_POS, m_next_filter_pos);
-    if (!m_db->WriteBatch(batch)) return false;
-
-    return BaseIndex::Rewind(current_tip, new_tip);
+    return true;
 }
 
 static bool LookupOne(const CDBWrapper& db, const CBlockIndex* block_index, DBVal& result)

@@ -95,8 +95,7 @@ void BaseIndex::ThreadSync()
         int64_t last_locator_write_time = 0;
         while (true) {
             if (m_interrupt) {
-                m_best_block_index = pindex;
-                Commit();
+                InternalCommit(pindex);
                 return;
             }
 
@@ -104,12 +103,11 @@ void BaseIndex::ThreadSync()
                 LOCK(cs_main);
                 const CBlockIndex* pindex_next = NextSyncBlock(pindex);
                 if (!pindex_next) {
-                    m_best_block_index = pindex;
+                    InternalCommit(pindex);
                     m_synced = true;
-                    Commit();
                     break;
                 }
-                if (pindex_next->pprev != pindex && !Rewind(pindex, pindex_next->pprev)) {
+                if (pindex_next->pprev != pindex && !InternalCommit(pindex_next->pprev, /* rewind= */ true)) {
                     FatalError("%s: Failed to rewind index %s to a previous chain tip",
                                __func__, GetName());
                     return;
@@ -125,9 +123,8 @@ void BaseIndex::ThreadSync()
             }
 
             if (last_locator_write_time + SYNC_LOCATOR_WRITE_INTERVAL < current_time) {
-                m_best_block_index = pindex;
+                InternalCommit(pindex);
                 last_locator_write_time = current_time;
-                Commit();
             }
 
             CBlock block;
@@ -151,35 +148,35 @@ void BaseIndex::ThreadSync()
     }
 }
 
-bool BaseIndex::Commit()
+bool BaseIndex::InternalCommit(const CBlockIndex* new_tip, bool rewind)
 {
+    const CBlockIndex* best_block = m_best_block_index.load();
     CDBBatch batch(GetDB());
-    if (!Commit(batch) || !GetDB().WriteBatch(batch)) {
+    if (new_tip) {
+        if (rewind) {
+            assert(best_block->GetAncestor(new_tip->nHeight) == new_tip);
+            if (!Rewind(batch, best_block, new_tip)) {
+                return error("%s: Failed to rewind %s tip", __func__, GetName());
+            }
+        }
+        best_block = new_tip;
+    }
+
+    CBlockLocator locator;
+    {
+        LOCK(cs_main);
+        locator = chainActive.GetLocator(best_block);
+    }
+    GetDB().WriteBestBlock(batch, locator);
+
+    if (!Commit(batch)) {
         return error("%s: Failed to commit latest %s state", __func__, GetName());
     }
-    return true;
-}
 
-bool BaseIndex::Commit(CDBBatch& batch)
-{
-    LOCK(cs_main);
-    GetDB().WriteBestBlock(batch, chainActive.GetLocator(m_best_block_index));
-    return true;
-}
-
-bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip)
-{
-    assert(current_tip == m_best_block_index);
-    assert(current_tip->GetAncestor(new_tip->nHeight) == new_tip);
-
-    // In the case of a reorg, ensure persisted block locator is not stale.
-    m_best_block_index = new_tip;
-    if (!Commit()) {
-        // If commit fails, revert the best block index to avoid corruption.
-        m_best_block_index = current_tip;
-        return false;
+    if (!GetDB().WriteBatch(batch)) {
+        return error("%s: Failed to flush latest %s state", __func__, GetName());
     }
-
+    m_best_block_index = best_block;
     return true;
 }
 
@@ -210,7 +207,7 @@ void BaseIndex::BlockConnected(const std::shared_ptr<const CBlock>& block, const
                       best_block_index->GetBlockHash().ToString());
             return;
         }
-        if (best_block_index != pindex->pprev && !Rewind(best_block_index, pindex->pprev)) {
+        if (best_block_index != pindex->pprev && !InternalCommit(pindex->pprev, /* rewind= */ true  )) {
             FatalError("%s: Failed to rewind index %s to a previous chain tip",
                        __func__, GetName());
             return;
@@ -259,7 +256,7 @@ void BaseIndex::ChainStateFlushed(const CBlockLocator& locator)
         return;
     }
 
-    Commit();
+    InternalCommit();
 }
 
 bool BaseIndex::BlockUntilSyncedToCurrentChain()

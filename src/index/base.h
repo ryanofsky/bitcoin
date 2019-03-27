@@ -55,27 +55,26 @@ private:
     void ThreadSync();
 
     /// Write the current chain block locator and other index state to the DB.
-    bool Commit();
+    bool InternalCommit(const CBlockIndex* new_tip = nullptr, bool rewind = false);
 
-protected:
     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex,
                         const std::vector<CTransactionRef>& txn_conflicted) override;
 
     void ChainStateFlushed(const CBlockLocator& locator) override;
 
+protected:
     /// Initialize internal state from the database and block index.
     virtual bool Init();
 
     /// Write update index entries for a newly connected block.
     virtual bool WriteBlock(const CBlock& block, const CBlockIndex* pindex) { return true; }
 
-    /// Virtual method called internally that can be overridden to atomically
-    /// commit more index state.
-    virtual bool Commit(CDBBatch& batch);
-
-    /// Rewind index to an earlier chain tip during a chain reorg. The tip must
+    /// Rewind index to an earlier chain tip during a chain reorg. The tip will
     /// be an ancestor of the current best block.
-    virtual bool Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip);
+    virtual bool Rewind(CDBBatch& batch, const CBlockIndex* current_tip, const CBlockIndex* new_tip) { return true; }
+
+    /// Save additional state after new blocks are added or rewound.
+    virtual bool Commit(CDBBatch& batch) { return true; }
 
     virtual DB& GetDB() const = 0;
 
