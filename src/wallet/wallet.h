@@ -762,7 +762,8 @@ public:
     std::unique_ptr<interfaces::Handler> m_chain_notifications_handler;
 
     /** Register the wallet for chain notifications */
-    void handleNotifications();
+    enum class ScanStatus { SUCCESS, FAILED, MISSING_BLOCKS, SKIPPED };
+    ScanStatus handleNotifications(bool scan_chain = false) LOCKS_EXCLUDED(cs_wallet);
 
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
@@ -879,7 +880,7 @@ public:
     };
     ScanResult ScanForWalletTransactions(const uint256& first_block, int block_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
     void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
-    void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void ReacceptWalletTransactions() LOCKS_EXCLUDED(cs_wallet);
     void ResendWalletTransactions();
     struct Balance {
         CAmount m_mine_trusted{0};           //!< Trusted, at depth=GetBalance.min_depth or more
