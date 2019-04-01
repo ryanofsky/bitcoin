@@ -261,8 +261,47 @@ public:
         virtual void ChainStateFlushed(const CBlockLocator& locator) {}
     };
 
-    //! Register handler for notifications.
-    virtual std::unique_ptr<Handler> handleNotifications(Notifications& notifications) = 0;
+    using ScanFn = std::function<Optional<uint256>(const uint256& start_hash, int start_height, const uint256& tip_hash, int tip_height)>;
+    using MempoolFn = std::function<void(std::vector<CTransactionRef>)>;
+
+    //! Register handler for notifications. Before returning and before sending
+    //! the first notification, call ScanFn with the hash of the first block
+    //! after the provided previous sync location, and then call MempoolFn
+    //! with a snapshot of transactions in the mempool the first
+    //! TransactionAddedToMempool/TransactionRemovedFromMempool notifications.
+    //!
+    //! @param[in] notify        object to send notifications to after returning
+    //! @param[in] scan_fn       callback invoked to scan any new blocks that
+    //!                          were added before sending new notifications.
+    //!                          This should return the hash of the last block
+    //!                          scanned, and will be called more than once if
+    //!                          the tip changes the call and the last block
+    //!                          scanned is behind the chain tip at the point
+    //!                          notifications would be attached.
+    //! @param[in] mempool_fn    callback invoked with snapshot of the mempool at
+    //!                          the point notifications are attached
+    //! @param[in] scan_locator  location of last block already scanned. scan_fn
+    //!                          will be only be called for new blocks after
+    //!                          this point. If null scan may begin at the
+    //!                          genesis block, depending on scan_time
+    //! @param[in] scan_time     minimum block timestamp for beginning the scan.
+    //!                          The first block with timestamp greater or equal
+    //!                          to this time is eligible to be scanned,
+    //!                          depending on scan_locator
+    //! @param[out] tip_hash     hash of the tip at the point notifications will
+    //!                          begin. The first block Connected / Disconnected
+    //!                          notifications will be relative to this tip
+    //! @param[out] tip_height   height of block at tip_hash
+    //! @param[out] tip_locator  locator for tip_hash
+    virtual std::unique_ptr<Handler> handleNotifications(Notifications& notifications,
+        ScanFn scan_fn,
+        MempoolFn mempool_fn,
+        const CBlockLocator* scan_locator,
+        int64_t scan_time,
+        uint256& tip_hash,
+        int& tip_height,
+        CBlockLocator& tip_locator,
+        bool& missing_block_data) = 0;
 
     //! Wait for pending notifications to be processed unless block hash points to the current
     //! chain tip.
@@ -280,16 +319,6 @@ public:
 
     //! Current RPC serialization flags.
     virtual int rpcSerializationFlags() = 0;
-
-    //! Synchronously send TransactionAddedToMempool notifications about all
-    //! current mempool transactions to the specified handler and return after
-    //! the last one is sent. These notifications aren't coordinated with async
-    //! notifications sent by handleNotifications, so out of date async
-    //! notifications from handleNotifications can arrive during and after
-    //! synchronous notifications from requestMempoolTransactions. Clients need
-    //! to be prepared to handle this by ignoring notifications about unknown
-    //! removed transactions and already added new transactions.
-    virtual void requestMempoolTransactions(Notifications& notifications) = 0;
 };
 
 //! Interface to let node manage chain clients (wallets, or maybe tools for
