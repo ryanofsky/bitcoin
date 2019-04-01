@@ -782,6 +782,17 @@ public:
     /** Registered interfaces::Chain::Notifications handler. */
     std::unique_ptr<interfaces::Handler> m_chain_notifications_handler;
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+    /** Register the wallet for chain notifications */
+    void handleNotifications();
+
+=======
+    /** Register the wallet for chain notifications */
+    enum class ScanStatus { SUCCESS, FAILED, MISSING_BLOCKS, SKIPPED };
+    ScanStatus handleNotifications(bool first_run = false) LOCKS_EXCLUDED(cs_wallet);
+
+>>>>>>> Drop Chain::requestMempoolTransactions method
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
 
@@ -909,8 +920,14 @@ public:
     ScanResult ScanForWalletTransactions(const uint256& first_block, int block_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
 >>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
     void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
+<<<<<<< HEAD
 >>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
     void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+||||||| merged common ancestors
+    void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+=======
+    void ReacceptWalletTransactions() LOCKS_EXCLUDED(cs_wallet);
+>>>>>>> Drop Chain::requestMempoolTransactions method
     void ResendWalletTransactions();
     struct Balance {
         CAmount m_mine_trusted{0};           //!< Trusted, at depth=GetBalance.min_depth or more
