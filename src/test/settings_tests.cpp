@@ -12,7 +12,34 @@
 #include <univalue.h>
 #include <util/strencodings.h>
 #include <util/string.h>
+#include <util/system.h>
 #include <vector>
+
+inline bool operator==(const util::SettingsValue& a, const util::SettingsValue& b)
+{
+    return a.write() == b.write();
+}
+
+inline std::ostream& operator<<(std::ostream& os, const util::SettingsValue& value)
+{
+    os << value.write();
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const std::pair<std::string, util::SettingsValue>& kv)
+{
+    util::SettingsValue out(util::SettingsValue::VOBJ);
+    out.__pushKV(kv.first, kv.second);
+    os << out.write();
+    return os;
+}
+
+inline void WriteText(const fs::path& path, const std::string& text)
+{
+    fsbridge::ofstream file;
+    file.open(path);
+    file << text;
+}
 
 BOOST_FIXTURE_TEST_SUITE(settings_tests, BasicTestingSetup)
 
@@ -173,6 +200,59 @@ BOOST_FIXTURE_TEST_CASE(Merge, MergeTestingSetup)
     //
     //   <input> || GetSetting() | GetSettingsList() | OnlyHasDefaultSectionSetting()
     BOOST_CHECK_EQUAL(out_sha_hex, "79db02d74e3e193196541b67c068b40ebd0c124a24b3ecbe9cbf7e85b1c4ba7a");
+}
+
+BOOST_AUTO_TEST_CASE(ReadWrite)
+{
+    fs::path path = GetDataDir() / "settings.json";
+
+    WriteText(path, R"({
+        "string": "string",
+        "num": 5,
+        "bool": true,
+        "null": null
+    })");
+
+    std::map<std::string, util::SettingsValue> expected{
+        {"string", "string"},
+        {"num", 5},
+        {"bool", true},
+        {"null", {}},
+    };
+
+    // Check file read.
+    std::map<std::string, util::SettingsValue> values;
+    std::vector<std::string> errors;
+    BOOST_CHECK(util::ReadSettings(path, values, errors));
+    BOOST_CHECK_EQUAL_COLLECTIONS(values.begin(), values.end(), expected.begin(), expected.end());
+    BOOST_CHECK(errors.empty());
+
+    // Check no errors if file doesn't exist.
+    fs::remove(path);
+    BOOST_CHECK(util::ReadSettings(path, values, errors));
+    BOOST_CHECK(values.empty());
+    BOOST_CHECK(errors.empty());
+
+    // Check duplicate keys not allowed
+    WriteText(path, R"({
+        "dupe": "string",
+        "dupe": "dupe"
+    })");
+    BOOST_CHECK(!util::ReadSettings(path, values, errors));
+    std::vector<std::string> dup_keys = {strprintf("Error: Settings file %s has duplicate key dupe", path.string())};
+    BOOST_CHECK_EQUAL_COLLECTIONS(errors.begin(), errors.end(), dup_keys.begin(), dup_keys.end());
+
+    // Check non-kv json files not allowed
+    WriteText(path, R"("non-kv")");
+    BOOST_CHECK(!util::ReadSettings(path, values, errors));
+    std::vector<std::string> non_kv = {strprintf("Error: Settings file %s is not in expected key-value format", path.string())};
+    BOOST_CHECK_EQUAL_COLLECTIONS(errors.begin(), errors.end(), non_kv.begin(), non_kv.end());
+
+    // Check invalid json not allowed
+    WriteText(path, R"(invalid json)");
+    BOOST_CHECK(!util::ReadSettings(path, values, errors));
+    std::vector<std::string> fail_parse = {strprintf("Error: Unable to parse settings file %s", path.string())};
+    BOOST_CHECK_EQUAL_COLLECTIONS(errors.begin(), errors.end(), fail_parse.begin(), fail_parse.end());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

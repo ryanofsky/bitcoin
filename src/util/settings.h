@@ -5,6 +5,8 @@
 #ifndef BITCOIN_UTIL_SETTINGS_H
 #define BITCOIN_UTIL_SETTINGS_H
 
+#include <fs.h>
+
 #include <map>
 #include <string>
 #include <vector>
@@ -62,6 +64,12 @@ std::vector<SettingsValue> GetSettingsList(const Settings& settings,
 //! This is used to provide user warnings about values that might be getting
 //! ignored unintentionally.
 bool OnlyHasDefaultSectionSetting(const Settings& settings, const std::string& section, const std::string& name);
+
+//! Read settings file.
+bool ReadSettings(const fs::path& path, std::map<std::string, SettingsValue>& values, std::vector<std::string>& errors);
+
+//! Write settings file.
+bool WriteSettings(const fs::path& path, const std::map<std::string, SettingsValue>& values, std::vector<std::string>& errors);
 
 //! Accessor for list of settings that skips negated values when iterated over.
 //! The last boolean `false` value in the list and all earlier values are

@@ -4,6 +4,7 @@
 
 #include <util/settings.h>
 
+#include <tinyformat.h>
 #include <univalue.h>
 
 namespace util {
@@ -175,4 +176,56 @@ size_t SettingsSpan::negated() const
     return 0;
 }
 
+bool ReadSettings(const fs::path& path, std::map<std::string, SettingsValue>& values, std::vector<std::string>& errors)
+{
+    values.clear();
+    errors.clear();
+
+    fsbridge::ifstream file;
+    file.open(path);
+    if (!file.is_open()) return true; // Ok for file not to exist.
+
+    SettingsValue in;
+    if (!in.read(std::string{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()})) {
+        errors.emplace_back(strprintf("Error: Unable to parse settings file %s", path.string()));
+        return false;
+    }
+    if (file.fail()) {
+        errors.emplace_back(strprintf("Error: failed reading settings file %s", path.string()));
+        return false;
+    }
+    file.close();
+
+    if (!in.isObject()) {
+        errors.emplace_back(strprintf("Error: Settings file %s is not in expected key-value format", path.string()));
+        return false;
+    }
+
+    const std::vector<std::string>& in_keys = in.getKeys();
+    const std::vector<UniValue>& in_values = in.getValues();
+    for (size_t i = 0; i < in_keys.size(); ++i) {
+        auto inserted = values.emplace(in_keys[i], in_values[i]);
+        if (!inserted.second) {
+            errors.emplace_back(strprintf("Error: Settings file %s has duplicate key %s", path.string(), in_keys[i]));
+        }
+    }
+    return errors.empty();
+}
+
+bool WriteSettings(const fs::path& path, const std::map<std::string, SettingsValue>& values, std::vector<std::string>& errors)
+{
+    SettingsValue out(SettingsValue::VOBJ);
+    for (const auto& value : values) {
+        out.__pushKV(value.first, value.second);
+    }
+    fsbridge::ofstream file;
+    file.open(path);
+    if (file.fail()) {
+        errors.emplace_back(strprintf("Error: Unable to open settings file %s for writing", path.string()));
+        return false;
+    }
+    file << out.write(/* prettyIndent= */ 1, /* indentLevel= */ 4) << std::endl;
+    file.close();
+    return true;
+}
 } // namespace util
