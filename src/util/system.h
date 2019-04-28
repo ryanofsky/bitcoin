@@ -41,6 +41,7 @@
 int64_t GetStartupTime();
 
 extern const char * const BITCOIN_CONF_FILENAME;
+extern const char * const BITCOIN_SETTINGS_FILENAME;
 
 void SetupEnvironment();
 bool SetupNetworking();
@@ -332,6 +333,41 @@ public:
      * Return nullopt for unknown arg.
      */
     Optional<unsigned int> GetArgFlags(const std::string& name) const;
+
+    /**
+     * Initialize read-write settings.
+     */
+    bool InitSettings(std::string& error);
+
+    /**
+     * Return whether read-write settings are enabled. This is true unless
+     * bitcoin was configured with -nosettings to disable storing changed
+     * dynamic settings from the GUI or RPC methods.
+     */
+    bool EnableSettingsFile();
+
+    /**
+     * Load <datadir>/settings.json file with saved settings. This needs to be
+     * called after SelectParams() because the settings file is network-specific.
+     * Errors are appended to vector if provided, otherwise logged.
+     */
+    bool ReadSettingsFile(std::vector<std::string>* errors = nullptr);
+
+    /**
+     * Save <datadir>/settings.json file with persistent settings.
+     * Errors are appended to vector if provided, otherwise logged.
+     */
+    bool WriteSettingsFile(std::vector<std::string>* errors = nullptr) const;
+
+    /**
+     * Access settings with lock held.
+     */
+    template <typename Fn>
+    void LockSettings(Fn&& fn)
+    {
+        LOCK(cs_args);
+        fn(m_settings);
+    }
 
     /**
      * Log the config file options and the command line arguments,
