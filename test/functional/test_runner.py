@@ -242,6 +242,15 @@ BASE_SCRIPTS = [
     'p2p_permissions.py',
     'feature_blocksdir.py',
     'feature_config_args.py',
+<<<<<<< HEAD
+||||||| merged common ancestors
+    'rpc_getaddressinfo_labels_purpose_deprecation.py',
+    'rpc_getaddressinfo_label_deprecation.py',
+=======
+    'feature_settings.py',
+    'rpc_getaddressinfo_labels_purpose_deprecation.py',
+    'rpc_getaddressinfo_label_deprecation.py',
+>>>>>>> Add <datadir>/settings.json persistent settings storage.
     'rpc_getdescriptorinfo.py',
     'rpc_help.py',
     'feature_help.py',
