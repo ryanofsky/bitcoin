@@ -528,6 +528,11 @@ int GuiMain(int argc, char* argv[])
     // Parse URIs on command line -- this can affect Params()
     PaymentServer::ipcParseCommandLine(*node, argc, argv);
 #endif
+    if (!node->readSettingsFile()) {
+        QMessageBox::critical(nullptr, QObject::tr(PACKAGE_NAME),
+                              QObject::tr("Error: Cannot read settings file."));
+        return EXIT_FAILURE;
+    }
 
     QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(Params().NetworkIDString()));
     assert(!networkStyle.isNull());
