@@ -298,7 +298,34 @@ public:
      * Return Flags for known arg.
      * Return ArgsManager::NONE for unknown arg.
      */
+<<<<<<< HEAD
     unsigned int FlagsOfKnownArg(const std::string& key) const;
+||||||| merged common ancestors
+    bool IsArgKnown(const std::string& key) const;
+=======
+    bool IsArgKnown(const std::string& key) const;
+
+    /**
+     * Load <datadir>/settings.json file with saved settings. This needs to be
+     * called after SelectParams() because the settings file is network-specific.
+     */
+    bool ReadSettingsFile();
+
+    /**
+     * Save <datadir>/settings.json file with persistent settings.
+     */
+    bool WriteSettingsFile() const;
+
+    /**
+     * Access settings with lock held.
+     */
+    template <typename Fn>
+    void LockSettings(Fn&& fn)
+    {
+        LOCK(cs_args);
+        fn(m_settings);
+    }
+>>>>>>> Add <datadir>/settings.json persistent settings storage.
 };
 
 extern ArgsManager gArgs;

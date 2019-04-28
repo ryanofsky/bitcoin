@@ -32,7 +32,14 @@ static void MergeSettings(const Settings& settings, const std::string& section, 
     if (auto* values = FindKey(settings.command_line_options, name)) {
         fn(SettingsSpan(*values), Source::COMMAND_LINE);
     }
+<<<<<<< HEAD
     // Merge in the network-specific section of the config file
+||||||| merged common ancestors
+=======
+    if (auto* value = FindKey(settings.rw_settings, name)) {
+        fn(Source(SettingsSpan(value)));
+    }
+>>>>>>> Add <datadir>/settings.json persistent settings storage.
     if (!section.empty()) {
         if (auto* map = FindKey(settings.ro_config, section)) {
             if (auto* values = FindKey(*map, name)) {

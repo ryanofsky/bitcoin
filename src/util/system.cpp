@@ -384,6 +384,72 @@ bool ArgsManager::IsArgSet(const std::string& strArg) const
     return !ArgsManagerHelper::Get(*this, strArg).isNull();
 }
 
+static fs::path GetSettingsFile(bool temp = false)
+{
+    return fs::absolute(temp ? "settings.json.tmp" : "settings.json", GetDataDir(/* net_specific= */ true));
+}
+
+bool ArgsManager::ReadSettingsFile()
+{
+    fsbridge::ifstream file;
+    fs::path filepath = GetSettingsFile(/* temp= */ false);
+    file.open(filepath);
+    if (!file.is_open()) return true; // Ok for file not to exist.
+
+    util::SettingsValue in;
+    if (!in.read(std::string{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()})) {
+        LogPrintf("Error: Unable to parse settings file %s\n", filepath.string());
+        return false;
+    }
+    if (file.fail()) {
+        LogPrintf("Error reading settings file %s\n", filepath.string());
+        return false;
+    }
+    file.close();
+
+    if (!in.isObject()) {
+        LogPrintf("Error: Settings file %s is not in expected key-value format.\n", filepath.string());
+        return false;
+    }
+
+    LOCK(cs_args);
+    m_settings.rw_settings.clear();
+    const std::vector<std::string>& keys = in.getKeys();
+    const std::vector<UniValue>& values = in.getValues();
+    for (size_t i = 0; i < keys.size(); ++i) {
+        m_settings.rw_settings.emplace(keys[i], values[i]);
+    }
+    return true;
+}
+
+bool ArgsManager::WriteSettingsFile() const
+{
+    util::SettingsValue out(util::SettingsValue::VOBJ);
+    {
+        LOCK(cs_args);
+        for (const auto& value : m_settings.rw_settings) {
+            out.__pushKV(value.first, value.second);
+        }
+    }
+
+    fsbridge::ofstream file;
+    fs::path filepath_tmp = GetSettingsFile(/* temp= */ true);
+    file.open(filepath_tmp);
+    if (file.fail()) {
+        LogPrintf("Error: Unable to open settings file %s for writing\n", filepath_tmp.string());
+        return false;
+    }
+    file << out.write(/* prettyIndent= */ 1, /* indentLevel= */ 4) << std::endl;
+    file.close();
+
+    fs::path filepath = GetSettingsFile(/* temp= */ false);
+    if (!RenameOver(filepath_tmp, filepath)) {
+        LogPrintf("Error: Unable to rename settings file %s to %s\n", filepath_tmp.string(), filepath.string());
+        return false;
+    }
+    return true;
+}
+
 bool ArgsManager::IsArgNegated(const std::string& strArg) const
 {
     return ArgsManagerHelper::Get(*this, strArg).isFalse();
