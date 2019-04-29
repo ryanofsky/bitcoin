@@ -56,9 +56,66 @@ namespace {
 class NodeImpl : public Node
 {
 public:
+<<<<<<< HEAD
     NodeImpl(NodeContext* context) { setContext(context); }
     void initLogging() override { InitLogging(*Assert(m_context->args)); }
     void initParameterInteraction() override { InitParameterInteraction(*Assert(m_context->args)); }
+||||||| merged common ancestors
+    void initError(const bilingual_str& message) override { InitError(message); }
+    bool parseParameters(int argc, const char* const argv[], std::string& error) override
+    {
+        return gArgs.ParseParameters(argc, argv, error);
+    }
+    bool readConfigFiles(std::string& error) override { return gArgs.ReadConfigFiles(error, true); }
+    void forceSetArg(const std::string& arg, const std::string& value) override { gArgs.ForceSetArg(arg, value); }
+    bool softSetArg(const std::string& arg, const std::string& value) override { return gArgs.SoftSetArg(arg, value); }
+    bool softSetBoolArg(const std::string& arg, bool value) override { return gArgs.SoftSetBoolArg(arg, value); }
+    void selectParams(const std::string& network) override { SelectParams(network); }
+    bool initSettings(std::string& error) override { return gArgs.InitSettings(error); }
+    uint64_t getAssumedBlockchainSize() override { return Params().AssumedBlockchainSize(); }
+    uint64_t getAssumedChainStateSize() override { return Params().AssumedChainStateSize(); }
+    std::string getNetwork() override { return Params().NetworkIDString(); }
+    void initLogging() override { InitLogging(); }
+    void initParameterInteraction() override { InitParameterInteraction(); }
+=======
+    void initError(const bilingual_str& message) override { InitError(message); }
+    bool parseParameters(int argc, const char* const argv[], std::string& error) override
+    {
+        return gArgs.ParseParameters(argc, argv, error);
+    }
+    bool readConfigFiles(std::string& error) override { return gArgs.ReadConfigFiles(error, true); }
+    void forceSetArg(const std::string& arg, const std::string& value) override { gArgs.ForceSetArg(arg, value); }
+    bool softSetArg(const std::string& arg, const std::string& value) override { return gArgs.SoftSetArg(arg, value); }
+    void selectParams(const std::string& network) override { SelectParams(network); }
+    bool initSettings(std::string& error) override { return gArgs.InitSettings(error); }
+    util::SettingsValue getPersistentSetting(const std::string& name) override { return gArgs.GetPersistentSetting(name); }
+    void updateSetting(const std::string& name, const util::SettingsValue& value) override
+    {
+        gArgs.LockSettings([&](util::Settings& settings) {
+            if (value.isNull()) {
+                settings.rw_settings.erase(name);
+            } else {
+                settings.rw_settings[name] = value;
+            }
+        });
+        gArgs.WriteSettingsFile();
+    }
+    bool isSettingIgnored(const std::string& name) override
+    {
+        bool ignored = false;
+        gArgs.LockSettings([&](util::Settings& settings) {
+            if (auto* options = util::FindKey(settings.command_line_options, name)) {
+                ignored = !options->empty();
+            }
+        });
+        return ignored;
+    }
+    uint64_t getAssumedBlockchainSize() override { return Params().AssumedBlockchainSize(); }
+    uint64_t getAssumedChainStateSize() override { return Params().AssumedChainStateSize(); }
+    std::string getNetwork() override { return Params().NetworkIDString(); }
+    void initLogging() override { InitLogging(); }
+    void initParameterInteraction() override { InitParameterInteraction(); }
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
     bilingual_str getWarnings() override { return GetWarnings(true); }
     uint32_t getLogCategories() override { return LogInstance().GetCategoryMask(); }
     bool baseInitialize() override

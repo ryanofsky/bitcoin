@@ -5,11 +5,12 @@
 #ifndef BITCOIN_INTERFACES_NODE_H
 #define BITCOIN_INTERFACES_NODE_H
 
-#include <amount.h>     // For CAmount
-#include <net.h>        // For CConnman::NumConnections
-#include <net_types.h>  // For banmap_t
-#include <netaddress.h> // For Network
+#include <amount.h>                    // For CAmount
+#include <net.h>                       // For CConnman::NumConnections
+#include <net_types.h>                 // For banmap_t
+#include <netaddress.h>                // For Network
 #include <support/allocators/secure.h> // For SecureString
+#include <util/settings.h>             // For util::SettingsValue
 #include <util/translation.h>
 
 #include <functional>
@@ -55,6 +56,87 @@ class Node
 public:
     virtual ~Node() {}
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+    //! Send init error.
+    virtual void initError(const bilingual_str& message) = 0;
+
+    //! Set command line arguments.
+    virtual bool parseParameters(int argc, const char* const argv[], std::string& error) = 0;
+
+    //! Set a command line argument
+    virtual void forceSetArg(const std::string& arg, const std::string& value) = 0;
+
+    //! Set a command line argument if it doesn't already have a value
+    virtual bool softSetArg(const std::string& arg, const std::string& value) = 0;
+
+    //! Set a command line boolean argument if it doesn't already have a value
+    virtual bool softSetBoolArg(const std::string& arg, bool value) = 0;
+
+    //! Load settings from configuration file.
+    virtual bool readConfigFiles(std::string& error) = 0;
+
+    //! Choose network parameters.
+    virtual void selectParams(const std::string& network) = 0;
+
+    //! Read and update <datadir>/settings.json file with saved settings. This
+    //! needs to be called after selectParams() because the settings file
+    //! location is network-specific.
+    virtual bool initSettings(std::string& error) = 0;
+
+    //! Get the (assumed) blockchain size.
+    virtual uint64_t getAssumedBlockchainSize() = 0;
+
+    //! Get the (assumed) chain state size.
+    virtual uint64_t getAssumedChainStateSize() = 0;
+
+    //! Get network name.
+    virtual std::string getNetwork() = 0;
+
+=======
+    //! Send init error.
+    virtual void initError(const bilingual_str& message) = 0;
+
+    //! Set command line arguments.
+    virtual bool parseParameters(int argc, const char* const argv[], std::string& error) = 0;
+
+    //! Set a command line argument
+    virtual void forceSetArg(const std::string& arg, const std::string& value) = 0;
+
+    //! Set a command line argument if it doesn't already have a value
+    virtual bool softSetArg(const std::string& arg, const std::string& value) = 0;
+
+    //! Load settings from configuration file.
+    virtual bool readConfigFiles(std::string& error) = 0;
+
+    //! Choose network parameters.
+    virtual void selectParams(const std::string& network) = 0;
+
+    //! Read and update <datadir>/settings.json file with saved settings. This
+    //! needs to be called after selectParams() because the settings file
+    //! location is network-specific.
+    virtual bool initSettings(std::string& error) = 0;
+
+    //! Return setting value from <datadir>/settings.json or bitcoin.conf.
+    virtual util::SettingsValue getPersistentSetting(const std::string& name) = 0;
+
+    //! Update a setting in <datadir>/settings.json.
+    virtual void updateSetting(const std::string& name, const util::SettingsValue& value) = 0;
+
+    //! Return whether a particular setting in <datadir>/settings.json is or
+    //! would be ignored because it is also specified in the command line.
+    virtual bool isSettingIgnored(const std::string& name) = 0;
+
+    //! Get the (assumed) blockchain size.
+    virtual uint64_t getAssumedBlockchainSize() = 0;
+
+    //! Get the (assumed) chain state size.
+    virtual uint64_t getAssumedChainStateSize() = 0;
+
+    //! Get network name.
+    virtual std::string getNetwork() = 0;
+
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
     //! Init logging.
     virtual void initLogging() = 0;
 
