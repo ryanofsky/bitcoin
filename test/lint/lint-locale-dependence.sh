@@ -43,7 +43,14 @@ KNOWN_VIOLATIONS=(
     "src/dbwrapper.cpp.*stoul"
     "src/dbwrapper.cpp:.*vsnprintf"
     "src/httprpc.cpp.*trim"
+<<<<<<< HEAD
     "src/node/blockstorage.cpp:.*atoi"
+||||||| merged common ancestors
+    "src/init.cpp:.*atoi"
+=======
+    "src/init.cpp:.*atoi"
+    "src/qt/optionsmodel.cpp:.*atoi"
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
     "src/qt/rpcconsole.cpp:.*atoi"
     "src/rest.cpp:.*strtol"
     "src/test/dbwrapper_tests.cpp:.*snprintf"
