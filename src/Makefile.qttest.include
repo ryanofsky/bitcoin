@@ -7,6 +7,13 @@ TESTS += qt/test/test_bitcoin-qt
 
 TEST_QT_MOC_CPP = \
   qt/test/moc_apptests.cpp \
+<<<<<<< HEAD
+||||||| merged common ancestors
+  qt/test/moc_compattests.cpp \
+=======
+  qt/test/moc_compattests.cpp \
+  qt/test/moc_optiontests.cpp \
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
   qt/test/moc_rpcnestedtests.cpp \
   qt/test/moc_uritests.cpp
 
@@ -19,6 +26,13 @@ endif # ENABLE_WALLET
 TEST_QT_H = \
   qt/test/addressbooktests.h \
   qt/test/apptests.h \
+<<<<<<< HEAD
+||||||| merged common ancestors
+  qt/test/compattests.h \
+=======
+  qt/test/compattests.h \
+  qt/test/optiontests.h \
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
   qt/test/rpcnestedtests.h \
   qt/test/uritests.h \
   qt/test/util.h \
@@ -29,6 +43,13 @@ qt_test_test_bitcoin_qt_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(BITCOIN_
 
 qt_test_test_bitcoin_qt_SOURCES = \
   qt/test/apptests.cpp \
+<<<<<<< HEAD
+||||||| merged common ancestors
+  qt/test/compattests.cpp \
+=======
+  qt/test/compattests.cpp \
+  qt/test/optiontests.cpp \
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
   qt/test/rpcnestedtests.cpp \
   qt/test/test_main.cpp \
   qt/test/uritests.cpp \

@@ -5,12 +5,25 @@
 #ifndef BITCOIN_INTERFACES_NODE_H
 #define BITCOIN_INTERFACES_NODE_H
 
+<<<<<<< HEAD
 #include <amount.h>     // For CAmount
 #include <net.h>        // For NodeId
 #include <net_types.h>  // For banmap_t
 #include <netaddress.h> // For Network
 #include <netbase.h>    // For ConnectionDirection
+||||||| merged common ancestors
+#include <amount.h>     // For CAmount
+#include <net.h>        // For CConnman::NumConnections
+#include <net_types.h>  // For banmap_t
+#include <netaddress.h> // For Network
+=======
+#include <amount.h>                    // For CAmount
+#include <net.h>                       // For CConnman::NumConnections
+#include <net_types.h>                 // For banmap_t
+#include <netaddress.h>                // For Network
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
 #include <support/allocators/secure.h> // For SecureString
+#include <util/settings.h>             // For util::SettingsValue
 #include <util/translation.h>
 
 #include <functional>
@@ -81,6 +94,16 @@ public:
 
     //! Return whether shutdown was requested.
     virtual bool shutdownRequested() = 0;
+
+    //! Return whether a particular setting in <datadir>/settings.json is or
+    //! would be ignored because it is also specified in the command line.
+    virtual bool isSettingIgnored(const std::string& name) = 0;
+
+    //! Return setting value from <datadir>/settings.json or bitcoin.conf.
+    virtual util::SettingsValue getPersistentSetting(const std::string& name) = 0;
+
+    //! Update a setting in <datadir>/settings.json.
+    virtual void updateSetting(const std::string& name, const util::SettingsValue& value) = 0;
 
     //! Map port.
     virtual void mapPort(bool use_upnp, bool use_natpmp) = 0;
