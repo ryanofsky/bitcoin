@@ -299,11 +299,19 @@ void BitcoinApplication::parameterSetup()
     m_node.initParameterInteraction();
 }
 
+<<<<<<< HEAD
 void BitcoinApplication::InitializePruneSetting(bool prune)
 {
     // If prune is set, intentionally override existing prune size with
     // the default size since this is called when choosing a new datadir.
     optionsModel->SetPruneTargetGB(prune ? DEFAULT_PRUNE_TARGET_GB : 0, true);
+||||||| merged common ancestors
+void BitcoinApplication::SetPrune(bool prune, bool force) {
+     optionsModel->SetPrune(prune, force);
+=======
+void BitcoinApplication::SetPrune(bool prune) {
+     optionsModel->SetPrune(prune);
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
 }
 
 void BitcoinApplication::requestInitialize()
@@ -575,7 +583,13 @@ int GuiMain(int argc, char* argv[])
 
     if (did_show_intro) {
         // Store intro dialog settings other than datadir (network specific)
+<<<<<<< HEAD
         app.InitializePruneSetting(prune);
+||||||| merged common ancestors
+        app.SetPrune(prune, true);
+=======
+        app.SetPrune(prune);
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
     }
 
     if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))

@@ -178,6 +178,44 @@ static std::string SettingName(const std::string& arg)
     return arg.size() > 0 && arg[0] == '-' ? arg.substr(1) : arg;
 }
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+/** Internal helper functions for ArgsManager */
+class ArgsManagerHelper {
+public:
+    /** Determine whether to use config settings in the default section,
+     *  See also comments around ArgsManager::ArgsManager() below. */
+    static inline bool UseDefaultSection(const ArgsManager& am, const std::string& arg) EXCLUSIVE_LOCKS_REQUIRED(am.cs_args)
+    {
+        return (am.m_network == CBaseChainParams::MAIN || am.m_network_only_args.count(arg) == 0);
+    }
+
+    static util::SettingsValue Get(const ArgsManager& am, const std::string& arg)
+    {
+        LOCK(am.cs_args);
+        return GetSetting(am.m_settings, am.m_network, SettingName(arg), !UseDefaultSection(am, arg), /* get_chain_name= */ false);
+    }
+};
+
+=======
+/** Internal helper functions for ArgsManager */
+class ArgsManagerHelper {
+public:
+    /** Determine whether to use config settings in the default section,
+     *  See also comments around ArgsManager::ArgsManager() below. */
+    static inline bool UseDefaultSection(const ArgsManager& am, const std::string& arg) EXCLUSIVE_LOCKS_REQUIRED(am.cs_args)
+    {
+        return (am.m_network == CBaseChainParams::MAIN || am.m_network_only_args.count(arg) == 0);
+    }
+
+    static util::SettingsValue Get(const ArgsManager& am, const std::string& arg)
+    {
+        LOCK(am.cs_args);
+        return GetSetting(am.m_settings, am.m_network, SettingName(arg), !UseDefaultSection(am, arg), /* ignore_nonpersistent= */ false, /* get_chain_name= */ false);
+    }
+};
+
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
 /**
  * Interpret -nofoo as if the user supplied -foo=0.
  *
@@ -451,6 +489,13 @@ bool ArgsManager::WriteSettingsFile() const
         return false;
     }
     return true;
+}
+
+util::SettingsValue ArgsManager::GetPersistentSetting(const std::string& name) const
+{
+    LOCK(cs_args);
+    return util::GetSetting(m_settings, m_network, name, !ArgsManagerHelper::UseDefaultSection(*this, "-" + name),
+        /* ignore_nonpersistent = */ true, /* get_chain_name= */ false);
 }
 
 bool ArgsManager::IsArgNegated(const std::string& strArg) const
@@ -913,9 +958,20 @@ std::string ArgsManager::GetChainName() const
 {
     auto get_net = [&](const std::string& arg) {
         LOCK(cs_args);
+<<<<<<< HEAD
         util::SettingsValue value = util::GetSetting(m_settings, /* section= */ "", SettingName(arg),
             /* ignore_default_section_config= */ false,
             /* get_chain_name= */ true);
+||||||| merged common ancestors
+        util::SettingsValue value = GetSetting(m_settings, /* section= */ "", SettingName(arg),
+                                               /* ignore_default_section_config= */ false,
+                                               /* get_chain_name= */ true);
+=======
+        util::SettingsValue value = GetSetting(m_settings, /* section= */ "", SettingName(arg),
+                                               /* ignore_default_section_config= */ false,
+                                               /* ignore_nonpersistent= */ false,
+                                               /* get_chain_name= */ true);
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
         return value.isNull() ? false : value.isBool() ? value.get_bool() : InterpretBool(value.get_str());
     };
 

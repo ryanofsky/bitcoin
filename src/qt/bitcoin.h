@@ -67,8 +67,16 @@ public:
     void parameterSetup();
     /// Create options model
     void createOptionsModel(bool resetSettings);
+<<<<<<< HEAD
     /// Initialize prune setting
     void InitializePruneSetting(bool prune);
+||||||| merged common ancestors
+    /// Update prune value
+    void SetPrune(bool prune, bool force = false);
+=======
+    /// Update prune value
+    void SetPrune(bool prune);
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
     /// Create main window
     void createWindow(const NetworkStyle *networkStyle);
     /// Create splash screen

@@ -17,6 +17,7 @@ class Node;
 extern const char *DEFAULT_GUI_PROXY_HOST;
 static constexpr unsigned short DEFAULT_GUI_PROXY_PORT = 9050;
 
+<<<<<<< HEAD
 /**
  * Convert configured prune target MiB to displayed GB. Round up to avoid underestimating max disk usage.
  */
@@ -27,6 +28,12 @@ static inline int PruneMiBtoGB(int64_t mib) { return (mib * 1024 * 1024 + GB_BYT
  */
 static inline int64_t PruneGBtoMiB(int gb) { return gb * GB_BYTES / 1024 / 1024; }
 
+||||||| merged common ancestors
+=======
+static inline int64_t PruneGBtoMiB(int gb) { return gb * GB_BYTES / 1024 / 1024; }
+static inline int PruneMiBtoGB(int64_t mib) { return (mib * 1024 * 1024 + GB_BYTES - 1) / GB_BYTES; }
+
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
 /** Interface from Qt to configuration data structure for Bitcoin client.
    To Qt, the options are presented as a list with the different options
    laid out vertically.
@@ -68,9 +75,21 @@ public:
     void Init(bool resetSettings = false);
     void Reset();
 
+<<<<<<< HEAD
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole) override;
+||||||| merged common ancestors
+    int rowCount(const QModelIndex & parent = QModelIndex()) const;
+    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
+    bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole);
+=======
+    int rowCount(const QModelIndex & parent = QModelIndex()) const;
+    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
+    bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole);
+    QVariant getOption(OptionID option) const;
+    bool setOption(OptionID option, const QVariant &value);
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
     /** Updates current unit in memory, settings and emits displayUnitChanged(newUnit) signal */
     void setDisplayUnit(const QVariant &value);
 
@@ -84,8 +103,14 @@ public:
     const QString& getOverriddenByCommandLine() { return strOverriddenByCommandLine; }
 
     /* Explicit setters */
+<<<<<<< HEAD
     void SetPruneEnabled(bool prune, bool force = false);
     void SetPruneTargetGB(int prune_target_gb, bool force = false);
+||||||| merged common ancestors
+    void SetPrune(bool prune, bool force = false);
+=======
+    void SetPrune(bool prune);
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
 
     /* Restart flag helper */
     void setRestartRequired(bool fRequired);
@@ -103,6 +128,15 @@ private:
     int nDisplayUnit;
     QString strThirdPartyTxUrls;
     bool fCoinControlFeatures;
+    //! In-memory settings for display. These are stored persistently by the
+    //! bitcoin node but it's also nice to store them in memory to prevent them
+    //! getting cleared when enable/disable toggles are used in the GUI.
+    int m_prune_size_gb;
+    QString m_proxy_ip;
+    QString m_proxy_port;
+    QString m_onion_ip;
+    QString m_onion_port;
+
     /* settings that were overridden by command-line */
     QString strOverriddenByCommandLine;
 
