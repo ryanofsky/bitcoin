@@ -86,6 +86,28 @@ public:
         }
     }
     bool shutdownRequested() override { return ShutdownRequested(); }
+    bool isSettingIgnored(const std::string& name) override
+    {
+        bool ignored = false;
+        gArgs.LockSettings([&](util::Settings& settings) {
+            if (auto* options = util::FindKey(settings.command_line_options, name)) {
+                ignored = !options->empty();
+            }
+        });
+        return ignored;
+    }
+    util::SettingsValue getPersistentSetting(const std::string& name) override { return gArgs.GetPersistentSetting(name); }
+    void updateSetting(const std::string& name, const util::SettingsValue& value) override
+    {
+        gArgs.LockSettings([&](util::Settings& settings) {
+            if (value.isNull()) {
+                settings.rw_settings.erase(name);
+            } else {
+                settings.rw_settings[name] = value;
+            }
+        });
+        gArgs.WriteSettingsFile();
+    }
     void mapPort(bool use_upnp) override
     {
         if (use_upnp) {
