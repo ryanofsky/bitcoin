@@ -64,9 +64,36 @@ public:
     bool readConfigFiles(std::string& error) override { return gArgs.ReadConfigFiles(error, true); }
     void forceSetArg(const std::string& arg, const std::string& value) override { gArgs.ForceSetArg(arg, value); }
     bool softSetArg(const std::string& arg, const std::string& value) override { return gArgs.SoftSetArg(arg, value); }
-    bool softSetBoolArg(const std::string& arg, bool value) override { return gArgs.SoftSetBoolArg(arg, value); }
     void selectParams(const std::string& network) override { SelectParams(network); }
+<<<<<<< HEAD
     bool initSettings(std::string& error) override { return gArgs.InitSettings(error); }
+||||||| merged common ancestors
+    bool readSettingsFile() override { return gArgs.ReadSettingsFile(); }
+=======
+    bool readSettingsFile() override { return gArgs.ReadSettingsFile(); }
+    util::SettingsValue getPersistentSetting(const std::string& name) override { return gArgs.GetPersistentSetting(name); }
+    void updateSetting(const std::string& name, const util::SettingsValue& value) override
+    {
+        gArgs.LockSettings([&](util::Settings& settings) {
+            if (value.isNull()) {
+                settings.rw_settings.erase(name);
+            } else {
+                settings.rw_settings[name] = value;
+            }
+        });
+        gArgs.WriteSettingsFile();
+    }
+    bool isSettingIgnored(const std::string& name) override
+    {
+        bool ignored = false;
+        gArgs.LockSettings([&](util::Settings& settings) {
+            if (auto* options = util::FindKey(settings.command_line_options, name)) {
+                ignored = !options->empty();
+            }
+        });
+        return ignored;
+    }
+>>>>>>> Unify bitcoin-qt and bitcoind persistent settings
     uint64_t getAssumedBlockchainSize() override { return Params().AssumedBlockchainSize(); }
     uint64_t getAssumedChainStateSize() override { return Params().AssumedChainStateSize(); }
     std::string getNetwork() override { return Params().NetworkIDString(); }
