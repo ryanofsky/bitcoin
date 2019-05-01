@@ -7,6 +7,7 @@
 
 #include <optional.h>               // For Optional and nullopt
 #include <primitives/transaction.h> // For CTransactionRef
+#include <util/settings.h>          // For util::SettingsValue
 
 #include <memory>
 #include <stddef.h>
@@ -266,6 +267,12 @@ public:
 
     //! Current RPC serialization flags.
     virtual int rpcSerializationFlags() = 0;
+
+    // Return <datadir>/settings.json setting value.
+    virtual util::SettingsValue getSetting(const std::string& name) = 0;
+
+    //! Write a setting to <datadir>/settings.json.
+    virtual bool updateSetting(const std::string& name, const util::SettingsValue& value) = 0;
 
     //! Synchronously send transactionAddedToMempool notifications about all
     //! current mempool transactions to the specified handler and return after
