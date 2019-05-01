@@ -7,6 +7,7 @@
 
 #include <optional.h>               // For Optional and nullopt
 #include <primitives/transaction.h> // For CTransactionRef
+#include <util/settings.h>          // For util::SettingsValue
 
 #include <memory>
 #include <stddef.h>
@@ -267,7 +268,19 @@ public:
     //! Current RPC serialization flags.
     virtual int rpcSerializationFlags() = 0;
 
+<<<<<<< HEAD
     //! Synchronously send transactionAddedToMempool notifications about all
+||||||| merged common ancestors
+    //! Synchronously send TransactionAddedToMempool notifications about all
+=======
+    // Return <datadir>/settings.json setting value.
+    virtual util::SettingsValue getSetting(const std::string& name) = 0;
+
+    //! Write a setting to <datadir>/settings.json.
+    virtual bool updateSetting(const std::string& name, const util::SettingsValue& value) = 0;
+
+    //! Synchronously send TransactionAddedToMempool notifications about all
+>>>>>>> Add loadwallet and createwallet RPC load_on_startup options
     //! current mempool transactions to the specified handler and return after
     //! the last one is sent. These notifications aren't coordinated with async
     //! notifications sent by handleNotifications, so out of date async

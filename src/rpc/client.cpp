@@ -171,7 +171,13 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "createwallet", 1, "disable_private_keys"},
     { "createwallet", 2, "blank"},
     { "createwallet", 4, "avoid_reuse"},
+<<<<<<< HEAD
     { "createwallet", 5, "descriptors"},
+||||||| merged common ancestors
+=======
+    { "createwallet", 5, "load_on_startup"},
+    { "loadwallet", 1, "load_on_startup"},
+>>>>>>> Add loadwallet and createwallet RPC load_on_startup options
     { "getnodeaddresses", 0, "count"},
     { "stop", 0, "wait" },
 };
