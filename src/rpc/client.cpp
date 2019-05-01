@@ -172,6 +172,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "createwallet", 2, "blank"},
     { "createwallet", 4, "avoid_reuse"},
     { "createwallet", 5, "descriptors"},
+    { "createwallet", 6, "load_on_startup"},
+    { "loadwallet", 1, "load_on_startup"},
     { "getnodeaddresses", 0, "count"},
     { "stop", 0, "wait" },
 };

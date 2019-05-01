@@ -28,6 +28,7 @@
 #include <util/vector.h>
 #include <wallet/coincontrol.h>
 #include <wallet/feebumper.h>
+#include <wallet/load.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
@@ -2570,6 +2571,7 @@ static UniValue loadwallet(const JSONRPCRequest& request)
                 "\napplied to the new wallet (eg -zapwallettxes, rescan, etc).\n",
                 {
                     {"filename", RPCArg::Type::STR, RPCArg::Optional::NO, "The wallet directory or .dat file."},
+                    {"load_on_startup", RPCArg::Type::BOOL, /* default */ "false", "Save wallet name to persistent settings and load on startup."},
                 },
                 RPCResult{
                     RPCResult::Type::OBJ, "", "",
@@ -2596,10 +2598,20 @@ static UniValue loadwallet(const JSONRPCRequest& request)
         }
     }
 
+    bool load_on_startup = false;
+    if (!request.params[1].isNull()) {
+        load_on_startup = request.params[1].get_bool();
+    }
+
     bilingual_str error;
     std::vector<bilingual_str> warnings;
     std::shared_ptr<CWallet> const wallet = LoadWallet(*g_rpc_chain, location, error, warnings);
     if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
+
+    if (load_on_startup && !AddWalletSetting(wallet->chain(), location.GetName())) {
+        warnings.emplace_back(Untranslated("Wallet loaded, but load-on-startup list could not be written, so wallet "
+                                           "may be not loaded on node restart."));
+    }
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
@@ -2688,6 +2700,7 @@ static UniValue createwallet(const JSONRPCRequest& request)
             {"passphrase", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Encrypt the wallet with this passphrase."},
             {"avoid_reuse", RPCArg::Type::BOOL, /* default */ "false", "Keep track of coin reuse, and treat dirty and clean coins differently with privacy considerations in mind."},
             {"descriptors", RPCArg::Type::BOOL, /* default */ "false", "Create a native descriptor wallet. The wallet will use descriptors internally to handle address creation"},
+            {"load_on_startup", RPCArg::Type::BOOL, /* default */ "false", "Save wallet name to persistent settings and load on startup."},
         },
         RPCResult{
             RPCResult::Type::OBJ, "", "",
@@ -2729,6 +2742,11 @@ static UniValue createwallet(const JSONRPCRequest& request)
         warnings.emplace_back(Untranslated("Wallet is an experimental descriptor wallet"));
     }
 
+    bool load_on_startup = false;
+    if (!request.params[6].isNull()) {
+        load_on_startup = request.params[6].get_bool();
+    }
+
     bilingual_str error;
     std::shared_ptr<CWallet> wallet;
     WalletCreationStatus status = CreateWallet(*g_rpc_chain, passphrase, flags, request.params[0].get_str(), error, warnings, wallet);
@@ -2740,6 +2758,11 @@ static UniValue createwallet(const JSONRPCRequest& request)
         case WalletCreationStatus::SUCCESS:
             break;
         // no default case, so the compiler can warn about missing cases
+    }
+
+    if (load_on_startup && !AddWalletSetting(wallet->chain(), wallet->GetName())) {
+        warnings.emplace_back(Untranslated("Wallet loaded, but load-on-startup list could not be written, so wallet "
+                                           "may be not loaded on node restart."));
     }
 
     UniValue obj(UniValue::VOBJ);
@@ -2757,7 +2780,9 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
                 {
                     {"wallet_name", RPCArg::Type::STR, /* default */ "the wallet name from the RPC request", "The name of the wallet to unload."},
                 },
-                RPCResult{RPCResult::Type::NONE, "", ""},
+                RPCResult{RPCResult::Type::OBJ, "", "", {
+                    {RPCResult::Type::STR, "warning", "Warning message if wallet was not unloaded cleanly."},
+                }},
                 RPCExamples{
                     HelpExampleCli("unloadwallet", "wallet_name")
             + HelpExampleRpc("unloadwallet", "wallet_name")
@@ -2785,9 +2810,17 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_MISC_ERROR, "Requested wallet already unloaded");
     }
 
+    interfaces::Chain& chain = wallet->chain();
     UnloadWallet(std::move(wallet));
+    std::vector<bilingual_str> warnings;
+    if (!RemoveWalletSetting(chain, wallet_name)) {
+        warnings.emplace_back(Untranslated("Wallet unloaded, but load-on-startup list could not be written, so wallet "
+                                           "may be reloaded on node restart."));
+    }
 
-    return NullUniValue;
+    UniValue result(UniValue::VOBJ);
+    result.pushKV("warning", Join(warnings, Untranslated("\n")).original);
+    return result;
 }
 
 static UniValue listunspent(const JSONRPCRequest& request)
@@ -4275,7 +4308,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "addmultisigaddress",               &addmultisigaddress,            {"nrequired","keys","label","address_type"} },
     { "wallet",             "backupwallet",                     &backupwallet,                  {"destination"} },
     { "wallet",             "bumpfee",                          &bumpfee,                       {"txid", "options"} },
-    { "wallet",             "createwallet",                     &createwallet,                  {"wallet_name", "disable_private_keys", "blank", "passphrase", "avoid_reuse", "descriptors"} },
+    { "wallet",             "createwallet",                     &createwallet,                  {"wallet_name", "disable_private_keys", "blank", "passphrase", "avoid_reuse", "descriptors", "load_on_startup"} },
     { "wallet",             "dumpprivkey",                      &dumpprivkey,                   {"address"}  },
     { "wallet",             "dumpwallet",                       &dumpwallet,                    {"filename"} },
     { "wallet",             "encryptwallet",                    &encryptwallet,                 {"passphrase"} },
@@ -4308,7 +4341,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "listunspent",                      &listunspent,                   {"minconf","maxconf","addresses","include_unsafe","query_options"} },
     { "wallet",             "listwalletdir",                    &listwalletdir,                 {} },
     { "wallet",             "listwallets",                      &listwallets,                   {} },
-    { "wallet",             "loadwallet",                       &loadwallet,                    {"filename"} },
+    { "wallet",             "loadwallet",                       &loadwallet,                    {"filename", "load_on_startup"} },
     { "wallet",             "lockunspent",                      &lockunspent,                   {"unlock","transactions"} },
     { "wallet",             "removeprunedfunds",                &removeprunedfunds,             {"txid"} },
     { "wallet",             "rescanblockchain",                 &rescanblockchain,              {"start_height", "stop_height"} },

@@ -12,6 +12,8 @@
 #include <util/translation.h>
 #include <wallet/wallet.h>
 
+#include <univalue.h>
+
 bool VerifyWallets(interfaces::Chain& chain, const std::vector<std::string>& wallet_files)
 {
     if (gArgs.IsArgSet("-walletdir")) {
@@ -116,4 +118,40 @@ void UnloadWallets()
         RemoveWallet(wallet);
         UnloadWallet(std::move(wallet));
     }
+}
+
+bool AddWalletSetting(interfaces::Chain& chain, const std::string& wallet_name)
+{
+    util::SettingsValue setting_value = chain.getRwSetting("wallet");
+    bool unset = setting_value.isNull();
+    if (!setting_value.isArray()) setting_value.setArray();
+    for (const util::SettingsValue& value : setting_value.getValues()) {
+        if (value.isStr() && value.get_str() == wallet_name) return true;
+    }
+    if (unset) {
+        // If dynamic wallet setting is being added for the first time, and the
+        // default SoftSetArg wallet is loaded, add the default wallet to the
+        // list so it still gets loaded next startup. This can be removed after
+        // https://github.com/bitcoin/bitcoin/pull/15454, when there is no more
+        // default SoftSetArg wallet.
+        util::SettingsValue forced_value = chain.getForcedSetting("wallet");
+        LogPrintf("::: UNSET forced %s\n", forced_value.write().c_str());
+        if (forced_value.isStr() && GetWallet(forced_value.get_str())) {
+            setting_value.push_back(forced_value.get_str());
+        }
+    }
+    setting_value.push_back(wallet_name);
+    return chain.updateRwSetting("wallet", setting_value);
+}
+
+bool RemoveWalletSetting(interfaces::Chain& chain, const std::string& wallet_name)
+{
+    util::SettingsValue setting_value = chain.getRwSetting("wallet");
+    if (!setting_value.isArray()) return true;
+    util::SettingsValue new_value(util::SettingsValue::VARR);
+    for (const util::SettingsValue& value : setting_value.getValues()) {
+        if (!value.isStr() || value.get_str() != wallet_name) new_value.push_back(value);
+    }
+    if (new_value.size() == setting_value.size()) return true;
+    return chain.updateRwSetting("wallet", new_value);
 }
