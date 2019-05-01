@@ -9,6 +9,13 @@
 #include <node/context.h>
 #include <node/ui_interface.h>
 #include <outputtype.h>
+<<<<<<< HEAD
+||||||| merged common ancestors
+#include <ui_interface.h>
+=======
+#include <ui_interface.h>
+#include <univalue.h>
+>>>>>>> Add loadwallet and createwallet RPC load_on_startup options
 #include <util/moneystr.h>
 #include <util/system.h>
 #include <util/translation.h>
@@ -116,6 +123,14 @@ void WalletInit::Construct(NodeContext& node) const
         LogPrintf("Wallet disabled!\n");
         return;
     }
-    gArgs.SoftSetArg("-wallet", "");
+    // If there's no wallet setting, initialize it with a default wallet in list
+    // of wallets to load.
+    if (!gArgs.IsArgSet("wallet")) {
+        gArgs.LockSettings([&](util::Settings& settings) {
+            util::SettingsValue wallets(util::SettingsValue::VARR);
+            wallets.push_back(""); // Default wallet name is ""
+            settings.rw_settings["wallet"] = wallets;
+        });
+    }
     node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, gArgs.GetArgs("-wallet")));
 }
