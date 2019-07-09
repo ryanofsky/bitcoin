@@ -140,11 +140,25 @@ jobs:
         FILE_ENV="./ci/test/00_setup_env_native_fuzz_with_valgrind.sh"
 
     - stage: test
+<<<<<<< HEAD
       name: 'x86_64 Linux [GOAL: install]  [bionic]  [multiprocess]'
       env: >-
         FILE_ENV="./ci/test/00_setup_env_native_multiprocess.sh"
 
     - stage: test
+||||||| merged common ancestors
+=======
+      name: 'x86_64 Linux [GOAL: install]  [bionic]  [multiprocess]'
+      env: >-
+        HOST=x86_64-unknown-linux-gnu
+        PACKAGES="cmake python3"
+        DEP_OPTS="MULTIPROCESS=1"
+        GOAL="install"
+        BITCOIN_CONFIG=""
+        TEST_RUNNER_ENV="BITCOIND=bitcoin-node"
+
+    - stage: test
+>>>>>>> Add multiprocess travis configuration
       name: 'x86_64 Linux  [GOAL: install]  [bionic]  [no wallet]'
       env: >-
         FILE_ENV="./ci/test/00_setup_env_native_nowallet.sh"
