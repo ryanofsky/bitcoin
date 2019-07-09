@@ -92,6 +92,13 @@ The following can be set when running make: make FOO=bar
     NO_WALLET: Don't download/build/cache libs needed to enable the wallet
     NO_UPNP: Don't download/build/cache packages needed for enabling upnp
     DEBUG: disable some optimizations and enable more runtime checking
+<<<<<<< HEAD
+||||||| merged common ancestors
+    RAPIDCHECK: build rapidcheck (experimental, requires cmake)
+=======
+    RAPIDCHECK: build rapidcheck (experimental, requires cmake)
+    MULTIPROCESS: build libmultiprocess (experimental, requires cmake)
+>>>>>>> libmultiprocess depends build
     HOST_ID_SALT: Optional salt to use when generating host package ids
     BUILD_ID_SALT: Optional salt to use when generating build package ids
 

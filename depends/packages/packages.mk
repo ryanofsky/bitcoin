@@ -7,6 +7,16 @@ qrencode_packages = qrencode
 qt_linux_packages:=qt expat libxcb xcb_proto libXau xproto freetype fontconfig
 qt_android_packages=qt
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+rapidcheck_packages = rapidcheck
+
+=======
+rapidcheck_packages = rapidcheck
+multiprocess_packages = libmultiprocess capnp
+multiprocess_native_packages = native_libmultiprocess native_boost native_capnp
+
+>>>>>>> libmultiprocess depends build
 qt_darwin_packages=qt
 qt_mingw32_packages=qt
 
