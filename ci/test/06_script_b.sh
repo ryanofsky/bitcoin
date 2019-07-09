@@ -43,6 +43,12 @@ fi
 
 if [ "$RUN_FUZZ_TESTS" = "true" ]; then
   BEGIN_FOLD fuzz-tests
+<<<<<<< HEAD
   DOCKER_EXEC LD_LIBRARY_PATH=$DEPENDS_DIR/$HOST/lib test/fuzz/test_runner.py ${FUZZ_TESTS_CONFIG} $MAKEJOBS -l DEBUG ${DIR_FUZZ_IN}
+||||||| merged common ancestors
+  DOCKER_EXEC test/fuzz/test_runner.py ${FUZZ_TESTS_CONFIG} -l DEBUG ${DIR_FUZZ_IN}
+=======
+  DOCKER_EXEC LD_LIBRARY_PATH=$DEPENDS_DIR/$HOST/lib test/fuzz/test_runner.py ${FUZZ_TESTS_CONFIG} -l DEBUG ${DIR_FUZZ_IN}
+>>>>>>> Set LD_LIBRARY_PATH consistently in travis tests
   END_FOLD
 fi
