@@ -156,6 +156,7 @@ endif
 ifneq ($($(1)_ldflags),)
 $(1)_autoconf += LDFLAGS="$$($(1)_ldflags)"
 endif
+<<<<<<< HEAD
 
 $(1)_cmake=cmake -DCMAKE_INSTALL_PREFIX=$($($(1)_type)_prefix)
 ifneq ($($(1)_type),build)
@@ -165,6 +166,16 @@ $(1)_cmake += -DCMAKE_C_COMPILER_TARGET=$(host) -DCMAKE_C_COMPILER=$(firstword $
 $(1)_cmake += -DCMAKE_CXX_COMPILER_TARGET=$(host) -DCMAKE_CXX_COMPILER=$(firstword $($($(1)_type)_CXX)) -DCMAKE_CXX_FLAGS="$(wordlist 2,1000,$($($(1)_type)_CXX))"
 endif
 endif
+||||||| merged common ancestors
+=======
+
+$(1)_cmake=cmake -DCMAKE_INSTALL_PREFIX=$($($(1)_type)_prefix)
+ifneq ($($(1)_type),build)
+$(1)_cmake += -DCMAKE_SYSTEM_NAME=$($(host_os)_cmake_system) -DCMAKE_SYSROOT=$(host_prefix)
+$(1)_cmake += -DCMAKE_C_COMPILER_TARGET=$(host) -DCMAKE_C_COMPILER=$(firstword $($($(1)_type)_CC)) -DCMAKE_C_FLAGS="$(wordlist 2,1000,$($($(1)_type)_CC))"
+$(1)_cmake += -DCMAKE_CXX_COMPILER_TARGET=$(host) -DCMAKE_CXX_COMPILER=$(firstword $($($(1)_type)_CXX)) -DCMAKE_CXX_FLAGS="$(wordlist 2,1000,$($($(1)_type)_CXX))"
+endif
+>>>>>>> libmultiprocess depends build
 endef
 
 define int_add_cmds
