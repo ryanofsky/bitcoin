@@ -563,7 +563,15 @@ if TARGET_WINDOWS
 bitcoin_daemon_sources += bitcoind-res.rc
 endif
 
+<<<<<<< HEAD
 bitcoin_bin_ldadd = \
+||||||| merged common ancestors
+bitcoind_LDADD = \
+  $(LIBBITCOIN_SERVER) \
+=======
+bitcoin_bin_ldadd = \
+  $(LIBBITCOIN_SERVER) \
+>>>>>>> Multiprocess build changes
   $(LIBBITCOIN_WALLET) \
   $(LIBBITCOIN_COMMON) \
   $(LIBBITCOIN_UTIL) \
@@ -576,6 +584,7 @@ bitcoin_bin_ldadd = \
   $(LIBMEMENV) \
   $(LIBSECP256K1)
 
+<<<<<<< HEAD
 bitcoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
 bitcoind_SOURCES = $(bitcoin_daemon_sources)
@@ -589,6 +598,23 @@ bitcoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
 bitcoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
 bitcoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
 bitcoin_node_LDADD = $(LIBBITCOIN_SERVER) $(bitcoin_bin_ldadd)
+||||||| merged common ancestors
+bitcoind_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+=======
+bitcoin_bin_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
+
+bitcoind_SOURCES = $(bitcoin_daemon_sources)
+bitcoind_CPPFLAGS = $(bitcoin_bin_cppflags)
+bitcoind_CXXFLAGS = $(bitcoin_bin_cxxflags)
+bitcoind_LDFLAGS = $(bitcoin_bin_ldflags)
+bitcoind_LDADD = $(bitcoin_bin_ldadd)
+
+bitcoin_node_SOURCES = $(bitcoin_daemon_sources)
+bitcoin_node_CPPFLAGS = $(bitcoin_bin_cppflags)
+bitcoin_node_CXXFLAGS = $(bitcoin_bin_cxxflags)
+bitcoin_node_LDFLAGS = $(bitcoin_bin_ldflags)
+bitcoin_node_LDADD = $(bitcoin_bin_ldadd)
+>>>>>>> Multiprocess build changes
 
 # bitcoin-cli binary #
 bitcoin_cli_SOURCES = bitcoin-cli.cpp
