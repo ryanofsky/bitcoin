@@ -549,11 +549,25 @@ libbitcoin_cli_a_SOURCES = \
 nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
+<<<<<<< HEAD
 # bitcoind & bitcoin-node binaries #
 bitcoind_common_sources = bitcoind.cpp
 bitcoind_common_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 bitcoind_common_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
 bitcoind_common_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+||||||| merged common ancestors
+# bitcoind binary #
+bitcoind_SOURCES = bitcoind.cpp
+bitcoind_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+bitcoind_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+bitcoind_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+=======
+# bitcoind, bitcoin-wallet, bitcoin-node binaries #
+bitcoind_common_sources = bitcoind.cpp
+bitcoind_common_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
+bitcoind_common_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
+bitcoind_common_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+>>>>>>> Multiprocess build changes
 
 if TARGET_WINDOWS
 bitcoind_common_sources += bitcoind-res.rc
