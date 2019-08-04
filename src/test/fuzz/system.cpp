@@ -104,11 +104,23 @@ void test_one_input(const std::vector<uint8_t>& buffer)
     const int64_t i64 = fuzzed_data_provider.ConsumeIntegral<int64_t>();
     const bool b = fuzzed_data_provider.ConsumeBool();
 
-    (void)args_manager.GetArg(s1, i64);
-    (void)args_manager.GetArg(s1, s2);
+    try {
+        (void)args_manager.GetArg(s1, i64);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetArg(s1, s2);
+    } catch (const std::logic_error&) {
+    }
     (void)args_manager.GetArgFlags(s1);
-    (void)args_manager.GetArgs(s1);
-    (void)args_manager.GetBoolArg(s1, b);
+    try {
+        (void)args_manager.GetArgs(s1);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetBoolArg(s1, b);
+    } catch (const std::logic_error&) {
+    }
     try {
         (void)args_manager.GetChainName();
     } catch (const std::runtime_error&) {
