@@ -66,9 +66,21 @@ FUZZ_TARGET(system, .init = initialize_system)
                 if (args_manager.GetArgFlags(argument_name) != std::nullopt) {
                     return;
                 }
+<<<<<<< HEAD
                 auto help = fuzzed_data_provider.ConsumeRandomLengthString(16);
                 auto flags = fuzzed_data_provider.ConsumeIntegral<unsigned int>() & ~ArgsManager::COMMAND;
                 args_manager.AddArg(argument_name, help, flags, options_category);
+||||||| parent of e9166cd0bb63 (common: Implement ArgsManager flags to parse and validate settings on startup)
+                args_manager.AddArg(argument_name, fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeIntegral<unsigned int>() & ~ArgsManager::COMMAND, options_category);
+=======
+                uint32_t flags = fuzzed_data_provider.ConsumeIntegral<uint32_t>();
+                // Avoid hitting "ALLOW_INT flag is incompatible with ALLOW_STRING", etc exceptions
+                if (flags & ArgsManager::ALLOW_ANY) flags &= ~(ArgsManager::ALLOW_BOOL | ArgsManager::ALLOW_INT | ArgsManager::ALLOW_STRING);
+                if (flags & ArgsManager::ALLOW_BOOL) flags &= ~ArgsManager::DISALLOW_ELISION;
+                if (flags & ArgsManager::ALLOW_STRING) flags &= ~ArgsManager::ALLOW_INT;
+                if (flags & ArgsManager::ALLOW_BOOL) flags &= ~(ArgsManager::ALLOW_INT | ArgsManager::ALLOW_STRING);
+                args_manager.AddArg(argument_name, fuzzed_data_provider.ConsumeRandomLengthString(16), flags & ~ArgsManager::COMMAND, options_category);
+>>>>>>> e9166cd0bb63 (common: Implement ArgsManager flags to parse and validate settings on startup)
             },
             [&] {
                 // Avoid hitting:
