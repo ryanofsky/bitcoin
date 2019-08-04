@@ -57,7 +57,12 @@ void test_one_input(const std::vector<uint8_t>& buffer)
             if (args_manager.GetArgFlags(argument_name) != nullopt) {
                 break;
             }
-            args_manager.AddArg(argument_name, fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeIntegral<unsigned int>(), options_category);
+            unsigned int flags = fuzzed_data_provider.ConsumeIntegral<unsigned int>();
+            // Avoid hitting "ALLOW_{BOOL|INT|STRING} flags would have no effect with ALLOW_ANY present (ALLOW_ANY disables validation)"
+            if (flags & ArgsManager::ALLOW_ANY) {
+                flags &= ~(ArgsManager::ALLOW_BOOL | ArgsManager::ALLOW_INT | ArgsManager::ALLOW_STRING);
+            }
+            args_manager.AddArg(argument_name, fuzzed_data_provider.ConsumeRandomLengthString(16), flags, options_category);
             break;
         }
         case 5: {
@@ -104,11 +109,23 @@ void test_one_input(const std::vector<uint8_t>& buffer)
     const int64_t i64 = fuzzed_data_provider.ConsumeIntegral<int64_t>();
     const bool b = fuzzed_data_provider.ConsumeBool();
 
-    (void)args_manager.GetArg(s1, i64);
-    (void)args_manager.GetArg(s1, s2);
+    try {
+        (void)args_manager.GetArg(s1, i64);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetArg(s1, s2);
+    } catch (const std::logic_error&) {
+    }
     (void)args_manager.GetArgFlags(s1);
-    (void)args_manager.GetArgs(s1);
-    (void)args_manager.GetBoolArg(s1, b);
+    try {
+        (void)args_manager.GetArgs(s1);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetBoolArg(s1, b);
+    } catch (const std::logic_error&) {
+    }
     try {
         (void)args_manager.GetChainName();
     } catch (const std::runtime_error&) {
