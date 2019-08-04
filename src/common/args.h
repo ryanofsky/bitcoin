@@ -375,7 +375,13 @@ protected:
     std::vector<std::string> GetArgs(const std::string& strArg) const;
 
     /**
-     * Return true if the given argument has been manually set
+     * Return true if the given argument has been manually set.
+     *
+     * New code should avoid calling this function. It's been frequently misused
+     * in the past and led to buggy argument handling. There's never any reason
+     * to call this because you can call GetArg() and GetBoolArg() functions
+     * with default values instead, or for list settings, check
+     * GetArgs().empty() instead.
      *
      * @param strArg Argument to get (e.g. "-foo")
      * @return true if the argument has been set
@@ -385,6 +391,12 @@ protected:
     /**
      * Return true if the argument was originally passed as a negated option,
      * i.e. -nofoo.
+     *
+     * New code should avoid calling this function. It's been frequently misused
+     * in the past and led to buggy argument handling. There's usually no reason
+     * to call this because GetArg()/GetBoolArg()/GetArg() functions will
+     * appropriately map -nofoo settings to false, 0, empty string, or empty
+     * list values for you.
      *
      * @param strArg Argument to get (e.g. "-foo")
      * @return true if the argument was passed negated
