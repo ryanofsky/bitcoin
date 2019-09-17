@@ -4,7 +4,10 @@
 
 #include <node/node.h>
 
+#include <banman.h>
 #include <interfaces/chain.h>
+#include <net.h>
+#include <net_processing.h>
 
 Node::Node() {}
 Node::~Node() {}

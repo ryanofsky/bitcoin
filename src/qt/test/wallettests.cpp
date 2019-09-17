@@ -133,6 +133,7 @@ void TestGUI(interfaces::Node& node)
     for (int i = 0; i < 5; ++i) {
         test.CreateAndProcessBlock({}, GetScriptForRawPubKey(test.coinbaseKey.GetPubKey()));
     }
+    node.state()->connman = std::move(test.m_node.connman);
     std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.state()->chain.get(), WalletLocation(), WalletDatabase::CreateMock());
     bool firstRun;
     wallet->LoadWallet(firstRun);
