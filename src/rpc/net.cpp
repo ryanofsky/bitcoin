@@ -13,6 +13,7 @@
 #include <netbase.h>
 #include <node/node.h>
 #include <policy/settings.h>
+#include <rpc/blockchain.h>
 #include <rpc/protocol.h>
 #include <rpc/util.h>
 #include <sync.h>
