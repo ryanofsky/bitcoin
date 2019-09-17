@@ -13,6 +13,7 @@
 #include <key_io.h>
 #include <miner.h>
 #include <net.h>
+#include <node/node.h>
 #include <policy/fees.h>
 #include <pow.h>
 #include <rpc/blockchain.h>
