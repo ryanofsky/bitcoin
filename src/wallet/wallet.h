@@ -676,6 +676,13 @@ private:
      */
     uint256 m_last_block_processed GUARDED_BY(cs_wallet);
 
+    std::map<OutputType, ScriptPubKeyMan*> m_external_spk_managers;
+    std::map<OutputType, ScriptPubKeyMan*> m_internal_spk_managers;
+
+    // Indexed by a unique identifier produced by each ScriptPubKeyMan using
+    // ScriptPubKeyMan::GetID. In many cases it will be the hash of an internal structure
+    std::map<uint256, std::unique_ptr<ScriptPubKeyMan>> m_spk_managers;
+
 public:
     /*
      * Main wallet lock.
@@ -1101,13 +1108,22 @@ public:
         LogPrintf(("%s " + fmt).c_str(), GetDisplayName(), parameters...);
     };
 
+    //! De-duplicates and returns all ScriptPubKeyMans in m_internal_spk_managers and m_external_spk_managers
+    std::set<ScriptPubKeyMan*> GetActiveScriptPubKeyMans() const;
+
+    //! Get the ScriptPubKeyMan for the given OutputType and internal/external chain.
+    ScriptPubKeyMan* GetScriptPubKeyMan(const OutputType& type, bool internal) const;
+
     //! Get the ScriptPubKeyMan for a script
     ScriptPubKeyMan* GetScriptPubKeyMan(const CScript& script) const;
+    //! Get the ScriptPubKeyMan by id
+    ScriptPubKeyMan* GetScriptPubKeyMan(const uint256& id) const;
 
     //! Get the SigningProvider for a script
     const SigningProvider* GetSigningProvider(const CScript& script) const;
     const SigningProvider* GetSigningProvider(const CScript& script, SignatureData& sigdata) const;
 
+    //! Get the LegacyScriptPubKeyMan which is used for all types, internal, and external.
     LegacyScriptPubKeyMan* GetLegacyScriptPubKeyMan() const;
     LegacyScriptPubKeyMan* GetOrCreateLegacyScriptPubKeyMan();
 
@@ -1116,10 +1132,6 @@ public:
 
     const CKeyingMaterial& GetEncryptionKey() const override;
     bool HasEncryptionKeys() const override;
-
-    // Temporary LegacyScriptPubKeyMan accessors and aliases.
-    friend class LegacyScriptPubKeyMan;
-    std::unique_ptr<LegacyScriptPubKeyMan> m_spk_man;
 };
 
 /**

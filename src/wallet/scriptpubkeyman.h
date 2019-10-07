@@ -193,6 +193,15 @@ public:
     virtual int64_t GetTimeFirstKey() const { return 0; }
 
     virtual const CKeyMetadata* GetMetadata(uint160 id) const { return nullptr; }
+
+    virtual const SigningProvider* GetSigningProvider(const CScript& script) const { return nullptr; }
+
+    /** Whether this ScriptPubKeyMan can provide a SigningProvider (via GetSigningProvider) that, combined with
+      * sigdata, can produce a valid signature.
+      */
+    virtual bool CanProvide(const CScript& script, SignatureData& sigdata) { return false; }
+
+    virtual uint256 GetID() const { return uint256(); }
 };
 
 class LegacyScriptPubKeyMan : public ScriptPubKeyMan, public FillableSigningProvider
@@ -316,6 +325,12 @@ public:
     const CKeyMetadata* GetMetadata(uint160 id) const override;
 
     bool CanGetAddresses(bool internal = false) override;
+
+    const SigningProvider* GetSigningProvider(const CScript& script) const override;
+
+    bool CanProvide(const CScript& script, SignatureData& sigdata) override;
+
+    uint256 GetID() const override;
 
     // Map from Key ID to key metadata.
     std::map<CKeyID, CKeyMetadata> mapKeyMetadata GUARDED_BY(cs_KeyStore);
