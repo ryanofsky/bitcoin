@@ -483,7 +483,7 @@ size_t LegacyScriptPubKeyMan::KeypoolCountExternalKeys()
 unsigned int LegacyScriptPubKeyMan::GetKeyPoolSize() const
 {
     LOCK(cs_KeyStore);
-    return setInternalKeyPool.size() + setExternalKeyPool.size();
+    return setInternalKeyPool.size() + setExternalKeyPool.size() + set_pre_split_keypool.size();
 }
 
 int64_t LegacyScriptPubKeyMan::GetTimeFirstKey() const
