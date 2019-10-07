@@ -150,8 +150,8 @@ public:
     virtual bool GetNewDestination(const OutputType type, CTxDestination& dest, std::string& error) { return false; }
     virtual isminetype IsMine(const CScript& script) const { return ISMINE_NO; }
 
-    virtual bool GetReservedDestination(const OutputType type, bool internal, int64_t& index, CKeyPool& keypool) { return false; }
-    virtual void KeepDestination(int64_t index) {}
+    virtual bool GetReservedDestination(const OutputType type, bool internal, CTxDestination& address, int64_t& index, CKeyPool& keypool) { return false; }
+    virtual void KeepDestination(int64_t index, OutputType type, const CPubKey& pubkey) {}
     virtual void ReturnDestination(int64_t index, bool internal, const CPubKey& pubkey) {}
 
     virtual bool TopUp(unsigned int size = 0) { return false; }
@@ -248,7 +248,7 @@ private:
     std::map<CKeyID, int64_t> m_pool_key_to_index;
 
     //! Fetches a key from the keypool
-    bool GetKeyFromPool(CPubKey &key, bool internal = false);
+    bool GetKeyFromPool(CPubKey &key, OutputType type, bool internal = false);
 
     /**
      * Reserves a key from the keypool and sets nIndex to its index
@@ -266,7 +266,7 @@ private:
      */
     bool ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& keypool, bool fRequestedInternal);
 
-    void KeepKey(int64_t nIndex);
+    void KeepKey(int64_t nIndex, OutputType type, const CPubKey& pubkey);
     void ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey);
 
 public:
@@ -276,8 +276,8 @@ public:
     //! will encrypt previously unencrypted keys
     bool EncryptKeys(CKeyingMaterial& vMasterKeyIn);
 
-    bool GetReservedDestination(const OutputType type, bool internal, int64_t& index, CKeyPool& keypool) override;
-    void KeepDestination(int64_t index) override;
+    bool GetReservedDestination(const OutputType type, bool internal, CTxDestination& address, int64_t& index, CKeyPool& keypool) override;
+    void KeepDestination(int64_t index, OutputType type, const CPubKey& pubkey) override;
     void ReturnDestination(int64_t index, bool internal, const CPubKey& pubkey) override;
 
     bool TopUp(unsigned int size = 0) override;

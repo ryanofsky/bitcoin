@@ -18,7 +18,7 @@ bool LegacyScriptPubKeyMan::GetNewDestination(const OutputType type, CTxDestinat
 
     // Generate a new key that is added to wallet
     CPubKey new_key;
-    if (!GetKeyFromPool(new_key)) {
+    if (!GetKeyFromPool(new_key, type)) {
         error = "Error: Keypool ran out, please call keypoolrefill first";
         return false;
     }
@@ -262,7 +262,7 @@ bool LegacyScriptPubKeyMan::EncryptKeys(CKeyingMaterial& vMasterKeyIn)
     return true;
 }
 
-bool LegacyScriptPubKeyMan::GetReservedDestination(const OutputType type, bool internal, int64_t& index, CKeyPool& keypool)
+bool LegacyScriptPubKeyMan::GetReservedDestination(const OutputType type, bool internal, CTxDestination& address, int64_t& index, CKeyPool& keypool)
 {
     if (!CanGetAddresses(internal)) {
         return false;
@@ -271,12 +271,13 @@ bool LegacyScriptPubKeyMan::GetReservedDestination(const OutputType type, bool i
     if (!ReserveKeyFromKeyPool(index, keypool, internal)) {
         return false;
     }
+    address = GetDestinationForKey(keypool.vchPubKey, type);
     return true;
 }
 
-void LegacyScriptPubKeyMan::KeepDestination(int64_t index)
+void LegacyScriptPubKeyMan::KeepDestination(int64_t index, OutputType type, const CPubKey& pubkey)
 {
-    KeepKey(index);
+    KeepKey(index, type, pubkey);
 }
 
 void LegacyScriptPubKeyMan::ReturnDestination(int64_t index, bool internal, const CPubKey& pubkey)
@@ -1096,11 +1097,12 @@ void LegacyScriptPubKeyMan::AddKeypoolPubkeyWithDB(const CPubKey& pubkey, const 
     m_pool_key_to_index[pubkey.GetID()] = index;
 }
 
-void LegacyScriptPubKeyMan::KeepKey(int64_t nIndex)
+void LegacyScriptPubKeyMan::KeepKey(int64_t nIndex, OutputType type, const CPubKey& pubkey)
 {
     // Remove from key pool
     WalletBatch batch(m_storage.GetDatabase());
     batch.ErasePool(nIndex);
+    LearnRelatedScripts(pubkey, type);
     WalletLogPrintf("keypool keep %d\n", nIndex);
 }
 
@@ -1122,7 +1124,7 @@ void LegacyScriptPubKeyMan::ReturnKey(int64_t nIndex, bool fInternal, const CPub
     WalletLogPrintf("keypool return %d\n", nIndex);
 }
 
-bool LegacyScriptPubKeyMan::GetKeyFromPool(CPubKey& result, bool internal)
+bool LegacyScriptPubKeyMan::GetKeyFromPool(CPubKey& result, OutputType type, bool internal)
 {
     if (!CanGetAddresses(internal)) {
         return false;
@@ -1138,7 +1140,7 @@ bool LegacyScriptPubKeyMan::GetKeyFromPool(CPubKey& result, bool internal)
             result = GenerateNewKey(batch, internal);
             return true;
         }
-        KeepKey(nIndex);
+        KeepKey(nIndex, type, keypool.vchPubKey);
         result = keypool.vchPubKey;
     }
     return true;
