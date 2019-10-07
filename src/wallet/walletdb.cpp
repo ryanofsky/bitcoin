@@ -14,6 +14,7 @@
 #include <sync.h>
 #include <util/system.h>
 #include <util/time.h>
+#include <wallet/scriptpubkeyman.h>
 #include <wallet/wallet.h>
 
 #include <atomic>
