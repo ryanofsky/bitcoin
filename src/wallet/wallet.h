@@ -588,7 +588,6 @@ class CWallet final : public WalletStorage, private interfaces::Chain::Notificat
 private:
     CKeyingMaterial vMasterKey GUARDED_BY(cs_wallet);
 
-
     bool Unlock(const CKeyingMaterial& vMasterKeyIn, bool accept_no_keys = false);
 
     std::atomic<bool> fAbortRescan{false};
@@ -650,9 +649,6 @@ private:
     std::atomic<uint64_t> m_wallet_flags{0};
 
     bool SetAddressBookWithDB(WalletBatch& batch, const CTxDestination& address, const std::string& strName, const std::string& strPurpose);
-
-    //! Unsets a wallet flag and saves it to disk
-    void UnsetWalletFlagWithDB(WalletBatch& batch, uint64_t flag) override;
 
     /** Interface for accessing chain state. */
     interfaces::Chain* m_chain;
@@ -1085,6 +1081,9 @@ public:
 
     /** Unsets a single wallet flag */
     void UnsetWalletFlag(uint64_t flag);
+
+    //! Unsets a wallet flag and saves it to disk
+    void UnsetWalletFlagWithDB(WalletBatch& batch, uint64_t flag) override;
 
     /** check if a certain wallet flag is set */
     bool IsWalletFlagSet(uint64_t flag) const override;

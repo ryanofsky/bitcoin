@@ -404,8 +404,7 @@ bool LegacyScriptPubKeyMan::Upgrade(int prev_version, std::string& error)
         m_storage.SetMinVersion(FEATURE_HD);
 
         // generate a new master key
-        CPubKey masterPubKey = GenerateNewSeed();
-        SetHDSeed(masterPubKey);
+        SetHDSeed(GenerateNewSeed());
         hd_upgrade = true;
     }
     // Upgrade to HD chain split if necessary
@@ -675,7 +674,7 @@ bool LegacyScriptPubKeyMan::AddCryptedKeyInner(const CPubKey &vchPubKey, const s
         return false;
     }
 
-    mapCryptedKeys[vchPubKey.GetID()] = make_pair(vchPubKey, vchCryptedSecret);
+    mapCryptedKeys[vchPubKey.GetID()] = std::make_pair(vchPubKey, vchCryptedSecret);
     ImplicitlyLearnRelatedKeyScripts(vchPubKey);
     return true;
 }
@@ -1078,7 +1077,7 @@ bool LegacyScriptPubKeyMan::NewKeyPool()
         if (!TopUpKeyPool()) {
             return false;
         }
-        WalletLogPrintf("LegacyScriptPubKeyMan::NewKeyPool rewrote keypool\n");
+        WalletLogPrintf("CWallet::NewKeyPool rewrote keypool\n");
     }
     return true;
 }
