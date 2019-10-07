@@ -147,8 +147,19 @@ class ScriptPubKeyMan
 protected:
     WalletStorage& m_storage;
 
+    const std::string GetDisplayName() const { return m_storage.GetDisplayName(); }
+    bool IsWalletFlagSet(uint64_t flag) const { return m_storage.IsWalletFlagSet(flag); }
+    void SetWalletFlag(uint64_t flag) { return m_storage.SetWalletFlag(flag); }
+    void UnsetWalletFlagWithDB(WalletBatch& batch, uint64_t flag) { return m_storage.UnsetWalletFlagWithDB(batch, flag); }
+    bool CanSupportFeature(enum WalletFeature wf) const { return m_storage.CanSupportFeature(wf); }
+    void SetMinVersion(enum WalletFeature wf) { return m_storage.SetMinVersion(wf); }
+    const CKeyingMaterial& GetEncryptionKey() const { return m_storage.GetEncryptionKey(); }
+    bool HasEncryptionKeys() const { return m_storage.HasEncryptionKeys(); }
+    bool IsLocked() const { return m_storage.IsLocked(); }
+
 public:
     ScriptPubKeyMan(WalletStorage& storage) : m_storage(storage) {}
+
     virtual ~ScriptPubKeyMan() {};
     virtual bool GetNewDestination(const OutputType type, CTxDestination& dest, std::string& error) { return false; }
     virtual isminetype IsMine(const CScript& script) const { return ISMINE_NO; }
@@ -210,7 +221,7 @@ public:
     /** Prepends the wallet name in logging output to ease debugging in multi-wallet use cases */
     template<typename... Params>
     void WalletLogPrintf(std::string fmt, Params... parameters) const {
-        LogPrintf(("%s " + fmt).c_str(), m_storage.GetDisplayName(), parameters...);
+        LogPrintf(("%s " + fmt).c_str(), GetDisplayName(), parameters...);
     };
 
     /** Watch-only address added */
