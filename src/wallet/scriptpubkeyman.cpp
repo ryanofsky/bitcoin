@@ -329,7 +329,7 @@ void LegacyScriptPubKeyMan::UpgradeKeyMetadata()
         return;
     }
 
-    std::unique_ptr<WalletBatch> batch = MakeUnique<WalletBatch>(m_storage.GetDatabase());
+    std::unique_ptr<WalletBatch> batch = MakeUnique<WalletBatch>(*m_database);
     for (auto& meta_pair : mapKeyMetadata) {
         CKeyMetadata& meta = meta_pair.second;
         if (!meta.hd_seed_id.IsNull() && !meta.has_key_origin && meta.hdKeypath != "s") { // If the hdKeypath is "s", that's the seed and it doesn't have a key origin
@@ -462,7 +462,7 @@ int64_t LegacyScriptPubKeyMan::GetOldestKeyPoolTime()
 {
     LOCK(cs_KeyStore);
 
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
 
     // load oldest key from keypool, get time and return
     int64_t oldestKey = GetOldestKeyTimeInPool(setExternalKeyPool, batch);
@@ -566,7 +566,7 @@ bool LegacyScriptPubKeyMan::LoadKey(const CKey& key, const CPubKey &pubkey)
 bool LegacyScriptPubKeyMan::AddKeyPubKey(const CKey& secret, const CPubKey &pubkey)
 {
     LOCK(cs_KeyStore);
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     return LegacyScriptPubKeyMan::AddKeyPubKeyWithDB(batch, secret, pubkey);
 }
 
@@ -691,7 +691,7 @@ bool LegacyScriptPubKeyMan::AddCryptedKey(const CPubKey &vchPubKey,
                                                         vchCryptedSecret,
                                                         mapKeyMetadata[vchPubKey.GetID()]);
         else
-            return WalletBatch(m_storage.GetDatabase()).WriteCryptedKey(vchPubKey,
+            return WalletBatch(*m_database).WriteCryptedKey(vchPubKey,
                                                             vchCryptedSecret,
                                                             mapKeyMetadata[vchPubKey.GetID()]);
     }
@@ -731,7 +731,7 @@ bool LegacyScriptPubKeyMan::RemoveWatchOnly(const CScript &dest)
 
     if (!HaveWatchOnly())
         NotifyWatchonlyChanged(false);
-    if (!WalletBatch(m_storage.GetDatabase()).EraseWatchOnly(dest))
+    if (!WalletBatch(*m_database).EraseWatchOnly(dest))
         return false;
 
     return true;
@@ -776,7 +776,7 @@ bool LegacyScriptPubKeyMan::AddWatchOnlyWithDB(WalletBatch &batch, const CScript
 
 bool LegacyScriptPubKeyMan::AddWatchOnly(const CScript& dest)
 {
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     return AddWatchOnlyWithDB(batch, dest);
 }
 
@@ -789,7 +789,7 @@ bool LegacyScriptPubKeyMan::AddWatchOnly(const CScript& dest, int64_t nCreateTim
 void LegacyScriptPubKeyMan::SetHDChain(const CHDChain& chain, bool memonly)
 {
     LOCK(cs_KeyStore);
-    if (!memonly && !WalletBatch(m_storage.GetDatabase()).WriteHDChain(chain))
+    if (!memonly && !WalletBatch(*m_database).WriteHDChain(chain))
         throw std::runtime_error(std::string(__func__) + ": writing chain failed");
 
     hdChain = chain;
@@ -1040,7 +1040,7 @@ void LegacyScriptPubKeyMan::SetHDSeed(const CPubKey& seed)
     newHdChain.seed_id = seed.GetID();
     SetHDChain(newHdChain, false);
     NotifyCanGetAddressesChanged();
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     UnsetWalletFlagWithDB(batch, WALLET_FLAG_BLANK_WALLET);
 }
 
@@ -1055,7 +1055,7 @@ bool LegacyScriptPubKeyMan::NewKeyPool()
     }
     {
         LOCK(cs_KeyStore);
-        WalletBatch batch(m_storage.GetDatabase());
+        WalletBatch batch(*m_database);
 
         for (const int64_t nIndex : setInternalKeyPool) {
             batch.ErasePool(nIndex);
@@ -1110,7 +1110,7 @@ bool LegacyScriptPubKeyMan::TopUpKeyPool(unsigned int kpSize)
             missingInternal = 0;
         }
         bool internal = false;
-        WalletBatch batch(m_storage.GetDatabase());
+        WalletBatch batch(*m_database);
         for (int64_t i = missingInternal + missingExternal; i--;)
         {
             if (i < missingInternal) {
@@ -1147,7 +1147,7 @@ void LegacyScriptPubKeyMan::AddKeypoolPubkeyWithDB(const CPubKey& pubkey, const 
 void LegacyScriptPubKeyMan::KeepKey(int64_t nIndex)
 {
     // Remove from key pool
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     batch.ErasePool(nIndex);
     WalletLogPrintf("keypool keep %d\n", nIndex);
 }
@@ -1182,7 +1182,7 @@ bool LegacyScriptPubKeyMan::GetKeyFromPool(CPubKey& result, bool internal)
         int64_t nIndex;
         if (!ReserveKeyFromKeyPool(nIndex, keypool, internal) && !IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS)) {
             if (IsLocked()) return false;
-            WalletBatch batch(m_storage.GetDatabase());
+            WalletBatch batch(*m_database);
             result = GenerateNewKey(batch, internal);
             return true;
         }
@@ -1211,7 +1211,7 @@ bool LegacyScriptPubKeyMan::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& key
             return false;
         }
 
-        WalletBatch batch(m_storage.GetDatabase());
+        WalletBatch batch(*m_database);
 
         auto it = setKeyPool.begin();
         nIndex = *it;
@@ -1264,7 +1264,7 @@ void LegacyScriptPubKeyMan::MarkReserveKeysAsUsed(int64_t keypool_id)
     std::set<int64_t> *setKeyPool = internal ? &setInternalKeyPool : (set_pre_split_keypool.empty() ? &setExternalKeyPool : &set_pre_split_keypool);
     auto it = setKeyPool->begin();
 
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     while (it != std::end(*setKeyPool)) {
         const int64_t& index = *(it);
         if (index > keypool_id) break; // set*KeyPool is ordered
@@ -1294,7 +1294,7 @@ std::vector<CKeyID> GetAffectedKeys(const CScript& spk, const SigningProvider& p
 
 void LegacyScriptPubKeyMan::MarkPreSplitKeys()
 {
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     for (auto it = setExternalKeyPool.begin(); it != setExternalKeyPool.end();) {
         int64_t index = *it;
         CKeyPool keypool;
@@ -1312,7 +1312,7 @@ void LegacyScriptPubKeyMan::MarkPreSplitKeys()
 
 bool LegacyScriptPubKeyMan::AddCScript(const CScript& redeemScript)
 {
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     return AddCScriptWithDB(batch, redeemScript);
 }
 
@@ -1339,7 +1339,7 @@ bool LegacyScriptPubKeyMan::AddKeyOriginWithDB(WalletBatch& batch, const CPubKey
 
 bool LegacyScriptPubKeyMan::ImportScripts(const std::set<CScript> scripts, int64_t timestamp)
 {
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     for (const auto& entry : scripts) {
         CScriptID id(entry);
         if (HaveCScript(id)) {
@@ -1363,7 +1363,7 @@ bool LegacyScriptPubKeyMan::ImportScripts(const std::set<CScript> scripts, int64
 
 bool LegacyScriptPubKeyMan::ImportPrivKeys(const std::map<CKeyID, CKey>& privkey_map, const int64_t timestamp)
 {
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     for (const auto& entry : privkey_map) {
         const CKey& key = entry.second;
         CPubKey pubkey = key.GetPubKey();
@@ -1386,7 +1386,7 @@ bool LegacyScriptPubKeyMan::ImportPrivKeys(const std::map<CKeyID, CKey>& privkey
 
 bool LegacyScriptPubKeyMan::ImportPubKeys(const std::vector<CKeyID>& ordered_pubkeys, const std::map<CKeyID, CPubKey>& pubkey_map, const std::map<CKeyID, std::pair<CPubKey, KeyOriginInfo>>& key_origins, const bool add_keypool, const bool internal, const int64_t timestamp)
 {
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     for (const auto& entry : key_origins) {
         AddKeyOriginWithDB(batch, entry.second.first, entry.second.second);
     }
@@ -1418,7 +1418,7 @@ bool LegacyScriptPubKeyMan::ImportPubKeys(const std::vector<CKeyID>& ordered_pub
 
 bool LegacyScriptPubKeyMan::ImportScriptPubKeys(const std::set<CScript>& script_pub_keys, const bool have_solving_data, const int64_t timestamp)
 {
-    WalletBatch batch(m_storage.GetDatabase());
+    WalletBatch batch(*m_database);
     for (const CScript& script : script_pub_keys) {
         if (!have_solving_data || !IsMine(script)) { // Always call AddWatchOnly for non-solvable watch-only, so that watch timestamp gets updated
             if (!AddWatchOnlyWithDB(batch, script, timestamp)) {
