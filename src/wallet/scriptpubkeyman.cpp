@@ -291,9 +291,10 @@ void LegacyScriptPubKeyMan::KeepDestination(int64_t index)
     KeepKey(index);
 }
 
-void LegacyScriptPubKeyMan::ReturnDestination(int64_t index, bool internal, const CPubKey& pubkey)
+void LegacyScriptPubKeyMan::ReturnDestination(int64_t index, bool internal, const CTxDestination& addr)
 {
-    ReturnKey(index, internal, pubkey);
+    ReturnKey(index, internal, m_reserved_key_to_index[index]);
+    m_reserved_key_to_index.erase(index);
 }
 
 bool LegacyScriptPubKeyMan::TopUp(unsigned int size)
@@ -1116,7 +1117,7 @@ void LegacyScriptPubKeyMan::KeepKey(int64_t nIndex)
     WalletLogPrintf("keypool keep %d\n", nIndex);
 }
 
-void LegacyScriptPubKeyMan::ReturnKey(int64_t nIndex, bool fInternal, const CPubKey& pubkey)
+void LegacyScriptPubKeyMan::ReturnKey(int64_t nIndex, bool fInternal, const CKeyID& pubkey_id)
 {
     // Return to key pool
     {
@@ -1128,7 +1129,7 @@ void LegacyScriptPubKeyMan::ReturnKey(int64_t nIndex, bool fInternal, const CPub
         } else {
             setExternalKeyPool.insert(nIndex);
         }
-        m_pool_key_to_index[pubkey.GetID()] = nIndex;
+        m_pool_key_to_index[pubkey_id] = nIndex;
         NotifyCanGetAddressesChanged();
     }
     WalletLogPrintf("keypool return %d\n", nIndex);
@@ -1195,6 +1196,7 @@ bool LegacyScriptPubKeyMan::ReserveKeyFromKeyPool(int64_t& nIndex, CKeyPool& key
             throw std::runtime_error(std::string(__func__) + ": keypool entry invalid");
         }
 
+        m_reserved_key_to_index[nIndex] = keypool.vchPubKey.GetID();
         m_pool_key_to_index.erase(keypool.vchPubKey.GetID());
         WalletLogPrintf("keypool reserve %d\n", nIndex);
     }

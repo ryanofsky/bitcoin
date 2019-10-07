@@ -145,8 +145,6 @@ protected:
     ScriptPubKeyMan* m_spk_man{nullptr};
     //! The index of the address's key in the keypool
     int64_t nIndex{-1};
-    //! The public key for the address
-    CPubKey vchPubKey;
     //! The destination
     CTxDestination address;
     //! Whether this is from the internal (change output) keypool
