@@ -138,7 +138,7 @@ void TestGUI()
     bool firstRun;
     wallet->LoadWallet(firstRun);
     {
-        auto spk_man = wallet->GetLegacyScriptPubKeyMan();
+        auto spk_man = wallet->GetOrCreateLegacyScriptPubKeyMan();
         LOCK2(wallet->cs_wallet, spk_man->cs_KeyStore);
         wallet->SetAddressBook(GetDestinationForKey(test.coinbaseKey.GetPubKey(), wallet->m_default_address_type), "", "receive");
         spk_man->AddKeyPubKey(test.coinbaseKey, test.coinbaseKey.GetPubKey());
