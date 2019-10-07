@@ -3243,16 +3243,14 @@ bool ReserveDestination::GetReservedDestination(const OutputType type, CTxDestin
     if (nIndex == -1)
     {
         CKeyPool keypool;
-        if (!m_spk_man->GetReservedDestination(type, internal, nIndex, keypool)) {
+        if (!m_spk_man->GetReservedDestination(type, internal, dest, nIndex, keypool)) {
             return false;
         }
         vchPubKey = keypool.vchPubKey;
         fInternal = keypool.fInternal;
+        address = dest;
     }
     assert(vchPubKey.IsValid());
-    m_spk_man->LearnRelatedScripts(vchPubKey, type);
-    address = GetDestinationForKey(vchPubKey, type);
-    dest = address;
     return true;
 }
 
