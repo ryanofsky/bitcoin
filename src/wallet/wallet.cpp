@@ -3234,9 +3234,6 @@ bool ReserveDestination::GetReservedDestination(const OutputType type, CTxDestin
         return false;
     }
 
-    if (!pwallet->CanGetAddresses(internal)) {
-        return false;
-    }
 
     if (nIndex == -1)
     {

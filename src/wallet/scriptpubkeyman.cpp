@@ -271,6 +271,10 @@ bool LegacyScriptPubKeyMan::Encrypt(const CKeyingMaterial& master_key, WalletBat
 
 bool LegacyScriptPubKeyMan::GetReservedDestination(const OutputType type, bool internal, int64_t& index, CKeyPool& keypool)
 {
+    if (!CanGetAddresses(internal)) {
+        return false;
+    }
+
     {
         LOCK(cs_KeyStore);
         if (!ReserveKeyFromKeyPool(index, keypool, internal)) {
