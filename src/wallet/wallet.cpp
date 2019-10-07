@@ -253,6 +253,7 @@ void CWallet::UpgradeKeyMetadata()
     if (m_spk_man) {
         m_spk_man->UpgradeKeyMetadata();
     }
+    SetWalletFlag(WALLET_FLAG_KEY_ORIGIN_METADATA);
 }
 
 bool CWallet::Unlock(const SecureString& strWalletPassphrase, bool accept_no_keys)
