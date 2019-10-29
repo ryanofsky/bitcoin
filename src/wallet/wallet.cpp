@@ -562,8 +562,10 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
         Unlock(strWalletPassphrase);
 
         // if we are using HD, replace the HD seed with a new one
-        if (m_spk_man->IsHDEnabled()) {
-            m_spk_man->SetHDSeed(m_spk_man->GenerateNewSeed());
+        if (auto spk_man = m_spk_man.get()) {
+            if (spk_man->IsHDEnabled()) {
+                spk_man->SetHDSeed(spk_man->GenerateNewSeed());
+            }
         }
 
         m_spk_man->NewKeyPool();
