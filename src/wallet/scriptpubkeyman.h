@@ -186,7 +186,9 @@ public:
 
     virtual int64_t GetTimeFirstKey() const { return 0; }
 
-    virtual const CKeyMetadata* GetMetadata(uint160 id) const { return nullptr; }
+    //! Return metadata for a script. key_id is optional and is used to help
+    //! legacy implementations that index metadata by key instead of script id.
+    virtual const CKeyMetadata* GetMetadata(const CTxDestination& dest) const { return nullptr; }
 };
 
 class LegacyScriptPubKeyMan : public ScriptPubKeyMan, public FillableSigningProvider
@@ -302,7 +304,7 @@ public:
 
     int64_t GetTimeFirstKey() const override;
 
-    const CKeyMetadata* GetMetadata(uint160 id) const override;
+    const CKeyMetadata* GetMetadata(const CTxDestination& dest) const override;
 
     bool CanGetAddresses(bool internal = false) override;
 
