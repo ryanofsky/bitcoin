@@ -3765,15 +3765,9 @@ UniValue getaddressinfo(const JSONRPCRequest& request)
 
     ScriptPubKeyMan* spk_man = pwallet->GetScriptPubKeyMan();
     if (spk_man) {
+        // key_id is only needed for the legacy ScriptPubKeyMan implementation.
         CKeyID key_id = GetKeyForDestination(*provider, dest);
-        const CKeyMetadata* meta = nullptr;
-        if (!key_id.IsNull()) {
-            meta = spk_man->GetMetadata(key_id);
-        }
-        if (!meta) {
-            meta = spk_man->GetMetadata(CScriptID(scriptPubKey));
-        }
-        if (meta) {
+        if (const CKeyMetadata* meta = spk_man->GetMetadata(scriptPubKey, &key_id)) {
             ret.pushKV("timestamp", meta->nCreateTime);
             if (meta->has_key_origin) {
                 ret.pushKV("hdkeypath", WriteHDKeypath(meta->key_origin.path));
