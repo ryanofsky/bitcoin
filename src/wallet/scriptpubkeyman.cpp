@@ -476,17 +476,20 @@ int64_t LegacyScriptPubKeyMan::GetTimeFirstKey() const
     return nTimeFirstKey;
 }
 
-const CKeyMetadata* LegacyScriptPubKeyMan::GetMetadata(uint160 id) const
+const CKeyMetadata* LegacyScriptPubKeyMan::GetMetadata(const CScript& scriptPubKey, const CKeyID* key_id) const
 {
     AssertLockHeld(cs_wallet);
-    auto it = mapKeyMetadata.find(CKeyID(id));
-    if (it != mapKeyMetadata.end()) {
-        return &it->second;
-    } else {
-        auto it2 = m_script_metadata.find(CScriptID(id));
-        if (it2 != m_script_metadata.end()) {
-            return &it2->second;
+
+    if (key_id && !key_id->IsNull()) {
+        auto it = mapKeyMetadata.find(*key_id);
+        if (it != mapKeyMetadata.end()) {
+            return &it->second;
         }
+    }
+
+    auto it = m_script_metadata.find(CScriptID(scriptPubKey));
+    if (it != m_script_metadata.end()) {
+        return &it->second;
     }
     return nullptr;
 }
