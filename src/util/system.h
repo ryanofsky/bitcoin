@@ -287,6 +287,11 @@ public:
     util::SettingsValue GetSetting(const std::string& arg) const;
 
     /**
+     * Get list of setting values.
+     */
+    std::vector<util::SettingsValue> GetSettingsList(const std::string& arg) const;
+
+    /**
      * Add argument
      */
     void AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat);
