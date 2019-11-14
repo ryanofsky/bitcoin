@@ -327,21 +327,15 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
         std::string section;
         util::SettingsValue value = InterpretOption(section, key, val);
         const unsigned int flags = FlagsOfKnownArg(key);
-        if (flags) {
-            if (!CheckValid(key, value, flags, error)) {
-                return false;
-            }
-            // Weird behavior preserved for backwards compatibility: command
-            // line options with section prefixes are allowed but ignored. It
-            // would be better if these options triggered the Invalid parameter
-            // error below.
-            if (section.empty()) {
-                m_settings.command_line_options[key].push_back(value);
-            }
-        } else {
-            error = strprintf("Invalid parameter -%s", key);
+
+        if (!flags || !section.empty()) {
+            error = strprintf("Invalid parameter %s", argv[i]);
             return false;
         }
+
+        if (!CheckValid(key, value, flags, error)) return false;
+
+        m_settings.command_line_options[key].push_back(value);
     }
 
     // we do not allow -includeconf from command line, so we clear it here
