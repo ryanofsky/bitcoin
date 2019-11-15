@@ -738,6 +738,7 @@ BOOST_AUTO_TEST_CASE(util_ReadConfigStream)
     BOOST_CHECK(test_args.m_settings.ro_config["sec1"].size() == 3);
     BOOST_CHECK(test_args.m_settings.ro_config["sec2"].size() == 2);
 
+<<<<<<< HEAD
     BOOST_CHECK(test_args.m_settings.ro_config[""].count("a"));
     BOOST_CHECK(test_args.m_settings.ro_config[""].count("b"));
     BOOST_CHECK(test_args.m_settings.ro_config[""].count("ccc"));
@@ -772,6 +773,85 @@ BOOST_AUTO_TEST_CASE(util_ReadConfigStream)
     BOOST_CHECK_EQUAL(test_args.TestArgString("-i", "xxx"), "1");
     BOOST_CHECK_EQUAL(test_args.GetArg("-zzz", "xxx"), "xxx");
     BOOST_CHECK_EQUAL(test_args.GetArg("-iii", "xxx"), "xxx");
+||||||| merged common ancestors
+    BOOST_CHECK(test_args.m_settings.ro_config[""].count("a")
+                && test_args.m_settings.ro_config[""].count("b")
+                && test_args.m_settings.ro_config[""].count("ccc")
+                && test_args.m_settings.ro_config[""].count("d")
+                && test_args.m_settings.ro_config[""].count("fff")
+                && test_args.m_settings.ro_config[""].count("ggg")
+                && test_args.m_settings.ro_config[""].count("h")
+                && test_args.m_settings.ro_config[""].count("i")
+               );
+    BOOST_CHECK(test_args.m_settings.ro_config["sec1"].count("ccc")
+                && test_args.m_settings.ro_config["sec1"].count("h")
+                && test_args.m_settings.ro_config["sec2"].count("ccc")
+                && test_args.m_settings.ro_config["sec2"].count("iii")
+               );
+
+    BOOST_CHECK(test_args.IsArgSet("-a")
+                && test_args.IsArgSet("-b")
+                && test_args.IsArgSet("-ccc")
+                && test_args.IsArgSet("-d")
+                && test_args.IsArgSet("-fff")
+                && test_args.IsArgSet("-ggg")
+                && test_args.IsArgSet("-h")
+                && test_args.IsArgSet("-i")
+                && !test_args.IsArgSet("-zzz")
+                && !test_args.IsArgSet("-iii")
+               );
+
+    BOOST_CHECK(test_args.GetArg("-a", "xxx") == ""
+                && test_args.GetArg("-b", "xxx") == "1"
+                && test_args.TestArgString("-ccc", "xxx") == "argument"
+                && test_args.GetArg("-d", "xxx") == "e"
+                && test_args.GetArg("-fff", "xxx") == "0"
+                && test_args.GetArg("-ggg", "xxx") == "1"
+                && test_args.TestArgString("-h", "xxx") == "0"
+                && test_args.TestArgString("-i", "xxx") == "1"
+                && test_args.GetArg("-zzz", "xxx") == "xxx"
+                && test_args.GetArg("-iii", "xxx") == "xxx"
+               );
+=======
+    BOOST_CHECK(test_args.m_settings.ro_config[""].count("a")
+                && test_args.m_settings.ro_config[""].count("b")
+                && test_args.m_settings.ro_config[""].count("ccc")
+                && test_args.m_settings.ro_config[""].count("d")
+                && test_args.m_settings.ro_config[""].count("fff")
+                && test_args.m_settings.ro_config[""].count("ggg")
+                && test_args.m_settings.ro_config[""].count("h")
+                && test_args.m_settings.ro_config[""].count("i")
+               );
+    BOOST_CHECK(test_args.m_settings.ro_config["sec1"].count("ccc")
+                && test_args.m_settings.ro_config["sec1"].count("h")
+                && test_args.m_settings.ro_config["sec2"].count("ccc")
+                && test_args.m_settings.ro_config["sec2"].count("iii")
+               );
+
+    BOOST_CHECK(test_args.IsArgSet("-a")
+                && test_args.IsArgSet("-b")
+                && test_args.IsArgSet("-ccc")
+                && test_args.IsArgSet("-d")
+                && test_args.IsArgSet("-fff")
+                && test_args.IsArgSet("-ggg")
+                && test_args.IsArgSet("-h")
+                && test_args.IsArgSet("-i")
+                && !test_args.IsArgSet("-zzz")
+                && !test_args.IsArgSet("-iii")
+               );
+
+    BOOST_CHECK(test_args.GetArg("-a", "xxx") == ""
+                && test_args.GetArg("-b", "xxx") == "1"
+                && test_args.TestArgString("-ccc", "xxx") == "multiple"
+                && test_args.GetArg("-d", "xxx") == "e"
+                && test_args.GetArg("-fff", "xxx") == "0"
+                && test_args.GetArg("-ggg", "xxx") == "1"
+                && test_args.TestArgString("-h", "xxx") == "0"
+                && test_args.TestArgString("-i", "xxx") == "1"
+                && test_args.GetArg("-zzz", "xxx") == "xxx"
+                && test_args.GetArg("-iii", "xxx") == "xxx"
+               );
+>>>>>>> refactor: Remove settings merge reverse precedence code
 
     for (const bool def : {false, true}) {
         BOOST_CHECK(test_args.GetBoolArg("-a", def));
@@ -830,7 +910,7 @@ BOOST_AUTO_TEST_CASE(util_ReadConfigStream)
     // section-specific setting
     BOOST_CHECK(test_args.TestArgString("-h", "xxx") == "1");
     // section takes priority for multiple values
-    BOOST_CHECK(test_args.TestArgString("-ccc", "xxx") == "extend1");
+    BOOST_CHECK(test_args.TestArgString("-ccc", "xxx") == "extend2");
     // check multiple values works
     const std::vector<std::string> sec1_ccc_expected = {"extend1","extend2","argument","multiple"};
     const auto& sec1_ccc_res = test_args.GetArgs("-ccc");
@@ -913,7 +993,7 @@ BOOST_AUTO_TEST_CASE(util_GetArg)
     BOOST_CHECK_EQUAL(testArgs.GetBoolArg("booltest4", false), true);
 
     BOOST_CHECK_EQUAL(testArgs.GetArg("pritest1", "default"), "b");
-    BOOST_CHECK_EQUAL(testArgs.GetArg("pritest2", "default"), "a");
+    BOOST_CHECK_EQUAL(testArgs.GetArg("pritest2", "default"), "b");
     BOOST_CHECK_EQUAL(testArgs.GetArg("pritest3", "default"), "a");
     BOOST_CHECK_EQUAL(testArgs.GetArg("pritest4", "default"), "b");
 }
