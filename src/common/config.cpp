@@ -102,7 +102,13 @@ bool ArgsManager::ReadConfigStream(std::istream& stream, const std::string& file
         std::optional<unsigned int> flags = GetArgFlags('-' + key.name);
         if (!IsConfSupported(key, error)) return false;
         if (flags) {
+<<<<<<< HEAD
             if (IsTypedArg(*flags) && !(*flags & ALLOW_LIST) && m_settings.ro_config[key.section].contains(key.name)) {
+||||||| parent of 92a38cc44c1 (util: Forbid ambiguous multiple assignments in config file)
+            if (IsTypedArg(*flags) && !(*flags & ALLOW_LIST) && m_settings.ro_config[key.section].count(key.name)) {
+=======
+            if (!(*flags & ALLOW_LIST) && m_settings.ro_config[key.section].count(key.name)) {
+>>>>>>> 92a38cc44c1 (util: Forbid ambiguous multiple assignments in config file)
                 error = strprintf("Multiple values specified for -%s in same section of config file.", key.name);
                 return false;
             }
