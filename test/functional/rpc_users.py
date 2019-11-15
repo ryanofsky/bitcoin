@@ -158,12 +158,23 @@ class HTTPBasicsTest(BitcoinTestFramework):
         init_error = 'Error: Unable to start HTTP server. See debug log for details.'
 
         self.log.info('Check -rpcauth are validated')
+<<<<<<< HEAD
         self.log.info('Empty -rpcauth are treated as error')
+||||||| parent of 811670650471 (Always reject empty -rpcauth="" arguments)
+        # Empty -rpcauth= are ignored
+        self.restart_node(0, extra_args=['-rpcauth='])
+=======
+>>>>>>> 811670650471 (Always reject empty -rpcauth="" arguments)
         self.stop_node(0)
+<<<<<<< HEAD
         self.nodes[0].assert_start_raises_init_error(expected_msg=init_error, extra_args=['-rpcauth'])
         self.nodes[0].assert_start_raises_init_error(expected_msg=init_error, extra_args=['-rpcauth='])
         self.nodes[0].assert_start_raises_init_error(expected_msg=init_error, extra_args=['-rpcauth=""'])
         self.log.info('Check malformed -rpcauth')
+||||||| parent of 811670650471 (Always reject empty -rpcauth="" arguments)
+=======
+        self.nodes[0].assert_start_raises_init_error(expected_msg=init_error, extra_args=['-rpcauth='])
+>>>>>>> 811670650471 (Always reject empty -rpcauth="" arguments)
         self.nodes[0].assert_start_raises_init_error(expected_msg=init_error, extra_args=['-rpcauth=foo'])
         self.nodes[0].assert_start_raises_init_error(expected_msg=init_error, extra_args=['-rpcauth=foo:bar'])
         self.nodes[0].assert_start_raises_init_error(expected_msg=init_error, extra_args=['-rpcauth=foo:bar:baz'])

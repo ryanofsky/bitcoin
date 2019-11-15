@@ -317,9 +317,17 @@ static bool InitRPCAuthentication()
         LogPrintf("Config options rpcuser and rpcpassword will soon be deprecated. Locally-run instances may remove rpcuser to use cookie-based auth, or may be replaced with rpcauth. Please see share/rpcauth for rpcauth auth generation.\n");
         strRPCUserColonPass = gArgs.GetArg("-rpcuser", "") + ":" + gArgs.GetArg("-rpcpassword", "");
     }
+<<<<<<< HEAD
 
     if (!gArgs.GetArgs("-rpcauth").empty()) {
         LogInfo("Using rpcauth authentication.\n");
+||||||| parent of 811670650471 (Always reject empty -rpcauth="" arguments)
+    if (gArgs.GetArg("-rpcauth", "") != "") {
+        LogPrintf("Using rpcauth authentication.\n");
+=======
+    if (!gArgs.GetArgs("-rpcauth").empty()) {
+        LogPrintf("Using rpcauth authentication.\n");
+>>>>>>> 811670650471 (Always reject empty -rpcauth="" arguments)
         for (const std::string& rpcauth : gArgs.GetArgs("-rpcauth")) {
             std::vector<std::string> fields{SplitString(rpcauth, ':')};
             const std::vector<std::string> salt_hmac{SplitString(fields.back(), '$')};
