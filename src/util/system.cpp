@@ -969,7 +969,7 @@ bool ArgsManager::ReadConfigStream(std::istream& stream, const std::string& file
         bool negated = !InterpretKey(section, key);
         std::optional<unsigned int> flags = GetArgFlags('-' + key);
         if (flags) {
-            if (!(*flags & (ALLOW_ANY | ALLOW_LIST)) && m_settings.ro_config[section].count(key)) {
+            if (!(*flags & ALLOW_LIST) && m_settings.ro_config[section].count(key)) {
                 error = strprintf("Multiple values specified for -%s in same section of config file.", key);
                 return false;
             }
