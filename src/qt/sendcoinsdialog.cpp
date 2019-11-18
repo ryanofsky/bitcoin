@@ -190,6 +190,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         if (model->privateKeysDisabled()) {
             ui->sendButton->setText(tr("Cr&eate Unsigned"));
             ui->sendButton->setToolTip(tr("Creates a Partially Signed Bitcoin Transaction (PSBT) for use with e.g. an offline %1 wallet, or a PSBT-compatible hardware wallet.").arg(PACKAGE_NAME));
+            ui->saveButton->setVisible(true);
         }
 
         // set the smartfee-sliders default value (wallets default conf.target or last stored value)
@@ -368,6 +369,55 @@ bool SendCoinsDialog::PrepareSendText(QString& question_string, QString& informa
     }
 
     return true;
+}
+
+void SendCoinsDialog::on_saveButton_clicked()
+{
+    if(!model || !model->getOptionsModel())
+        return;
+
+    QString question_string, informative_text, detailed_text;
+    if (!PrepareSendText(question_string, informative_text, detailed_text)) return;
+    assert(m_current_transaction);
+
+    const QString confirmation = tr("Confirm transaction proposal");
+    const QString confirmButtonText = tr("Save PSBT to disk");
+    SendConfirmationDialog confirmationDialog(QMessageBox::Question, confirmation, question_string, QMessageBox::Yes, confirmButtonText, QMessageBox::Cancel, informative_text, detailed_text, SEND_CONFIRM_DELAY, this);
+    if (!confirmationDialog.exec()) {
+        fNewRecipientAllowed = true;
+        return;
+    }
+
+    QString selectedFilter;
+    QString filename = GUIUtil::getSaveFileName(this,
+        tr("Save Transaction Data"), QString(),
+        tr("Partially Signed Transaction (Binary) (*.psbt)"), &selectedFilter);
+    if (filename.isEmpty()) {
+        return;
+    }
+
+    CMutableTransaction mtx = CMutableTransaction{*(m_current_transaction->getWtx())};
+    PartiallySignedTransaction psbtx(mtx);
+    bool complete = false;
+    const TransactionError err = model->wallet().fillPSBT(psbtx, complete, SIGHASH_ALL, false /* sign */, true /* bip32derivs */);
+    assert(!complete);
+    assert(err == TransactionError::OK);
+    // Serialize the PSBT
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    ssTx << psbtx;
+
+
+    std::ofstream out(filename.toLocal8Bit().data());
+    out << ssTx.str();
+    out.close();
+
+    Q_EMIT message(tr("PSBT save"), "PSBT saved to disk", CClientUIInterface::MSG_INFORMATION);
+
+    accept();
+    CoinControlDialog::coinControl()->UnSelectAll();
+    coinControlUpdateLabels();
+
+    fNewRecipientAllowed = true;
 }
 
 void SendCoinsDialog::on_sendButton_clicked()
