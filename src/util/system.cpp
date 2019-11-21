@@ -424,13 +424,21 @@ bool ArgsManager::CheckArgFlags(const std::string& name,
     const char* context) const
 {
     Optional<unsigned int> flags = GetArgFlags(name);
+<<<<<<< HEAD
     if (!flags || *flags & ArgsManager::ALLOW_ANY) return false;
+||||||| merged common ancestors
+    if (!flags) return false;
+    if (*flags & ArgsManager::ALLOW_ANY) return false;
+=======
+    if (!flags) return false;
+    if (*flags & ALLOW_ANY) require &= ~(ALLOW_BOOL | ALLOW_INT | ALLOW_STRING);
+>>>>>>> refactor: Always enforce ALLOW_LIST in CheckArgFlags
     if ((*flags & require) != require || (*flags & forbid) != 0) {
         throw std::logic_error(
             strprintf("Bug: Can't call %s on arg %s registered with flags 0x%08x (requires 0x%x, disallows 0x%x)",
                 context, name, *flags, require, forbid));
     }
-    return true;
+    return !(*flags & ALLOW_ANY);
 }
 
 std::vector<std::string> ArgsManager::GetArgs(const std::string& strArg) const
