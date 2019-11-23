@@ -1044,17 +1044,23 @@ BOOST_FIXTURE_TEST_CASE(util_ArgsMerge, ArgsMergeTestingSetup)
 
     ForEachMergeSetup([&](const ActionList& arg_actions, const ActionList& conf_actions, bool soft_set, bool force_set,
                           const std::string& section, const std::string& network, bool net_specific) {
-        TestArgsManager parser;
+        TestArgsManager parser, single_parser;
         LOCK(parser.cs_args);
+        LOCK(single_parser.cs_args);
 
         std::string desc = "net=";
         desc += network;
         parser.m_network = network;
+        single_parser.m_network = network;
 
         const std::string& name = net_specific ? "wallet" : "server";
         const std::string key = "-" + name;
         parser.AddArg(key, name, ArgsManager::ALLOW_ANY | ArgsManager::ALLOW_LIST, OptionsCategory::OPTIONS);
-        if (net_specific) parser.SetNetworkOnlyArg(key);
+        single_parser.AddArg(key, name, ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+        if (net_specific) {
+            parser.SetNetworkOnlyArg(key);
+            single_parser.SetNetworkOnlyArg(key);
+        }
 
         auto args = GetValues(arg_actions, section, name, "a");
         std::vector<const char*> argv = {"ignored"};
@@ -1067,6 +1073,8 @@ BOOST_FIXTURE_TEST_CASE(util_ArgsMerge, ArgsMergeTestingSetup)
         std::string error;
         BOOST_CHECK(parser.ParseParameters(argv.size(), argv.data(), error));
         BOOST_CHECK_EQUAL(error, "");
+        BOOST_CHECK(single_parser.ParseParameters(argv.size(), argv.data(), error));
+        BOOST_CHECK_EQUAL(error, "");
 
         std::string conf;
         for (auto& conf_val : GetValues(conf_actions, section, name, "c")) {
@@ -1078,17 +1086,27 @@ BOOST_FIXTURE_TEST_CASE(util_ArgsMerge, ArgsMergeTestingSetup)
         std::istringstream conf_stream(conf);
         BOOST_CHECK(parser.ReadConfigStream(conf_stream, "filepath", error));
         BOOST_CHECK_EQUAL(error, "");
+        std::istringstream single_conf_stream(conf);
+        if (single_parser.ReadConfigStream(single_conf_stream, "filepath", error)) {
+            BOOST_CHECK_EQUAL(error, "");
+        } else {
+            BOOST_CHECK(!error.empty());
+        }
 
         if (soft_set) {
             desc += " soft";
             parser.SoftSetArg(key, "soft1");
             parser.SoftSetArg(key, "soft2");
+            single_parser.SoftSetArg(key, "soft1");
+            single_parser.SoftSetArg(key, "soft2");
         }
 
         if (force_set) {
             desc += " force";
             parser.ForceSetArg(key, "force1");
             parser.ForceSetArg(key, "force2");
+            single_parser.ForceSetArg(key, "force1");
+            single_parser.ForceSetArg(key, "force2");
         }
 
         desc += " || ";
@@ -1096,14 +1114,32 @@ BOOST_FIXTURE_TEST_CASE(util_ArgsMerge, ArgsMergeTestingSetup)
         if (!parser.IsArgSet(key)) {
             desc += "unset";
             BOOST_CHECK(!parser.IsArgNegated(key));
-            BOOST_CHECK_EQUAL(parser.TestArgString(key, "default"), "default");
             BOOST_CHECK(parser.GetArgs(key).empty());
+            if (error.empty()) {
+                BOOST_CHECK(!single_parser.IsArgSet(key));
+                BOOST_CHECK(!single_parser.IsArgNegated(key));
+                BOOST_CHECK_EQUAL(single_parser.GetArg(key, "default"), "default");
+            } else {
+                desc += " / ";
+                desc += error;
+            }
         } else if (parser.IsArgNegated(key)) {
             desc += "negated";
-            BOOST_CHECK_EQUAL(parser.TestArgString(key, "default"), "0");
             BOOST_CHECK(parser.GetArgs(key).empty());
+            if (error.empty()) {
+                BOOST_CHECK(single_parser.IsArgSet(key));
+                BOOST_CHECK(single_parser.IsArgNegated(key));
+                BOOST_CHECK_EQUAL(single_parser.GetArg(key, "default"), "0");
+            } else {
+                desc += " / ";
+                desc += error;
+            }
         } else {
-            desc += parser.TestArgString(key, "default");
+            if (error.empty()) {
+                desc += single_parser.GetArg(key, "default");
+            } else {
+                desc += error;
+            }
             desc += " |";
             for (const auto& arg : parser.GetArgs(key)) {
                 desc += " ";
@@ -1146,7 +1182,7 @@ BOOST_FIXTURE_TEST_CASE(util_ArgsMerge, ArgsMergeTestingSetup)
     // Results file is formatted like:
     //
     //   <input> || <IsArgSet/IsArgNegated/GetArg output> | <GetArgs output> | <GetUnsuitable output>
-    BOOST_CHECK_EQUAL(out_sha_hex, "b835eef5977d69114eb039a976201f8c7121f34fe2b7ea2b73cafb516e5c9dc8");
+    BOOST_CHECK_EQUAL(out_sha_hex, "f49ef5c2cd696bebb5425a3f4d0f86f641dd86e6fdf607f576ee984aba0d8291");
 }
 
 // Similar test as above, but for ArgsManager::GetChainName function.
