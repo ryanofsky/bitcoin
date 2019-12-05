@@ -845,6 +845,13 @@ void LegacyScriptPubKeyMan::SetHDChain(const CHDChain& chain, bool memonly)
     m_hd_chain = chain;
 }
 
+void LegacyScriptPubKeyMan::AddInactiveHDChain(const CHDChain& chain)
+{
+    LOCK(cs_KeyStore);
+    assert(!chain.seed_id.IsNull());
+    m_inactive_hd_chains[chain.seed_id] = chain;
+}
+
 bool LegacyScriptPubKeyMan::HaveKey(const CKeyID &address) const
 {
     LOCK(cs_KeyStore);
@@ -1011,8 +1018,8 @@ void LegacyScriptPubKeyMan::DeriveNewChildKey(WalletBatch &batch, CKeyMetadata& 
     std::copy(master_id.begin(), master_id.begin() + 4, metadata.key_origin.fingerprint);
     metadata.has_key_origin = true;
     // update the chain model in the database
-    if (!batch.WriteHDChain(hd_chain))
-        throw std::runtime_error(std::string(__func__) + ": Writing HD chain model failed");
+    if (hd_chain.seed_id == m_hd_chain.seed_id && !batch.WriteHDChain(hd_chain))
+        throw std::runtime_error(std::string(__func__) + ": writing HD chain model failed");
 }
 
 void LegacyScriptPubKeyMan::LoadKeyPool(int64_t nIndex, const CKeyPool &keypool)
