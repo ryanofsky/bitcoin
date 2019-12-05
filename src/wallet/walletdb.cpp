@@ -29,6 +29,7 @@ const std::string DEFAULTKEY{"defaultkey"};
 const std::string DESTDATA{"destdata"};
 const std::string FLAGS{"flags"};
 const std::string HDCHAIN{"hdchain"};
+const std::string INACTIVEHDCHAIN("inactivehdchain");
 const std::string KEYMETA{"keymeta"};
 const std::string KEY{"key"};
 const std::string MASTER_KEY{"mkey"};
@@ -392,6 +393,10 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             CHDChain chain;
             ssValue >> chain;
             pwallet->GetOrCreateLegacyScriptPubKeyMan()->SetHDChain(chain, true);
+        } else if (strType == DBKeys::INACTIVEHDCHAIN) {
+            CHDChain chain;
+            ssValue >> chain;
+            pwallet->GetOrCreateLegacyScriptPubKeyMan()->AddInactiveHDChain(chain, true);
         } else if (strType == DBKeys::FLAGS) {
             uint64_t flags;
             ssValue >> flags;
@@ -752,6 +757,11 @@ bool WalletBatch::EraseDestData(const std::string &address, const std::string &k
 bool WalletBatch::WriteHDChain(const CHDChain& chain)
 {
     return WriteIC(DBKeys::HDCHAIN, chain);
+}
+
+bool WalletBatch::WriteInactiveHDChain(const CHDChain& chain)
+{
+    return WriteIC(DBKeys::INACTIVEHDCHAIN, chain);
 }
 
 bool WalletBatch::WriteWalletFlags(const uint64_t flags)

@@ -110,6 +110,11 @@ public:
         nInternalChainCounter = 0;
         seed_id.SetNull();
     }
+
+    bool operator==(const CHDChain& chain) const
+    {
+        return seed_id == chain.seed_id;
+    }
 };
 
 class CKeyMetadata
@@ -264,6 +269,7 @@ public:
 
     //! write the hdchain model (external chain child index counter)
     bool WriteHDChain(const CHDChain& chain);
+    bool WriteInactiveHDChain(const CHDChain& chain);
 
     bool WriteWalletFlags(const uint64_t flags);
     //! Begin a new transaction
