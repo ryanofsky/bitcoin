@@ -290,6 +290,47 @@ bool LegacyScriptPubKeyMan::GetReservedDestination(const OutputType type, bool i
     return true;
 }
 
+bool LegacyScriptPubKeyMan::TopUpInactiveHDChain(const CKeyID seed_id, int64_t index, bool internal)
+{
+    LOCK(cs_KeyStore);
+
+    if (m_storage.IsLocked()) return false;
+
+    auto it = m_inactive_hd_chains.find(seed_id);
+    if (it == m_inactive_hd_chains.end()) {
+        return false;
+    }
+
+    CHDChain& chain = it->second;
+
+    // Top up key pool
+    int64_t target_size = std::max(gArgs.GetArg("-keypool", DEFAULT_KEYPOOL_SIZE), (int64_t) 0);
+
+    // "size" of the keypools. Not really the size, actually the difference between index and the chain counter
+    // Since chain counter is 1 based and index is 0 based, one of them needs to be offset by 1.
+    int64_t kp_size = (internal ? chain.nInternalChainCounter : chain.nExternalChainCounter) - (index + 1);
+
+    // count number of missing keys (internal, external)
+    // make sure the keypool of external and internal keys fits the user-selected target (-keypool)
+    int64_t missing = std::max(std::max((int64_t) target_size, (int64_t) 1) - kp_size, (int64_t) 0);
+
+    WalletBatch batch(m_storage.GetDatabase());
+    for (int64_t i = missing; i > 0; --i) {
+        CPubKey pubkey(GenerateNewKey(batch, chain, internal));
+        AddKeypoolPubkeyWithDB(pubkey, internal, batch);
+    }
+    if (missing > 0) {
+        if (internal) {
+            WalletLogPrintf("inactive seed with id %s added %d internal keys\n", HexStr(seed_id), missing);
+        } else {
+            WalletLogPrintf("inactive seed with id %s added %d keys\n", HexStr(seed_id), missing);
+        }
+    }
+    return true;
+}
+
+const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x80000000;
+
 void LegacyScriptPubKeyMan::MarkUnusedAddresses(const CScript& script)
 {
     LOCK(cs_KeyStore);
@@ -302,6 +343,19 @@ void LegacyScriptPubKeyMan::MarkUnusedAddresses(const CScript& script)
 
             if (!TopUp()) {
                 WalletLogPrintf("%s: Topping up keypool failed (locked wallet)\n", __func__);
+            }
+        }
+
+        auto it = mapKeyMetadata.find(keyid);
+        if (it != mapKeyMetadata.end()){
+            CKeyMetadata meta = it->second;
+            if (!meta.hd_seed_id.IsNull() && meta.hd_seed_id != m_hd_chain.seed_id) {
+                bool internal = meta.key_origin.path[1] - BIP32_HARDENED_KEY_LIMIT != 0;
+                int64_t index = meta.key_origin.path[2] - BIP32_HARDENED_KEY_LIMIT;
+
+                if (!TopUpInactiveHDChain(meta.hd_seed_id, index, internal)) {
+                    WalletLogPrintf("%s: Adding inactive seed keys failed (locked wallet)\n", __func__);
+                }
             }
         }
     }
@@ -964,8 +1018,6 @@ CPubKey LegacyScriptPubKeyMan::GenerateNewKey(WalletBatch &batch, CHDChain& hd_c
     }
     return pubkey;
 }
-
-const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x80000000;
 
 void LegacyScriptPubKeyMan::DeriveNewChildKey(WalletBatch &batch, CKeyMetadata& metadata, CKey& secret, CHDChain& hd_chain, bool internal)
 {
