@@ -266,7 +266,7 @@ static bool InitRPCAuthentication()
         }
     }
 
-    g_rpc_whitelist_default = gArgs.GetBoolArg("-rpcwhitelistdefault", gArgs.IsArgSet("-rpcwhitelist"));
+    g_rpc_whitelist_default = gArgs.GetBoolArg("-rpcwhitelistdefault", gArgs.GetArgs("-rpcwhitelist").size() > 0);
     for (const std::string& strRPCWhitelist : gArgs.GetArgs("-rpcwhitelist")) {
         auto pos = strRPCWhitelist.find(':');
         std::string strUser = strRPCWhitelist.substr(0, pos);
