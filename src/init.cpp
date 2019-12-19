@@ -737,8 +737,9 @@ void InitParameterInteraction(ArgsManager& args)
             LogInfo("parameter interaction: -whitebind set -> setting -listen=1\n");
     }
 
-    if (args.IsArgSet("-connect") || args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS) <= 0) {
+    if (!args.GetArgs("-connect").empty() || args.IsArgNegated("-connect") || args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS) <= 0) {
         // when only connecting to trusted nodes, do not seed via DNS, or listen by default
+        // do the same when connections are disabled
         if (args.SoftSetBoolArg("-dnsseed", false))
             LogInfo("parameter interaction: -connect or -maxconnections=0 set -> setting -dnsseed=0\n");
         if (args.SoftSetBoolArg("-listen", false))
@@ -1918,17 +1919,25 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     connOptions.vSeedNodes = args.GetArgs("-seednode");
 
-    // Initiate outbound connections unless connect=0
-    connOptions.m_use_addrman_outgoing = !args.IsArgSet("-connect");
-    if (!connOptions.m_use_addrman_outgoing) {
-        const auto connect = args.GetArgs("-connect");
+    const auto connect = args.GetArgs("-connect");
+    if (!connect.empty() || args.IsArgNegated("-connect")) {
+        // Do not initiate addrman connections when only connecting to trusted
+        // nodes, or when automatic connections are disabled.
+        connOptions.m_use_addrman_outgoing = false;
+
+        // Assign addresses of trusted nodes, if any.
         if (connect.size() != 1 || connect[0] != "0") {
             connOptions.m_specified_outgoing = connect;
         }
+
+        // Warn that -seednode setting will be ignored if trusted nodes were
+        // specified.
         if (!connOptions.m_specified_outgoing.empty() && !connOptions.vSeedNodes.empty()) {
             LogPrintf("-seednode is ignored when -connect is used\n");
         }
 
+        // Warn that -dnsseed will be ignored if automatic connections are
+        // disabled.
         if (args.IsArgSet("-dnsseed") && args.GetBoolArg("-dnsseed", DEFAULT_DNSSEED) && args.IsArgSet("-proxy")) {
             LogPrintf("-dnsseed is ignored when -connect is used and -proxy is specified\n");
         }
