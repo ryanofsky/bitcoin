@@ -95,8 +95,9 @@ void SetLoggingOptions(const ArgsManager& args)
 
 void SetLoggingCategories(const ArgsManager& args)
 {
-    if (args.IsArgSet("-debug")) {
-        // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
+    const std::vector<std::string> categories = args.GetArgs("-debug");
+    if (!categories.empty()) {
+        // Special-case: if -debug=0/-debug=none is set, turn off debugging messages
         const std::vector<std::string> categories = args.GetArgs("-debug");
 
         if (std::none_of(categories.begin(), categories.end(),
