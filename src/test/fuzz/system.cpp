@@ -138,7 +138,10 @@ FUZZ_TARGET(system)
     (void)args_manager.GetUnrecognizedSections();
     (void)args_manager.GetUnsuitableSectionOnlyArgs();
     (void)args_manager.IsArgNegated(s1);
-    (void)args_manager.IsArgSet(s1);
+    try {
+        (void)args_manager.IsArgSet(s1);
+    } catch (const std::logic_error&) {
+    }
 
     (void)HelpRequested(args_manager);
 }
