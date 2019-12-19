@@ -59,6 +59,7 @@ FUZZ_TARGET(system)
                 // Avoid hitting:
                 // util/system.cpp:425: void ArgsManager::AddArg(const std::string &, const std::string &, unsigned int, const OptionsCategory &): Assertion `ret.second' failed.
                 const std::string argument_name = GetArgumentName(fuzzed_data_provider.ConsumeRandomLengthString(16));
+                // Avoid assertion in AddArg if this would try to add an already registered flag.
                 if (args_manager.GetArgFlags(argument_name) != std::nullopt) {
                     return;
                 }
@@ -138,7 +139,17 @@ FUZZ_TARGET(system)
     (void)args_manager.GetUnrecognizedSections();
     (void)args_manager.GetUnsuitableSectionOnlyArgs();
     (void)args_manager.IsArgNegated(s1);
-    (void)args_manager.IsArgSet(s1);
+    try {
+        (void)args_manager.IsArgSet(s1);
+    } catch (const std::logic_error&) {
+        // Will throw logic_error if called on an ALLOW_LIST arg.
+    }
 
-    (void)HelpRequested(args_manager);
+    try {
+        (void)HelpRequested(args_manager);
+    } catch (const std::logic_error&) {
+        // May throw logic_error in rare case where SetupHelpOptions randomly
+        // was not called above, but AddArg was called, with a valid arg name
+        // like "-?" combined with invalid flags like ALLOW_LIST.
+    }
 }
