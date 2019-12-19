@@ -785,16 +785,38 @@ void InitParameterInteraction(ArgsManager& args)
 {
     // when specifying an explicit binding address, you want to listen on it
     // even when -connect or -proxy is specified
+<<<<<<< HEAD
     if (args.IsArgSet("-bind")) {
         if (args.SoftSetBoolArg("-listen", true))
+||||||| merged common ancestors
+    if (gArgs.IsArgSet("-bind")) {
+        if (gArgs.SoftSetBoolArg("-listen", true))
+=======
+    if (gArgs.GetArgs("-bind").size() > 0) {
+        if (gArgs.SoftSetBoolArg("-listen", true))
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
             LogPrintf("%s: parameter interaction: -bind set -> setting -listen=1\n", __func__);
     }
+<<<<<<< HEAD
     if (args.IsArgSet("-whitebind")) {
         if (args.SoftSetBoolArg("-listen", true))
+||||||| merged common ancestors
+    if (gArgs.IsArgSet("-whitebind")) {
+        if (gArgs.SoftSetBoolArg("-listen", true))
+=======
+    if (gArgs.GetArgs("-whitebind").size() > 0) {
+        if (gArgs.SoftSetBoolArg("-listen", true))
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
             LogPrintf("%s: parameter interaction: -whitebind set -> setting -listen=1\n", __func__);
     }
 
+<<<<<<< HEAD
     if (args.IsArgSet("-connect")) {
+||||||| merged common ancestors
+    if (gArgs.IsArgSet("-connect")) {
+=======
+    if (gArgs.GetArgs("-connect").size() > 0) {
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
         // when only connecting to trusted nodes, do not seed via DNS, or listen by default
         if (args.SoftSetBoolArg("-dnsseed", false))
             LogPrintf("%s: parameter interaction: -connect set -> setting -dnsseed=0\n", __func__);
@@ -825,7 +847,13 @@ void InitParameterInteraction(ArgsManager& args)
             LogPrintf("%s: parameter interaction: -listen=0 -> setting -listenonion=0\n", __func__);
     }
 
+<<<<<<< HEAD
     if (args.IsArgSet("-externalip")) {
+||||||| merged common ancestors
+    if (gArgs.IsArgSet("-externalip")) {
+=======
+    if (gArgs.GetArgs("-externalip").size() > 0) {
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
         // if an explicit public IP is specified, do not try to find others
         if (args.SoftSetBoolArg("-discover", false))
             LogPrintf("%s: parameter interaction: -externalip set -> setting -discover=0\n", __func__);
@@ -1033,10 +1061,21 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
 
     // ********************************************************* Step 3: parameter-to-internal-flags
+<<<<<<< HEAD
     if (args.IsArgSet("-debug")) {
         // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
         const std::vector<std::string> categories = args.GetArgs("-debug");
 
+||||||| merged common ancestors
+    if (gArgs.IsArgSet("-debug")) {
+        // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
+        const std::vector<std::string> categories = gArgs.GetArgs("-debug");
+
+=======
+    const std::vector<std::string> categories = gArgs.GetArgs("-debug");
+    if (!categories.empty()) {
+        // Special-case: if -debug=0/-debug=none is set, turn off debugging messages
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
         if (std::none_of(categories.begin(), categories.end(),
             [](std::string cat){return cat == "0" || cat == "none";})) {
             for (const auto& cat : categories) {
@@ -1392,7 +1431,13 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
             strSubVersion.size(), MAX_SUBVERSION_LENGTH));
     }
 
+<<<<<<< HEAD
     if (args.IsArgSet("-onlynet")) {
+||||||| merged common ancestors
+    if (gArgs.IsArgSet("-onlynet")) {
+=======
+    if (gArgs.GetArgs("-onlynet").size() > 0) {
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
         std::set<enum Network> nets;
         for (const std::string& snet : args.GetArgs("-onlynet")) {
             enum Network net = ParseNetwork(snet);
@@ -1949,7 +1994,13 @@ bool AppInitMain(const util::Ref& context, NodeContext& node, interfaces::BlockA
     connOptions.vSeedNodes = args.GetArgs("-seednode");
 
     // Initiate outbound connections unless connect=0
+<<<<<<< HEAD
     connOptions.m_use_addrman_outgoing = !args.IsArgSet("-connect");
+||||||| merged common ancestors
+    connOptions.m_use_addrman_outgoing = !gArgs.IsArgSet("-connect");
+=======
+    connOptions.m_use_addrman_outgoing = gArgs.GetArgs("-connect").empty();
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
     if (!connOptions.m_use_addrman_outgoing) {
         const auto connect = args.GetArgs("-connect");
         if (connect.size() != 1 || connect[0] != "0") {

@@ -320,8 +320,21 @@ GUI changes
 Low-level changes
 =================
 
+<<<<<<< HEAD
 RPC
 ---
+||||||| merged common ancestors
+Tests
+-----
+=======
+Configuration
+-------------
+
+Some corner cases handling negated list options `-norpcallowip`, `-norpcbind`, `-nobind`, `-nowhitebind`, `-noconnect`, `-noexternalip`, `-noonlynet` have been fixed. Now negating these options is the same as not specifying them at all.
+
+Tests
+-----
+>>>>>>> Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior
 
 - To make RPC `sendtoaddress` more consistent with `sendmany` the following error
     `sendtoaddress` codes were changed from `-4` to `-6`:
