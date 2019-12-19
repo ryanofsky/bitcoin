@@ -728,16 +728,16 @@ void InitParameterInteraction(ArgsManager& args)
 {
     // when specifying an explicit binding address, you want to listen on it
     // even when -connect or -proxy is specified
-    if (args.IsArgSet("-bind")) {
+    if (args.GetArgs("-bind").size() > 0) {
         if (args.SoftSetBoolArg("-listen", true))
             LogInfo("parameter interaction: -bind set -> setting -listen=1\n");
     }
-    if (args.IsArgSet("-whitebind")) {
+    if (args.GetArgs("-whitebind").size() > 0) {
         if (args.SoftSetBoolArg("-listen", true))
             LogInfo("parameter interaction: -whitebind set -> setting -listen=1\n");
     }
 
-    if (args.IsArgSet("-connect") || args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS) <= 0) {
+    if (args.GetArgs("-connect").size() > 0 || args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS) <= 0) {
         // when only connecting to trusted nodes, do not seed via DNS, or listen by default
         if (args.SoftSetBoolArg("-dnsseed", false))
             LogInfo("parameter interaction: -connect or -maxconnections=0 set -> setting -dnsseed=0\n");
@@ -778,7 +778,7 @@ void InitParameterInteraction(ArgsManager& args)
         }
     }
 
-    if (args.IsArgSet("-externalip")) {
+    if (args.GetArgs("-externalip").size() > 0) {
         // if an explicit public IP is specified, do not try to find others
         if (args.SoftSetBoolArg("-discover", false))
             LogInfo("parameter interaction: -externalip set -> setting -discover=0\n");
@@ -798,8 +798,8 @@ void InitParameterInteraction(ArgsManager& args)
         if (args.SoftSetBoolArg("-whitelistrelay", true))
             LogInfo("parameter interaction: -whitelistforcerelay=1 -> setting -whitelistrelay=1\n");
     }
-    if (args.IsArgSet("-onlynet")) {
-        const auto onlynets = args.GetArgs("-onlynet");
+    const auto onlynets = args.GetArgs("-onlynet");
+    if (!onlynets.empty()) {
         bool clearnet_reachable = std::any_of(onlynets.begin(), onlynets.end(), [](const auto& net) {
             const auto n = ParseNetwork(net);
             return n == NET_IPV4 || n == NET_IPV6;
@@ -1361,7 +1361,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
             strSubVersion.size(), MAX_SUBVERSION_LENGTH));
     }
 
-    if (args.IsArgSet("-onlynet")) {
+    if (args.GetArgs("-onlynet").size() > 0) {
         g_reachable_nets.RemoveAll();
         for (const std::string& snet : args.GetArgs("-onlynet")) {
             enum Network net = ParseNetwork(snet);
@@ -1372,7 +1372,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     }
 
     if (!args.IsArgSet("-cjdnsreachable")) {
-        if (args.IsArgSet("-onlynet") && g_reachable_nets.Contains(NET_CJDNS)) {
+        if (!args.GetArgs("-onlynet").empty() && g_reachable_nets.Contains(NET_CJDNS)) {
             return InitError(
                 _("Outbound connections restricted to CJDNS (-onlynet=cjdns) but "
                   "-cjdnsreachable is not provided"));
@@ -1423,7 +1423,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         onion_proxy = addrProxy;
     }
 
-    const bool onlynet_used_with_onion{args.IsArgSet("-onlynet") && g_reachable_nets.Contains(NET_ONION)};
+    const bool onlynet_used_with_onion{!args.GetArgs("-onlynet").empty() && g_reachable_nets.Contains(NET_ONION)};
 
     // -onion can be used to set only a proxy for .onion, or override normal proxy for .onion addresses
     // -noonion (or -onion=0) disables connecting to .onion entirely
@@ -1927,7 +1927,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     connOptions.vSeedNodes = args.GetArgs("-seednode");
 
     // Initiate outbound connections unless connect=0
-    connOptions.m_use_addrman_outgoing = !args.IsArgSet("-connect");
+    connOptions.m_use_addrman_outgoing = args.GetArgs("-connect").empty();
     if (!connOptions.m_use_addrman_outgoing) {
         const auto connect = args.GetArgs("-connect");
         if (connect.size() != 1 || connect[0] != "0") {
@@ -1950,7 +1950,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         }
         SetProxy(NET_I2P, Proxy{addr.value()});
     } else {
-        if (args.IsArgSet("-onlynet") && g_reachable_nets.Contains(NET_I2P)) {
+        if (!args.GetArgs("-onlynet").empty() && g_reachable_nets.Contains(NET_I2P)) {
             return InitError(
                 _("Outbound connections restricted to i2p (-onlynet=i2p) but "
                   "-i2psam is not provided"));
