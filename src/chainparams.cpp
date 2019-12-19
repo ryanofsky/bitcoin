@@ -349,8 +349,6 @@ void CRegTestParams::UpdateActivationParametersFromArgs(const ArgsManager& args)
         consensus.SegwitHeight = static_cast<int>(height);
     }
 
-    if (!args.IsArgSet("-vbparams")) return;
-
     for (const std::string& strDeployment : args.GetArgs("-vbparams")) {
         std::vector<std::string> vDeploymentParams;
         boost::split(vDeploymentParams, strDeployment, boost::is_any_of(":"));

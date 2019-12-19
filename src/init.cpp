@@ -757,16 +757,16 @@ void InitParameterInteraction()
 {
     // when specifying an explicit binding address, you want to listen on it
     // even when -connect or -proxy is specified
-    if (gArgs.IsArgSet("-bind")) {
+    if (gArgs.GetArgs("-bind").size() > 0) {
         if (gArgs.SoftSetBoolArg("-listen", true))
             LogPrintf("%s: parameter interaction: -bind set -> setting -listen=1\n", __func__);
     }
-    if (gArgs.IsArgSet("-whitebind")) {
+    if (gArgs.GetArgs("-whitebind").size() > 0) {
         if (gArgs.SoftSetBoolArg("-listen", true))
             LogPrintf("%s: parameter interaction: -whitebind set -> setting -listen=1\n", __func__);
     }
 
-    if (gArgs.IsArgSet("-connect")) {
+    if (gArgs.GetArgs("-connect").size() > 0) {
         // when only connecting to trusted nodes, do not seed via DNS, or listen by default
         if (gArgs.SoftSetBoolArg("-dnsseed", false))
             LogPrintf("%s: parameter interaction: -connect set -> setting -dnsseed=0\n", __func__);
@@ -797,7 +797,7 @@ void InitParameterInteraction()
             LogPrintf("%s: parameter interaction: -listen=0 -> setting -listenonion=0\n", __func__);
     }
 
-    if (gArgs.IsArgSet("-externalip")) {
+    if (gArgs.GetArgs("-externalip").size() > 0) {
         // if an explicit public IP is specified, do not try to find others
         if (gArgs.SoftSetBoolArg("-discover", false))
             LogPrintf("%s: parameter interaction: -externalip set -> setting -discover=0\n", __func__);
@@ -983,10 +983,9 @@ bool AppInitParameterInteraction()
         InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations.").translated, nUserMaxConnections, nMaxConnections));
 
     // ********************************************************* Step 3: parameter-to-internal-flags
-    if (gArgs.IsArgSet("-debug")) {
-        // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
-        const std::vector<std::string> categories = gArgs.GetArgs("-debug");
-
+    const std::vector<std::string> categories = gArgs.GetArgs("-debug");
+    if (!categories.empty()) {
+        // Special-case: if -debug=0/-debug=none is set, turn off debugging messages
         if (std::none_of(categories.begin(), categories.end(),
             [](std::string cat){return cat == "0" || cat == "none";})) {
             for (const auto& cat : categories) {
@@ -1329,7 +1328,7 @@ bool AppInitMain(NodeContext& node)
             strSubVersion.size(), MAX_SUBVERSION_LENGTH));
     }
 
-    if (gArgs.IsArgSet("-onlynet")) {
+    if (gArgs.GetArgs("-onlynet").size() > 0) {
         std::set<enum Network> nets;
         for (const std::string& snet : gArgs.GetArgs("-onlynet")) {
             enum Network net = ParseNetwork(snet);
@@ -1798,7 +1797,7 @@ bool AppInitMain(NodeContext& node)
     connOptions.vSeedNodes = gArgs.GetArgs("-seednode");
 
     // Initiate outbound connections unless connect=0
-    connOptions.m_use_addrman_outgoing = !gArgs.IsArgSet("-connect");
+    connOptions.m_use_addrman_outgoing = gArgs.GetArgs("-connect").empty();
     if (!connOptions.m_use_addrman_outgoing) {
         const auto connect = gArgs.GetArgs("-connect");
         if (connect.size() != 1 || connect[0] != "0") {

@@ -233,6 +233,14 @@ struct TestArgsManager : public ArgsManager
         if (test.arg) test.arg->m_flags &= ~ALLOW_LIST;
         return GetBoolArg(name, default_value);
     }
+    //! Call IsArgSet(), temporarily disabling ALLOW_LIST so call can succeed.
+    //! This is called by old tests written before ALLOW_LIST was enforced.
+    bool TestArgSet(const std::string& name)
+    {
+        TestFlags test(*this, name);
+        if (test.arg) test.arg->m_flags &= ~ALLOW_LIST;
+        return IsArgSet(name);
+    }
     using ArgsManager::GetSetting;
     using ArgsManager::GetSettingsList;
     using ArgsManager::ReadConfigStream;
@@ -478,7 +486,7 @@ BOOST_AUTO_TEST_CASE(util_ParseParameters)
     // -a, -b and -ccc end up in map, -d ignored because it is after
     // a non-option argument (non-GNU option parsing)
     BOOST_CHECK(testArgs.m_settings.command_line_options.size() == 3 && testArgs.m_settings.ro_config.empty());
-    BOOST_CHECK(testArgs.IsArgSet("-a") && testArgs.IsArgSet("-b") && testArgs.IsArgSet("-ccc")
+    BOOST_CHECK(testArgs.IsArgSet("-a") && testArgs.IsArgSet("-b") && testArgs.TestArgSet("-ccc")
                 && !testArgs.IsArgSet("f") && !testArgs.IsArgSet("-d"));
     BOOST_CHECK(testArgs.m_settings.command_line_options.count("a") && testArgs.m_settings.command_line_options.count("b") && testArgs.m_settings.command_line_options.count("ccc")
                 && !testArgs.m_settings.command_line_options.count("f") && !testArgs.m_settings.command_line_options.count("d"));
@@ -704,12 +712,12 @@ BOOST_AUTO_TEST_CASE(util_ReadConfigStream)
 
     BOOST_CHECK(test_args.IsArgSet("-a")
                 && test_args.IsArgSet("-b")
-                && test_args.IsArgSet("-ccc")
+                && test_args.TestArgSet("-ccc")
                 && test_args.IsArgSet("-d")
                 && test_args.IsArgSet("-fff")
                 && test_args.IsArgSet("-ggg")
-                && test_args.IsArgSet("-h")
-                && test_args.IsArgSet("-i")
+                && test_args.TestArgSet("-h")
+                && test_args.TestArgSet("-i")
                 && !test_args.IsArgSet("-zzz")
                 && !test_args.IsArgSet("-iii")
                );
@@ -1093,7 +1101,7 @@ BOOST_FIXTURE_TEST_CASE(util_ArgsMerge, ArgsMergeTestingSetup)
 
         desc += " || ";
 
-        if (!parser.IsArgSet(key)) {
+        if (!parser.TestArgSet(key)) {
             desc += "unset";
             BOOST_CHECK(!parser.IsArgNegated(key));
             BOOST_CHECK_EQUAL(parser.TestArgString(key, "default"), "default");
