@@ -76,7 +76,16 @@ util::Result<void> SetLoggingLevel(const ArgsManager& args)
 
 util::Result<void> SetLoggingCategories(const ArgsManager& args)
 {
+<<<<<<< HEAD
         // Special-case: if -debug=0/-debug=none is set, turn off debugging messages
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    if (args.IsArgSet("-debug")) {
+        // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
+=======
+    const std::vector<std::string> categories = args.GetArgs("-debug");
+    if (!categories.empty()) {
+        // Special-case: if -debug=0/-debug=none is set, turn off debugging messages
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         const std::vector<std::string> categories = args.GetArgs("-debug");
 
         if (std::none_of(categories.begin(), categories.end(),

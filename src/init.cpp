@@ -735,16 +735,34 @@ void InitParameterInteraction(ArgsManager& args)
 {
     // when specifying an explicit binding address, you want to listen on it
     // even when -connect or -proxy is specified
+<<<<<<< HEAD
     if (!args.GetArgs("-bind").empty()) {
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    if (args.IsArgSet("-bind")) {
+=======
+    if (args.GetArgs("-bind").size() > 0) {
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         if (args.SoftSetBoolArg("-listen", true))
             LogInfo("parameter interaction: -bind set -> setting -listen=1\n");
     }
+<<<<<<< HEAD
     if (!args.GetArgs("-whitebind").empty()) {
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    if (args.IsArgSet("-whitebind")) {
+=======
+    if (args.GetArgs("-whitebind").size() > 0) {
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         if (args.SoftSetBoolArg("-listen", true))
             LogInfo("parameter interaction: -whitebind set -> setting -listen=1\n");
     }
 
+<<<<<<< HEAD
     if (!args.GetArgs("-connect").empty() || args.IsArgNegated("-connect") || args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS) <= 0) {
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    if (args.IsArgSet("-connect") || args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS) <= 0) {
+=======
+    if (args.GetArgs("-connect").size() > 0 || args.GetIntArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS) <= 0) {
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         // when only connecting to trusted nodes, do not seed via DNS, or listen by default
         // do the same when connections are disabled
         if (args.SoftSetBoolArg("-dnsseed", false))
@@ -786,7 +804,13 @@ void InitParameterInteraction(ArgsManager& args)
         }
     }
 
+<<<<<<< HEAD
     if (!args.GetArgs("-externalip").empty()) {
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    if (args.IsArgSet("-externalip")) {
+=======
+    if (args.GetArgs("-externalip").size() > 0) {
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         // if an explicit public IP is specified, do not try to find others
         if (args.SoftSetBoolArg("-discover", false))
             LogInfo("parameter interaction: -externalip set -> setting -discover=0\n");
@@ -1369,7 +1393,13 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
             strSubVersion.size(), MAX_SUBVERSION_LENGTH));
     }
 
+<<<<<<< HEAD
     if (!args.GetArgs("-onlynet").empty()) {
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    if (args.IsArgSet("-onlynet")) {
+=======
+    if (args.GetArgs("-onlynet").size() > 0) {
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         g_reachable_nets.RemoveAll();
         for (const std::string& snet : args.GetArgs("-onlynet")) {
             enum Network net = ParseNetwork(snet);
@@ -1938,6 +1968,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     connOptions.vSeedNodes = args.GetArgs("-seednode");
 
+<<<<<<< HEAD
     const auto connect = args.GetArgs("-connect");
     if (!connect.empty() || args.IsArgNegated("-connect")) {
         // Do not initiate addrman connections when only connecting to trusted
@@ -1945,6 +1976,17 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         connOptions.m_use_addrman_outgoing = false;
 
         // Assign addresses of trusted nodes, if any.
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    // Initiate outbound connections unless connect=0
+    connOptions.m_use_addrman_outgoing = !args.IsArgSet("-connect");
+    if (!connOptions.m_use_addrman_outgoing) {
+        const auto connect = args.GetArgs("-connect");
+=======
+    // Initiate outbound connections unless connect=0
+    connOptions.m_use_addrman_outgoing = args.GetArgs("-connect").empty();
+    if (!connOptions.m_use_addrman_outgoing) {
+        const auto connect = args.GetArgs("-connect");
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         if (connect.size() != 1 || connect[0] != "0") {
             connOptions.m_specified_outgoing = connect;
         }

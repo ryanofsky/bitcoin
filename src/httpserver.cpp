@@ -361,17 +361,39 @@ static bool HTTPBindAddresses(struct evhttp* http)
     std::vector<std::pair<std::string, uint16_t>> endpoints;
 
     // Determine what addresses to bind to
+<<<<<<< HEAD
     // To prevent misconfiguration and accidental exposure of the RPC
     // interface, require -rpcallowip and -rpcbind to both be specified
     // together. If either is missing, ignore both values, bind to localhost
     // instead, and log warnings.
     if (gArgs.GetArgs("-rpcallowip").empty() || gArgs.GetArgs("-rpcbind").empty()) { // Default to loopback if not allowing external IPs
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    if (!(gArgs.IsArgSet("-rpcallowip") && gArgs.IsArgSet("-rpcbind"))) { // Default to loopback if not allowing external IPs
+=======
+    // To prevent misconfiguration and accidental exposure of the RPC
+    // interface, require -rpcallowip and -rpcbind to both be specified
+    // together. If either is missing, ignore both values, bind to localhost
+    // instead, and log warnings.
+    if (gArgs.GetArgs("-rpcallowip").size() == 0 || gArgs.GetArgs("-rpcbind").size() == 0) { // Default to loopback if not allowing external IPs
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
         endpoints.emplace_back("::1", http_port);
         endpoints.emplace_back("127.0.0.1", http_port);
+<<<<<<< HEAD
         if (!gArgs.GetArgs("-rpcallowip").empty()) {
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+        if (gArgs.IsArgSet("-rpcallowip")) {
+=======
+        if (gArgs.GetArgs("-rpcallowip").size() > 0) {
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
             LogPrintf("WARNING: option -rpcallowip was specified without -rpcbind; this doesn't usually make sense\n");
         }
+<<<<<<< HEAD
         if (!gArgs.GetArgs("-rpcbind").empty()) {
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+        if (gArgs.IsArgSet("-rpcbind")) {
+=======
+        if (gArgs.GetArgs("-rpcbind").size() > 0) {
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
             LogPrintf("WARNING: option -rpcbind was ignored because -rpcallowip was not specified, refusing to allow everyone to connect\n");
         }
     } else { // Specific bind addresses

@@ -330,7 +330,13 @@ static bool InitRPCAuthentication()
         }
     }
 
+<<<<<<< HEAD
     g_rpc_whitelist_default = gArgs.GetBoolArg("-rpcwhitelistdefault", !gArgs.GetArgs("-rpcwhitelist").empty());
+||||||| parent of fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    g_rpc_whitelist_default = gArgs.GetBoolArg("-rpcwhitelistdefault", gArgs.IsArgSet("-rpcwhitelist"));
+=======
+    g_rpc_whitelist_default = gArgs.GetBoolArg("-rpcwhitelistdefault", gArgs.GetArgs("-rpcwhitelist").size() > 0);
+>>>>>>> fad80df30883 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
     for (const std::string& strRPCWhitelist : gArgs.GetArgs("-rpcwhitelist")) {
         auto pos = strRPCWhitelist.find(':');
         std::string strUser = strRPCWhitelist.substr(0, pos);
