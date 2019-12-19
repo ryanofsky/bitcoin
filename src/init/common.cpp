@@ -57,7 +57,6 @@ void SetLoggingOptions(const ArgsManager& args)
 
 util::Result<void> SetLoggingLevel(const ArgsManager& args)
 {
-    if (args.IsArgSet("-loglevel")) {
         for (const std::string& level_str : args.GetArgs("-loglevel")) {
             if (level_str.find_first_of(':', 3) == std::string::npos) {
                 // user passed a global log level, i.e. -loglevel=<level>
@@ -72,14 +71,20 @@ util::Result<void> SetLoggingLevel(const ArgsManager& args)
                 }
             }
         }
+<<<<<<< HEAD
     }
     return {};
+||||||| parent of a746ae052004 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
+    }
+=======
+>>>>>>> a746ae052004 (Fix nonsensical -norpcwhitelist, -norpcallowip and related behavior)
 }
 
 util::Result<void> SetLoggingCategories(const ArgsManager& args)
 {
-    if (args.IsArgSet("-debug")) {
-        // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
+    const std::vector<std::string> categories = args.GetArgs("-debug");
+    if (!categories.empty()) {
+        // Special-case: if -debug=0/-debug=none is set, turn off debugging messages
         const std::vector<std::string> categories = args.GetArgs("-debug");
 
         if (std::none_of(categories.begin(), categories.end(),
