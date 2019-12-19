@@ -58,7 +58,6 @@ void SetLoggingOptions(const ArgsManager& args)
 
 util::Result<void> SetLoggingLevel(const ArgsManager& args)
 {
-    if (args.IsArgSet("-loglevel")) {
         for (const std::string& level_str : args.GetArgs("-loglevel")) {
             if (level_str.find_first_of(':', 3) == std::string::npos) {
                 // user passed a global log level, i.e. -loglevel=<level>
@@ -73,13 +72,19 @@ util::Result<void> SetLoggingLevel(const ArgsManager& args)
                 }
             }
         }
-    }
     return {};
 }
 
 util::Result<void> SetLoggingCategories(const ArgsManager& args)
 {
+<<<<<<< HEAD
     if (args.IsArgSet("-debug")) {
+||||||| parent of 76fc51774e98 (refactor: Avoid using IsArgSet() on -debug, -loglevel, and -vbparams list options)
+    if (args.IsArgSet("-debug")) {
+        // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
+=======
+        // Special-case: if -debug=0/-debug=none is set, turn off debugging messages
+>>>>>>> 76fc51774e98 (refactor: Avoid using IsArgSet() on -debug, -loglevel, and -vbparams list options)
         const std::vector<std::string> categories = args.GetArgs("-debug");
 
         // Special-case: Disregard any debugging categories appearing before -debug=0/none
@@ -93,7 +98,6 @@ util::Result<void> SetLoggingCategories(const ArgsManager& args)
                 return util::Error{strprintf(_("Unsupported logging category %s=%s."), "-debug", cat)};
             }
         }
-    }
 
     // Now remove the logging categories which were explicitly excluded
     for (const std::string& cat : args.GetArgs("-debugexclude")) {
