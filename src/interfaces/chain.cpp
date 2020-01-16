@@ -80,6 +80,31 @@ class LockImpl : public Chain::Lock, public UniqueLock<RecursiveMutex>
         assert(block != nullptr);
         return block->GetBlockHash();
     }
+<<<<<<< HEAD
+||||||| merged common ancestors
+    int64_t getBlockTime(int height) override
+    {
+        LockAssertion lock(::cs_main);
+        CBlockIndex* block = ::ChainActive()[height];
+        assert(block != nullptr);
+        return block->GetBlockTime();
+    }
+    int64_t getBlockMedianTimePast(int height) override
+    {
+        LockAssertion lock(::cs_main);
+        CBlockIndex* block = ::ChainActive()[height];
+        assert(block != nullptr);
+        return block->GetMedianTimePast();
+    }
+=======
+    int64_t getBlockTime(int height) override
+    {
+        LockAssertion lock(::cs_main);
+        CBlockIndex* block = ::ChainActive()[height];
+        assert(block != nullptr);
+        return block->GetBlockTime();
+    }
+>>>>>>> wallet: Avoid use of Chain::Lock in importmulti
     bool haveBlockOnDisk(int height) override
     {
         LockAssertion lock(::cs_main);
@@ -234,7 +259,13 @@ public:
         std::unique_ptr<Chain::Lock> result = std::move(lock); // Temporary to avoid CWG 1579
         return result;
     }
+<<<<<<< HEAD
     bool findBlock(const uint256& hash, const FoundBlock& block) override
+||||||| merged common ancestors
+    bool findBlock(const uint256& hash, CBlock* block, int64_t* time, int64_t* time_max) override
+=======
+    bool findBlock(const uint256& hash, CBlock* block, int64_t* time, int64_t* time_max, int64_t* time_mtp) override
+>>>>>>> wallet: Avoid use of Chain::Lock in importmulti
     {
         WAIT_LOCK(cs_main, lock);
         return FillBlock(LookupBlockIndex(hash), block, lock);
@@ -257,6 +288,9 @@ public:
         if (const CBlockIndex* block = LookupBlockIndex(block_hash)) {
             if (const CBlockIndex* ancestor = block->GetAncestor(ancestor_height)) {
                 return FillBlock(ancestor, ancestor_out, lock);
+            }
+            if (time_mtp) {
+                *time_mtp = index->GetMedianTimePast();
             }
         }
         return FillBlock(nullptr, ancestor_out, lock);

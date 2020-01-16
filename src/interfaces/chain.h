@@ -100,6 +100,20 @@ public:
         //! Get block hash. Height must be valid or this function will abort.
         virtual uint256 getBlockHash(int height) = 0;
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+        //! Get block time. Height must be valid or this function will abort.
+        virtual int64_t getBlockTime(int height) = 0;
+
+        //! Get block median time past. Height must be valid or this function
+        //! will abort.
+        virtual int64_t getBlockMedianTimePast(int height) = 0;
+
+=======
+        //! Get block time. Height must be valid or this function will abort.
+        virtual int64_t getBlockTime(int height) = 0;
+
+>>>>>>> wallet: Avoid use of Chain::Lock in importmulti
         //! Check that the block is available on disk (i.e. has not been
         //! pruned), and contains transactions.
         virtual bool haveBlockOnDisk(int height) = 0;
@@ -137,6 +151,7 @@ public:
 
     //! Return whether node has the block and optionally return block metadata
     //! or contents.
+<<<<<<< HEAD
     virtual bool findBlock(const uint256& hash, const FoundBlock& block={}) = 0;
 
     //! Find first block in the chain with timestamp >= the given time
@@ -167,6 +182,26 @@ public:
         const FoundBlock& ancestor={},
         const FoundBlock& block1={},
         const FoundBlock& block2={}) = 0;
+||||||| merged common ancestors
+    //!
+    //! If a block pointer is provided to retrieve the block contents, and the
+    //! block exists but doesn't have data (for example due to pruning), the
+    //! block will be empty and all fields set to null.
+    virtual bool findBlock(const uint256& hash,
+        CBlock* block = nullptr,
+        int64_t* time = nullptr,
+        int64_t* max_time = nullptr) = 0;
+=======
+    //!
+    //! If a block pointer is provided to retrieve the block contents, and the
+    //! block exists but doesn't have data (for example due to pruning), the
+    //! block will be empty and all fields set to null.
+    virtual bool findBlock(const uint256& hash,
+        CBlock* block = nullptr,
+        int64_t* time = nullptr,
+        int64_t* max_time = nullptr,
+        int64_t* mtp_time = nullptr) = 0;
+>>>>>>> wallet: Avoid use of Chain::Lock in importmulti
 
     //! Return whether block descends from a specified ancestor, and
     //! optionally return height of the ancestor.

@@ -1406,7 +1406,14 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
         EnsureWalletIsUnlocked(pwallet);
 
         // Verify all timestamps are present before importing any keys.
+<<<<<<< HEAD
         CHECK_NONFATAL(pwallet->chain().findBlock(pwallet->GetLastBlockHash(), FoundBlock().time(nLowestTimestamp).mtpTime(now)));
+||||||| merged common ancestors
+        const Optional<int> tip_height = locked_chain->getHeight();
+        now = tip_height ? locked_chain->getBlockMedianTimePast(*tip_height) : 0;
+=======
+        pwallet->chain().findBlock(pwallet->GetLastBlockHash(), nullptr, &nLowestTimestamp, nullptr, &now);
+>>>>>>> wallet: Avoid use of Chain::Lock in importmulti
         for (const UniValue& data : requests.getValues()) {
             GetImportTimestamp(data, now);
         }
