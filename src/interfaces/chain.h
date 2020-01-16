@@ -134,7 +134,8 @@ public:
     virtual bool findBlock(const uint256& hash,
         CBlock* block = nullptr,
         int64_t* time = nullptr,
-        int64_t* max_time = nullptr) = 0;
+        int64_t* max_time = nullptr,
+        int64_t* mtp_time = nullptr) = 0;
 
     //! Return height of ancestor block, or nullopt if ancestor_hash is not an
     //! ancestor of descendant_hash or either block hash is unknown.
