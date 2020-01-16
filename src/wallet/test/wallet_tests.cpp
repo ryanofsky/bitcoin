@@ -235,8 +235,13 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
     // were scanned, and no prior blocks were scanned.
     {
         std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(chain.get(), WalletLocation(), WalletDatabase::CreateDummy());
+<<<<<<< HEAD
         LOCK(wallet->cs_wallet);
         wallet->SetupLegacyScriptPubKeyMan();
+||||||| merged common ancestors
+=======
+        LOCK(wallet->cs_wallet);
+>>>>>>> wallet: Avoid use of Chain::Lock in importwallet and dumpwallet
 
         JSONRPCRequest request;
         request.params.setArray();
