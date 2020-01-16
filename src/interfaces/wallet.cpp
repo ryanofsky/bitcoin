@@ -63,7 +63,7 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
 WalletTxStatus MakeWalletTxStatus(interfaces::Chain::Lock& locked_chain, const CWalletTx& wtx)
 {
     WalletTxStatus result;
-    result.block_height = locked_chain.getBlockHeight(wtx.m_confirm.hashBlock).get_value_or(std::numeric_limits<int>::max());
+    result.block_height = wtx.m_confirm.block_height > 0 ? wtx.m_confirm.block_height : std::numeric_limits<int>::max();
     result.blocks_to_maturity = wtx.GetBlocksToMaturity();
     result.depth_in_main_chain = wtx.GetDepthInMainChain();
     result.time_received = wtx.nTimeReceived;
@@ -329,13 +329,9 @@ public:
         if (mi == m_wallet->mapWallet.end()) {
             return false;
         }
-        if (Optional<int> height = locked_chain->getHeight()) {
-            num_blocks = *height;
-            block_time = locked_chain->getBlockTime(*height);
-        } else {
-            num_blocks = -1;
-            block_time = -1;
-        }
+        num_blocks = m_wallet->GetLastBlockHeight();
+        block_time = -1;
+        m_wallet->chain().findBlock(m_wallet->GetLastBlockHash(), FoundBlock().time(block_time).require());
         tx_status = MakeWalletTxStatus(*locked_chain, mi->second);
         return true;
     }
@@ -389,7 +385,7 @@ public:
             return false;
         }
         balances = getBalances();
-        num_blocks = locked_chain->getHeight().get_value_or(-1);
+        num_blocks = m_wallet->GetLastBlockHeight();
         return true;
     }
     CAmount getBalance() override { return m_wallet->GetBalance().m_mine_trusted; }
