@@ -10,6 +10,15 @@
 
 BOOST_FIXTURE_TEST_SUITE(interfaces_tests, TestChain100Setup)
 
+BOOST_AUTO_TEST_CASE(findBlock)
+{
+    auto chain = interfaces::MakeChain(m_node);
+    auto& active = ::ChainActive();
+    int64_t time_mtp = -1;
+    BOOST_CHECK(chain->findBlock(active[20]->GetBlockHash(), nullptr, nullptr, nullptr, &time_mtp));
+    BOOST_CHECK_EQUAL(time_mtp, active[20]->GetMedianTimePast());
+}
+
 BOOST_AUTO_TEST_CASE(findAncestorByHash)
 {
     auto chain = interfaces::MakeChain(m_node);
