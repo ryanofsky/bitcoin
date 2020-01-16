@@ -123,6 +123,7 @@ public:
     virtual bool findBlock(const uint256& hash,
         CBlock* block = nullptr,
         int64_t* time = nullptr,
+<<<<<<< HEAD
         int64_t* max_time = nullptr,
         int64_t* mtp_time = nullptr) = 0;
 
@@ -140,6 +141,12 @@ public:
 
     //! Find ancestor of block at specified height and return its hash.
     virtual uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) = 0;
+||||||| merged common ancestors
+        int64_t* max_time = nullptr) = 0;
+=======
+        int64_t* max_time = nullptr,
+        int64_t* mtp_time = nullptr) = 0;
+>>>>>>> wallet: Avoid use of Chain::Lock in importmulti
 
     //! Return whether block descends from a specified ancestor, and
     //! optionally return height of the ancestor.
