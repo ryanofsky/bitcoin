@@ -277,6 +277,15 @@ public:
         const CBlockIndex* ancestor = block1 && block2 ? LastCommonAncestor(block1, block2) : nullptr;
         return FillBlock(ancestor, ancestor_out, lock) & FillBlock(block1, block1_out, lock) & FillBlock(block2, block2_out, lock);
     }
+    bool findAncestorByHash(const uint256& block_hash, const uint256& ancestor_hash, int* height) override
+    {
+        LOCK(::cs_main);
+        const CBlockIndex* block = LookupBlockIndex(block_hash);
+        const CBlockIndex* ancestor = LookupBlockIndex(ancestor_hash);
+        if (!block || !ancestor || block->GetAncestor(ancestor->nHeight) != ancestor) return false;
+        if (height) *height = ancestor->nHeight;
+        return true;
+    }
     void findCoins(std::map<COutPoint, Coin>& coins) override { return FindCoins(m_node, coins); }
     double guessVerificationProgress(const uint256& block_hash) override
     {

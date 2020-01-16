@@ -361,9 +361,18 @@ UniValue importprunedfunds(const JSONRPCRequest& request)
     }
 
     auto locked_chain = pwallet->chain().lock();
+<<<<<<< HEAD
     LOCK(pwallet->cs_wallet);
     int height;
     if (!pwallet->chain().findAncestorByHash(pwallet->GetLastBlockHash(), merkleBlock.header.GetHash(), FoundBlock().height(height))) {
+||||||| merged common ancestors
+    Optional<int> height = locked_chain->getBlockHeight(merkleBlock.header.GetHash());
+    if (height == nullopt) {
+=======
+    LOCK(pwallet->cs_wallet);
+    int height;
+    if (!pwallet->chain().findAncestorByHash(pwallet->GetLastBlockHash(), merkleBlock.header.GetHash(), &height)) {
+>>>>>>> wallet: Avoid use of Chain::Lock in importprunedfunds
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found in chain");
     }
 
