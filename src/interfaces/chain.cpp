@@ -242,7 +242,7 @@ public:
         // LockImpl to Lock pointer
         return std::move(result);
     }
-    bool findBlock(const uint256& hash, CBlock* block, int64_t* time, int64_t* time_max) override
+    bool findBlock(const uint256& hash, CBlock* block, int64_t* time, int64_t* time_max, int64_t* time_mtp) override
     {
         CBlockIndex* index;
         {
@@ -256,6 +256,9 @@ public:
             }
             if (time_max) {
                 *time_max = index->GetBlockTimeMax();
+            }
+            if (time_mtp) {
+                *time_mtp = index->GetMedianTimePast();
             }
         }
         if (block && !ReadBlockFromDisk(*block, index, Params().GetConsensus())) {

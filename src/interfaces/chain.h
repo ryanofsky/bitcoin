@@ -134,7 +134,8 @@ public:
     virtual bool findBlock(const uint256& hash,
         CBlock* block = nullptr,
         int64_t* time = nullptr,
-        int64_t* max_time = nullptr) = 0;
+        int64_t* max_time = nullptr,
+        int64_t* mtp_time = nullptr) = 0;
 
     //! Return whether block descends from a specified ancestor, and
     //! optionally return height of the ancestor.
