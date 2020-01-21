@@ -133,11 +133,22 @@ public:
         int64_t* max_time = nullptr,
         int64_t* mtp_time = nullptr) = 0;
 
+    //! Find ancestor of block at specified height and return its hash.
+    virtual uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) = 0;
+
     //! Return whether block descends from a specified ancestor, and
     //! optionally return height of the ancestor.
     virtual bool findAncestorByHash(const uint256& block_hash,
         const uint256& ancestor_hash,
         int* height = 0) = 0;
+
+    //! Find most recent common ancestor between two blocks and optionally
+    //! return its hash and/or height. Also return height of first block. Return
+    //! nullopt if either block is unknown or there is no common ancestor.
+    virtual Optional<int> findFork(const uint256& block_hash1,
+        const uint256& block_hash2,
+        uint256* ancestor_hash,
+        int* ancestor_height) = 0;
 
     //! Look up unspent output information. Returns coins in the mempool and in
     //! the current chain UTXO set. Iterates through all the keys in the map and
