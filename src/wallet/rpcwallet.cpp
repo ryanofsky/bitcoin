@@ -1581,9 +1581,18 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
     uint256 blockId;
     if (!request.params[0].isNull() && !request.params[0].get_str().empty()) {
         blockId = ParseHashV(request.params[0], "blockhash");
+<<<<<<< HEAD
         height.emplace();
         altheight.emplace();
         if (!pwallet->chain().findCommonAncestor(blockId, pwallet->GetLastBlockHash(), FoundBlock().height(*height), FoundBlock().height(*altheight))) {
+||||||| merged common ancestors
+        height = locked_chain->findFork(blockId, &altheight);
+        if (!height) {
+=======
+        height.emplace();
+        altheight = pwallet->chain().findFork(blockId, pwallet->GetLastBlockHash(), nullptr, height.get_ptr());
+        if (!altheight) {
+>>>>>>> wallet: Avoid use of Chain::Lock in listsinceblock
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
         }
     }
@@ -1634,8 +1643,15 @@ static UniValue listsinceblock(const JSONRPCRequest& request)
         --*altheight;
     }
 
+<<<<<<< HEAD
     uint256 lastblock;
     CHECK_NONFATAL(pwallet->chain().findAncestorByHeight(pwallet->GetLastBlockHash(), pwallet->GetLastBlockHeight() + 1 - target_confirms, FoundBlock().hash(lastblock)));
+||||||| merged common ancestors
+    int last_height = tip_height ? *tip_height + 1 - target_confirms : -1;
+    uint256 lastblock = last_height >= 0 ? locked_chain->getBlockHash(last_height) : uint256();
+=======
+    uint256 lastblock = pwallet->chain().findAncestorByHeight(pwallet->GetLastBlockHash(), pwallet->GetLastBlockHeight() + 1 - target_confirms);
+>>>>>>> wallet: Avoid use of Chain::Lock in listsinceblock
 
     UniValue ret(UniValue::VOBJ);
     ret.pushKV("transactions", transactions);
