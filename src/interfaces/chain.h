@@ -133,6 +133,13 @@ public:
         int64_t* max_time = nullptr,
         int64_t* mtp_time = nullptr) = 0;
 
+    //! Return hash of first block in the chain with timestamp >= the given time
+    //! and height >= than the given height, or nullopt if there is no block
+    //! with a high enough timestamp and height. Also return the block height as
+    //! an optional output parameter (to avoid the cost of a second lookup in
+    //! case this information is needed.)
+    virtual Optional<uint256> findFirstBlockWithTimeAndHeight(int64_t min_time, int min_height, int* height = nullptr) = 0;
+
     //! Find ancestor of block at specified height and return its hash.
     virtual uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) = 0;
 

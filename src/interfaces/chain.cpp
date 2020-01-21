@@ -259,6 +259,16 @@ public:
         }
         return true;
     }
+    Optional<uint256> findFirstBlockWithTimeAndHeight(int64_t min_time, int min_height, int* height = nullptr) override
+    {
+        LOCK(::cs_main);
+        CBlockIndex* block = ::ChainActive().FindEarliestAtLeast(min_time, min_height);
+        if (block) {
+            if (height) *height = block->nHeight;
+            return block->GetBlockHash();
+        }
+        return nullopt;
+    }
     uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) override
     {
         LOCK(::cs_main);
