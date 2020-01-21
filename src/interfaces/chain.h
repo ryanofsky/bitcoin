@@ -236,11 +236,18 @@ public:
     //! the specified block hash are verified.
     virtual double guessVerificationProgress(const uint256& block_hash) = 0;
 
+<<<<<<< HEAD
     //! Return true if data is available for all blocks in the specified range
     //! of blocks. This checks all blocks that are ancestors of block_hash in
     //! the height range from min_height to max_height, inclusive.
     virtual bool hasBlocks(const uint256& block_hash, int min_height = 0, Optional<int> max_height = {}) = 0;
 
+||||||| merged common ancestors
+=======
+    //! Return true if data is available for the specified blocks.
+    virtual bool hasBlocks(const uint256& block_hash, Optional<int> min_height, Optional<int> max_height) = 0;
+
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
     //! Check if transaction is RBF opt in.
     virtual RBFTransactionState isRBFOptIn(const CTransaction& tx) = 0;
 

@@ -1655,7 +1655,13 @@ int64_t CWallet::RescanFromTime(int64_t startTime, const WalletRescanReserver& r
  * the main chain after to the addition of any new keys you want to detect
  * transactions for.
  */
+<<<<<<< HEAD
 CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, int start_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate)
+||||||| merged common ancestors
+CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, const uint256& stop_block, const WalletRescanReserver& reserver, bool fUpdate)
+=======
+CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate)
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
 {
     int64_t nNow = GetTime();
     int64_t start_time = GetTimeMillis();
@@ -1669,11 +1675,44 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
 
     fAbortRescan = false;
     ShowProgress(strprintf("%s " + _("Rescanning...").translated, GetDisplayName()), 0); // show rescan progress in GUI as dialog or on splashscreen, if -rescan on startup
+<<<<<<< HEAD
     uint256 tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
     uint256 end_hash = tip_hash;
     if (max_height) chain().findAncestorByHeight(tip_hash, *max_height, FoundBlock().hash(end_hash));
     double progress_begin = chain().guessVerificationProgress(block_hash);
     double progress_end = chain().guessVerificationProgress(end_hash);
+||||||| merged common ancestors
+    uint256 tip_hash;
+    // The way the 'block_height' is initialized is just a workaround for the gcc bug #47679 since version 4.6.0.
+    Optional<int> block_height = MakeOptional(false, int());
+    double progress_begin;
+    double progress_end;
+    {
+        auto locked_chain = chain().lock();
+        if (Optional<int> tip_height = locked_chain->getHeight()) {
+            tip_hash = locked_chain->getBlockHash(*tip_height);
+        }
+        block_height = locked_chain->getBlockHeight(block_hash);
+        progress_begin = chain().guessVerificationProgress(block_hash);
+        progress_end = chain().guessVerificationProgress(stop_block.IsNull() ? tip_hash : stop_block);
+    }
+=======
+    uint256 tip_hash;
+    // The way the 'block_height' is initialized is just a workaround for the gcc bug #47679 since version 4.6.0.
+    Optional<int> block_height = MakeOptional(false, int());
+    double progress_begin;
+    double progress_end;
+    {
+        auto locked_chain = chain().lock();
+        if (Optional<int> tip_height = locked_chain->getHeight()) {
+            tip_hash = locked_chain->getBlockHash(*tip_height);
+        }
+        block_height = locked_chain->getBlockHeight(block_hash);
+        progress_begin = chain().guessVerificationProgress(block_hash);
+        uint256 stop_block = max_height ? chain().findAncestorByHeight(tip_hash, *max_height) : tip_hash;
+        progress_end = chain().guessVerificationProgress(stop_block);
+    }
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
     double progress_current = progress_begin;
     int block_height = start_height;
     while (!fAbortRescan && !chain().shutdownRequested()) {
@@ -1716,7 +1755,13 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             result.status = ScanResult::FAILURE;
             next_block = chain().findNextBlock(block_hash, block_height, FoundBlock().hash(next_block_hash), &reorg);
         }
+<<<<<<< HEAD
         if (max_height && block_height >= *max_height) {
+||||||| merged common ancestors
+        if (block_hash == stop_block) {
+=======
+        if (max_height && *block_height >= *max_height) {
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
             break;
         }
         {
@@ -1734,8 +1779,16 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
 
             // handle updated tip hash
             const uint256 prev_tip_hash = tip_hash;
+<<<<<<< HEAD
             tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
             if (!max_height && prev_tip_hash != tip_hash) {
+||||||| merged common ancestors
+            tip_hash = locked_chain->getBlockHash(*tip_height);
+            if (stop_block.IsNull() && prev_tip_hash != tip_hash) {
+=======
+            tip_hash = locked_chain->getBlockHash(*tip_height);
+            if (!max_height && prev_tip_hash != tip_hash) {
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
                 // in case the tip has changed, update progress max
                 progress_end = chain().guessVerificationProgress(tip_hash);
             }

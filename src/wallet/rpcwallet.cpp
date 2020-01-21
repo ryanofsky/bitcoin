@@ -3561,14 +3561,26 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
 
         if (!request.params[0].isNull()) {
             start_height = request.params[0].get_int();
+<<<<<<< HEAD
             if (start_height < 0 || start_height > tip_height) {
+||||||| merged common ancestors
+            if (start_height < 0 || !tip_height || start_height > *tip_height) {
+=======
+            if (start_height < 0 || tip_height < 0 || start_height > tip_height) {
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid start_height");
             }
         }
 
         if (!request.params[1].isNull()) {
             stop_height = request.params[1].get_int();
+<<<<<<< HEAD
             if (*stop_height < 0 || *stop_height > tip_height) {
+||||||| merged common ancestors
+            if (*stop_height < 0 || !tip_height || *stop_height > *tip_height) {
+=======
+            if (*stop_height < 0 || tip_height < 0 || *stop_height > tip_height) {
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid stop_height");
             }
             else if (*stop_height < start_height) {
@@ -3581,11 +3593,35 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_MISC_ERROR, "Can't rescan beyond pruned data. Use RPC call getblockchaininfo to determine your pruned height.");
         }
 
+<<<<<<< HEAD
         CHECK_NONFATAL(pwallet->chain().findAncestorByHeight(pwallet->GetLastBlockHash(), start_height, FoundBlock().hash(start_block)));
+||||||| merged common ancestors
+        if (tip_height) {
+            start_block = locked_chain->getBlockHash(start_height);
+            // If called with a stop_height, set the stop_height here to
+            // trigger a rescan to that height.
+            // If called without a stop height, leave stop_height as null here
+            // so rescan continues to the tip (even if the tip advances during
+            // rescan).
+            if (stop_height) {
+                stop_block = locked_chain->getBlockHash(*stop_height);
+            }
+        }
+=======
+        if (tip_height >= 0) {
+            start_block = pwallet->chain().findAncestorByHeight(pwallet->GetLastBlockHash(), start_height);
+        }
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
     }
 
     CWallet::ScanResult result =
+<<<<<<< HEAD
         pwallet->ScanForWalletTransactions(start_block, start_height, stop_height, reserver, true /* fUpdate */);
+||||||| merged common ancestors
+        pwallet->ScanForWalletTransactions(start_block, stop_block, reserver, true /* fUpdate */);
+=======
+        pwallet->ScanForWalletTransactions(start_block, stop_height, reserver, true /* fUpdate */);
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
     switch (result.status) {
     case CWallet::ScanResult::SUCCESS:
         break;
