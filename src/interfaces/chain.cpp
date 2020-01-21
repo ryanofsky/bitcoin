@@ -311,6 +311,16 @@ public:
         const CBlockIndex* ancestor = block1 && block2 ? LastCommonAncestor(block1, block2) : nullptr;
         return FillBlock(ancestor, ancestor_out, lock) & FillBlock(block1, block1_out, lock) & FillBlock(block2, block2_out, lock);
     }
+    Optional<uint256> findFirstBlockWithTimeAndHeight(int64_t min_time, int min_height, int* height = nullptr) override
+    {
+        LOCK(::cs_main);
+        CBlockIndex* block = ::ChainActive().FindEarliestAtLeast(min_time, min_height);
+        if (block) {
+            if (height) *height = block->nHeight;
+            return block->GetBlockHash();
+        }
+        return nullopt;
+    }
     uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) override
     {
         LOCK(::cs_main);

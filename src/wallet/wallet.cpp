@@ -1591,14 +1591,40 @@ int64_t CWallet::RescanFromTime(int64_t startTime, const WalletRescanReserver& r
     // Find starting block. May be null if nCreateTime is greater than the
     // highest blockchain timestamp, in which case there is nothing that needs
     // to be scanned.
+<<<<<<< HEAD
     int start_height = 0;
     uint256 start_block;
     bool start = chain().findFirstBlockWithTimeAndHeight(startTime - TIMESTAMP_WINDOW, 0, FoundBlock().hash(start_block).height(start_height));
     WalletLogPrintf("%s: Rescanning last %i blocks\n", __func__, start ? WITH_LOCK(cs_wallet, return GetLastBlockHeight()) - start_height + 1 : 0);
+||||||| merged common ancestors
+    uint256 start_block;
+    {
+        auto locked_chain = chain().lock();
+        const Optional<int> start_height = locked_chain->findFirstBlockWithTimeAndHeight(startTime - TIMESTAMP_WINDOW, 0, &start_block);
+        const Optional<int> tip_height = locked_chain->getHeight();
+        WalletLogPrintf("%s: Rescanning last %i blocks\n", __func__, tip_height && start_height ? *tip_height - *start_height + 1 : 0);
+    }
+=======
+    int start_height = 0;
+    Optional<uint256> start_block = chain().findFirstBlockWithTimeAndHeight(startTime - TIMESTAMP_WINDOW, 0, &start_height);
+    WalletLogPrintf("%s: Rescanning last %i blocks\n", __func__, start_block ? WITH_LOCK(cs_wallet, return GetLastBlockHeight()) - start_height + 1 : 0);
+>>>>>>> wallet refactor: Avoid use of Chain::Lock in CWallet::RescanFromTime
 
+<<<<<<< HEAD
     if (start) {
+||||||| merged common ancestors
+    if (!start_block.IsNull()) {
+=======
+    if (start_block) {
+>>>>>>> wallet refactor: Avoid use of Chain::Lock in CWallet::RescanFromTime
         // TODO: this should take into account failure by ScanResult::USER_ABORT
+<<<<<<< HEAD
         ScanResult result = ScanForWalletTransactions(start_block, start_height, {} /* max_height */, reserver, update);
+||||||| merged common ancestors
+        ScanResult result = ScanForWalletTransactions(start_block, {} /* stop_block */, reserver, update);
+=======
+        ScanResult result = ScanForWalletTransactions(*start_block, {} /* stop_block */, reserver, update);
+>>>>>>> wallet refactor: Avoid use of Chain::Lock in CWallet::RescanFromTime
         if (result.status == ScanResult::FAILURE) {
             int64_t time_max;
             CHECK_NONFATAL(chain().findBlock(result.last_failed_block, FoundBlock().maxTime(time_max)));
