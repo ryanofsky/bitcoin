@@ -887,7 +887,13 @@ public:
         //! USER_ABORT.
         uint256 last_failed_block;
     };
+<<<<<<< HEAD
     ScanResult ScanForWalletTransactions(const uint256& first_block, int block_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
+||||||| merged common ancestors
+    ScanResult ScanForWalletTransactions(const uint256& first_block, const uint256& last_block, const WalletRescanReserver& reserver, bool fUpdate);
+=======
+    ScanResult ScanForWalletTransactions(const uint256& first_block, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
+>>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
     void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
     void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void ResendWalletTransactions();
