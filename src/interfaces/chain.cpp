@@ -88,20 +88,6 @@ class LockImpl : public Chain::Lock, public UniqueLock<RecursiveMutex>
         }
         return nullopt;
     }
-    Optional<int> findPruned(int start_height, Optional<int> stop_height) override
-    {
-        LockAssertion lock(::cs_main);
-        if (::fPruneMode) {
-            CBlockIndex* block = stop_height ? ::ChainActive()[*stop_height] : ::ChainActive().Tip();
-            while (block && block->nHeight >= start_height) {
-                if ((block->nStatus & BLOCK_HAVE_DATA) == 0) {
-                    return block->nHeight;
-                }
-                block = block->pprev;
-            }
-        }
-        return nullopt;
-    }
     Optional<int> findFork(const uint256& hash, Optional<int>* height) override
     {
         LockAssertion lock(::cs_main);
@@ -321,6 +307,16 @@ public:
     {
         LOCK(cs_main);
         return GuessVerificationProgress(Params().TxData(), LookupBlockIndex(block_hash));
+    }
+    bool hasBlocks(const uint256& block_hash, Optional<int> min_height, Optional<int> max_height) override
+    {
+        LOCK(::cs_main);
+        CBlockIndex* block = LookupBlockIndex(block_hash);
+        if (block && max_height) block = block->GetAncestor(*max_height);
+        for (;block && (block->nStatus & BLOCK_HAVE_DATA); block = block->pprev) {
+            if (!min_height || block->nHeight <= *min_height) return true;
+        }
+        return false;
     }
     RBFTransactionState isRBFOptIn(const CTransaction& tx) override
     {
