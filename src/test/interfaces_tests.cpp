@@ -72,4 +72,29 @@ BOOST_AUTO_TEST_CASE(findCommonAncestor)
     BOOST_CHECK_EQUAL(fork_hash, active[fork_height]->GetBlockHash());
 }
 
+BOOST_AUTO_TEST_CASE(hasBlocks)
+{
+    auto chain = interfaces::MakeChain(m_node);
+    auto& active = ChainActive();
+    BOOST_CHECK(chain->hasBlocks(active.Tip()->GetBlockHash(), 10, 90));
+    BOOST_CHECK(chain->hasBlocks(active.Tip()->GetBlockHash(), 10, {}));
+    BOOST_CHECK(chain->hasBlocks(active.Tip()->GetBlockHash(), {}, 90));
+    BOOST_CHECK(chain->hasBlocks(active.Tip()->GetBlockHash(), {}, {}));
+    active[5]->nStatus &= ~BLOCK_HAVE_DATA;
+    BOOST_CHECK(chain->hasBlocks(active.Tip()->GetBlockHash(), 10, 90));
+    BOOST_CHECK(chain->hasBlocks(active.Tip()->GetBlockHash(), 10, {}));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), {}, 90));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), {}, {}));
+    active[95]->nStatus &= ~BLOCK_HAVE_DATA;
+    BOOST_CHECK(chain->hasBlocks(active.Tip()->GetBlockHash(), 10, 90));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), 10, {}));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), {}, 90));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), {}, {}));
+    active[50]->nStatus &= ~BLOCK_HAVE_DATA;
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), 10, 90));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), 10, {}));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), {}, 90));
+    BOOST_CHECK(!chain->hasBlocks(active.Tip()->GetBlockHash(), {}, {}));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
