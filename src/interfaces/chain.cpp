@@ -329,6 +329,16 @@ public:
         LOCK(cs_main);
         return GuessVerificationProgress(Params().TxData(), LookupBlockIndex(block_hash));
     }
+    bool hasBlocks(const uint256& block_hash, Optional<int> min_height, Optional<int> max_height) override
+    {
+        LOCK(::cs_main);
+        CBlockIndex* block = LookupBlockIndex(block_hash);
+        if (block && max_height) block = block->GetAncestor(*max_height);
+        for (;block && (block->nStatus & BLOCK_HAVE_DATA); block = block->pprev) {
+            if (!min_height || block->nHeight <= *min_height) return true;
+        }
+        return false;
+    }
     RBFTransactionState isRBFOptIn(const CTransaction& tx) override
     {
         LOCK(::mempool.cs);

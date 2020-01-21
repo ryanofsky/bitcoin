@@ -170,6 +170,9 @@ public:
     //! the specified block hash are verified.
     virtual double guessVerificationProgress(const uint256& block_hash) = 0;
 
+    //! Return true if data is available for the specified blocks.
+    virtual bool hasBlocks(const uint256& block_hash, Optional<int> min_height, Optional<int> max_height) = 0;
+
     //! Check if transaction is RBF opt in.
     virtual RBFTransactionState isRBFOptIn(const CTransaction& tx) = 0;
 
