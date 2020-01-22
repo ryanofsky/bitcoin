@@ -56,8 +56,16 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
         AddKey(wallet, coinbaseKey);
         WalletRescanReserver reserver(&wallet);
         reserver.reserve();
+<<<<<<< HEAD
         CWallet::ScanResult result = wallet.ScanForWalletTransactions({} /* start_block */, 0 /* start_height */, {} /* max_height */, reserver, false /* update */);
         BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::FAILURE);
+||||||| merged common ancestors
+        CWallet::ScanResult result = wallet.ScanForWalletTransactions({} /* start_block */, {} /* stop_block */, reserver, false /* update */);
+        BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::SUCCESS);
+=======
+        CWallet::ScanResult result = wallet.ScanForWalletTransactions({} /* start_block */, 0 /* block_height */, {} /* max_height */, reserver, false /* update */);
+        BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::FAILURE);
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
         BOOST_CHECK(result.last_failed_block.IsNull());
         BOOST_CHECK(result.last_scanned_block.IsNull());
         BOOST_CHECK(!result.last_scanned_height);
@@ -475,7 +483,13 @@ public:
         AddKey(*wallet, coinbaseKey);
         WalletRescanReserver reserver(wallet.get());
         reserver.reserve();
+<<<<<<< HEAD
         CWallet::ScanResult result = wallet->ScanForWalletTransactions(::ChainActive().Genesis()->GetBlockHash(), 0 /* start_height */, {} /* max_height */, reserver, false /* update */);
+||||||| merged common ancestors
+        CWallet::ScanResult result = wallet->ScanForWalletTransactions(::ChainActive().Genesis()->GetBlockHash(), {} /* stop_block */, reserver, false /* update */);
+=======
+        CWallet::ScanResult result = wallet->ScanForWalletTransactions(::ChainActive().Genesis()->GetBlockHash(), 0 /* block_height */, {} /* max_height */, reserver, false /* update */);
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
         BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::SUCCESS);
         BOOST_CHECK_EQUAL(result.last_scanned_block, ::ChainActive().Tip()->GetBlockHash());
         BOOST_CHECK_EQUAL(*result.last_scanned_height, ::ChainActive().Height());

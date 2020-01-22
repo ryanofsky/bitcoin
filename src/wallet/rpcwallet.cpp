@@ -3616,12 +3616,18 @@ UniValue rescanblockchain(const JSONRPCRequest& request)
 
     CWallet::ScanResult result =
 <<<<<<< HEAD
+<<<<<<< HEAD
         pwallet->ScanForWalletTransactions(start_block, start_height, stop_height, reserver, true /* fUpdate */);
 ||||||| merged common ancestors
         pwallet->ScanForWalletTransactions(start_block, stop_block, reserver, true /* fUpdate */);
 =======
         pwallet->ScanForWalletTransactions(start_block, stop_height, reserver, true /* fUpdate */);
 >>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
+||||||| merged common ancestors
+        pwallet->ScanForWalletTransactions(start_block, stop_height, reserver, true /* fUpdate */);
+=======
+        pwallet->ScanForWalletTransactions(start_block, start_height, stop_height, reserver, true /* fUpdate */);
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
     switch (result.status) {
     case CWallet::ScanResult::SUCCESS:
         break;

@@ -1619,12 +1619,18 @@ int64_t CWallet::RescanFromTime(int64_t startTime, const WalletRescanReserver& r
 >>>>>>> wallet refactor: Avoid use of Chain::Lock in CWallet::RescanFromTime
         // TODO: this should take into account failure by ScanResult::USER_ABORT
 <<<<<<< HEAD
+<<<<<<< HEAD
         ScanResult result = ScanForWalletTransactions(start_block, start_height, {} /* max_height */, reserver, update);
 ||||||| merged common ancestors
         ScanResult result = ScanForWalletTransactions(start_block, {} /* stop_block */, reserver, update);
 =======
         ScanResult result = ScanForWalletTransactions(*start_block, {} /* stop_block */, reserver, update);
 >>>>>>> wallet refactor: Avoid use of Chain::Lock in CWallet::RescanFromTime
+||||||| merged common ancestors
+        ScanResult result = ScanForWalletTransactions(*start_block, {} /* stop_block */, reserver, update);
+=======
+        ScanResult result = ScanForWalletTransactions(*start_block, start_height, {} /* max_height */, reserver, update);
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
         if (result.status == ScanResult::FAILURE) {
             int64_t time_max;
             CHECK_NONFATAL(chain().findBlock(result.last_failed_block, FoundBlock().maxTime(time_max)));
@@ -1656,12 +1662,18 @@ int64_t CWallet::RescanFromTime(int64_t startTime, const WalletRescanReserver& r
  * transactions for.
  */
 <<<<<<< HEAD
+<<<<<<< HEAD
 CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, int start_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate)
 ||||||| merged common ancestors
 CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, const uint256& stop_block, const WalletRescanReserver& reserver, bool fUpdate)
 =======
 CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate)
 >>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
+||||||| merged common ancestors
+CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate)
+=======
+CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_block, int block_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate)
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
 {
     int64_t nNow = GetTime();
     int64_t start_time = GetTimeMillis();
@@ -1675,6 +1687,7 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
 
     fAbortRescan = false;
     ShowProgress(strprintf("%s " + _("Rescanning...").translated, GetDisplayName()), 0); // show rescan progress in GUI as dialog or on splashscreen, if -rescan on startup
+<<<<<<< HEAD
 <<<<<<< HEAD
     uint256 tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
     uint256 end_hash = tip_hash;
@@ -1713,9 +1726,36 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
         progress_end = chain().guessVerificationProgress(stop_block);
     }
 >>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
+||||||| merged common ancestors
+    uint256 tip_hash;
+    // The way the 'block_height' is initialized is just a workaround for the gcc bug #47679 since version 4.6.0.
+    Optional<int> block_height = MakeOptional(false, int());
+    double progress_begin;
+    double progress_end;
+    {
+        auto locked_chain = chain().lock();
+        if (Optional<int> tip_height = locked_chain->getHeight()) {
+            tip_hash = locked_chain->getBlockHash(*tip_height);
+        }
+        block_height = locked_chain->getBlockHeight(block_hash);
+        progress_begin = chain().guessVerificationProgress(block_hash);
+        uint256 stop_block = max_height ? chain().findAncestorByHeight(tip_hash, *max_height) : tip_hash;
+        progress_end = chain().guessVerificationProgress(stop_block);
+    }
+=======
+    uint256 tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
+    double progress_begin = chain().guessVerificationProgress(block_hash);
+    double progress_end = chain().guessVerificationProgress(max_height ? chain().findAncestorByHeight(tip_hash, *max_height) : tip_hash);
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
     double progress_current = progress_begin;
+<<<<<<< HEAD
     int block_height = start_height;
     while (!fAbortRescan && !chain().shutdownRequested()) {
+||||||| merged common ancestors
+    while (block_height && !fAbortRescan && !chain().shutdownRequested()) {
+=======
+    while (!fAbortRescan && !chain().shutdownRequested()) {
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
         m_scanning_progress = (progress_current - progress_begin) / (progress_end - progress_begin);
         if (block_height % 100 == 0 && progress_end - progress_begin > 0.0) {
             ShowProgress(strprintf("%s " + _("Rescanning...").translated, GetDisplayName()), std::max(1, std::min(99, (int)(m_scanning_progress * 100))));
@@ -1726,14 +1766,29 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
         }
 
         CBlock block;
+<<<<<<< HEAD
         bool next_block;
         uint256 next_block_hash;
         bool reorg = false;
         if (chain().findBlock(block_hash, FoundBlock().data(block)) && !block.IsNull()) {
+||||||| merged common ancestors
+        if (chain().findBlock(block_hash, &block) && !block.IsNull()) {
+=======
+        Optional<uint256> next_block;
+        bool reorg = false;
+        if (chain().findBlock(block_hash, &block) && !block.IsNull()) {
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
             auto locked_chain = chain().lock();
             LOCK(cs_wallet);
+<<<<<<< HEAD
             next_block = chain().findNextBlock(block_hash, block_height, FoundBlock().hash(next_block_hash), &reorg);
             if (reorg) {
+||||||| merged common ancestors
+            if (!locked_chain->getBlockHeight(block_hash)) {
+=======
+            next_block = chain().findNextBlock(block_hash, block_height, reorg);
+            if (reorg) {
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
                 // Abort scan if current block is no longer active, to prevent
                 // marking transactions as coming from the wrong block.
                 // TODO: This should return success instead of failure, see
@@ -1753,8 +1808,14 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             // could not scan block, keep scanning but record this block as the most recent failure
             result.last_failed_block = block_hash;
             result.status = ScanResult::FAILURE;
+<<<<<<< HEAD
             next_block = chain().findNextBlock(block_hash, block_height, FoundBlock().hash(next_block_hash), &reorg);
+||||||| merged common ancestors
+=======
+            next_block = chain().findNextBlock(block_hash, block_height, reorg);
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
         }
+<<<<<<< HEAD
 <<<<<<< HEAD
         if (max_height && block_height >= *max_height) {
 ||||||| merged common ancestors
@@ -1762,6 +1823,11 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
 =======
         if (max_height && *block_height >= *max_height) {
 >>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
+||||||| merged common ancestors
+        if (max_height && *block_height >= *max_height) {
+=======
+        if (max_height && block_height >= *max_height) {
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
             break;
         }
         {
@@ -1773,12 +1839,20 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             }
 
             // increment block and verification progress
+<<<<<<< HEAD
             block_hash = next_block_hash;
             ++block_height;
+||||||| merged common ancestors
+            block_hash = locked_chain->getBlockHash(++*block_height);
+=======
+            block_hash = *next_block;
+            ++block_height;
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
             progress_current = chain().guessVerificationProgress(block_hash);
 
             // handle updated tip hash
             const uint256 prev_tip_hash = tip_hash;
+<<<<<<< HEAD
 <<<<<<< HEAD
             tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
             if (!max_height && prev_tip_hash != tip_hash) {
@@ -1787,6 +1861,11 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             if (stop_block.IsNull() && prev_tip_hash != tip_hash) {
 =======
             tip_hash = locked_chain->getBlockHash(*tip_height);
+||||||| merged common ancestors
+            tip_hash = locked_chain->getBlockHash(*tip_height);
+=======
+            tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
             if (!max_height && prev_tip_hash != tip_hash) {
 >>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
                 // in case the tip has changed, update progress max
