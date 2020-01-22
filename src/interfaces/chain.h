@@ -136,6 +136,11 @@ public:
     //! case this information is needed.)
     virtual Optional<uint256> findFirstBlockWithTimeAndHeight(int64_t min_time, int min_height, int* height = nullptr) = 0;
 
+    //! Get hash of next block if block is part of current chain. Also flag if
+    //! there was a reorg and the specified block hash is not even on the
+    //! current chain.
+    virtual Optional<uint256> findNextBlock(const uint256& block_hash, int block_height, bool& reorg) = 0;
+
     //! Find ancestor of block at specified height and return its hash.
     virtual uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) = 0;
 
