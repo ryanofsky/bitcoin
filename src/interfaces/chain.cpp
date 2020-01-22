@@ -247,6 +247,13 @@ public:
         WAIT_LOCK(cs_main, lock);
         return FillBlock(ChainActive().FindEarliestAtLeast(min_time, min_height), block, lock);
     }
+    bool findNextBlock(const uint256& block_hash, int block_height, const FoundBlock& block_out, bool* reorg_out) override {
+        WAIT_LOCK(cs_main, lock);
+        CBlockIndex* block = ChainActive()[block_height];
+        bool reorg = !block || block->GetBlockHash() != block_hash;
+        if (reorg_out) *reorg_out = reorg;
+        return FillBlock(reorg ? nullptr : ChainActive()[block_height + 1], block_out, lock);
+    }
     bool findAncestorByHeight(const uint256& block_hash, int ancestor_height, const FoundBlock& ancestor_out) override
     {
         WAIT_LOCK(cs_main, lock);
