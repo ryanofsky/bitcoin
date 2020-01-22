@@ -2784,9 +2784,16 @@ static bool IsCurrentForAntiFeeSniping(interfaces::Chain& chain, const uint256& 
         return false;
     }
     constexpr int64_t MAX_ANTI_FEE_SNIPING_TIP_AGE = 8 * 60 * 60; // in seconds
+<<<<<<< HEAD
     int64_t block_time;
     CHECK_NONFATAL(chain.findBlock(block_hash, FoundBlock().time(block_time)));
     if (block_time < (GetTime() - MAX_ANTI_FEE_SNIPING_TIP_AGE)) {
+||||||| merged common ancestors
+    if (locked_chain.getBlockTime(*locked_chain.getHeight()) < (GetTime() - MAX_ANTI_FEE_SNIPING_TIP_AGE)) {
+=======
+    int64_t block_time;
+    if (chain.findBlock(block_hash, nullptr, &block_time) && block_time < (GetTime() - MAX_ANTI_FEE_SNIPING_TIP_AGE)) {
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::CreateTransaction
         return false;
     }
     return true;
@@ -2893,6 +2900,16 @@ bool CWallet::CreateTransaction(interfaces::Chain::Lock& locked_chain, const std
     }
 
     CMutableTransaction txNew;
+<<<<<<< HEAD
+||||||| merged common ancestors
+
+    txNew.nLockTime = GetLocktimeForNewTransaction(chain(), locked_chain);
+
+=======
+
+    txNew.nLockTime = WITH_LOCK(cs_wallet, return GetLocktimeForNewTransaction(chain(), GetLastBlockHash(), GetLastBlockHeight()));
+
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::CreateTransaction
     FeeCalculation feeCalc;
     CAmount nFeeNeeded;
     int nBytes;
