@@ -81,6 +81,7 @@ class LockImpl : public Chain::Lock, public UniqueLock<RecursiveMutex>
         return block->GetBlockHash();
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| merged common ancestors
     int64_t getBlockTime(int height) override
     {
@@ -105,6 +106,16 @@ class LockImpl : public Chain::Lock, public UniqueLock<RecursiveMutex>
         return block->GetBlockTime();
     }
 >>>>>>> wallet: Avoid use of Chain::Lock in importmulti
+||||||| merged common ancestors
+    int64_t getBlockTime(int height) override
+    {
+        LockAssertion lock(::cs_main);
+        CBlockIndex* block = ::ChainActive()[height];
+        assert(block != nullptr);
+        return block->GetBlockTime();
+    }
+=======
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::GetKeyBirthTimes
     bool haveBlockOnDisk(int height) override
     {
         LockAssertion lock(::cs_main);

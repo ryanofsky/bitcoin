@@ -3729,13 +3729,29 @@ void CWallet::GetKeyBirthTimes(interfaces::Chain::Lock& locked_chain, std::map<C
     }
 
     // map in which we'll infer heights of other keys
+<<<<<<< HEAD
     std::map<CKeyID, const CWalletTx::Confirmation*> mapKeyFirstBlock;
     CWalletTx::Confirmation max_confirm;
     max_confirm.block_height = GetLastBlockHeight() > 144 ? GetLastBlockHeight() - 144 : 0; // the tip can be reorganized; use a 144-block safety margin
     CHECK_NONFATAL(chain().findAncestorByHeight(GetLastBlockHash(), max_confirm.block_height, FoundBlock().hash(max_confirm.hashBlock)));
+||||||| merged common ancestors
+    const Optional<int> tip_height = locked_chain.getHeight();
+    const int max_height = tip_height && *tip_height > 144 ? *tip_height - 144 : 0; // the tip can be reorganized; use a 144-block safety margin
+    std::map<CKeyID, int> mapKeyFirstBlock;
+=======
+    const int max_height = m_last_block_processed_height > 144 ? m_last_block_processed_height - 144 : 0; // the tip can be reorganized; use a 144-block safety margin
+    const uint256 max_block = chain().findAncestorByHeight(m_last_block_processed, max_height);
+    std::map<CKeyID, std::pair<uint256, int>> mapKeyFirstBlock;
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::GetKeyBirthTimes
     for (const CKeyID &keyid : spk_man->GetKeys()) {
         if (mapKeyBirth.count(keyid) == 0)
+<<<<<<< HEAD
             mapKeyFirstBlock[keyid] = &max_confirm;
+||||||| merged common ancestors
+            mapKeyFirstBlock[keyid] = max_height;
+=======
+            mapKeyFirstBlock[keyid] = {max_block, max_height};
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::GetKeyBirthTimes
     }
 
     // if there are no such keys, we're done
@@ -3746,27 +3762,55 @@ void CWallet::GetKeyBirthTimes(interfaces::Chain::Lock& locked_chain, std::map<C
     for (const auto& entry : mapWallet) {
         // iterate over all wallet transactions...
         const CWalletTx &wtx = entry.second;
+<<<<<<< HEAD
         if (wtx.m_confirm.status == CWalletTx::CONFIRMED) {
+||||||| merged common ancestors
+        if (Optional<int> height = locked_chain.getBlockHeight(wtx.m_confirm.hashBlock)) {
+=======
+        {
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::GetKeyBirthTimes
             // ... which are already in a block
-            for (const CTxOut &txout : wtx.tx->vout) {
+            for (const CTxOut& txout : wtx.tx->vout) {
                 // iterate over all their outputs
-                for (const auto &keyid : GetAffectedKeys(txout.scriptPubKey, *spk_man)) {
+                for (const auto& keyid : GetAffectedKeys(txout.scriptPubKey, *spk_man)) {
                     // ... and all their affected keys
+<<<<<<< HEAD
                     auto rit = mapKeyFirstBlock.find(keyid);
                     if (rit != mapKeyFirstBlock.end() && wtx.m_confirm.block_height < rit->second->block_height) {
                         rit->second = &wtx.m_confirm;
                     }
+||||||| merged common ancestors
+                    std::map<CKeyID, int>::iterator rit = mapKeyFirstBlock.find(keyid);
+                    if (rit != mapKeyFirstBlock.end() && *height < rit->second)
+                        rit->second = *height;
+=======
+                    auto rit = mapKeyFirstBlock.find(keyid);
+                    if (rit != mapKeyFirstBlock.end() && wtx.m_confirm.block_height < rit->second.second) {
+                        rit->second = {wtx.m_confirm.hashBlock, wtx.m_confirm.block_height};
+                    }
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::GetKeyBirthTimes
                 }
             }
         }
     }
 
+<<<<<<< HEAD
     // Extract block timestamps for those keys
     for (const auto& entry : mapKeyFirstBlock) {
         int64_t block_time;
         CHECK_NONFATAL(chain().findBlock(entry.second->hashBlock, FoundBlock().time(block_time)));
         mapKeyBirth[entry.first] = block_time - TIMESTAMP_WINDOW; // block times can be 2h off
     }
+||||||| merged common ancestors
+    // Extract block timestamps for those keys
+    for (const auto& entry : mapKeyFirstBlock)
+        mapKeyBirth[entry.first] = locked_chain.getBlockTime(entry.second) - TIMESTAMP_WINDOW; // block times can be 2h off
+=======
+    for (const auto& entry : mapKeyFirstBlock) {
+        int64_t block_time = 0;
+        mapKeyBirth[entry.first] = !chain().findBlock(entry.second.first, nullptr, &block_time) ? 0 : block_time - TIMESTAMP_WINDOW; // block times can be 2h off
+    }
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::GetKeyBirthTimes
 }
 
 /**
