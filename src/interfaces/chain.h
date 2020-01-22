@@ -134,7 +134,37 @@ public:
     virtual bool findBlock(const uint256& hash,
         CBlock* block = nullptr,
         int64_t* time = nullptr,
-        int64_t* max_time = nullptr) = 0;
+        int64_t* max_time = nullptr,
+        int64_t* mtp_time = nullptr) = 0;
+
+    //! Return hash of first block in the chain with timestamp >= the given time
+    //! and height >= than the given height, or nullopt if there is no block
+    //! with a high enough timestamp and height. Also return the block height as
+    //! an optional output parameter (to avoid the cost of a second lookup in
+    //! case this information is needed.)
+    virtual Optional<uint256> findFirstBlockWithTimeAndHeight(int64_t min_time, int min_height, int* height = nullptr) = 0;
+
+    //! Get hash of next block if block is part of current chain. Also flag if
+    //! there was a reorg and the specified block hash is not even on the
+    //! current chain.
+    virtual Optional<uint256> findNextBlock(const uint256& block_hash, int block_height, bool& reorg) = 0;
+
+    //! Find ancestor of block at specified height and return its hash.
+    virtual uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) = 0;
+
+    //! Return whether block descends from a specified ancestor, and
+    //! optionally return height of the ancestor.
+    virtual bool findAncestorByHash(const uint256& block_hash,
+        const uint256& ancestor_hash,
+        int* height = 0) = 0;
+
+    //! Find most recent common ancestor between two blocks and optionally
+    //! return its hash and/or height. Also return height of first block. Return
+    //! nullopt if either block is unknown or there is no common ancestor.
+    virtual Optional<int> findFork(const uint256& block_hash1,
+        const uint256& block_hash2,
+        uint256* ancestor_hash,
+        int* ancestor_height) = 0;
 
     //! Look up unspent output information. Returns coins in the mempool and in
     //! the current chain UTXO set. Iterates through all the keys in the map and
@@ -144,6 +174,9 @@ public:
     //! Estimate fraction of total transactions verified if blocks up to
     //! the specified block hash are verified.
     virtual double guessVerificationProgress(const uint256& block_hash) = 0;
+
+    //! Return true if data is available for the specified blocks.
+    virtual bool hasBlocks(const uint256& block_hash, Optional<int> min_height, Optional<int> max_height) = 0;
 
     //! Check if transaction is RBF opt in.
     virtual RBFTransactionState isRBFOptIn(const CTransaction& tx) = 0;
