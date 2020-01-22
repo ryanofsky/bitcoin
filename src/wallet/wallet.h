@@ -897,6 +897,7 @@ public:
         uint256 last_failed_block;
     };
 <<<<<<< HEAD
+<<<<<<< HEAD
     ScanResult ScanForWalletTransactions(const uint256& first_block, const uint256& last_block, const WalletRescanReserver& reserver, bool fUpdate);
     void transactionRemovedFromMempool(const CTransactionRef &ptx) override;
 ||||||| merged common ancestors
@@ -904,6 +905,11 @@ public:
     void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
 =======
     ScanResult ScanForWalletTransactions(const uint256& first_block, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
+||||||| merged common ancestors
+    ScanResult ScanForWalletTransactions(const uint256& first_block, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
+=======
+    ScanResult ScanForWalletTransactions(const uint256& start_block, int start_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
+>>>>>>> wallet: Avoid use of Chain::Lock in CWallet::ScanForWalletTransactions
     void TransactionRemovedFromMempool(const CTransactionRef &ptx) override;
 >>>>>>> wallet: Avoid use of Chain::Lock in rescanblockchain
     void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
