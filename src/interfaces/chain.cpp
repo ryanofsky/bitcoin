@@ -255,6 +255,16 @@ public:
         }
         return nullopt;
     }
+    Optional<uint256> findNextBlock(const uint256& block_hash, int block_height, bool& reorg) override {
+        LOCK(::cs_main);
+        CChain& chain = ::ChainActive();
+        CBlockIndex* block = chain[block_height];
+        reorg = !block || block->GetBlockHash() != block_hash;
+        if (reorg) return nullopt;
+        block = chain[block_height + 1];
+        if (!block) return nullopt;
+        return block->GetBlockHash();
+    }
     uint256 findAncestorByHeight(const uint256& block_hash, int ancestor_height) override
     {
         LOCK(::cs_main);
