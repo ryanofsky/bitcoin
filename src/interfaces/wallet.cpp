@@ -330,13 +330,9 @@ public:
         if (mi == m_wallet->mapWallet.end()) {
             return false;
         }
-        if (Optional<int> height = locked_chain->getHeight()) {
-            num_blocks = *height;
-            block_time = locked_chain->getBlockTime(*height);
-        } else {
-            num_blocks = -1;
-            block_time = -1;
-        }
+        num_blocks = m_wallet->GetLastBlockHeight();
+        block_time = -1;
+        m_wallet->chain().findBlock(m_wallet->GetLastBlockHash(), nullptr, &block_time);
         tx_status = MakeWalletTxStatus(*locked_chain, mi->second);
         return true;
     }
