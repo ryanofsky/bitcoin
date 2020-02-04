@@ -602,6 +602,13 @@ public:
 template<typename I>
 BigEndian<I> WrapBigEndian(I& n) { return BigEndian<I>(n); }
 
+/** Identity functor. Identical to C++20's std::identity. */
+struct Identity
+{
+    template<typename T>
+    constexpr T&& operator()(T&& t) const noexcept { return std::forward<T>(t); }
+};
+
 /** Formatter to serialize/deserialize vector elements using another formatter
  *
  * Example:
@@ -614,22 +621,27 @@ BigEndian<I> WrapBigEndian(I& n) { return BigEndian<I>(n); }
  *
  * V is not required to be an std::vector type. It works for any class that
  * exposes a value_type, size, reserve, push_back, and const iterators.
+ *
+ * SerTrans and UnserTrans are functors that apply a transformation to the data
+ * before serialization and deserialization respectively.
  */
-template<class Formatter>
+template<class Formatter, class SerTrans = Identity, class UnserTrans = Identity>
 struct VectorFormatter
 {
     template<typename Stream, typename V>
     void Ser(Stream& s, const V& v)
     {
+        SerTrans trans;
         WriteCompactSize(s, v.size());
         for (const typename V::value_type& elem : v) {
-            s << Using<Formatter>(elem);
+            s << Using<Formatter>(trans(elem));
         }
     }
 
     template<typename Stream, typename V>
     void Unser(Stream& s, V& v)
     {
+        UnserTrans trans;
         v.clear();
         size_t size = ReadCompactSize(s);
         size_t allocated = 0;
@@ -643,7 +655,7 @@ struct VectorFormatter
             while (v.size() < allocated) {
                 typename V::value_type val;
                 s >> Using<Formatter>(val);
-                v.push_back(std::move(val));
+                v.push_back(trans(std::move(val)));
             }
         }
     };
