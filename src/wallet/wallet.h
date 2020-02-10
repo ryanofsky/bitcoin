@@ -207,6 +207,9 @@ struct CRecipient
     CScript scriptPubKey;
     CAmount nAmount;
     bool fSubtractFeeFromAmount;
+    // Note: If you add fields to this struct, you should also update the IPC
+    // serialization code (in interfaces/capnp/common-types.cpp and
+    // interfaces/capnp/common.capnp).
 };
 
 typedef std::map<std::string, std::string> mapValue_t;
