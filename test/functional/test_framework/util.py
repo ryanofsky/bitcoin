@@ -303,18 +303,16 @@ def initialize_datadir(dirname, n, chain):
 
 
 def write_config(config_path, n, chain, extra_config=""):
-    # Translate chain name to config name
+    # Translate chain subdirectory name to config name
     if chain == 'testnet3':
-        chain_name_conf_arg = 'testnet'
-        chain_name_conf_section = 'test'
+        chain_name = 'test'
+    elif not chain:
+        chain_name = 'main'
     else:
-        chain_name_conf_arg = chain
-        chain_name_conf_section = chain
+        chain_name = chain
     with open(config_path, 'w', encoding='utf8') as f:
-        if chain_name_conf_arg:
-            f.write("{}=1\n".format(chain_name_conf_arg))
-        if chain_name_conf_section:
-            f.write("[{}]\n".format(chain_name_conf_section))
+        f.write("chain={}\n".format(chain_name))
+        f.write("[{}]\n".format(chain_name))
         f.write("port=" + str(p2p_port(n)) + "\n")
         f.write("rpcport=" + str(rpc_port(n)) + "\n")
         f.write("fallbackfee=0.0002\n")
