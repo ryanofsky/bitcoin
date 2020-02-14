@@ -241,7 +241,7 @@ namespace BCLog {
 
 void BCLog::Logger::LogPrintStr(const std::string& str, const std::string& logging_function, const std::string& source_file, const int source_line)
 {
-    StdLockGuard scoped_lock(m_cs);
+    StdUniqueLock scoped_lock(m_cs);
     std::string str_prefixed = LogEscapeMessage(str);
 
     if (m_log_sourcelocations && m_started_new_line) {
@@ -267,8 +267,10 @@ void BCLog::Logger::LogPrintStr(const std::string& str, const std::string& loggi
         fwrite(str_prefixed.data(), 1, str_prefixed.size(), stdout);
         fflush(stdout);
     }
-    for (const auto& cb : m_print_callbacks) {
+    for (auto cb : m_print_callbacks) {
+        scoped_lock.unlock();
         cb(str_prefixed);
+        scoped_lock.lock();
     }
     if (m_print_to_file) {
         assert(m_fileout != nullptr);
