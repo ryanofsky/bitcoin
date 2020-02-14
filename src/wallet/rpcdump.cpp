@@ -312,14 +312,9 @@ UniValue importaddress(const JSONRPCRequest& request)
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Bitcoin address or script");
         }
     }
-    if (fRescan)
-    {
+    if (fRescan) {
         RescanWallet(*pwallet, reserver);
-        {
-            auto locked_chain = pwallet->chain().lock();
-            LOCK(pwallet->cs_wallet);
-            pwallet->ReacceptWalletTransactions();
-        }
+        pwallet->ReacceptWalletTransactions();
     }
 
     return NullUniValue;
@@ -500,14 +495,9 @@ UniValue importpubkey(const JSONRPCRequest& request)
 
         pwallet->ImportPubKeys({pubKey.GetID()}, {{pubKey.GetID(), pubKey}} , {} /* key_origins */, false /* add_keypool */, false /* internal */, 1 /* timestamp */);
     }
-    if (fRescan)
-    {
+    if (fRescan) {
         RescanWallet(*pwallet, reserver);
-        {
-            auto locked_chain = pwallet->chain().lock();
-            LOCK(pwallet->cs_wallet);
-            pwallet->ReacceptWalletTransactions();
-        }
+        pwallet->ReacceptWalletTransactions();
     }
 
     return NullUniValue;
@@ -1408,11 +1398,7 @@ UniValue importmulti(const JSONRPCRequest& mainRequest)
     }
     if (fRescan && fRunScan && requests.size()) {
         int64_t scannedTime = pwallet->RescanFromTime(nLowestTimestamp, reserver, true /* update */);
-        {
-            auto locked_chain = pwallet->chain().lock();
-            LOCK(pwallet->cs_wallet);
-            pwallet->ReacceptWalletTransactions();
-        }
+        pwallet->ReacceptWalletTransactions();
 
         if (pwallet->IsAbortingRescan()) {
             throw JSONRPCError(RPC_MISC_ERROR, "Rescan aborted by user.");
