@@ -4057,80 +4057,19 @@ std::shared_ptr<CWallet> CWallet::Create(interfaces::Chain& chain, const std::st
 
     LOCK(walletInstance->cs_wallet);
 
-    // Register wallet with validationinterface. It's done before rescan to avoid
-    // missing block connections between end of rescan and validation subscribing.
-    // Because of wallet lock being hold, block connection notifications are going to
-    // be pending on the validation-side until lock release. It's likely to have
-    // block processing duplicata (if rescan block range overlaps with notification one)
-    // but we guarantee at least than wallet state is correct after notifications delivery.
-    // This is temporary until rescan and notifications delivery are unified under same
-    // interface.
-    walletInstance->m_chain_notifications_handler = walletInstance->chain().handleNotifications(walletInstance);
-
-    int rescan_height = 0;
-    if (!gArgs.GetBoolArg("-rescan", false))
-    {
-        WalletBatch batch(walletInstance->GetDatabase());
-        CBlockLocator locator;
-        if (batch.ReadBestBlock(locator)) {
-            if (const std::optional<int> fork_height = chain.findLocatorFork(locator)) {
-                rescan_height = *fork_height;
-            }
-        }
-    }
-
-    const std::optional<int> tip_height = chain.getHeight();
-    if (tip_height) {
-        walletInstance->m_last_block_processed = chain.getBlockHash(*tip_height);
-        walletInstance->m_last_block_processed_height = *tip_height;
-    } else {
-        walletInstance->m_last_block_processed.SetNull();
-        walletInstance->m_last_block_processed_height = -1;
-    }
-
-    if (tip_height && *tip_height != rescan_height)
-    {
+    CWallet::ScanStatus scan_status = CWallet::AttachChain(walletInstance, !fFirstRun);
+    if (scan_status == CWallet::ScanStatus::FAILED) {
+        error = _("Failed to rescan the wallet during initialization");
+        return nullptr;
+    } else if (scan_status == CWallet::ScanStatus::MISSING_BLOCKS) {
         // We can't rescan beyond non-pruned blocks, stop and throw an error.
         // This might happen if a user uses an old wallet within a pruned node
         // or if they ran -disablewallet for a longer time, then decided to re-enable
-        if (chain.havePruned()) {
-            // Exit early and print an error.
-            // If a block is pruned after this check, we will load the wallet,
-            // but fail the rescan with a generic error.
-            int block_height = *tip_height;
-            while (block_height > 0 && chain.haveBlockOnDisk(block_height - 1) && rescan_height != block_height) {
-                --block_height;
-            }
-
-            if (rescan_height != block_height) {
-                error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)");
-                return nullptr;
-            }
-        }
-
-        chain.initMessage(_("Rescanning...").translated);
-        walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
-
-        // No need to read and scan block if block was created before
-        // our wallet birthday (as adjusted for block time variability)
-        std::optional<int64_t> time_first_key;
-        for (auto spk_man : walletInstance->GetAllScriptPubKeyMans()) {
-            int64_t time = spk_man->GetTimeFirstKey();
-            if (!time_first_key || time < *time_first_key) time_first_key = time;
-        }
-        if (time_first_key) {
-            chain.findFirstBlockWithTimeAndHeight(*time_first_key - TIMESTAMP_WINDOW, rescan_height, FoundBlock().height(rescan_height));
-        }
-
-        {
-            WalletRescanReserver reserver(*walletInstance);
-            if (!reserver.reserve() || (ScanResult::SUCCESS != walletInstance->ScanForWalletTransactions(chain.getBlockHash(rescan_height), rescan_height, {} /* max height */, reserver, true /* update */).status)) {
-                error = _("Failed to rescan the wallet during initialization");
-                return nullptr;
-            }
-        }
-        walletInstance->chainStateFlushed(chain.getTipLocator());
-        walletInstance->GetDatabase().IncrementUpdateCounter();
+        // Exit early and print an error.
+        // If a block is pruned after this check, we will load the wallet,
+        // but fail the rescan with a generic error.
+        error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)");
+        return nullptr;
     }
 
     {
@@ -4192,6 +4131,85 @@ bool CWallet::UpgradeWallet(int version, bilingual_str& error)
         }
     }
     return true;
+}
+
+CWallet::ScanStatus CWallet::AttachChain(std::shared_ptr<CWallet> wallet, bool scan)
+{
+    auto& chain = wallet->chain();
+    auto& walletInstance = wallet;
+    LOCK(walletInstance->cs_wallet);
+
+    // Register wallet with validationinterface. It's done before rescan to avoid
+    // missing block connections between end of rescan and validation subscribing.
+    // Because of wallet lock being hold, block connection notifications are going to
+    // be pending on the validation-side until lock release. It's likely to have
+    // block processing duplicata (if rescan block range overlaps with notification one)
+    // but we guarantee at least than wallet state is correct after notifications delivery.
+    // This is temporary until rescan and notifications delivery are unified under same
+    // interface.
+    walletInstance->m_chain_notifications_handler = walletInstance->chain().handleNotifications(walletInstance);
+
+    int rescan_height = 0;
+    if (!gArgs.GetBoolArg("-rescan", false))
+    {
+        WalletBatch batch(walletInstance->GetDatabase());
+        CBlockLocator locator;
+        if (batch.ReadBestBlock(locator)) {
+            if (const std::optional<int> fork_height = chain.findLocatorFork(locator)) {
+                rescan_height = *fork_height;
+            }
+        }
+    }
+
+    const std::optional<int> tip_height = chain.getHeight();
+    if (tip_height) {
+        walletInstance->m_last_block_processed = chain.getBlockHash(*tip_height);
+        walletInstance->m_last_block_processed_height = *tip_height;
+    } else {
+        walletInstance->m_last_block_processed.SetNull();
+        walletInstance->m_last_block_processed_height = -1;
+    }
+
+    ScanStatus scan_status = ScanStatus::SKIPPED;
+    if (tip_height && *tip_height != rescan_height)
+    {
+        if (chain.havePruned()) {
+            int block_height = *tip_height;
+            while (block_height > 0 && chain.haveBlockOnDisk(block_height - 1) && rescan_height != block_height) {
+                --block_height;
+            }
+
+            if (rescan_height != block_height) {
+                return CWallet::ScanStatus::MISSING_BLOCKS;
+            }
+        }
+
+        chain.initMessage(_("Rescanning...").translated);
+        walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
+
+        // No need to read and scan block if block was created before
+        // our wallet birthday (as adjusted for block time variability)
+        std::optional<int64_t> time_first_key;
+        for (auto spk_man : walletInstance->GetAllScriptPubKeyMans()) {
+            int64_t time = spk_man->GetTimeFirstKey();
+            if (!time_first_key || time < *time_first_key) time_first_key = time;
+        }
+        if (time_first_key) {
+            chain.findFirstBlockWithTimeAndHeight(*time_first_key - TIMESTAMP_WINDOW, rescan_height, FoundBlock().height(rescan_height));
+        }
+
+        {
+            WalletRescanReserver reserver(*walletInstance);
+            if (!reserver.reserve() || (ScanResult::SUCCESS != walletInstance->ScanForWalletTransactions(chain.getBlockHash(rescan_height), rescan_height, {} /* max height */, reserver, true /* update */).status)) {
+                return CWallet::ScanStatus::FAILED;
+            }
+            scan_status = ScanStatus::SUCCESS;
+        }
+        walletInstance->chainStateFlushed(chain.getTipLocator());
+        walletInstance->GetDatabase().IncrementUpdateCounter();
+    }
+
+    return scan_status;
 }
 
 void CWallet::postInitProcess()
