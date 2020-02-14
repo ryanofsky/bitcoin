@@ -1879,6 +1879,7 @@ void CWallet::ReacceptWalletTransactions()
     // If transactions aren't being broadcasted, don't let them into local mempool either
     if (!fBroadcastTransactions)
         return;
+    LOCK(cs_wallet);
     std::map<int64_t, CWalletTx*> mapSorted;
 
     // Sort pending wallet transactions based on their initial wallet insertion order
@@ -4452,8 +4453,6 @@ bool CWallet::UpgradeWallet(int version, bilingual_str& error, std::vector<bilin
 
 void CWallet::postInitProcess()
 {
-    LOCK(cs_wallet);
-
     // Add wallet transactions that aren't already in a block to mempool
     // Do this here as mempool requires genesis block to be loaded
     ReacceptWalletTransactions();
