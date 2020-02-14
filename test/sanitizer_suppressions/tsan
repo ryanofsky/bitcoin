@@ -30,6 +30,7 @@ deadlock:CConnman::ForNode
 deadlock:CConnman::GetNodeStats
 deadlock:CChainState::ConnectTip
 deadlock:UpdateTip
+# possible deadlock, discussion in https://github.com/bitcoin/bitcoin/issues/19049
 deadlock:wallet_tests::CreateWalletFromFile
 
 # WalletBatch (unidentified deadlock)
