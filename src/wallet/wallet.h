@@ -932,8 +932,16 @@ public:
         uint256 last_failed_block;
     };
     ScanResult ScanForWalletTransactions(const uint256& start_block, int start_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
+<<<<<<< HEAD
     void transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason, uint64_t mempool_sequence) override;
     void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+||||||| merged common ancestors
+    void transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason) override;
+    void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+=======
+    void transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRemovalReason reason) override;
+    void ReacceptWalletTransactions() LOCKS_EXCLUDED(cs_wallet);
+>>>>>>> refactor: Move cs_wallet to ReacceptWalletTransactions
     void ResendWalletTransactions();
     struct Balance {
         CAmount m_mine_trusted{0};           //!< Trusted, at depth=GetBalance.min_depth or more
