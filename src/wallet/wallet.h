@@ -923,7 +923,7 @@ public:
     };
     ScanResult ScanForWalletTransactions(const uint256& start_block, int start_height, Optional<int> max_height, const WalletRescanReserver& reserver, bool fUpdate);
     void transactionRemovedFromMempool(const CTransactionRef &ptx) override;
-    void ReacceptWalletTransactions() EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void ReacceptWalletTransactions() LOCKS_EXCLUDED(cs_wallet);
     void ResendWalletTransactions();
     struct Balance {
         CAmount m_mine_trusted{0};           //!< Trusted, at depth=GetBalance.min_depth or more
