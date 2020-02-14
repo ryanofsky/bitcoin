@@ -33,6 +33,21 @@ race:bitcoin-qt
 
 # deadlock (TODO fix)
 deadlock:CChainState::ConnectTip
+<<<<<<< HEAD
+||||||| merged common ancestors
+deadlock:UpdateTip
+deadlock:wallet_tests::CreateWalletFromFile
+
+# WalletBatch (unidentified deadlock)
+deadlock:WalletBatch
+=======
+deadlock:UpdateTip
+# possible deadlock, discussion in https://github.com/bitcoin/bitcoin/issues/19049
+deadlock:wallet_tests::CreateWalletFromFile
+
+# WalletBatch (unidentified deadlock)
+deadlock:WalletBatch
+>>>>>>> Wallet passive startup
 
 # Intentional deadlock in tests
 deadlock:TestPotentialDeadLockDetected
