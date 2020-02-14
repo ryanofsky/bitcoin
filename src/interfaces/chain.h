@@ -44,10 +44,15 @@ public:
     FoundBlock& time(int64_t& time) { m_time = &time; return *this; }
     FoundBlock& maxTime(int64_t& max_time) { m_max_time = &max_time; return *this; }
     FoundBlock& mtpTime(int64_t& mtp_time) { m_mtp_time = &mtp_time; return *this; }
+<<<<<<< HEAD
     //! Return whether block is in the active (most-work) chain.
     FoundBlock& inActiveChain(bool& in_active_chain) { m_in_active_chain = &in_active_chain; return *this; }
     //! Return next block in the active chain if current block is in the active chain.
     FoundBlock& nextBlock(const FoundBlock& next_block) { m_next_block = &next_block; return *this; }
+||||||| merged common ancestors
+=======
+    FoundBlock& locator(CBlockLocator& locator) { m_locator = &locator; return *this; }
+>>>>>>> lib: Add FoundBlock locator support
     //! Read block data from disk. If the block exists but doesn't have data
     //! (for example due to pruning), the CBlock variable will be set to null.
     FoundBlock& data(CBlock& data) { m_data = &data; return *this; }
@@ -57,8 +62,13 @@ public:
     int64_t* m_time = nullptr;
     int64_t* m_max_time = nullptr;
     int64_t* m_mtp_time = nullptr;
+<<<<<<< HEAD
     bool* m_in_active_chain = nullptr;
     const FoundBlock* m_next_block = nullptr;
+||||||| merged common ancestors
+=======
+    CBlockLocator* m_locator = nullptr;
+>>>>>>> lib: Add FoundBlock locator support
     CBlock* m_data = nullptr;
 };
 

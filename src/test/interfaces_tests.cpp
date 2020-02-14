@@ -15,6 +15,16 @@ using interfaces::FoundBlock;
 
 BOOST_FIXTURE_TEST_SUITE(interfaces_tests, TestChain100Setup)
 
+namespace {
+template <typename T>
+inline std::string Ser(const T& value)
+{
+    CDataStream stream(SER_NETWORK, CLIENT_VERSION);
+    stream << value;
+    return stream.str();
+}
+} // namespace
+
 BOOST_AUTO_TEST_CASE(findBlock)
 {
     auto& chain = m_node.chain;
@@ -44,6 +54,7 @@ BOOST_AUTO_TEST_CASE(findBlock)
     BOOST_CHECK(chain->findBlock(active[60]->GetBlockHash(), FoundBlock().mtpTime(mtp_time)));
     BOOST_CHECK_EQUAL(mtp_time, active[60]->GetMedianTimePast());
 
+<<<<<<< HEAD
     bool cur_active{false}, next_active{false};
     uint256 next_hash;
     BOOST_CHECK_EQUAL(active.Height(), 100);
@@ -56,6 +67,13 @@ BOOST_AUTO_TEST_CASE(findBlock)
     BOOST_CHECK(cur_active);
     BOOST_CHECK(!next_active);
 
+||||||| merged common ancestors
+=======
+    CBlockLocator locator;
+    BOOST_CHECK(chain->findBlock(active[70]->GetBlockHash(), FoundBlock().locator(locator)));
+    BOOST_CHECK_EQUAL(Ser(locator), Ser(active.GetLocator(active[70])));
+
+>>>>>>> lib: Add FoundBlock locator support
     BOOST_CHECK(!chain->findBlock({}, FoundBlock()));
 }
 
