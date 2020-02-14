@@ -328,13 +328,6 @@ private:
 
     bool CreateTransactionInternal(const std::vector<CRecipient>& vecSend, CTransactionRef& tx, CAmount& nFeeRet, int& nChangePosInOut, bilingual_str& error, const CCoinControl& coin_control, FeeCalculation& fee_calc_out, bool sign) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    /**
-     * Catch wallet up to current chain, scanning new blocks, updating the best
-     * block locator and m_last_block_processed, and registering for
-     * notifications about new blocks and transactions.
-     */
-    static bool AttachChain(const std::shared_ptr<CWallet>& wallet, interfaces::Chain& chain, bilingual_str& error, std::vector<bilingual_str>& warnings);
-
 public:
     /**
      * Main wallet lock.
@@ -409,6 +402,16 @@ public:
 
     /** Registered interfaces::Chain::Notifications handler. */
     std::unique_ptr<interfaces::Handler> m_chain_notifications_handler;
+
+    /** Result of scanning a chain for new transactions */
+    enum class ScanStatus { SUCCESS, FAILED, MISSING_BLOCKS, SKIPPED };
+
+    /**
+     * Catch wallet up to current chain, scanning new blocks, updating the best
+     * block locator and m_last_block_processed, and registering for
+     * notifications about new blocks and transactions.
+     */
+    static ScanStatus AttachChain(std::shared_ptr<CWallet> wallet, bool scan = true);
 
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
