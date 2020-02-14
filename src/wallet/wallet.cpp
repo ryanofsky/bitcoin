@@ -1739,6 +1739,8 @@ void CWallet::ReacceptWalletTransactions()
     // If transactions aren't being broadcasted, don't let them into local mempool either
     if (!fBroadcastTransactions)
         return;
+    auto locked_chain = chain().lock();
+    LOCK(cs_wallet);
     std::map<int64_t, CWalletTx*> mapSorted;
 
     // Sort pending wallet transactions based on their initial wallet insertion order
@@ -4000,77 +4002,25 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
     // Try to top up keypool. No-op if the wallet is locked.
     walletInstance->TopUpKeyPool();
 
-    auto locked_chain = chain.lock();
-    LOCK(walletInstance->cs_wallet);
-
-    int rescan_height = 0;
-    if (!gArgs.GetBoolArg("-rescan", false))
-    {
-        WalletBatch batch(*walletInstance->database);
-        CBlockLocator locator;
-        if (batch.ReadBestBlock(locator)) {
-            if (const Optional<int> fork_height = locked_chain->findLocatorFork(locator)) {
-                rescan_height = *fork_height;
-            }
-        }
-    }
-
-    const Optional<int> tip_height = locked_chain->getHeight();
-    if (tip_height) {
-        walletInstance->m_last_block_processed = locked_chain->getBlockHash(*tip_height);
-        walletInstance->m_last_block_processed_height = *tip_height;
-    } else {
-        walletInstance->m_last_block_processed.SetNull();
-        walletInstance->m_last_block_processed_height = -1;
-    }
-
-    if (tip_height && *tip_height != rescan_height)
-    {
+    CWallet::ScanStatus scan_status = CWallet::HandleNotifications(walletInstance, fFirstRun);
+    if (scan_status == CWallet::ScanStatus::FAILED) {
+        error = _("Failed to rescan the wallet during initialization").translated;
+        return nullptr;
+    } else if (scan_status == CWallet::ScanStatus::MISSING_BLOCKS) {
         // We can't rescan beyond non-pruned blocks, stop and throw an error.
         // This might happen if a user uses an old wallet within a pruned node
         // or if they ran -disablewallet for a longer time, then decided to re-enable
-        if (chain.havePruned()) {
-            // Exit early and print an error.
-            // If a block is pruned after this check, we will load the wallet,
-            // but fail the rescan with a generic error.
-            int block_height = *tip_height;
-            while (block_height > 0 && locked_chain->haveBlockOnDisk(block_height - 1) && rescan_height != block_height) {
-                --block_height;
-            }
+        // Exit early and print an error.
+        // If a block is pruned after this check, we will load the wallet,
+        // but fail the rescan with a generic error.
+        error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)").translated;
+        return nullptr;
+    }
 
-            if (rescan_height != block_height) {
-                error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)").translated;
-                return nullptr;
-            }
-        }
+    auto locked_chain = chain.lock();
+    LOCK(walletInstance->cs_wallet);
 
-        chain.initMessage(_("Rescanning...").translated);
-        walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
-
-        // No need to read and scan block if block was created before
-        // our wallet birthday (as adjusted for block time variability)
-        // The way the 'time_first_key' is initialized is just a workaround for the gcc bug #47679 since version 4.6.0.
-        Optional<int64_t> time_first_key = MakeOptional(false, int64_t());;
-        for (auto spk_man : walletInstance->GetAllScriptPubKeyMans()) {
-            int64_t time = spk_man->GetTimeFirstKey();
-            if (!time_first_key || time < *time_first_key) time_first_key = time;
-        }
-        if (time_first_key) {
-            if (Optional<int> first_block = locked_chain->findFirstBlockWithTimeAndHeight(*time_first_key - TIMESTAMP_WINDOW, rescan_height, nullptr)) {
-                rescan_height = *first_block;
-            }
-        }
-
-        {
-            WalletRescanReserver reserver(walletInstance.get());
-            if (!reserver.reserve() || (ScanResult::SUCCESS != walletInstance->ScanForWalletTransactions(locked_chain->getBlockHash(rescan_height), rescan_height, {} /* max height */, reserver, true /* update */).status)) {
-                error = _("Failed to rescan the wallet during initialization").translated;
-                return nullptr;
-            }
-        }
-        walletInstance->chainStateFlushed(locked_chain->getTipLocator());
-        walletInstance->database->IncrementUpdateCounter();
-
+    if (scan_status != CWallet::ScanStatus::SKIPPED) {
         // Restore wallet transaction metadata after -zapwallettxes=1
         if (gArgs.GetBoolArg("-zapwallettxes", false) && gArgs.GetArg("-zapwallettxes", "1") != "2")
         {
@@ -4103,9 +4053,6 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
         }
     }
 
-    // Register with the validation interface. It's ok to do this after rescan since we're still holding locked_chain.
-    walletInstance->m_chain_notifications_handler = walletInstance->chain().handleNotifications(walletInstance);
-
     walletInstance->SetBroadcastTransactions(gArgs.GetBoolArg("-walletbroadcast", DEFAULT_WALLETBROADCAST));
 
     {
@@ -4117,6 +4064,7 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
     return walletInstance;
 }
 
+<<<<<<< HEAD
 const CAddressBookData* CWallet::FindAddressBookEntry(const CTxDestination& dest, bool allow_change) const
 {
     const auto& address_book_it = m_address_book.find(dest);
@@ -4128,16 +4076,73 @@ const CAddressBookData* CWallet::FindAddressBookEntry(const CTxDestination& dest
 }
 
 void CWallet::postInitProcess()
+||||||| merged common ancestors
+void CWallet::postInitProcess()
+=======
+CWallet::ScanStatus CWallet::HandleNotifications(std::shared_ptr<CWallet> wallet, bool first_run)
+>>>>>>> Drop Chain::requestMempoolTransactions method
 {
-    auto locked_chain = chain().lock();
-    LOCK(cs_wallet);
+    // Register with the validation interface. Skip requesting mempool transactions if wallet is empty.
+    interfaces::Chain::ScanFn scan_fn;
+    interfaces::Chain::MempoolFn mempool_fn;
+    Optional<CBlockLocator> best_block_locator;
+    // The way the 'time_first_key' is initialized is just a workaround for the gcc bug #47679 since version 4.6.0.
+    Optional<int64_t> time_first_key = MakeOptional(false, int64_t());;
+    ScanStatus scan_status = ScanStatus::SKIPPED;
+    if (!first_run) {
+        // Get best block locator to rescan if not going back and rescanning
+        if (!gArgs.GetBoolArg("-rescan", false)) {
+            best_block_locator.emplace();
+            WalletBatch(*wallet->database).ReadBestBlock(*best_block_locator);
+        }
 
+        // No need to read and scan block if block was created before
+        // our wallet birthday (as adjusted for block time variability)
+        for (auto spk_man : wallet->GetAllScriptPubKeyMans()) {
+            int64_t time = WITH_LOCK(wallet->cs_wallet, return spk_man->GetTimeFirstKey());
+            if (!time_first_key || time < *time_first_key) time_first_key = time;
+        }
+        scan_fn = [&](const uint256& rescan_hash, int rescan_height, const uint256& tip_hash, int tip_height) -> Optional<uint256> {
+            WITH_LOCK(wallet->cs_wallet, wallet->SetLastBlockProcessed(tip_height, tip_hash));
+            scan_status = ScanStatus::FAILED;
+            wallet->chain().initMessage(_("Rescanning...").translated);
+            wallet->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", tip_height - rescan_height, rescan_height);
+            WalletRescanReserver reserver(wallet.get());
+            if (reserver.reserve()) {
+                ScanResult result =
+                    wallet->ScanForWalletTransactions(rescan_hash, rescan_height, {} /* max height */, reserver, true /* update */);
+                if (result.status == ScanResult::SUCCESS) {
+                    scan_status = ScanStatus::SUCCESS;
+                    return result.last_scanned_block;
+                }
+            }
+            return nullopt;
+        };
+        mempool_fn = [&](const std::vector<CTransactionRef>& mempool_txs) {
+            for (const auto& mempool_tx : mempool_txs) {
+                wallet->transactionAddedToMempool(mempool_tx);
+            }
+        };
+    }
+
+    CBlockLocator last_block_processed_locator;
+    bool missing_block_data;
+    wallet->m_chain_notifications_handler = wallet->chain().handleNotifications(wallet, scan_fn, mempool_fn,
+        best_block_locator.get_ptr(), time_first_key.value_or(0), wallet->m_last_block_processed,
+        wallet->m_last_block_processed_height, last_block_processed_locator, missing_block_data);
+
+    if (missing_block_data) scan_status = ScanStatus::MISSING_BLOCKS;
+
+    wallet->chainStateFlushed(last_block_processed_locator);
+    wallet->database->IncrementUpdateCounter();
+    return scan_status;
+}
+
+void CWallet::postInitProcess()
+{
     // Add wallet transactions that aren't already in a block to mempool
     // Do this here as mempool requires genesis block to be loaded
     ReacceptWalletTransactions();
-
-    // Update wallet transactions with current mempool transactions.
-    chain().requestMempoolTransactions(*this);
 }
 
 bool CWallet::BackupWallet(const std::string& strDest) const
