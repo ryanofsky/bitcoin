@@ -4091,6 +4091,7 @@ std::shared_ptr<CWallet> CWallet::Create(interfaces::Chain* chain, const std::st
 
     LOCK(walletInstance->cs_wallet);
 
+<<<<<<< HEAD
     if (chain && !AttachChain(walletInstance, *chain, error, warnings)) {
         return nullptr;
     }
@@ -4120,6 +4121,91 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
     assert(!walletInstance->m_chain || walletInstance->m_chain == &chain);
     walletInstance->m_chain = &chain;
 
+||||||| merged common ancestors
+=======
+    CWallet::ScanStatus scan_status = CWallet::AttachChain(walletInstance, !fFirstRun);
+    if (scan_status == CWallet::ScanStatus::FAILED) {
+        error = _("Failed to rescan the wallet during initialization");
+        return nullptr;
+    } else if (scan_status == CWallet::ScanStatus::MISSING_BLOCKS) {
+        // We can't rescan beyond non-pruned blocks, stop and throw an error.
+        // This might happen if a user uses an old wallet within a pruned node
+        // or if they ran -disablewallet for a longer time, then decided to re-enable
+        // Exit early and print an error.
+        // If a block is pruned after this check, we will load the wallet,
+        // but fail the rescan with a generic error.
+        error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)");
+        return nullptr;
+    }
+
+    {
+        LOCK(cs_wallets);
+        for (auto& load_wallet : g_load_wallet_fns) {
+            load_wallet(interfaces::MakeWallet(walletInstance));
+        }
+    }
+
+    walletInstance->SetBroadcastTransactions(gArgs.GetBoolArg("-walletbroadcast", DEFAULT_WALLETBROADCAST));
+
+    {
+        walletInstance->WalletLogPrintf("setKeyPool.size() = %u\n",      walletInstance->GetKeyPoolSize());
+        walletInstance->WalletLogPrintf("mapWallet.size() = %u\n",       walletInstance->mapWallet.size());
+        walletInstance->WalletLogPrintf("m_address_book.size() = %u\n",  walletInstance->m_address_book.size());
+    }
+
+    return walletInstance;
+}
+
+const CAddressBookData* CWallet::FindAddressBookEntry(const CTxDestination& dest, bool allow_change) const
+{
+    const auto& address_book_it = m_address_book.find(dest);
+    if (address_book_it == m_address_book.end()) return nullptr;
+    if ((!allow_change) && address_book_it->second.IsChange()) {
+        return nullptr;
+    }
+    return &address_book_it->second;
+}
+
+bool CWallet::UpgradeWallet(int version, bilingual_str& error)
+{
+    int prev_version = GetVersion();
+    if (version == 0) {
+        WalletLogPrintf("Performing wallet upgrade to %i\n", FEATURE_LATEST);
+        version = FEATURE_LATEST;
+    } else {
+        WalletLogPrintf("Allowing wallet upgrade up to %i\n", version);
+    }
+    if (version < prev_version) {
+        error = strprintf(_("Cannot downgrade wallet from version %i to version %i. Wallet version unchanged."), prev_version, version);
+        return false;
+    }
+
+    LOCK(cs_wallet);
+
+    // Do not upgrade versions to any version between HD_SPLIT and FEATURE_PRE_SPLIT_KEYPOOL unless already supporting HD_SPLIT
+    if (!CanSupportFeature(FEATURE_HD_SPLIT) && version >= FEATURE_HD_SPLIT && version < FEATURE_PRE_SPLIT_KEYPOOL) {
+        error = strprintf(_("Cannot upgrade a non HD split wallet from version %i to version %i without upgrading to support pre-split keypool. Please use version %i or no version specified."), prev_version, version, FEATURE_PRE_SPLIT_KEYPOOL);
+        return false;
+    }
+
+    // Permanently upgrade to the version
+    SetMinVersion(GetClosestWalletFeature(version));
+
+    for (auto spk_man : GetActiveScriptPubKeyMans()) {
+        if (!spk_man->Upgrade(prev_version, version, error)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+CWallet::ScanStatus CWallet::AttachChain(std::shared_ptr<CWallet> wallet, bool scan)
+{
+    auto& chain = wallet->chain();
+    auto& walletInstance = wallet;
+    LOCK(walletInstance->cs_wallet);
+
+>>>>>>> refactor: Add CWallet:::AttachChain method
     // Register wallet with validationinterface. It's done before rescan to avoid
     // missing block connections between end of rescan and validation subscribing.
     // Because of wallet lock being hold, block connection notifications are going to
@@ -4151,6 +4237,7 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
         walletInstance->m_last_block_processed_height = -1;
     }
 
+    ScanStatus scan_status = ScanStatus::SKIPPED;
     if (tip_height && *tip_height != rescan_height)
     {
         if (chain.havePruned()) {
@@ -4160,6 +4247,7 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
             }
 
             if (rescan_height != block_height) {
+<<<<<<< HEAD
                 // We can't rescan beyond non-pruned blocks, stop and throw an error.
                 // This might happen if a user uses an old wallet within a pruned node
                 // or if they ran -disablewallet for a longer time, then decided to re-enable
@@ -4168,6 +4256,12 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
                 // but fail the rescan with a generic error.
                 error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)");
                 return false;
+||||||| merged common ancestors
+                error = _("Prune: last wallet synchronisation goes beyond pruned data. You need to -reindex (download the whole blockchain again in case of pruned node)");
+                return nullptr;
+=======
+                return CWallet::ScanStatus::MISSING_BLOCKS;
+>>>>>>> refactor: Add CWallet:::AttachChain method
             }
         }
 
@@ -4188,14 +4282,23 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
         {
             WalletRescanReserver reserver(*walletInstance);
             if (!reserver.reserve() || (ScanResult::SUCCESS != walletInstance->ScanForWalletTransactions(chain.getBlockHash(rescan_height), rescan_height, {} /* max height */, reserver, true /* update */).status)) {
+<<<<<<< HEAD
                 error = _("Failed to rescan the wallet during initialization");
                 return false;
+||||||| merged common ancestors
+                error = _("Failed to rescan the wallet during initialization");
+                return nullptr;
+=======
+                return CWallet::ScanStatus::FAILED;
+>>>>>>> refactor: Add CWallet:::AttachChain method
             }
+            scan_status = ScanStatus::SUCCESS;
         }
         walletInstance->chainStateFlushed(chain.getTipLocator());
         walletInstance->GetDatabase().IncrementUpdateCounter();
     }
 
+<<<<<<< HEAD
     return true;
 }
 
@@ -4240,6 +4343,69 @@ bool CWallet::UpgradeWallet(int version, bilingual_str& error)
         }
     }
     return true;
+||||||| merged common ancestors
+    {
+        LOCK(cs_wallets);
+        for (auto& load_wallet : g_load_wallet_fns) {
+            load_wallet(interfaces::MakeWallet(walletInstance));
+        }
+    }
+
+    walletInstance->SetBroadcastTransactions(gArgs.GetBoolArg("-walletbroadcast", DEFAULT_WALLETBROADCAST));
+
+    {
+        walletInstance->WalletLogPrintf("setKeyPool.size() = %u\n",      walletInstance->GetKeyPoolSize());
+        walletInstance->WalletLogPrintf("mapWallet.size() = %u\n",       walletInstance->mapWallet.size());
+        walletInstance->WalletLogPrintf("m_address_book.size() = %u\n",  walletInstance->m_address_book.size());
+    }
+
+    return walletInstance;
+}
+
+const CAddressBookData* CWallet::FindAddressBookEntry(const CTxDestination& dest, bool allow_change) const
+{
+    const auto& address_book_it = m_address_book.find(dest);
+    if (address_book_it == m_address_book.end()) return nullptr;
+    if ((!allow_change) && address_book_it->second.IsChange()) {
+        return nullptr;
+    }
+    return &address_book_it->second;
+}
+
+bool CWallet::UpgradeWallet(int version, bilingual_str& error)
+{
+    int prev_version = GetVersion();
+    if (version == 0) {
+        WalletLogPrintf("Performing wallet upgrade to %i\n", FEATURE_LATEST);
+        version = FEATURE_LATEST;
+    } else {
+        WalletLogPrintf("Allowing wallet upgrade up to %i\n", version);
+    }
+    if (version < prev_version) {
+        error = strprintf(_("Cannot downgrade wallet from version %i to version %i. Wallet version unchanged."), prev_version, version);
+        return false;
+    }
+
+    LOCK(cs_wallet);
+
+    // Do not upgrade versions to any version between HD_SPLIT and FEATURE_PRE_SPLIT_KEYPOOL unless already supporting HD_SPLIT
+    if (!CanSupportFeature(FEATURE_HD_SPLIT) && version >= FEATURE_HD_SPLIT && version < FEATURE_PRE_SPLIT_KEYPOOL) {
+        error = strprintf(_("Cannot upgrade a non HD split wallet from version %i to version %i without upgrading to support pre-split keypool. Please use version %i or no version specified."), prev_version, version, FEATURE_PRE_SPLIT_KEYPOOL);
+        return false;
+    }
+
+    // Permanently upgrade to the version
+    SetMinVersion(GetClosestWalletFeature(version));
+
+    for (auto spk_man : GetActiveScriptPubKeyMans()) {
+        if (!spk_man->Upgrade(prev_version, version, error)) {
+            return false;
+        }
+    }
+    return true;
+=======
+    return scan_status;
+>>>>>>> refactor: Add CWallet:::AttachChain method
 }
 
 void CWallet::postInitProcess()
