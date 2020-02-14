@@ -25,7 +25,13 @@ static void WalletBalance(benchmark::Bench& bench, const bool set_dirty, const b
         bool first_run;
         if (wallet.LoadWallet(first_run) != DBErrors::LOAD_OK) assert(false);
     }
+<<<<<<< HEAD
     auto handler = test_setup->m_node.chain->handleNotifications({&wallet, [](CWallet*) {}});
+||||||| merged common ancestors
+    auto handler = chain->handleNotifications({&wallet, [](CWallet*) {}});
+=======
+    CWallet::AttachChain({&wallet, [](CWallet*) {}});
+>>>>>>> refactor: Add CWallet:::AttachChain method
 
     const std::optional<std::string> address_mine{add_mine ? std::optional<std::string>{getnewaddress(wallet)} : std::nullopt};
     if (add_watchonly) importaddress(wallet, ADDRESS_WATCHONLY);

@@ -10,6 +10,12 @@ WalletTestingSetup::WalletTestingSetup(const std::string& chainName)
 {
     bool fFirstRun;
     m_wallet.LoadWallet(fFirstRun);
+<<<<<<< HEAD
     m_chain_notifications_handler = m_node.chain->handleNotifications({ &m_wallet, [](CWallet*) {} });
+||||||| merged common ancestors
+    m_chain_notifications_handler = m_chain->handleNotifications({ &m_wallet, [](CWallet*) {} });
+=======
+    CWallet::AttachChain({ &m_wallet, [](CWallet*) {} });
+>>>>>>> refactor: Add CWallet:::AttachChain method
     m_wallet_client->registerRpcs();
 }
