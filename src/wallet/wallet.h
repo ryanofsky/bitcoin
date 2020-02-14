@@ -809,7 +809,7 @@ public:
      * block locator and m_last_block_processed, and registering for
      * notifications about new blocks and transactions.
      */
-    static ScanStatus AttachChain(std::shared_ptr<CWallet> wallet, bool scan = true);
+    static ScanStatus AttachChain(std::shared_ptr<CWallet> wallet, bool scan = true) LOCKS_EXCLUDED(wallet->cs_wallet);
 
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
