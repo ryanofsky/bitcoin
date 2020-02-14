@@ -44,6 +44,7 @@ public:
     FoundBlock& time(int64_t& time) { m_time = &time; return *this; }
     FoundBlock& maxTime(int64_t& max_time) { m_max_time = &max_time; return *this; }
     FoundBlock& mtpTime(int64_t& mtp_time) { m_mtp_time = &mtp_time; return *this; }
+    FoundBlock& locator(CBlockLocator& locator) { m_locator = &locator; return *this; }
     //! Read block data from disk. If the block exists but doesn't have data
     //! (for example due to pruning), the CBlock variable will be set to null.
     FoundBlock& data(CBlock& data) { m_data = &data; return *this; }
@@ -53,6 +54,7 @@ public:
     int64_t* m_time = nullptr;
     int64_t* m_max_time = nullptr;
     int64_t* m_mtp_time = nullptr;
+    CBlockLocator* m_locator = nullptr;
     CBlock* m_data = nullptr;
 };
 
