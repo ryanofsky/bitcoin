@@ -45,7 +45,7 @@ public:
     {
         if (v < m_shift || v >= std::numeric_limits<uint64_t>::max()) throw std::ios_base::failure("differential value overflow");
         WriteCompactSize(s, v - m_shift);
-        m_shift = v + 1;
+        m_shift = uint64_t(v) + 1;
     }
     template<typename Stream, typename I>
     void Unser(Stream& s, I& v)
@@ -53,7 +53,7 @@ public:
         uint64_t n = ReadCompactSize(s);
         m_shift += n;
         if (m_shift < n || m_shift >= std::numeric_limits<uint64_t>::max() || m_shift < std::numeric_limits<I>::min() || m_shift > std::numeric_limits<I>::max()) throw std::ios_base::failure("differential value overflow");
-        v = m_shift++;
+        v = I(m_shift++);
     }
 };
 

@@ -613,10 +613,7 @@ BigEndian<I> WrapBigEndian(I& n) { return BigEndian<I>(n); }
  * as a vector of VarInt-encoded integers.
  *
  * V is not required to be an std::vector type. It works for any class that
- * exposes a value_type, size, reserve, emplace_back, and const iterators.
- *
- * SerTrans and UnserTrans are functors that apply a transformation to the data
- * before serialization and deserialization respectively.
+ * exposes a value_type, size, reserve, emplace_back, back, and const iterators.
  */
 template<class Formatter>
 struct VectorFormatter
