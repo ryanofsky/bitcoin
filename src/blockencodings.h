@@ -35,18 +35,25 @@ struct Uint48Formatter
     }
 };
 
-template<bool Unser>
-class DifferenceTransform
+class DifferenceFormatter
 {
-    int32_t m_shift = 0;
+    uint64_t m_shift = 0;
 
 public:
-    uint16_t operator()(uint16_t val)
+    template<typename Stream, typename I>
+    void Ser(Stream& s, I v)
     {
-        int32_t out = m_shift + val;
-        if (out < 0 || out > 0xffff) throw std::ios_base::failure("differential value overflow");
-        m_shift = Unser ? out + 1 : (-(int32_t)val) - 1;
-        return uint16_t(out);
+        if (v < m_shift || v >= std::numeric_limits<uint64_t>::max()) throw std::ios_base::failure("differential value overflow");
+        WriteCompactSize(s, v - m_shift);
+        m_shift = v + 1;
+    }
+    template<typename Stream, typename I>
+    void Unser(Stream& s, I& v)
+    {
+        uint64_t n = ReadCompactSize(s);
+        m_shift += n;
+        if (m_shift < n || m_shift >= std::numeric_limits<uint64_t>::max() || m_shift < std::numeric_limits<I>::min() || m_shift > std::numeric_limits<I>::max()) throw std::ios_base::failure("differential value overflow");
+        v = m_shift++;
     }
 };
 
@@ -58,7 +65,7 @@ public:
 
     SERIALIZE_METHODS(BlockTransactionsRequest, obj)
     {
-        READWRITE(obj.blockhash, Using<VectorFormatter<CompactSizeFormatter, DifferenceTransform<false>, DifferenceTransform<true>>>(obj.indexes));
+        READWRITE(obj.blockhash, Using<VectorFormatter<DifferenceFormatter>>(obj.indexes));
     }
 };
 
