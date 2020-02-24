@@ -142,6 +142,8 @@ private:
     }
 
 public:
+    UniqueLock() = default;
+
     UniqueLock(Mutex& mutexIn, const char* pszName, const char* pszFile, int nLine, bool fTry = false) EXCLUSIVE_LOCK_FUNCTION(mutexIn) : Base(mutexIn, std::defer_lock)
     {
         if (fTry)

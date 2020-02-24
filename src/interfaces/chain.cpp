@@ -19,6 +19,7 @@
 #include <policy/settings.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
+#include <reverselock.h>
 #include <rpc/protocol.h>
 #include <rpc/server.h>
 #include <shutdown.h>
@@ -28,6 +29,7 @@
 #include <ui_interface.h>
 #include <uint256.h>
 #include <univalue.h>
+#include <util/check.h>
 #include <util/system.h>
 #include <validation.h>
 #include <validationinterface.h>
@@ -37,6 +39,24 @@
 
 namespace interfaces {
 namespace {
+
+bool FillBlock(const CBlockIndex* index, const FoundBlock& block, UniqueLock<RecursiveMutex>& lock)
+{
+    if (!index) {
+        CHECK_NONFATAL(!block.m_require);
+        return false;
+    }
+    if (block.m_hash) *block.m_hash = index->GetBlockHash();
+    if (block.m_height) *block.m_height = index->nHeight;
+    if (block.m_time) *block.m_time = index->GetBlockTime();
+    if (block.m_max_time) *block.m_max_time = index->GetBlockTimeMax();
+    if (block.m_mtp_time) *block.m_mtp_time = index->GetMedianTimePast();
+    if (block.m_data) {
+        reverse_lock<UniqueLock<RecursiveMutex>> unlock(lock);
+        if (!ReadBlockFromDisk(*block.m_data, index, Params().GetConsensus())) block.m_data->SetNull();
+    }
+    return true;
+}
 
 class LockImpl : public Chain::Lock, public UniqueLock<RecursiveMutex>
 {
@@ -242,26 +262,10 @@ public:
         // LockImpl to Lock pointer
         return std::move(result);
     }
-    bool findBlock(const uint256& hash, CBlock* block, int64_t* time, int64_t* time_max) override
+    bool findBlock(const uint256& hash, const FoundBlock& block) override
     {
-        CBlockIndex* index;
-        {
-            LOCK(cs_main);
-            index = LookupBlockIndex(hash);
-            if (!index) {
-                return false;
-            }
-            if (time) {
-                *time = index->GetBlockTime();
-            }
-            if (time_max) {
-                *time_max = index->GetBlockTimeMax();
-            }
-        }
-        if (block && !ReadBlockFromDisk(*block, index, Params().GetConsensus())) {
-            block->SetNull();
-        }
-        return true;
+        WAIT_LOCK(cs_main, lock);
+        return FillBlock(LookupBlockIndex(hash), block, lock);
     }
     void findCoins(std::map<COutPoint, Coin>& coins) override { return FindCoins(m_node, coins); }
     double guessVerificationProgress(const uint256& block_hash) override
