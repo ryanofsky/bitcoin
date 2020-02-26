@@ -174,7 +174,13 @@ public:
     }
     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
     {
+<<<<<<< HEAD
         m_notifications->blockConnected(*block, index->nHeight);
+||||||| merged common ancestors
+        m_notifications->BlockConnected(*block, tx_conflicted, index->nHeight);
+=======
+        m_notifications->blockConnected(*block, tx_conflicted, index->nHeight);
+>>>>>>> refactor: Rename Chain::Notifications methods to be consistent with other interfaces methods
     }
     void BlockDisconnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
     {

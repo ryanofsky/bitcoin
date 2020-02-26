@@ -1109,7 +1109,13 @@ void CWallet::transactionRemovedFromMempool(const CTransactionRef &ptx) {
     }
 }
 
+<<<<<<< HEAD
 void CWallet::blockConnected(const CBlock& block, int height)
+||||||| merged common ancestors
+void CWallet::BlockConnected(const CBlock& block, const std::vector<CTransactionRef>& vtxConflicted, int height)
+=======
+void CWallet::blockConnected(const CBlock& block, const std::vector<CTransactionRef>& vtxConflicted, int height)
+>>>>>>> refactor: Rename Chain::Notifications methods to be consistent with other interfaces methods
 {
     const uint256& block_hash = block.GetHash();
     auto locked_chain = chain().lock();
@@ -1120,7 +1126,19 @@ void CWallet::blockConnected(const CBlock& block, int height)
     for (size_t index = 0; index < block.vtx.size(); index++) {
         CWalletTx::Confirmation confirm(CWalletTx::Status::CONFIRMED, height, block_hash, index);
         SyncTransaction(block.vtx[index], confirm);
+<<<<<<< HEAD
         transactionRemovedFromMempool(block.vtx[index]);
+||||||| merged common ancestors
+        TransactionRemovedFromMempool(block.vtx[index]);
+    }
+    for (const CTransactionRef& ptx : vtxConflicted) {
+        TransactionRemovedFromMempool(ptx);
+=======
+        transactionRemovedFromMempool(block.vtx[index]);
+    }
+    for (const CTransactionRef& ptx : vtxConflicted) {
+        transactionRemovedFromMempool(ptx);
+>>>>>>> refactor: Rename Chain::Notifications methods to be consistent with other interfaces methods
     }
 }
 
