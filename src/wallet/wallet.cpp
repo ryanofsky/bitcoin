@@ -344,7 +344,7 @@ bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase,
     return false;
 }
 
-void CWallet::ChainStateFlushed(const CBlockLocator& loc)
+void CWallet::chainStateFlushed(const CBlockLocator& loc)
 {
     WalletBatch batch(*database);
     batch.WriteBestBlock(loc);
@@ -1089,7 +1089,7 @@ void CWallet::SyncTransaction(const CTransactionRef& ptx, CWalletTx::Confirmatio
     MarkInputsDirty(ptx);
 }
 
-void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx) {
+void CWallet::transactionAddedToMempool(const CTransactionRef& ptx) {
     auto locked_chain = chain().lock();
     LOCK(cs_wallet);
     CWalletTx::Confirmation confirm(CWalletTx::Status::UNCONFIRMED, /* block_height */ 0, {}, /* nIndex */ 0);
@@ -1101,7 +1101,7 @@ void CWallet::TransactionAddedToMempool(const CTransactionRef& ptx) {
     }
 }
 
-void CWallet::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
+void CWallet::transactionRemovedFromMempool(const CTransactionRef &ptx) {
     LOCK(cs_wallet);
     auto it = mapWallet.find(ptx->GetHash());
     if (it != mapWallet.end()) {
@@ -1109,7 +1109,7 @@ void CWallet::TransactionRemovedFromMempool(const CTransactionRef &ptx) {
     }
 }
 
-void CWallet::BlockConnected(const CBlock& block, const std::vector<CTransactionRef>& vtxConflicted, int height)
+void CWallet::blockConnected(const CBlock& block, const std::vector<CTransactionRef>& vtxConflicted, int height)
 {
     const uint256& block_hash = block.GetHash();
     auto locked_chain = chain().lock();
@@ -1120,14 +1120,14 @@ void CWallet::BlockConnected(const CBlock& block, const std::vector<CTransaction
     for (size_t index = 0; index < block.vtx.size(); index++) {
         CWalletTx::Confirmation confirm(CWalletTx::Status::CONFIRMED, height, block_hash, index);
         SyncTransaction(block.vtx[index], confirm);
-        TransactionRemovedFromMempool(block.vtx[index]);
+        transactionRemovedFromMempool(block.vtx[index]);
     }
     for (const CTransactionRef& ptx : vtxConflicted) {
-        TransactionRemovedFromMempool(ptx);
+        transactionRemovedFromMempool(ptx);
     }
 }
 
-void CWallet::BlockDisconnected(const CBlock& block, int height)
+void CWallet::blockDisconnected(const CBlock& block, int height)
 {
     auto locked_chain = chain().lock();
     LOCK(cs_wallet);
@@ -1144,7 +1144,7 @@ void CWallet::BlockDisconnected(const CBlock& block, int height)
     }
 }
 
-void CWallet::UpdatedBlockTip()
+void CWallet::updatedBlockTip()
 {
     m_best_block_time = GetTime();
 }
@@ -3878,7 +3878,7 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
         }
 
         auto locked_chain = chain.lock();
-        walletInstance->ChainStateFlushed(locked_chain->getTipLocator());
+        walletInstance->chainStateFlushed(locked_chain->getTipLocator());
     } else if (wallet_creation_flags & WALLET_FLAG_DISABLE_PRIVATE_KEYS) {
         // Make it impossible to disable private keys after creation
         error = strprintf(_("Error loading %s: Private keys can only be disabled during creation").translated, walletFile);
@@ -4059,7 +4059,7 @@ std::shared_ptr<CWallet> CWallet::CreateWalletFromFile(interfaces::Chain& chain,
                 return nullptr;
             }
         }
-        walletInstance->ChainStateFlushed(locked_chain->getTipLocator());
+        walletInstance->chainStateFlushed(locked_chain->getTipLocator());
         walletInstance->database->IncrementUpdateCounter();
 
         // Restore wallet transaction metadata after -zapwallettxes=1
