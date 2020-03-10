@@ -75,8 +75,8 @@ CMainSignals& GetMainSignals()
     return g_signals;
 }
 
-void RegisterValidationInterface(CValidationInterface* pwalletIn) {
-    ValidationInterfaceConnections& conns = g_signals.m_internals->m_connMainSignals[pwalletIn];
+void RegisterSharedValidationInterface(std::shared_ptr<CValidationInterface> pwalletIn) {
+    ValidationInterfaceConnections& conns = g_signals.m_internals->m_connMainSignals[pwalletIn.get()];
     conns.UpdatedBlockTip = g_signals.m_internals->UpdatedBlockTip.connect(std::bind(&CValidationInterface::UpdatedBlockTip, pwalletIn, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     conns.TransactionAddedToMempool = g_signals.m_internals->TransactionAddedToMempool.connect(std::bind(&CValidationInterface::TransactionAddedToMempool, pwalletIn, std::placeholders::_1));
     conns.BlockConnected = g_signals.m_internals->BlockConnected.connect(std::bind(&CValidationInterface::BlockConnected, pwalletIn, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -85,6 +85,16 @@ void RegisterValidationInterface(CValidationInterface* pwalletIn) {
     conns.ChainStateFlushed = g_signals.m_internals->ChainStateFlushed.connect(std::bind(&CValidationInterface::ChainStateFlushed, pwalletIn, std::placeholders::_1));
     conns.BlockChecked = g_signals.m_internals->BlockChecked.connect(std::bind(&CValidationInterface::BlockChecked, pwalletIn, std::placeholders::_1, std::placeholders::_2));
     conns.NewPoWValidBlock = g_signals.m_internals->NewPoWValidBlock.connect(std::bind(&CValidationInterface::NewPoWValidBlock, pwalletIn, std::placeholders::_1, std::placeholders::_2));
+}
+
+void RegisterValidationInterface(CValidationInterface* callbacks)
+{
+    RegisterSharedValidationInterface({callbacks, [](CValidationInterface*){}});
+}
+
+void UnregisterSharedValidationInterface(std::shared_ptr<CValidationInterface> callbacks)
+{
+    UnregisterValidationInterface(callbacks.get());
 }
 
 void UnregisterValidationInterface(CValidationInterface* pwalletIn) {
