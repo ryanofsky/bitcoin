@@ -342,64 +342,72 @@ BOOST_AUTO_TEST_CASE(mempool_locks_reorg)
     }
 }
 
+class StateCheck
+{
+public:
+    StateCheck(int state) : m_state(state) {}
+
+    void update(int prev_state, int new_state)
+    {
+        LOCK(m_mutex);
+        BOOST_CHECK_EQUAL(m_state, prev_state);
+        m_state = new_state;
+        m_cv.notify_all();
+    }
+
+    void wait(int prev_state, int new_state)
+    {
+        WAIT_LOCK(m_mutex, lock);
+        while (m_state == prev_state) {
+           m_cv.wait(lock);
+        }
+        BOOST_CHECK_EQUAL(m_state, new_state);
+    }
+
+    Mutex m_mutex;
+    std::condition_variable m_cv;
+    int m_state;
+};
+
 // Test UnregisterSharedValidationInterface ensuring that if interface is
 // unregistered during the middle of a callback, interface is destroyed as soon
 // as callback returns.
 BOOST_AUTO_TEST_CASE(release_shared)
 {
-    enum State { CREATING, CREATED, CALLING, CALLED, UNREGISTERED, RETURNED, DESTROYED };
-    std::promise<bool> called;       // Wait for callback to be called before unregistering
-    std::promise<bool> unregistered; // Wait for interface to be unregistered before returning
-    std::promise<bool> destroyed;    // Wait for interface to be destroyed before ending test
+    enum State { CREATING, CREATED, CALLING, CALLED, UNREGISTERED, DESTROYED };
 
     class TestInterface : public CValidationInterface
     {
     public:
-        TestInterface(State& state,
-            std::promise<bool>& called,
-            std::promise<bool>& unregistered,
-            std::promise<bool>& destroyed)
-            : m_state(state), m_called(called), m_unregistered(unregistered), m_destroyed(destroyed)
+        TestInterface(StateCheck& state) : m_state(state)
         {
-            BOOST_CHECK_EQUAL(m_state, CREATING);
-            m_state = CREATED;
+            m_state.update(CREATING, CREATED);
         }
         void UpdatedBlockTip(const CBlockIndex*, const CBlockIndex*, bool) override
         {
-            BOOST_CHECK_EQUAL(m_state, CALLING);
-            m_state = CALLED;
-            m_called.set_value(true);
-            BOOST_CHECK(m_unregistered.get_future().get());
-            BOOST_CHECK_EQUAL(m_state, UNREGISTERED);
-            m_state = RETURNED;
+            m_state.update(CALLING, CALLED);
+            m_state.wait(CALLED, UNREGISTERED);
+            returned = true;
         }
         virtual ~TestInterface()
         {
-            BOOST_CHECK_EQUAL(m_state, RETURNED);
-            m_state = DESTROYED;
-            m_destroyed.set_value(true);
+            BOOST_CHECK(returned);
+            m_state.update(UNREGISTERED, DESTROYED);
         }
-        State& m_state;
-        std::promise<bool>& m_called;
-        std::promise<bool>& m_unregistered;
-        std::promise<bool>& m_destroyed;
+        StateCheck& m_state;
+        bool returned = false;
     };
 
-    State state = CREATING;
-    auto test_interface = std::make_shared<TestInterface>(state, called, unregistered, destroyed);
-    BOOST_CHECK_EQUAL(state, CREATED);
-    state = CALLING;
+    StateCheck state(CREATING);
+    auto test_interface = std::make_shared<TestInterface>(state);
+    state.update(CREATED, CALLING);
     RegisterSharedValidationInterface(test_interface);
     GetMainSignals().UpdatedBlockTip(nullptr, nullptr, false);
-    BOOST_CHECK(called.get_future().get());
-    BOOST_CHECK_EQUAL(state, CALLED);
+    state.wait(CALLING, CALLED);
     UnregisterSharedValidationInterface(std::move(test_interface));
     BOOST_CHECK(!test_interface);
-    BOOST_CHECK_EQUAL(state, CALLED);
-    state = UNREGISTERED;
-    unregistered.set_value(true);
-    BOOST_CHECK(destroyed.get_future().get());
-    BOOST_CHECK_EQUAL(state, DESTROYED);
+    state.update(CALLED, UNREGISTERED);
+    state.wait(UNREGISTERED, DESTROYED);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
