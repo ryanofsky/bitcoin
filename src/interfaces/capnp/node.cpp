@@ -147,12 +147,11 @@ void CustomReadMessage(InvokeContext& invoke_context,
     interfaces::capnp::messages::NodeStats::Reader const& reader,
     std::tuple<CNodeStats, bool, CNodeStateStats>& node_stats)
 {
-    auto&& node = std::get<0>(node_stats);
-    ReadFieldUpdate(TypeList<Decay<decltype(node)>>(), invoke_context, Make<ValueField>(reader), node);
+    CNodeStats& node = std::get<0>(node_stats);
+    ReadField(TypeList<CNodeStats>(), invoke_context, Make<ValueField>(reader), ReadDestValue(node));
     if ((std::get<1>(node_stats) = reader.hasStateStats())) {
-        auto&& state = std::get<2>(node_stats);
-        ReadFieldUpdate(
-            TypeList<Decay<decltype(state)>>(), invoke_context, Make<ValueField>(reader.getStateStats()), state);
+        CNodeStateStats& state = std::get<2>(node_stats);
+        ReadField(TypeList<CNodeStateStats>(), invoke_context, Make<ValueField>(reader.getStateStats()), ReadDestValue(state));
     }
 }
 } // namespace mp

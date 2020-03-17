@@ -37,8 +37,8 @@ void CustomReadMessage(InvokeContext& invoke_context,
     } else if (reader.hasWitnessV0KeyHash()) {
         dest = interfaces::capnp::Unserialize<WitnessV0KeyHash>(reader.getWitnessV0KeyHash());
     } else if (reader.hasWitnessUnknown()) {
-        ReadFieldUpdate(TypeList<WitnessUnknown>(), invoke_context, Make<ValueField>(reader.getWitnessUnknown()),
-            boost::get<WitnessUnknown>(dest));
+        ReadField(TypeList<WitnessUnknown>(), invoke_context, Make<ValueField>(reader.getWitnessUnknown()),
+            ReadDestValue(boost::get<WitnessUnknown>(dest)));
     }
 }
 

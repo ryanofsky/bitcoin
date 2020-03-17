@@ -33,9 +33,9 @@ ProxyServerMethodTraits<interfaces::capnp::messages::Chain::HandleRpcParams>::in
     auto command = params.getCommand();
 
     CRPCCommand::Actor actor;
-    ReadFieldUpdate(TypeList<decltype(actor)>(), context, Make<ValueField>(command.getActor()), actor);
+    ReadField(TypeList<decltype(actor)>(), context, Make<ValueField>(command.getActor()), ReadDestValue(actor));
     std::vector<std::string> args;
-    ReadFieldUpdate(TypeList<decltype(args)>(), context, Make<ValueField>(command.getArgNames()), args);
+    ReadField(TypeList<decltype(args)>(), context, Make<ValueField>(command.getArgNames()), ReadDestValue(args));
 
     auto rpc_command = MakeUnique<CRPCCommand>(
         command.getCategory(), command.getName(), std::move(actor), std::move(args), command.getUniqueId());

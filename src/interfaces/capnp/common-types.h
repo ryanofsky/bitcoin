@@ -127,58 +127,65 @@ void CustomReadMessage(InvokeContext& invoke_context,
     UniValue& univalue);
 //!@}
 
-template <typename LocalType, typename Reader, typename Value>
-void ReadFieldUpdate(mp::TypeList<LocalType>,
-    mp::InvokeContext& invoke_context,
+template <typename LocalType, typename Reader, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<LocalType>,
+    InvokeContext& invoke_context,
     Reader&& reader,
-    Value&& value,
-    decltype(CustomReadMessage(invoke_context, reader.get(), value))* enable = nullptr)
+    ReadDest&& read_dest,
+                     decltype(CustomReadMessage(invoke_context, reader.get(), std::declval<LocalType&>()))* enable = nullptr)
 {
+    return read_dest.update([&](auto& value) {
     CustomReadMessage(invoke_context, reader.get(), value);
+    });
 }
 
-template <typename LocalType, typename Input, typename Emplace>
-void ReadFieldNew(mp::TypeList<LocalType>,
+template <typename LocalType, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<LocalType>,
     InvokeContext& invoke_context,
     Input&& input,
-    Emplace&& emplace,
+    ReadDest&& read_dest,
     typename std::enable_if<interfaces::capnp::Deserializable<LocalType>::value>::type* enable = nullptr)
 {
-    if (!input.has()) return;
+    if (!input.has()) return read_dest.construct();
     auto data = input.get();
     // Note: stream copy here is unnecessary, and can be avoided in the future
     // when `VectorReader` from #12254 is added.
     CDataStream stream(CharCast(data.begin()), CharCast(data.end()), SER_NETWORK, CLIENT_VERSION);
-    emplace(deserialize, stream);
+    return read_dest.construct(deserialize, stream);
 }
 
-template <typename LocalType, typename Input, typename Value>
-void ReadFieldUpdate(mp::TypeList<LocalType>,
+template <typename LocalType, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<LocalType>,
     InvokeContext& invoke_context,
     Input&& input,
-    Value& value,
-    typename std::enable_if<interfaces::capnp::Unserializable<Value>::value>::type* enable = nullptr)
+    ReadDest&& read_dest,
+    // FIXME instead of always preferring Deserialize implementation over Unserialize should prefer Deserializing when emplacing, unserialize when updating
+    typename std::enable_if<
+                   interfaces::capnp::Unserializable<LocalType>::value && !
+                   interfaces::capnp::Deserializable<LocalType>::value>::type* enable = nullptr)
 {
+    return read_dest.update([&](auto& value) {
     if (!input.has()) return;
     auto data = input.get();
     // Note: stream copy here is unnecessary, and can be avoided in the future
     // when `VectorReader` from #12254 is added.
     CDataStream stream(CharCast(data.begin()), CharCast(data.end()), SER_NETWORK, CLIENT_VERSION);
     value.Unserialize(stream);
+    });
 }
 
-template <typename Input, typename Emplace>
-void ReadFieldNew(mp::TypeList<SecureString>, InvokeContext& invoke_context, Input&& input, Emplace&& emplace)
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<SecureString>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
 {
     auto data = input.get();
     // Copy input into SecureString. Caller needs to be responsible for calling
     // memory_cleanse on the input.
-    emplace(CharCast(data.begin()), data.size());
+    return read_dest.construct(CharCast(data.begin()), data.size());
 }
 
 template <typename Value, typename Output>
-void CustomBuildField(mp::TypeList<SecureString>,
-    mp::Priority<1>,
+void CustomBuildField(TypeList<SecureString>,
+    Priority<1>,
     InvokeContext& invoke_context,
     Value&& str,
     Output&& output)
@@ -190,8 +197,8 @@ void CustomBuildField(mp::TypeList<SecureString>,
 }
 
 template <typename LocalType, typename Value, typename Output>
-void CustomBuildField(mp::TypeList<LocalType>,
-    mp::Priority<2>,
+void CustomBuildField(TypeList<LocalType>,
+    Priority<2>,
     InvokeContext& invoke_context,
     Value&& value,
     Output&& output,
@@ -201,8 +208,8 @@ void CustomBuildField(mp::TypeList<LocalType>,
 }
 
 template <typename LocalType, typename Value, typename Output>
-void CustomBuildField(mp::TypeList<LocalType>,
-    mp::Priority<1>,
+void CustomBuildField(TypeList<LocalType>,
+    Priority<1>,
     InvokeContext& invoke_context,
     Value&& value,
     Output&& output,
@@ -216,7 +223,7 @@ void CustomBuildField(mp::TypeList<LocalType>,
 }
 
 template <typename Accessor, typename ServerContext, typename Fn, typename... Args>
-auto CustomPassField(mp::TypeList<>, ServerContext& server_context, const Fn& fn, Args&&... args) ->
+auto CustomPassField(TypeList<>, ServerContext& server_context, const Fn& fn, Args&&... args) ->
     typename std::enable_if<std::is_same<decltype(Accessor::get(server_context.call_context.getParams())),
         interfaces::capnp::messages::GlobalArgs::Reader>::value>::type
 {
@@ -225,8 +232,8 @@ auto CustomPassField(mp::TypeList<>, ServerContext& server_context, const Fn& fn
 }
 
 template <typename Output>
-void CustomBuildField(mp::TypeList<>,
-    mp::Priority<1>,
+void CustomBuildField(TypeList<>,
+    Priority<1>,
     InvokeContext& invoke_context,
     Output&& output,
     typename std::enable_if<std::is_same<decltype(output.init()),
@@ -235,33 +242,24 @@ void CustomBuildField(mp::TypeList<>,
     interfaces::capnp::BuildGlobalArgs(invoke_context, output.init());
 }
 
-template <typename Value>
-struct OptionalEmplace
+template <typename LocalType, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<Optional<LocalType>>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
 {
-    Value& m_value;
-
-    OptionalEmplace(Value& value) : m_value(value) {}
-
-    template <typename... Params>
-    auto operator()(Params&&... params) const -> decltype(*m_value)&
-    {
-        m_value.emplace(std::forward<Params>(params)...);
-        return *m_value;
-    }
-};
-
-template <typename LocalType, typename Input, typename DestValue>
-void ReadFieldUpdate(TypeList<Optional<LocalType>>, InvokeContext& invoke_context, Input&& input, DestValue&& value)
-{
+    return read_dest.update([&](auto& value) {
     if (!input.has()) {
         value.reset();
         return;
     }
     if (value) {
-        ReadFieldUpdate(TypeList<LocalType>(), invoke_context, input, *value);
+        ReadField(TypeList<LocalType>(), invoke_context, input, ReadDestValue(*value));
     } else {
-        ReadField(TypeList<LocalType>(), invoke_context, input, OptionalEmplace<DestValue>(value));
+        ReadField(TypeList<LocalType>(), invoke_context, input,
+            ReadDestEmplace(TypeList<LocalType>(), [&](auto&&... args) -> auto& {
+                value.emplace(std::forward<decltype(args)>(args)...);
+                return *value;
+            }));
     }
+    });
 }
 
 template <typename LocalType, typename Value, typename Output>

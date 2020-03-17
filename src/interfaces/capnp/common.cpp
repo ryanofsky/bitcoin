@@ -49,7 +49,7 @@ void ReadGlobalArgs(mp::InvokeContext& invoke_context, const messages::GlobalArg
     auto& args = static_cast<GlobalArgs&>(::gArgs);
     {
         LOCK(args.cs_args);
-        mp::ReadFieldUpdate(mp::TypeList<GlobalArgs>(), invoke_context, mp::Make<mp::ValueField>(reader), args);
+        mp::ReadField(mp::TypeList<GlobalArgs>(), invoke_context, mp::Make<mp::ValueField>(reader), mp::ReadDestValue(args));
     }
     interfaces::LocalInit& init = *static_cast<interfaces::LocalInit*>(invoke_context.connection.m_loop.m_context);
     init.initProcess();
