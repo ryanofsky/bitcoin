@@ -68,9 +68,9 @@ public:
 
     //! Clear unregisters every previously registered callback, erasing every
     //! map entry. After this call, the list may still contain callbacks that
-    //! are currently executing, but it will be cleared when they are done
+    //! are currently executing, but it will be empty when they are done
     //! executing.
-    void Clear() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    void UnregisterAll() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
     {
         LOCK(m_mutex);
         for (const auto& entry : m_map) {
@@ -134,7 +134,7 @@ void ValidationSignals::UnregisterValidationInterface(CValidationInterface* call
 
 void ValidationSignals::UnregisterAllValidationInterfaces()
 {
-    m_internals->Clear();
+    m_internals->UnregisterAll();
 }
 
 void ValidationSignals::CallFunctionInValidationInterfaceQueue(std::function<void()> func)
