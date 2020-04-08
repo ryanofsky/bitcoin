@@ -13,6 +13,7 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <util/check.h>
+#include <util/scope.h>
 #include <util/task_runner.h>
 
 #include <future>
@@ -83,11 +84,11 @@ public:
         WAIT_LOCK(m_mutex, lock);
         for (auto it = m_list.begin(); it != m_list.end();) {
             ++it->count;
-            {
-                REVERSE_LOCK(lock);
-                f(*it->callbacks);
-            }
-            it = --it->count ? std::next(it) : m_list.erase(it);
+            auto _ = util::MakeScopeExit([&]() EXCLUSIVE_LOCKS_REQUIRED(m_mutex) {
+                it = --it->count ? std::next(it) : m_list.erase(it);
+            });
+            REVERSE_LOCK(lock);
+            f(*it->callbacks);
         }
     }
 };

@@ -101,4 +101,17 @@ BOOST_AUTO_TEST_CASE(unregister_all_during_call)
     BOOST_CHECK(destroyed);
 }
 
+// Verify throwing exception from callback doesn't cause reference count leak
+// that prevents unregistration from working.
+BOOST_AUTO_TEST_CASE(release_shared)
+{
+    auto test_interface = std::make_shared<TestInterface>([&] { CHECK_NONFATAL(false); });
+    RegisterSharedValidationInterface(test_interface);
+    CBlock block;
+    BlockValidationState state;
+    BOOST_CHECK_THROW(GetMainSignals().BlockChecked(block, state), NonFatalCheckError);
+    UnregisterSharedValidationInterface(std::move(test_interface));
+    BOOST_CHECK_NO_THROW(GetMainSignals().BlockChecked(block, state));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
