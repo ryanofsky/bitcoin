@@ -192,6 +192,7 @@ private:
     bool WriteKey(CDataStream&& key, CDataStream&& value, bool overwrite = true) override;
     bool EraseKey(CDataStream&& key) override;
     bool HasKey(CDataStream&& key) override;
+    bool ErasePrefix(const char* data, size_t size) override;
 
 protected:
     Db* pdb;
