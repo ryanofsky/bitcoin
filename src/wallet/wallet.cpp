@@ -806,6 +806,12 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
     return success;
 }
 
+static bool IsUsedDest(const std::map<CTxDestination, CAddressBookData>& address_book, const CTxDestination& dest)
+{
+    auto it = address_book.find(dest);
+    return it != address_book.end() && it->second.IsUsed();
+}
+
 void CWallet::SetSpentKeyState(WalletBatch& batch, const uint256& hash, unsigned int n, bool used, std::set<CTxDestination>& tx_destinations)
 {
     AssertLockHeld(cs_wallet);
@@ -815,12 +821,12 @@ void CWallet::SetSpentKeyState(WalletBatch& batch, const uint256& hash, unsigned
     CTxDestination dst;
     if (ExtractDestination(srctx->tx->vout[n].scriptPubKey, dst)) {
         if (IsMine(dst)) {
-            if (used && !GetDestData(dst, "used", nullptr)) {
-                if (AddDestData(batch, dst, "used", "p")) { // p for "present", opposite of absent (null)
+            if (used != IsUsedDest(m_address_book, dst)) {
+                if (used) {
                     tx_destinations.insert(dst);
                 }
-            } else if (!used && GetDestData(dst, "used", nullptr)) {
-                EraseDestData(batch, dst, "used");
+                m_address_book[dst].SetUsed(used);
+                batch.WriteUsed(dst, used);
             }
         }
     }
@@ -836,7 +842,7 @@ bool CWallet::IsSpentKey(const uint256& hash, unsigned int n) const
         if (!ExtractDestination(srctx->tx->vout[n].scriptPubKey, dest)) {
             return false;
         }
-        if (GetDestData(dest, "used", nullptr)) {
+        if (IsUsedDest(m_address_book, dest)) {
             return true;
         }
         if (IsLegacy()) {
@@ -844,15 +850,15 @@ bool CWallet::IsSpentKey(const uint256& hash, unsigned int n) const
             assert(spk_man != nullptr);
             for (const auto& keyid : GetAffectedKeys(srctx->tx->vout[n].scriptPubKey, *spk_man)) {
                 WitnessV0KeyHash wpkh_dest(keyid);
-                if (GetDestData(wpkh_dest, "used", nullptr)) {
+                if (IsUsedDest(m_address_book, wpkh_dest)) {
                     return true;
                 }
                 ScriptHash sh_wpkh_dest(GetScriptForDestination(wpkh_dest));
-                if (GetDestData(sh_wpkh_dest, "used", nullptr)) {
+                if (IsUsedDest(m_address_book, sh_wpkh_dest)) {
                     return true;
                 }
                 PKHash pkh_dest(keyid);
-                if (GetDestData(pkh_dest, "used", nullptr)) {
+                if (IsUsedDest(m_address_book, pkh_dest)) {
                     return true;
                 }
             }
@@ -3283,12 +3289,23 @@ bool CWallet::DelAddressBook(const CTxDestination& address)
             return false;
         }
         // Delete destdata tuples associated with address
+<<<<<<< HEAD
         std::string strAddress = EncodeDestination(address);
         for (const std::pair<const std::string, std::string> &item : m_address_book[address].destdata)
         {
             batch.EraseDestData(strAddress, item.first);
         }
         m_address_book.erase(address);
+||||||| merged common ancestors
+        std::string strAddress = EncodeDestination(address);
+        for (const std::pair<const std::string, std::string> &item : m_address_book[address].destdata)
+        {
+            WalletBatch(*database).EraseDestData(strAddress, item.first);
+        }
+        m_address_book.erase(address);
+=======
+        WalletBatch(*database).EraseDestData(address);
+>>>>>>> refactor: Remove CAddressBookData::destdata
         is_mine = IsMine(address) != ISMINE_NO;
     }
 
@@ -3729,6 +3746,7 @@ unsigned int CWallet::ComputeTimeSmart(const CWalletTx& wtx) const
     return nTimeSmart;
 }
 
+<<<<<<< HEAD
 bool CWallet::AddDestData(WalletBatch& batch, const CTxDestination &dest, const std::string &key, const std::string &value)
 {
     if (boost::get<CNoDestination>(&dest))
@@ -3780,6 +3798,61 @@ std::vector<std::string> CWallet::GetDestValues(const std::string& prefix) const
 }
 
 std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error_string)
+||||||| merged common ancestors
+bool CWallet::AddDestData(WalletBatch& batch, const CTxDestination &dest, const std::string &key, const std::string &value)
+{
+    if (boost::get<CNoDestination>(&dest))
+        return false;
+
+    m_address_book[dest].destdata.insert(std::make_pair(key, value));
+    return batch.WriteDestData(EncodeDestination(dest), key, value);
+}
+
+bool CWallet::EraseDestData(WalletBatch& batch, const CTxDestination &dest, const std::string &key)
+{
+    if (!m_address_book[dest].destdata.erase(key))
+        return false;
+    return batch.EraseDestData(EncodeDestination(dest), key);
+}
+
+void CWallet::LoadDestData(const CTxDestination &dest, const std::string &key, const std::string &value)
+{
+    m_address_book[dest].destdata.insert(std::make_pair(key, value));
+}
+
+bool CWallet::GetDestData(const CTxDestination &dest, const std::string &key, std::string *value) const
+{
+    std::map<CTxDestination, CAddressBookData>::const_iterator i = m_address_book.find(dest);
+    if(i != m_address_book.end())
+    {
+        CAddressBookData::StringMap::const_iterator j = i->second.destdata.find(key);
+        if(j != i->second.destdata.end())
+        {
+            if(value)
+                *value = j->second;
+            return true;
+        }
+    }
+    return false;
+}
+
+std::vector<std::string> CWallet::GetDestValues(const std::string& prefix) const
+{
+    std::vector<std::string> values;
+    for (const auto& address : m_address_book) {
+        for (const auto& data : address.second.destdata) {
+            if (!data.first.compare(0, prefix.size(), prefix)) {
+                values.emplace_back(data.second);
+            }
+        }
+    }
+    return values;
+}
+
+bool CWallet::Verify(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error_string, std::vector<bilingual_str>& warnings)
+=======
+bool CWallet::Verify(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error_string, std::vector<bilingual_str>& warnings)
+>>>>>>> refactor: Remove CAddressBookData::destdata
 {
     // Do some checking on wallet path. It should be either a:
     //
