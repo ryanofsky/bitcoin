@@ -743,9 +743,25 @@ bool BerkeleyBatch::StartCursor()
 {
     assert(!m_cursor);
     if (!pdb)
+<<<<<<< HEAD
         return false;
     int ret = pdb->cursor(nullptr, &m_cursor, 0);
     return ret == 0;
+||||||| merged common ancestors
+        return nullptr;
+    Dbc* pcursor = nullptr;
+    int ret = pdb->cursor(nullptr, &pcursor, 0);
+    if (ret != 0)
+        return nullptr;
+    return pcursor;
+=======
+        return nullptr;
+    Dbc* pcursor = nullptr;
+    int ret = pdb->cursor(activeTxn, &pcursor, 0);
+    if (ret != 0)
+        return nullptr;
+    return pcursor;
+>>>>>>> refactor: Remove CAddressBookData::destdata
 }
 
 bool BerkeleyBatch::ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete)
@@ -779,6 +795,22 @@ void BerkeleyBatch::CloseCursor()
     if (!m_cursor) return;
     m_cursor->close();
     m_cursor = nullptr;
+}
+
+bool BerkeleyBatch::ErasePrefix(const char* data, size_t size)
+{
+    TxnBegin();
+    Dbc* pcursor = GetCursor();
+    Dbt prefix((void*)data, size), prefix_value;
+    int ret = pcursor->get(&prefix, &prefix_value, DB_SET_RANGE);
+    for (int flag = DB_CURRENT; ret == 0; flag = DB_NEXT) {
+        SafeDbt key, value;
+        if ((ret = pcursor->get(key, value, flag)) != 0 || key.get_size() < size || memcmp(key.get_data(), data, size) != 0) break;
+        pcursor->del(0);
+    }
+    pcursor->close();
+    TxnCommit();
+    return ret == 0 || ret == DB_NOTFOUND;
 }
 
 bool BerkeleyBatch::TxnBegin()

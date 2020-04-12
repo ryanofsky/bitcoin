@@ -285,9 +285,18 @@ public:
         return HasKey(ssKey);
     }
 
+<<<<<<< HEAD
     bool StartCursor();
     bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete);
     void CloseCursor();
+||||||| merged common ancestors
+    Dbc* GetCursor();
+    int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue);
+=======
+    Dbc* GetCursor();
+    int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue);
+    bool ErasePrefix(const char* data, size_t size);
+>>>>>>> refactor: Remove CAddressBookData::destdata
     bool TxnBegin();
     bool TxnCommit();
     bool TxnAbort();
