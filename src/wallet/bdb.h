@@ -288,6 +288,7 @@ public:
     bool StartCursor();
     bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete);
     void CloseCursor();
+    bool ErasePrefix(const char* data, size_t size);
     bool TxnBegin();
     bool TxnCommit();
     bool TxnAbort();
