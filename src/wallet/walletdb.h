@@ -8,6 +8,7 @@
 
 #include <amount.h>
 #include <script/sign.h>
+#include <script/standard.h>
 #include <wallet/db.h>
 #include <key.h>
 
@@ -240,10 +241,9 @@ public:
 
     bool WriteMinVersion(int nVersion);
 
-    /// Write destination data key,value tuple to database
-    bool WriteDestData(const std::string &address, const std::string &key, const std::string &value);
-    /// Erase destination data tuple from wallet database
-    bool EraseDestData(const std::string &address, const std::string &key);
+    bool WriteUsed(const CTxDestination& dest, bool used);
+    bool WriteReceiveRequest(const CTxDestination& dest, const std::string& id, const std::string& receive_request);
+    bool EraseDestData(const CTxDestination& dest);
 
     DBErrors LoadWallet(CWallet* pwallet);
     DBErrors FindWalletTx(std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);
