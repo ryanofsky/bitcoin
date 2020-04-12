@@ -227,6 +227,7 @@ public:
     bool StartCursor() override;
     bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete) override;
     void CloseCursor() override;
+    bool ErasePrefix(const char* data, size_t size) override;
     bool TxnBegin() override;
     bool TxnCommit() override;
     bool TxnAbort() override;
