@@ -677,7 +677,7 @@ bool BerkeleyBatch::StartCursor()
     assert(!m_cursor);
     if (!pdb)
         return false;
-    int ret = pdb->cursor(nullptr, &m_cursor, 0);
+    int ret = pdb->cursor(activeTxn, &m_cursor, 0);
     return ret == 0;
 }
 
@@ -712,6 +712,22 @@ void BerkeleyBatch::CloseCursor()
     if (!m_cursor) return;
     m_cursor->close();
     m_cursor = nullptr;
+}
+
+bool BerkeleyBatch::ErasePrefix(const char* data, size_t size)
+{
+    TxnBegin();
+    StartCursor();
+    Dbt prefix((void*)data, size), prefix_value;
+    int ret = m_cursor->get(&prefix, &prefix_value, DB_SET_RANGE);
+    for (int flag = DB_CURRENT; ret == 0; flag = DB_NEXT) {
+        SafeDbt key, value;
+        if ((ret = m_cursor->get(key, value, flag)) != 0 || key.get_size() < size || memcmp(key.get_data(), data, size) != 0) break;
+        m_cursor->del(0);
+    }
+    CloseCursor();
+    TxnCommit();
+    return ret == 0 || ret == DB_NOTFOUND;
 }
 
 bool BerkeleyBatch::TxnBegin()

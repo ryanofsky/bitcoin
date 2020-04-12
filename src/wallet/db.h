@@ -94,6 +94,7 @@ public:
     virtual bool StartCursor() = 0;
     virtual bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete) = 0;
     virtual void CloseCursor() = 0;
+    virtual bool ErasePrefix(const char* data, size_t size) = 0;
     virtual bool TxnBegin() = 0;
     virtual bool TxnCommit() = 0;
     virtual bool TxnAbort() = 0;
