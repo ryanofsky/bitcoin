@@ -325,6 +325,7 @@ public:
 
     Dbc* GetCursor();
     int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue);
+    bool ErasePrefix(const char* data, size_t size);
     bool TxnBegin();
     bool TxnCommit();
     bool TxnAbort();
