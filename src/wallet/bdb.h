@@ -224,12 +224,29 @@ public:
     void Flush() override;
     void Close() override;
 
+<<<<<<< HEAD
     bool StartCursor() override;
     bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete) override;
     void CloseCursor() override;
     bool TxnBegin() override;
     bool TxnCommit() override;
     bool TxnAbort() override;
+||||||| merged common ancestors
+    bool StartCursor();
+    bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete);
+    void CloseCursor();
+    bool TxnBegin();
+    bool TxnCommit();
+    bool TxnAbort();
+=======
+    bool StartCursor();
+    bool ReadAtCursor(CDataStream& ssKey, CDataStream& ssValue, bool& complete);
+    void CloseCursor();
+    bool ErasePrefix(const char* data, size_t size);
+    bool TxnBegin();
+    bool TxnCommit();
+    bool TxnAbort();
+>>>>>>> refactor: Remove CAddressBookData::destdata
 };
 
 std::string BerkeleyDatabaseVersion();
