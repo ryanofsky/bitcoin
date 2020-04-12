@@ -21,7 +21,15 @@ RecentRequestsTableModel::RecentRequestsTableModel(WalletModel *parent) :
     QAbstractTableModel(parent), walletModel(parent)
 {
     // Load entries from wallet
+<<<<<<< HEAD
     for (const std::string& request : parent->wallet().getAddressReceiveRequests()) {
+||||||| merged common ancestors
+    std::vector<std::string> vReceiveRequests;
+    parent->loadReceiveRequests(vReceiveRequests);
+    for (const std::string& request : vReceiveRequests)
+=======
+    for (const std::string& request : parent->wallet().getReceiveRequests()) {
+>>>>>>> refactor: Remove CAddressBookData::destdata
         addNewRequest(request);
     }
 
@@ -145,7 +153,13 @@ bool RecentRequestsTableModel::removeRows(int row, int count, const QModelIndex 
         for (int i = 0; i < count; ++i)
         {
             const RecentRequestEntry* rec = &list[row+i];
+<<<<<<< HEAD
             if (!walletModel->wallet().setAddressReceiveRequest(DecodeDestination(rec->recipient.address.toStdString()), ToString(rec->id), ""))
+||||||| merged common ancestors
+            if (!walletModel->saveReceiveRequest(rec->recipient.address.toStdString(), rec->id, ""))
+=======
+            if (!walletModel->wallet().saveReceiveRequest(DecodeDestination(rec->recipient.address.toStdString()), ToString(rec->id), ""))
+>>>>>>> refactor: Remove CAddressBookData::destdata
                 return false;
         }
 
@@ -174,7 +188,13 @@ void RecentRequestsTableModel::addNewRequest(const SendCoinsRecipient &recipient
     CDataStream ss(SER_DISK, CLIENT_VERSION);
     ss << newEntry;
 
+<<<<<<< HEAD
     if (!walletModel->wallet().setAddressReceiveRequest(DecodeDestination(recipient.address.toStdString()), ToString(newEntry.id), ss.str()))
+||||||| merged common ancestors
+    if (!walletModel->saveReceiveRequest(recipient.address.toStdString(), newEntry.id, ss.str()))
+=======
+    if (!walletModel->wallet().saveReceiveRequest(DecodeDestination(recipient.address.toStdString()), ToString(newEntry.id), ss.str()))
+>>>>>>> refactor: Remove CAddressBookData::destdata
         return;
 
     addNewRequest(newEntry);

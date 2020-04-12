@@ -385,8 +385,9 @@ BOOST_AUTO_TEST_CASE(ComputeTimeSmart)
     SetMockTime(0);
 }
 
-BOOST_AUTO_TEST_CASE(LoadReceiveRequests)
+void TestLoadWallet(const std::string& name, std::function<void(std::shared_ptr<CWallet>)> f)
 {
+<<<<<<< HEAD
     CTxDestination dest = PKHash();
     LOCK(m_wallet.cs_wallet);
     WalletBatch batch{m_wallet.GetDatabase()};
@@ -398,6 +399,63 @@ BOOST_AUTO_TEST_CASE(LoadReceiveRequests)
     BOOST_CHECK_EQUAL(values.size(), 2U);
     BOOST_CHECK_EQUAL(values[0], "val_rr0");
     BOOST_CHECK_EQUAL(values[1], "val_rr1");
+||||||| merged common ancestors
+    CTxDestination dest = PKHash();
+    LOCK(m_wallet.cs_wallet);
+    WalletBatch batch{m_wallet.GetDatabase()};
+    m_wallet.AddDestData(batch, dest, "misc", "val_misc");
+    m_wallet.AddDestData(batch, dest, "rr0", "val_rr0");
+    m_wallet.AddDestData(batch, dest, "rr1", "val_rr1");
+
+    auto values = m_wallet.GetDestValues("rr");
+    BOOST_CHECK_EQUAL(values.size(), 2U);
+    BOOST_CHECK_EQUAL(values[0], "val_rr0");
+    BOOST_CHECK_EQUAL(values[1], "val_rr1");
+=======
+    NodeContext node;
+    auto chain = interfaces::MakeChain(node);
+    DatabaseOptions options;
+    DatabaseStatus status;
+    bilingual_str error;
+    std::vector<bilingual_str> warnings;
+    auto database = MakeWalletDatabase(name, options, status, error);
+    auto wallet = std::make_shared<CWallet>(chain.get(), "", std::move(database));
+    bool first_run;
+    wallet->LoadWallet(first_run);
+    WITH_LOCK(wallet->cs_wallet, f(wallet));
+}
+
+BOOST_FIXTURE_TEST_CASE(LoadReceiveRequests, TestingSetup)
+{
+    const std::string& name = "receive-requests";
+    TestLoadWallet(name, [](std::shared_ptr<CWallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->cs_wallet) {
+        BOOST_CHECK(!wallet->m_address_book[PKHash()].IsUsed());
+        BOOST_CHECK(WalletBatch(wallet->GetDatabase()).WriteUsed(PKHash(), true));
+        BOOST_CHECK(WalletBatch(wallet->GetDatabase()).WriteUsed(ScriptHash(), true));
+        BOOST_CHECK(interfaces::MakeWallet(wallet)->saveReceiveRequest(PKHash(), "0", "val_rr00"));
+        BOOST_CHECK(interfaces::MakeWallet(wallet)->saveReceiveRequest(PKHash(), "0", ""));
+        BOOST_CHECK(!interfaces::MakeWallet(wallet)->saveReceiveRequest(PKHash(), "0", ""));
+        BOOST_CHECK(interfaces::MakeWallet(wallet)->saveReceiveRequest(PKHash(), "1", "val_rr10"));
+        BOOST_CHECK(interfaces::MakeWallet(wallet)->saveReceiveRequest(PKHash(), "1", "val_rr11"));
+        BOOST_CHECK(interfaces::MakeWallet(wallet)->saveReceiveRequest(ScriptHash(), "2", "val_rr20"));
+    });
+    TestLoadWallet(name, [](std::shared_ptr<CWallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->cs_wallet) {
+        BOOST_CHECK(wallet->m_address_book[PKHash()].IsUsed());
+        BOOST_CHECK(wallet->m_address_book[ScriptHash()].IsUsed());
+        auto requests = interfaces::MakeWallet(wallet)->getReceiveRequests();
+        auto erequests = {"val_rr11", "val_rr20"};
+        BOOST_CHECK_EQUAL_COLLECTIONS(requests.begin(), requests.end(), std::begin(erequests), std::end(erequests));
+        BOOST_CHECK(WalletBatch(wallet->GetDatabase()).WriteUsed(PKHash(), false));
+        BOOST_CHECK(WalletBatch(wallet->GetDatabase()).EraseDestData(ScriptHash()));
+    });
+    TestLoadWallet(name, [](std::shared_ptr<CWallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->cs_wallet) {
+        BOOST_CHECK(!wallet->m_address_book[PKHash()].IsUsed());
+        BOOST_CHECK(!wallet->m_address_book[ScriptHash()].IsUsed());
+        auto requests = interfaces::MakeWallet(wallet)->getReceiveRequests();
+        auto erequests = {"val_rr11"};
+        BOOST_CHECK_EQUAL_COLLECTIONS(requests.begin(), requests.end(), std::begin(erequests), std::end(erequests));
+    });
+>>>>>>> refactor: Remove CAddressBookData::destdata
 }
 
 // Test some watch-only LegacyScriptPubKeyMan methods by the procedure of loading (LoadWatchOnly),

@@ -199,14 +199,52 @@ public:
         }
         return result;
     }
+<<<<<<< HEAD
     std::vector<std::string> getAddressReceiveRequests() override {
+||||||| merged common ancestors
+    bool addDestData(const CTxDestination& dest, const std::string& key, const std::string& value) override
+    {
+=======
+    std::vector<std::string> getReceiveRequests() override {
+>>>>>>> refactor: Remove CAddressBookData::destdata
         LOCK(m_wallet->cs_wallet);
+<<<<<<< HEAD
         return m_wallet->GetAddressReceiveRequests();
+||||||| merged common ancestors
+        WalletBatch batch{m_wallet->GetDatabase()};
+        return m_wallet->AddDestData(batch, dest, key, value);
+=======
+        std::vector<std::string> requests;
+        for (const auto& dest : m_wallet->m_address_book) {
+            for (const auto& request : dest.second.GetReceiveRequests()) {
+                requests.emplace_back(request.second);
+            }
+        }
+        return requests;
+>>>>>>> refactor: Remove CAddressBookData::destdata
     }
+<<<<<<< HEAD
     bool setAddressReceiveRequest(const CTxDestination& dest, const std::string& id, const std::string& value) override {
+||||||| merged common ancestors
+    bool eraseDestData(const CTxDestination& dest, const std::string& key) override
+    {
+=======
+    bool saveReceiveRequest(const CTxDestination& dest, const std::string& id, const std::string& value) override {
+>>>>>>> refactor: Remove CAddressBookData::destdata
         LOCK(m_wallet->cs_wallet);
         WalletBatch batch{m_wallet->GetDatabase()};
+<<<<<<< HEAD
         return m_wallet->SetAddressReceiveRequest(batch, dest, id, value);
+||||||| merged common ancestors
+        return m_wallet->EraseDestData(batch, dest, key);
+    }
+    std::vector<std::string> getDestValues(const std::string& prefix) override
+    {
+        LOCK(m_wallet->cs_wallet);
+        return m_wallet->GetDestValues(prefix);
+=======
+        return m_wallet->m_address_book[dest].SetReceiveRequest(id, value) && batch.WriteReceiveRequest(dest, id, value);
+>>>>>>> refactor: Remove CAddressBookData::destdata
     }
     void lockCoin(const COutPoint& output) override
     {
