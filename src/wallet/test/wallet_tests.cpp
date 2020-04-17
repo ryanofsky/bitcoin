@@ -13,6 +13,7 @@
 #include <policy/policy.h>
 #include <rpc/server.h>
 #include <test/util/setup_common.h>
+#include <util/ref.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
 #include <wallet/test/wallet_test_fixture.h>
@@ -170,7 +171,8 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
         key.pushKV("timestamp", newTip->GetBlockTimeMax() + TIMESTAMP_WINDOW + 1);
         key.pushKV("internal", UniValue(true));
         keys.push_back(key);
-        JSONRPCRequest request;
+        util::Ref context;
+        JSONRPCRequest request(context);
         request.params.setArray();
         request.params.push_back(keys);
 
@@ -226,7 +228,8 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
             AddWallet(wallet);
             wallet->SetLastBlockProcessed(::ChainActive().Height(), ::ChainActive().Tip()->GetBlockHash());
         }
-        JSONRPCRequest request;
+        util::Ref context;
+        JSONRPCRequest request(context);
         request.params.setArray();
         request.params.push_back(backup_file);
 
@@ -241,7 +244,8 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
         LOCK(wallet->cs_wallet);
         wallet->SetupLegacyScriptPubKeyMan();
 
-        JSONRPCRequest request;
+        util::Ref context;
+        JSONRPCRequest request(context);
         request.params.setArray();
         request.params.push_back(backup_file);
         AddWallet(wallet);
