@@ -16,11 +16,13 @@ class DebugLogHelper
     const std::string m_message;
     bool m_found{false};
     std::list<std::function<void(const std::string&)>>::iterator m_print_connection;
+    using MatchFn = std::function<bool(const std::string*)>;
+    MatchFn m_match;
 
     void check_found();
 
 public:
-    DebugLogHelper(std::string message);
+    DebugLogHelper(std::string message, MatchFn match = [](const std::string*){ return true; });
     ~DebugLogHelper() { check_found(); }
 };
 
