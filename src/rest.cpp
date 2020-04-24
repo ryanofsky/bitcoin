@@ -610,7 +610,13 @@ static bool rest_blockhash_by_height(const util::Ref& context, HTTPRequest* req,
     std::string height_str;
     const RetFormat rf = ParseDataFormat(height_str, str_uri_part);
 
+<<<<<<< HEAD
     int32_t blockheight = -1; // Initialization done only to prevent valgrind false positive, see https://github.com/bitcoin/bitcoin/pull/18785
+||||||| merged common ancestors
+    int32_t blockheight;
+=======
+    int32_t blockheight = 0;
+>>>>>>> Prevent valgrind false positive in rest_blockhash_by_height
     if (!ParseInt32(height_str, &blockheight) || blockheight < 0) {
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid height: " + SanitizeString(height_str));
     }
