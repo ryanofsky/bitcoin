@@ -409,7 +409,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             pwallet->GetOrCreateLegacyScriptPubKeyMan()->LoadKeyMetadata(vchPubKey.GetID(), keyMeta);
 
             // Extract some CHDChain info from this metadata if it has any
-            if (keyMeta.nVersion >= CKeyMetadata::VERSION_WITH_HDDATA) {
+            if (keyMeta.nVersion >= CKeyMetadata::VERSION_WITH_HDDATA && !keyMeta.hd_seed_id.IsNull() && keyMeta.hdKeypath.size() > 0) {
                 // Get the path from the key origin or from the path string
                 // Not applicable when path is "s" as that indicates a seed
                 bool internal = false;
@@ -418,15 +418,10 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                     std::vector<uint32_t> path;
                     if (keyMeta.has_key_origin) {
                         // We have a key origin, so pull it from it's path vector
-                        if (keyMeta.key_origin.path.size() != 3) {
-                            strErr = "Error reading wallet database: keymeta found with unexpected path";
-                            return false;
-                        }
                         path = keyMeta.key_origin.path;
-                    } else if (keyMeta.hdKeypath != "s") {
+                    } else {
                         // No key origin, have to parse the string
                         // "s" is for a seed, no path info to parse so we skip those
-                        std::vector<uint32_t> path;
                         if (!ParseHDKeypath(keyMeta.hdKeypath, path)) {
                             strErr = "Error reading wallet database: keymeta with invalid HD keypath";
                             return false;
@@ -437,6 +432,10 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                     // Path string is m/0'/k'/i'
                     // Path vector is [0', k', i'] (but as ints OR'd with the hardened bit
                     // k == 0 for external, 1 for internal. i is the index
+                    if (keyMeta.key_origin.path.size() != 3) {
+                        strErr = "Error reading wallet database: keymeta found with unexpected path";
+                        return false;
+                    }
                     internal = path[1] == 1;
                     index = path[2] & ~0x80000000;
                 }
@@ -447,6 +446,8 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                 if (ins.second) {
                     // For new chains, we want to default to VERSION_HD_BASE until we see an internal
                     chain.nVersion = CHDChain::VERSION_HD_BASE;
+                    // Set the seed id
+                    chain.seed_id = keyMeta.hd_seed_id;
                 }
                 if (internal) {
                     if (chain.nVersion < CHDChain::VERSION_HD_CHAIN_SPLIT) {
@@ -685,7 +686,7 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
                 if (IsKeyType(strType) || strType == DBKeys::DEFAULTKEY) {
                     result = DBErrors::CORRUPT;
                 } else if (strType == DBKeys::FLAGS) {
-                    // reading the wallet flags can only fail if unknown flags are present
+                    // reading the wallet flags only fail if unknown flags are present
                     result = DBErrors::TOO_NEW;
                 } else {
                     // Leave other errors alone, if we try to fix them we might make things worse.
@@ -781,9 +782,16 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
     }
 
     // Set the inactive chain
-    for (const auto& chain_pair : wss.m_hd_chains) {
-        if (chain_pair.first != pwallet->GetLegacyScriptPubKeyMan()->GetHDChain()) {
-            pwallet->GetLegacyScriptPubKeyMan()->AddInactiveHDChain(chain_pair.second);
+    if (wss.m_hd_chains.size() > 0) {
+        LegacyScriptPubKeyMan* legacy_spkm = pwallet->GetLegacyScriptPubKeyMan();
+        if (!legacy_spkm) {
+            pwallet->WalletLogPrintf("Inactive HD Chains found but no Legacy ScriptPubKeyMan");
+            return DBErrors::CORRUPT;
+        }
+        for (const auto& chain_pair : wss.m_hd_chains) {
+            if (chain_pair.first != pwallet->GetLegacyScriptPubKeyMan()->GetHDChain().seed_id) {
+                pwallet->GetLegacyScriptPubKeyMan()->AddInactiveHDChain(chain_pair.second);
+            }
         }
     }
 
