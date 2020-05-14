@@ -203,6 +203,7 @@ BASE_SCRIPTS = [
     'wallet_createwallet.py --legacy-wallet',
     'wallet_createwallet.py --usecli',
     'wallet_createwallet.py --descriptors',
+    'wallet_db.py',
     'wallet_watchonly.py --legacy-wallet',
     'wallet_watchonly.py --usecli --legacy-wallet',
     'wallet_reindex.py --legacy-wallet',
