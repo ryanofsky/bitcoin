@@ -424,6 +424,9 @@ public:
     {
         FeeCalculation fee_calc;
         CAmount result;
+        printf("getMinimumFee sleep\n");
+        sleep(10);
+        printf("getMiniumumFee sleep done\n");
         result = GetMinimumFee(*m_wallet, tx_bytes, coin_control, &fee_calc);
         if (returned_target) *returned_target = fee_calc.returnedTarget;
         if (reason) *reason = fee_calc.reason;

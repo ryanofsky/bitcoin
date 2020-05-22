@@ -10,6 +10,7 @@
 #include <qt/forms/ui_sendcoinsdialog.h>
 
 #include <qt/addresstablemodel.h>
+#include <qt/async_update.h>
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/coincontroldialog.h>
@@ -750,9 +751,19 @@ void SendCoinsDialog::updateSmartFeeLabel()
         return;
     updateCoinControlState(*m_coin_control);
     m_coin_control->m_feerate.reset(); // Explicitly use only fee estimation rate for smart fee labels
-    int returned_target;
-    FeeReason reason;
-    CFeeRate feeRate = CFeeRate(model->wallet().getMinimumFee(1000, *m_coin_control, &returned_target, &reason));
+
+    auto coin_control = *m_coin_control;
+    AsyncUpdate(*this,
+        [this, coin_control] {
+            int returned_target;
+            FeeReason reason;
+            CAmount fee = model->wallet().getMinimumFee(1000, coin_control, &returned_target, &reason);
+            return std::make_tuple(returned_target, reason, fee);
+        },
+        [this](std::tuple<int, FeeReason, CAmount>& result) {
+            int returned_target = std::get<0>(result);
+            FeeReason reason = std::get<1>(result);
+            CFeeRate feeRate = CFeeRate(std::get<2>(result));
 
     ui->labelSmartFee->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), feeRate.GetFeePerK()) + "/kB");
 
@@ -771,6 +782,8 @@ void SendCoinsDialog::updateSmartFeeLabel()
         ui->labelFeeEstimation->setText(tr("Estimated to begin confirmation within %n block(s).", "", returned_target));
         ui->fallbackFeeWarningLabel->setVisible(false);
     }
+
+    });
 
     updateFeeMinimizedLabel();
 }
