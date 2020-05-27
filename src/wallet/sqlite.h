@@ -70,6 +70,8 @@ public:
 
     ~SQLiteDatabase();
 
+    bool Verify(bilingual_str& error);
+
     /** Open the database if it is not already opened */
     void Open(const char* mode) override;
 
