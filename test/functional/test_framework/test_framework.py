@@ -103,14 +103,23 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         self.supports_cli = True
         self.bind_to_localhost_only = True
         self.parse_args()
-        self.default_wallet_name = ""
-        self.wallet_data_filename = "wallet.dat"
+
+        # Default wallet name is non-empty for descriptor wallets to avoid
+        # nested layout where the default wallet's directory has other wallet
+        # directories contained inside it. In the non-descriptor case, an empty
+        # wallet name is used to provide test coverage for the nested layout.
+        self.default_wallet_name = "default_wallet" if self.options.descriptors else ""
+
+        # Wallet format is SQLite for descriptor wallets, Berkeley otherwise
+        self.wallet_data_filename = "wallet.sqlite" if self.options.descriptors else "wallet.dat"
+
         # Optional list of wallet names that can be set in set_test_params to
         # create and import keys to. If unset, default is len(nodes) *
         # [default_wallet_name]. If wallet names are None, wallet creation is
         # skipped. If list is truncated, wallet creation is skipped and keys
         # are not imported.
         self.wallet_names = None
+
         self.set_test_params()
         if self.options.timeout_factor == 0 :
             self.options.timeout_factor = 99999
