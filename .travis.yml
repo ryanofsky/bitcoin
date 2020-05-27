@@ -134,6 +134,7 @@ jobs:
           - qrencode
           - ccache
           - zeromq
+          - sqlite
       env: >-
         DANGER_RUN_CI_ON_HOST=true
         CI_USE_APT_INSTALL=no

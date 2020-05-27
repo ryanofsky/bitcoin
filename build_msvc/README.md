@@ -12,9 +12,21 @@ Quick Start
 The minimal steps required to build Bitcoin Core with the msbuild toolchain are below. More detailed instructions are contained in the following sections.
 
 ```
+<<<<<<< HEAD
 cd build_msvc
 py -3 msvc-autogen.py
 msbuild /m bitcoin.sln /p:Platform=x64 /p:Configuration=Release /t:build
+||||||| merged common ancestors
+vcpkg install --triplet x64-windows-static berkeleydb boost-filesystem boost-multi-index boost-signals2 boost-test boost-thread libevent[thread] zeromq double-conversion
+vcpkg integrate install
+py -3 build_msvc\msvc-autogen.py
+msbuild /m build_msvc\bitcoin.sln /p:Platform=x64 /p:Configuration=Release /t:build
+=======
+vcpkg install --triplet x64-windows-static berkeleydb boost-filesystem boost-multi-index boost-signals2 boost-test boost-thread libevent[thread] zeromq double-conversion sqlite3
+vcpkg integrate install
+py -3 build_msvc\msvc-autogen.py
+msbuild /m build_msvc\bitcoin.sln /p:Platform=x64 /p:Configuration=Release /t:build
+>>>>>>> Add sqlite to travis and depends
 ```
 
 Dependencies
