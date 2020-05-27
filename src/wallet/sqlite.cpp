@@ -64,8 +64,65 @@ SQLiteDatabase::~SQLiteDatabase()
     }
 }
 
-void SQLiteDatabase::Open(const char* pszMode)
+void SQLiteDatabase::Open(const char* mode)
 {
+    bool read_only = (!strchr(mode, '+') && !strchr(mode, 'w'));
+
+    bool create = strchr(mode, 'c') != nullptr;
+    int flags;
+    if (read_only) {
+        flags = SQLITE_OPEN_READONLY;
+    } else {
+        flags = SQLITE_OPEN_READWRITE;
+    }
+    if (create) {
+        flags |= SQLITE_OPEN_CREATE;
+    }
+    if (m_mock) {
+        flags |= SQLITE_OPEN_MEMORY; // In memory database for mock db
+    }
+
+    if (m_db == nullptr) {
+        sqlite3* db = nullptr;
+        int ret = sqlite3_open_v2(m_file_path.c_str(), &db, flags, nullptr);
+        if (ret != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to open database: %s\n", sqlite3_errstr(ret)));
+        }
+        // TODO: Maybe(?) Check the file wasn't copied and a duplicate opened
+
+        if (create) {
+            bool table_exists;
+            // Check that the main table exists
+            sqlite3_stmt* check_main_stmt;
+            std::string check_main = "SELECT name FROM sqlite_master WHERE type='table' AND name='main'";
+            ret = sqlite3_prepare_v2(db, check_main.c_str(), -1, &check_main_stmt, nullptr);
+            if (ret != SQLITE_OK) {
+                throw std::runtime_error(strprintf("SQLiteDatabase: Failed to prepare statement to check table existence: %s\n", sqlite3_errstr(ret)));
+            }
+            ret = sqlite3_step(check_main_stmt);
+            if (sqlite3_finalize(check_main_stmt) != SQLITE_OK) {
+                throw std::runtime_error(strprintf("SQLiteDatabase: Failed to finalize statement checking table existence: %s\n", sqlite3_errstr(ret)));
+            }
+            if (ret == SQLITE_DONE) {
+                table_exists = false;
+            } else if (ret == SQLITE_ROW) {
+                table_exists = true;
+            } else {
+                throw std::runtime_error(strprintf("SQLiteDatabase: Failed to execute statement to check table existence: %s\n", sqlite3_errstr(ret)));
+            }
+
+            if (!table_exists) {
+                // Make the table for our key-value pairs
+                std::string create_stmt = "CREATE TABLE main(key BLOB PRIMARY KEY, value BLOB)";
+                ret = sqlite3_exec(db, create_stmt.c_str(), nullptr, nullptr, nullptr);
+                if (ret != SQLITE_OK) {
+                    throw std::runtime_error(strprintf("SQLiteDatabase: Failed to create new database: %s\n", sqlite3_errstr(ret)));
+                }
+            }
+        }
+
+        m_db = db;
+    }
 }
 
 bool SQLiteDatabase::Rewrite(const char* skip)
