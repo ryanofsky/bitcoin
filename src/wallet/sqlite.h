@@ -67,9 +67,9 @@ public:
     /** Close the database */
     void Close() override;
 
-    /** Indicate the a new database user has began using the database. Increments m_refcount */
+    /** This function is unused */
     void AddRef() override;
-    /** Indicate that database user has stopped using the database. Decrement m_refcount */
+    /** This function is unused */
     void RemoveRef() override;
 
     /** Rewrite the entire database on disk, with the exception of key pszSkip if non-zero
