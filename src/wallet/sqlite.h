@@ -19,6 +19,7 @@ private:
     SQLiteDatabase& m_database;
 
     bool m_read_only = false;
+    bool m_cursor_init = false;
 
     bool ReadKey(CDataStream&& key, CDataStream& value) override;
     bool WriteKey(CDataStream&& key, CDataStream&& value, bool overwrite=true) override;
