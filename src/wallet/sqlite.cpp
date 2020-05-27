@@ -9,6 +9,7 @@
 #include <util/translation.h>
 #include <wallet/db.h>
 
+#include <sqlite3.h>
 #include <stdint.h>
 
 static const char* DATABASE_FILENAME = "wallet.sqlite";
@@ -131,4 +132,9 @@ bool ExistsSQLiteDatabase(const fs::path& path)
 std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
 {
     return MakeUnique<SQLiteDatabase>(path, path / DATABASE_FILENAME);
+}
+
+std::string SQLiteDatabaseVersion()
+{
+    return std::string(sqlite3_libversion());
 }
