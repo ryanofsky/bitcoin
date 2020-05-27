@@ -5,6 +5,7 @@
 #include <wallet/sqlite.h>
 
 #include <logging.h>
+#include <sync.h>
 #include <util/memory.h>
 #include <util/strencodings.h>
 #include <util/translation.h>
@@ -12,6 +13,13 @@
 
 #include <sqlite3.h>
 #include <stdint.h>
+#include <unordered_set>
+
+namespace {
+    Mutex g_sqlite_mutex;
+    //! Set of wallet file paths in use
+    std::unordered_set<std::string> g_file_paths GUARDED_BY(g_sqlite_mutex);
+} // namespace
 
 static const char* DATABASE_FILENAME = "wallet.sqlite";
 
