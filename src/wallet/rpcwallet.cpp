@@ -2660,6 +2660,7 @@ static UniValue createwallet(const JSONRPCRequest& request)
     options.require_create = true;
     options.create_flags = flags;
     options.create_passphrase = passphrase;
+    if (flags & WALLET_FLAG_DESCRIPTORS) options.require_format = DatabaseFormat::SQLITE;
     bilingual_str error;
     std::shared_ptr<CWallet> wallet = CreateWallet(*context.chain, request.params[0].get_str(), options, status, error, warnings);
     if (!wallet) {
