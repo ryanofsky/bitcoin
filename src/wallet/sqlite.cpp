@@ -167,10 +167,14 @@ void SQLiteDatabase::ReloadDbEnv()
 
 void SQLiteDatabase::RemoveRef()
 {
+    // This function is unused
+    assert(false);
 }
 
 void SQLiteDatabase::AddRef()
 {
+    // This function is unused
+    assert(false);
 }
 
 std::unique_ptr<DatabaseBatch> SQLiteDatabase::MakeBatch(const char* mode, bool flush_on_close)
