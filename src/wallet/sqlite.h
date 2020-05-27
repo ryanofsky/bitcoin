@@ -7,6 +7,8 @@
 
 #include <wallet/db.h>
 
+#include <atomic>
+
 #include <sqlite3.h>
 
 struct bilingual_str;
