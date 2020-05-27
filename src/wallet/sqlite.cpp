@@ -111,6 +111,60 @@ SQLiteDatabase::~SQLiteDatabase()
     }
 }
 
+bool SQLiteDatabase::Verify(bilingual_str& error)
+{
+    if (!PrepareDirectory()) {
+        error = strprintf(_("SQLiteDatabase: Unable to obtain lock on wallet directory \"%s\""), m_dir_path);
+        return false;
+    }
+
+    sqlite3* db = nullptr;
+    int ret = sqlite3_open_v2(m_file_path.c_str(), &db, SQLITE_OPEN_READONLY, nullptr);
+    if (ret == SQLITE_NOTFOUND) {
+        sqlite3_close(db);
+        return true; // Return true if the file doesn't exist
+    } else if (ret != SQLITE_OK) {
+        sqlite3_close(db);
+        error = strprintf(_("SQLiteDatabase: Failed to verify database: %s"), sqlite3_errstr(ret));
+        return false;
+    }
+
+    sqlite3_stmt* stmt{nullptr};
+    ret = sqlite3_prepare_v2(db, "PRAGMA integrity_check", -1, &stmt, nullptr);
+    if (ret != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        error = strprintf(_("SQLiteDatabase: Failed to prepare statement to verify database: %s"), sqlite3_errstr(ret));
+        return false;
+    }
+    while (true) {
+        ret = sqlite3_step(stmt);
+        if (ret == SQLITE_DONE) {
+            break;
+        } else if (ret != SQLITE_ROW) {
+            error = strprintf(_("SQLiteDatabase: Failed to execute statement to verify database: %s"), sqlite3_errstr(ret));
+            break;
+        }
+        const char* msg = (const char*)sqlite3_column_text(stmt, 0);
+        if (!msg) {
+            error = strprintf(_("SQLiteDatabase: Failed to read database verification error: %s"), sqlite3_errstr(ret));
+            break;
+        }
+        std::string str_msg(msg);
+        if (str_msg == "ok") {
+            continue;
+        }
+        if (error.original.empty()) {
+            error = _("Failed to verify database\n");
+        }
+        error += Untranslated(strprintf("%s\n", str_msg));
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    UnlockDirectory(m_dir_path, ".walletlock");
+    return error.original.empty();
+}
+
 void SQLiteDatabase::Open(const char* mode)
 {
     if (!PrepareDirectory()) {
@@ -459,7 +513,13 @@ bool ExistsSQLiteDatabase(const fs::path& path)
 
 std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
 {
-    return MakeUnique<SQLiteDatabase>(path, path / DATABASE_FILENAME);
+    fs::path file = path / DATABASE_FILENAME;
+    auto db = MakeUnique<SQLiteDatabase>(path, file);
+    if (options.verify && fs::is_regular_file(file) && !db->Verify(error)) {
+        status = DatabaseStatus::FAILED_VERIFY;
+        return nullptr;
+    }
+    return db;
 }
 
 std::string SQLiteDatabaseVersion()
