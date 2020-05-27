@@ -84,7 +84,7 @@ class WalletHDTest(BitcoinTestFramework):
         shutil.rmtree(os.path.join(self.nodes[1].datadir, self.chain, "chainstate"))
         shutil.copyfile(
             os.path.join(self.nodes[1].datadir, "hd.bak"),
-            os.path.join(self.nodes[1].datadir, self.chain, 'wallets', "wallet.dat"),
+            os.path.join(self.nodes[1].datadir, self.chain, 'wallets', self.default_wallet_name, self.wallet_data_filename),
         )
         self.start_node(1)
 
@@ -103,7 +103,7 @@ class WalletHDTest(BitcoinTestFramework):
         self.sync_all()
 
         # Needs rescan
-        self.restart_node(1, extra_args=self.extra_args[1] + ['-rescan'])
+        self.restart_node(1, extra_args=self.nodes[1].extra_args + ['-rescan'])
         assert_equal(self.nodes[1].getbalance(), NUM_HD_ADDS + 1)
 
         # Try a RPC based rescan
@@ -112,9 +112,9 @@ class WalletHDTest(BitcoinTestFramework):
         shutil.rmtree(os.path.join(self.nodes[1].datadir, self.chain, "chainstate"))
         shutil.copyfile(
             os.path.join(self.nodes[1].datadir, "hd.bak"),
-            os.path.join(self.nodes[1].datadir, self.chain, "wallets", "wallet.dat"),
+            os.path.join(self.nodes[1].datadir, self.chain, "wallets", self.default_wallet_name, self.wallet_data_filename),
         )
-        self.start_node(1, extra_args=self.extra_args[1])
+        self.start_node(1)
         connect_nodes(self.nodes[0], 1)
         self.sync_all()
         # Wallet automatically scans blocks older than key on startup
