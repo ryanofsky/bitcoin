@@ -23,6 +23,12 @@ namespace {
 
 static const char* DATABASE_FILENAME = "wallet.sqlite";
 
+static void ErrorLogCallback(void* arg, int code, const char* msg)
+{
+    assert(arg == nullptr); // That's what we tell it to do during the setup
+    LogPrintf("SQLite Error. Code: %d. Message: %s\n", code, msg);
+}
+
 SQLiteDatabase::SQLiteDatabase(const fs::path& dir_path, const fs::path& file_path, bool mock) :
     WalletDatabase(), m_mock(mock), m_dir_path(dir_path.string()), m_file_path(file_path.string())
 {
@@ -30,6 +36,17 @@ SQLiteDatabase::SQLiteDatabase(const fs::path& dir_path, const fs::path& file_pa
     LogPrintf("Using wallet %s\n", m_dir_path);
 
     LOCK(g_sqlite_mutex);
+    if (g_file_paths.empty()) {
+        // Setup logging
+        int ret = sqlite3_config(SQLITE_CONFIG_LOG, ErrorLogCallback, nullptr);
+        if (ret != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup error log: %s\n", sqlite3_errstr(ret)));
+        }
+    }
+    int ret = sqlite3_initialize(); // This is a no-op if sqlite3 is already initialized
+    if (ret != SQLITE_OK) {
+        throw std::runtime_error(strprintf("SQLiteDatabase: Failed to initialize SQLite: %s\n", sqlite3_errstr(ret)));
+    }
     assert(m_file_path.empty() || (!m_file_path.empty() && g_file_paths.count(m_file_path) == 0));
     g_file_paths.insert(m_file_path);
 }
@@ -39,6 +56,12 @@ SQLiteDatabase::~SQLiteDatabase()
     Close();
     LOCK(g_sqlite_mutex);
     g_file_paths.erase(m_file_path);
+    if (g_file_paths.empty()) {
+        int ret = sqlite3_shutdown();
+        if (ret != SQLITE_OK) {
+            LogPrintf("SQLiteDatabase: Failed to shutdown SQLite: %s\n", sqlite3_errstr(ret));
+        }
+    }
 }
 
 void SQLiteDatabase::Open(const char* pszMode)
