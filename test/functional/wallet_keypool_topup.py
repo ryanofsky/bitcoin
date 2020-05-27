@@ -30,14 +30,14 @@ class KeypoolRestoreTest(BitcoinTestFramework):
         self.skip_if_no_wallet()
 
     def run_test(self):
-        wallet_path = os.path.join(self.nodes[1].datadir, self.chain, "wallets", "wallet.dat")
+        wallet_path = os.path.join(self.nodes[1].datadir, self.chain, "wallets", self.default_wallet_name, self.wallet_data_filename)
         wallet_backup_path = os.path.join(self.nodes[1].datadir, "wallet.bak")
         self.nodes[0].generate(101)
 
         self.log.info("Make backup of wallet")
         self.stop_node(1)
         shutil.copyfile(wallet_path, wallet_backup_path)
-        self.start_node(1, self.extra_args[1])
+        self.start_node(1)
         connect_nodes(self.nodes[0], 1)
         connect_nodes(self.nodes[0], 2)
         connect_nodes(self.nodes[0], 3)
@@ -71,7 +71,7 @@ class KeypoolRestoreTest(BitcoinTestFramework):
             self.log.info("Restart node with wallet backup")
             self.stop_node(idx)
             shutil.copyfile(wallet_backup_path, wallet_path)
-            self.start_node(idx, self.extra_args[idx])
+            self.start_node(idx)
             connect_nodes(self.nodes[0], idx)
             self.sync_all()
 
