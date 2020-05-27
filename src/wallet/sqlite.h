@@ -53,6 +53,8 @@ private:
 
     bool PrepareDirectory() const;
 
+    void SetupSQLStatements();
+
 public:
     SQLiteDatabase() = delete;
 
@@ -97,6 +99,12 @@ public:
     std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) override;
 
     sqlite3* m_db{nullptr};
+
+    sqlite3_stmt* m_read_stmt{nullptr};
+    sqlite3_stmt* m_insert_stmt{nullptr};
+    sqlite3_stmt* m_overwrite_stmt{nullptr};
+    sqlite3_stmt* m_delete_stmt{nullptr};
+    sqlite3_stmt* m_cursor_stmt{nullptr};
 };
 
 bool ExistsSQLiteDatabase(const fs::path& path);
