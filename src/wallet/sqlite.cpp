@@ -28,11 +28,17 @@ SQLiteDatabase::SQLiteDatabase(const fs::path& dir_path, const fs::path& file_pa
 {
     LogPrintf("Using SQLite Version %s\n", SQLiteDatabaseVersion());
     LogPrintf("Using wallet %s\n", m_dir_path);
+
+    LOCK(g_sqlite_mutex);
+    assert(m_file_path.empty() || (!m_file_path.empty() && g_file_paths.count(m_file_path) == 0));
+    g_file_paths.insert(m_file_path);
 }
 
 SQLiteDatabase::~SQLiteDatabase()
 {
     Close();
+    LOCK(g_sqlite_mutex);
+    g_file_paths.erase(m_file_path);
 }
 
 void SQLiteDatabase::Open(const char* pszMode)
