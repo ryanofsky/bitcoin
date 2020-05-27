@@ -89,15 +89,18 @@ public:
      */
     bool Backup(const std::string& dest) const override;
 
-    /** Make sure all changes are flushed to disk.
+    /** Flush and PeriodicFlsuh are No-ops.
+     *
+     * SQLite always flushes everything to the database file after each
+     * transaction (each Read/Write/Erase that we do is its own transaction unless we
+     * called TxnBegin) so there is no need to have Flush or PeriodicFlush.
      */
     void Flush() override;
-    /* flush the wallet passively (TRY_LOCK)
-       ideal to be called periodically */
     bool PeriodicFlush() override;
 
     void IncrementUpdateCounter() override { ++nUpdateCounter; }
 
+    /** There's no DB env to reload, so RelaodDbEnv is also a no-op. */
     void ReloadDbEnv() override;
 
     std::string Filename() override { return m_file_path; };
