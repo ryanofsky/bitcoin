@@ -64,6 +64,54 @@ SQLiteDatabase::~SQLiteDatabase()
 
 void SQLiteDatabase::Open(const char* mode)
 {
+    const bool read_only = (!strchr(mode, '+') && !strchr(mode, 'w'));
+
+    const bool create = strchr(mode, 'c') != nullptr;
+    int flags;
+    if (read_only) {
+        flags = SQLITE_OPEN_READONLY;
+    } else {
+        flags = SQLITE_OPEN_READWRITE;
+    }
+    if (create) {
+        flags |= SQLITE_OPEN_CREATE;
+    }
+    if (m_mock) {
+        flags |= SQLITE_OPEN_MEMORY; // In memory database for mock db
+    }
+
+    if (m_db == nullptr) {
+        sqlite3* db = nullptr;
+        int ret = sqlite3_open_v2(m_file_path.c_str(), &db, flags, nullptr);
+        if (ret != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to open database: %s\n", sqlite3_errstr(ret)));
+        }
+
+        if (create) {
+            if (sqlite3_db_readonly(db, "main") != 0) {
+                throw std::runtime_error("SQLiteDatabase: Database opened in readonly mode but read-write permissions are needed");
+            }
+
+            // Make the table for our key-value pairs
+            std::string create_stmt = "CREATE TABLE IF NOT EXISTS main(key BLOB PRIMARY KEY, value BLOB NOT NULL)";
+            ret = sqlite3_exec(db, create_stmt.c_str(), nullptr, nullptr, nullptr);
+            if (ret != SQLITE_OK) {
+                throw std::runtime_error(strprintf("SQLiteDatabase: Failed to create new database: %s\n", sqlite3_errstr(ret)));
+            }
+
+            // Enable fullfysnc for the platforms that use it
+            std::string fullfsync_stmt = "PRAGMA fullfsync = true";
+            ret = sqlite3_exec(db, fullfsync_stmt.c_str(), nullptr, nullptr, nullptr);
+            if (ret != SQLITE_OK) {
+                throw std::runtime_error(strprintf("SQLiteDatabase: Failed to enable fullfsync: %s\n", sqlite3_errstr(ret)));
+            }
+        }
+
+        m_db = db;
+    }
+    if (!read_only && sqlite3_db_readonly(m_db, "main") != 0) {
+        throw std::runtime_error(strprintf("SQLiteDatabase: SQLiteBatch requested read-write permission but database only has readonly"));
+    }
 }
 
 bool SQLiteDatabase::Rewrite(const char* skip)
