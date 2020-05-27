@@ -494,7 +494,8 @@ bool SQLiteBatch::TxnAbort()
 
 bool ExistsSQLiteDatabase(const fs::path& path)
 {
-    return false;
+    fs::path file = path / DATABASE_FILENAME;
+    return fs::symlink_status(file).type() == fs::regular_file && IsSQLiteFile(file);
 }
 
 std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
@@ -511,4 +512,23 @@ std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const D
 std::string SQLiteDatabaseVersion()
 {
     return std::string(sqlite3_libversion());
+}
+
+bool IsSQLiteFile(const fs::path& path)
+{
+    FILE* f = fsbridge::fopen(path, "rb");
+    CAutoFile file(f, SER_DISK, CLIENT_VERSION);
+    if (file.IsNull()) {
+        file.fclose();
+        throw std::runtime_error(strprintf("Unable to fopen file %s", path.string()));
+    }
+
+    // Read the magic. 16 bytes
+    char magic[16];
+    file.read(magic, 16);
+    file.fclose();
+
+    // Check the magic
+    std::string magic_str(magic);
+    return magic_str == std::string("SQLite format 3");
 }
