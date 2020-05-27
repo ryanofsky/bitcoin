@@ -19,6 +19,7 @@ private:
     SQLiteDatabase& m_database;
 
     bool m_read_only = false;
+    bool m_cursor_init = false;
 
     sqlite3_stmt* m_read_stmt{nullptr};
     sqlite3_stmt* m_insert_stmt{nullptr};
