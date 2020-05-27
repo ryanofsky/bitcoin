@@ -7,6 +7,8 @@
 
 #include <wallet/db.h>
 
+#include <sqlite3.h>
+
 struct bilingual_str;
 class SQLiteDatabase;
 
@@ -25,6 +27,7 @@ private:
 
 public:
     explicit SQLiteBatch(SQLiteDatabase& database, const char* mode);
+    ~SQLiteBatch() override { Close(); }
 
     void Flush() override;
     void Close() override;
@@ -90,6 +93,8 @@ public:
 
     /** Make a SQLiteBatch connected to this database */
     std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) override;
+
+    sqlite3* m_db{nullptr};
 };
 
 bool ExistsSQLiteDatabase(const fs::path& path);
