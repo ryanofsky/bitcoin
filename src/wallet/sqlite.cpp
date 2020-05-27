@@ -64,6 +64,42 @@ bool SQLiteDatabase::PrepareDirectory() const
     return true;
 }
 
+void SQLiteDatabase::SetupSQLStatements()
+{
+    std::string read_sql = "SELECT value FROM main WHERE key = ?";
+    std::string insert_sql = "INSERT INTO main VALUES(?, ?)";
+    std::string overwrite_sql = "INSERT OR REPLACE INTO main VALUES(?, ?)";
+    std::string delete_sql = "DELETE FROM main WHERE key = ?";
+    std::string cursor_sql = "SELECT key, value FROM main";
+
+    int res;
+    if (!m_read_stmt) {
+        if ((res = sqlite3_prepare_v2(m_db, read_sql.c_str(), -1, &m_read_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_insert_stmt) {
+        if ((res = sqlite3_prepare_v2(m_db, insert_sql.c_str(), -1, &m_insert_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_overwrite_stmt) {
+        if ((res = sqlite3_prepare_v2(m_db, overwrite_sql.c_str(), -1, &m_overwrite_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_delete_stmt) {
+        if ((res = sqlite3_prepare_v2(m_db, delete_sql.c_str(), -1, &m_delete_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_cursor_stmt) {
+        if ((res = sqlite3_prepare_v2(m_db, cursor_sql.c_str(), -1, &m_cursor_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements : %s\n", sqlite3_errstr(res)));
+        }
+    }
+}
+
 SQLiteDatabase::~SQLiteDatabase()
 {
     Close();
@@ -140,6 +176,7 @@ void SQLiteDatabase::Open(const char* mode)
 
         m_db = db;
     }
+    SetupSQLStatements();
 }
 
 bool SQLiteDatabase::Rewrite(const char* skip)
@@ -162,6 +199,14 @@ void SQLiteDatabase::Close()
     if (!m_db) return;
 
     assert(m_refcount == 0);
+
+    // Free all of the prepared statements
+    sqlite3_finalize(m_read_stmt);
+    sqlite3_finalize(m_insert_stmt);
+    sqlite3_finalize(m_overwrite_stmt);
+    sqlite3_finalize(m_delete_stmt);
+    sqlite3_finalize(m_cursor_stmt);
+
     int res = sqlite3_close(m_db);
     if (res != SQLITE_OK) {
         throw std::runtime_error(strprintf("SQLiteDatabase: Failed to close database: %s\n", sqlite3_errstr(res)));
