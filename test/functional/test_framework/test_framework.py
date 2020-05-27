@@ -108,6 +108,15 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             self.options.timeout_factor = 99999
         self.rpc_timeout = int(self.rpc_timeout * self.options.timeout_factor) # optionally, increase timeout by a factor
 
+        # Default wallet name is non-empty for descriptor wallets to avoid
+        # nested layout where the default wallet's directory has other wallet
+        # directories contained inside it. In the non-descriptor case, an empty
+        # wallet name is used to provide test coverage for the nested layout.
+        self.default_wallet_name = "default_wallet" if self.options.descriptors else ""
+
+        # Wallet format is SQLite for descriptor wallets, Berkeley otherwise
+        self.wallet_data_filename = "wallet.sqlite" if self.options.descriptors else "wallet.dat"
+
     def main(self):
         """Main function. This should not be overridden by the subclass test scripts."""
 
@@ -374,7 +383,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             if '-wallet=0' in n.extra_args or '-nowallet' in n.extra_args or '-disablewallet' in n.extra_args or not self.is_wallet_compiled():
                 continue
             if '-wallet=' not in wallets[i] and not any([x.startswith('-wallet=') for x in wallets[i]]):
-                wallets[i].append('-wallet=')
+                default_wallet_arg = '-wallet=' + self.default_wallet_name
+                wallets[i].append(default_wallet_arg)
+                n.extra_args.append(default_wallet_arg)
             for w in wallets[i]:
                 wallet_name = w.split('=', 1)[1]
                 n.createwallet(wallet_name=wallet_name, descriptors=self.options.descriptors)
