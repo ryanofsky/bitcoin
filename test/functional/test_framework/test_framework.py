@@ -107,6 +107,8 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         if self.options.timeout_factor == 0 :
             self.options.timeout_factor = 99999
         self.rpc_timeout = int(self.rpc_timeout * self.options.timeout_factor) # optionally, increase timeout by a factor
+        # Empty string is not a valid name for a descriptor wallet
+        self.default_wallet = "default" if self.options.descriptors else ""
 
     def main(self):
         """Main function. This should not be overridden by the subclass test scripts."""
@@ -376,7 +378,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             if '-wallet=' not in wallets[i] and not any([x.startswith('-wallet=') for x in wallets[i]]):
                 wallets[i].append('-wallet=')
             for w in wallets[i]:
-                wallet_name = w.split('=', 1)[1]
+                wallet_name = w.split('=', 1)[1] or self.default_wallet
                 n.createwallet(wallet_name=wallet_name, descriptors=self.options.descriptors)
         self.import_deterministic_coinbase_privkeys()
         if not self.setup_clean_chain:
