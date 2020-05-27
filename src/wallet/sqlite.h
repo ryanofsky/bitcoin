@@ -20,6 +20,14 @@ private:
 
     bool m_read_only = false;
 
+    sqlite3_stmt* m_read_stmt{nullptr};
+    sqlite3_stmt* m_insert_stmt{nullptr};
+    sqlite3_stmt* m_overwrite_stmt{nullptr};
+    sqlite3_stmt* m_delete_stmt{nullptr};
+    sqlite3_stmt* m_cursor_stmt{nullptr};
+
+    void SetupSQLStatements();
+
     bool ReadKey(CDataStream&& key, CDataStream& value) override;
     bool WriteKey(CDataStream&& key, CDataStream&& value, bool overwrite=true) override;
     bool EraseKey(CDataStream&& key) override;

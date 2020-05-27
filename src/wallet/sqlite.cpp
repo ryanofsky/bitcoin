@@ -62,6 +62,42 @@ bool SQLiteDatabase::PrepareDirectory() const
     return true;
 }
 
+void SQLiteBatch::SetupSQLStatements()
+{
+    std::string read_sql = "SELECT value FROM main WHERE key = ?";
+    std::string insert_sql = "INSERT INTO main VALUES(?, ?)";
+    std::string overwrite_sql = "INSERT OR REPLACE INTO main VALUES(?, ?)";
+    std::string delete_sql = "DELETE FROM main WHERE key = ?";
+    std::string cursor_sql = "SELECT key, value FROM main";
+
+    int res;
+    if (!m_read_stmt) {
+        if ((res = sqlite3_prepare_v2(m_database.m_db, read_sql.c_str(), -1, &m_read_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_insert_stmt) {
+        if ((res = sqlite3_prepare_v2(m_database.m_db, insert_sql.c_str(), -1, &m_insert_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_overwrite_stmt) {
+        if ((res = sqlite3_prepare_v2(m_database.m_db, overwrite_sql.c_str(), -1, &m_overwrite_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_delete_stmt) {
+        if ((res = sqlite3_prepare_v2(m_database.m_db, delete_sql.c_str(), -1, &m_delete_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements: %s\n", sqlite3_errstr(res)));
+        }
+    }
+    if (!m_cursor_stmt) {
+        if ((res = sqlite3_prepare_v2(m_database.m_db, cursor_sql.c_str(), -1, &m_cursor_stmt, nullptr)) != SQLITE_OK) {
+            throw std::runtime_error(strprintf("SQLiteDatabase: Failed to setup SQL statements : %s\n", sqlite3_errstr(res)));
+        }
+    }
+}
+
 SQLiteDatabase::~SQLiteDatabase()
 {
     Close();
@@ -187,6 +223,7 @@ SQLiteBatch::SQLiteBatch(SQLiteDatabase& database, const char* mode)
 {
     m_read_only = (!strchr(mode, '+') && !strchr(mode, 'w'));
     m_database.Open(mode);
+    SetupSQLStatements();
 }
 
 void SQLiteBatch::Flush()
@@ -201,6 +238,28 @@ void SQLiteBatch::Close()
         } else {
             LogPrintf("SQLiteBatch: Batch closed and could not abort transaction\n");
         }
+    }
+
+    // Free all of the prepared statements
+    int ret = sqlite3_finalize(m_read_stmt);
+    if (ret != SQLITE_OK) {
+        LogPrintf("SQLiteBatch: Batch closed but could not finalize read statement: %s\n", sqlite3_errstr(ret));
+    }
+    ret = sqlite3_finalize(m_insert_stmt);
+    if (ret != SQLITE_OK) {
+        LogPrintf("SQLiteBatch: Batch closed but could not finalize insert statement: %s\n", sqlite3_errstr(ret));
+    }
+    ret = sqlite3_finalize(m_overwrite_stmt);
+    if (ret != SQLITE_OK) {
+        LogPrintf("SQLiteBatch: Batch closed but could not finalize overwrite statement: %s\n", sqlite3_errstr(ret));
+    }
+    ret = sqlite3_finalize(m_delete_stmt);
+    if (ret != SQLITE_OK) {
+        LogPrintf("SQLiteBatch: Batch closed but could not finalize delete statement: %s\n", sqlite3_errstr(ret));
+    }
+    ret = sqlite3_finalize(m_cursor_stmt);
+    if (ret != SQLITE_OK) {
+        LogPrintf("SQLiteBatch: Batch closed but could not finalize cursor statement: %s\n", sqlite3_errstr(ret));
     }
 }
 
