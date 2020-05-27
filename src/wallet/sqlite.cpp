@@ -161,6 +161,7 @@ void SQLiteDatabase::Close()
 {
     if (!m_db) return;
 
+    assert(m_refcount == 0);
     int res = sqlite3_close(m_db);
     if (res != SQLITE_OK) {
         throw std::runtime_error(strprintf("SQLiteDatabase: Failed to close database: %s\n", sqlite3_errstr(res)));
@@ -180,10 +181,12 @@ void SQLiteDatabase::ReloadDbEnv()
 
 void SQLiteDatabase::RemoveRef()
 {
+    m_refcount--;
 }
 
 void SQLiteDatabase::AddRef()
 {
+    m_refcount++;
 }
 
 std::unique_ptr<DatabaseBatch> SQLiteDatabase::MakeBatch(const char* mode, bool flush_on_close)
