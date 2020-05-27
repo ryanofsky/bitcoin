@@ -313,9 +313,9 @@ class WalletTest(BitcoinTestFramework):
 
         # do some -walletbroadcast tests
         self.stop_nodes()
-        self.start_node(0, ["-walletbroadcast=0"])
-        self.start_node(1, ["-walletbroadcast=0"])
-        self.start_node(2, ["-walletbroadcast=0"])
+        self.start_node(0, extra_args=self.nodes[0].extra_args + ["-walletbroadcast=0"])
+        self.start_node(1, extra_args=self.nodes[1].extra_args + ["-walletbroadcast=0"])
+        self.start_node(2, extra_args=self.nodes[2].extra_args + ["-walletbroadcast=0"])
         connect_nodes(self.nodes[0], 1)
         connect_nodes(self.nodes[1], 2)
         connect_nodes(self.nodes[0], 2)
@@ -540,9 +540,9 @@ class WalletTest(BitcoinTestFramework):
             self.log.info("check " + m)
             self.stop_nodes()
             # set lower ancestor limit for later
-            self.start_node(0, [m, "-limitancestorcount=" + str(chainlimit)])
-            self.start_node(1, [m, "-limitancestorcount=" + str(chainlimit)])
-            self.start_node(2, [m, "-limitancestorcount=" + str(chainlimit)])
+            self.start_node(0, extra_args=self.nodes[0].extra_args + [m, "-limitancestorcount=" + str(chainlimit)])
+            self.start_node(1, extra_args=self.nodes[1].extra_args + [m, "-limitancestorcount=" + str(chainlimit)])
+            self.start_node(2, extra_args=self.nodes[2].extra_args + [m, "-limitancestorcount=" + str(chainlimit)])
             if m == '-reindex':
                 # reindex will leave rpc warm up "early"; Wait for it to finish
                 self.wait_until(lambda: [block_count] * 3 == [self.nodes[i].getblockcount() for i in range(3)])
@@ -590,7 +590,7 @@ class WalletTest(BitcoinTestFramework):
         # Try with walletrejectlongchains
         # Double chain limit but require combining inputs, so we pass SelectCoinsMinConf
         self.stop_node(0)
-        extra_args = ["-walletrejectlongchains", "-limitancestorcount=" + str(2 * chainlimit)]
+        extra_args = self.nodes[0].extra_args + ["-walletrejectlongchains", "-limitancestorcount=" + str(2 * chainlimit)]
         self.start_node(0, extra_args=extra_args)
 
         # wait until the wallet has submitted all transactions to the mempool

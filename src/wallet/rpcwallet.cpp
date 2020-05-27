@@ -2830,6 +2830,7 @@ static RPCHelpMan createwallet()
     options.require_create = true;
     options.create_flags = flags;
     options.create_passphrase = passphrase;
+<<<<<<< HEAD
 ||||||| merged common ancestors
 =======
     DatabaseOptions options;
@@ -2838,6 +2839,10 @@ static RPCHelpMan createwallet()
     options.create_flags = flags;
     options.create_passphrase = passphrase;
 >>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
+||||||| merged common ancestors
+=======
+    if (flags & WALLET_FLAG_DESCRIPTORS) options.require_format = DatabaseFormat::SQLITE;
+>>>>>>> Use SQLite for descriptor wallets
     bilingual_str error;
 <<<<<<< HEAD
     Optional<bool> load_on_start = request.params[6].isNull() ? nullopt : Optional<bool>(request.params[6].get_bool());
