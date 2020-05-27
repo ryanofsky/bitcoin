@@ -181,7 +181,16 @@ void SQLiteDatabase::Open(const char* mode)
 
 bool SQLiteDatabase::Rewrite(const char* skip)
 {
-    return false;
+    while (true) {
+        if (m_refcount == 0) {
+            break;
+        }
+        UninterruptibleSleep(std::chrono::milliseconds{100});
+    }
+
+    // Rewrite the database using the VACUUM command: https://sqlite.org/lang_vacuum.html
+    int ret = sqlite3_exec(m_db, "VACUUM", nullptr, nullptr, nullptr);
+    return ret == SQLITE_OK;
 }
 
 bool SQLiteDatabase::PeriodicFlush()
