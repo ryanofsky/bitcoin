@@ -51,6 +51,8 @@ private:
 
     const std::string m_file_path;
 
+    bool PrepareDirectory() const;
+
 public:
     SQLiteDatabase() = delete;
 

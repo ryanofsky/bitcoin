@@ -8,6 +8,7 @@
 #include <sync.h>
 #include <util/memory.h>
 #include <util/strencodings.h>
+#include <util/system.h>
 #include <util/translation.h>
 #include <wallet/db.h>
 
@@ -51,6 +52,18 @@ SQLiteDatabase::SQLiteDatabase(const fs::path& dir_path, const fs::path& file_pa
     g_file_paths.insert(m_file_path);
 }
 
+bool SQLiteDatabase::PrepareDirectory() const
+{
+    if (m_mock) return true;
+    // Try to create the directory containing the wallet file and lock it
+    TryCreateDirectories(m_dir_path);
+    if (!LockDirectory(m_dir_path, ".walletlock")) {
+        LogPrintf("Cannot obtain a lock on wallet directory %s. Another instance of bitcoin may be using it.\n", m_dir_path);
+        return false;
+    }
+    return true;
+}
+
 SQLiteDatabase::~SQLiteDatabase()
 {
     Close();
@@ -66,6 +79,10 @@ SQLiteDatabase::~SQLiteDatabase()
 
 void SQLiteDatabase::Open(const char* mode)
 {
+    if (!PrepareDirectory()) {
+        throw std::runtime_error("Cannot obtain a lock on wallet directory");
+    }
+
     bool read_only = (!strchr(mode, '+') && !strchr(mode, 'w'));
 
     bool create = strchr(mode, 'c') != nullptr;
@@ -149,6 +166,8 @@ void SQLiteDatabase::Close()
         throw std::runtime_error(strprintf("SQLiteDatabase: Failed to close database: %s\n", sqlite3_errstr(res)));
     }
     m_db = nullptr;
+
+    UnlockDirectory(m_dir_path, ".walletlock");
 }
 
 void SQLiteDatabase::Flush()
