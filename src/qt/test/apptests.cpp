@@ -5,6 +5,7 @@
 #include <qt/test/apptests.h>
 
 #include <chainparams.h>
+#include <interfaces/node.h>
 #include <key.h>
 #include <qt/bitcoin.h>
 #include <qt/bitcoingui.h>
@@ -62,10 +63,21 @@ void AppTests::appTests()
     }
 #endif
 
+<<<<<<< HEAD
     fs::create_directories([] {
         BasicTestingSetup test{CBaseChainParams::REGTEST}; // Create a temp data directory to backup the gui settings to
         return GetDataDir() / "blocks";
     }());
+||||||| merged common ancestors
+    BasicTestingSetup test{CBaseChainParams::REGTEST}; // Create a temp data directory to backup the gui settings to
+    ECC_Stop(); // Already started by the common test setup, so stop it to avoid interference
+    LogInstance().DisconnectTestLogger();
+=======
+    BasicTestingSetup test{CBaseChainParams::REGTEST}; // Create a temp data directory to backup the gui settings to
+    m_app.node().setContext(&test.m_node);
+    ECC_Stop(); // Already started by the common test setup, so stop it to avoid interference
+    LogInstance().DisconnectTestLogger();
+>>>>>>> test: Remove duplicate NodeContext hacks
 
     m_app.parameterSetup();
     m_app.createOptionsModel(true /* reset settings */);
