@@ -21,6 +21,7 @@
 #include <test/util/setup_common.h>
 #include <validation.h>
 #include <wallet/wallet.h>
+#include <walletinitinterface.h>
 #include <qt/overviewpage.h>
 #include <qt/receivecoinsdialog.h>
 #include <qt/recentrequeststablemodel.h>
@@ -138,9 +139,20 @@ void TestGUI(interfaces::Node& node)
     for (int i = 0; i < 5; ++i) {
         test.CreateAndProcessBlock({}, GetScriptForRawPubKey(test.coinbaseKey.GetPubKey()));
     }
+<<<<<<< HEAD
     node.context()->connman = std::move(test.m_node.connman);
     node.context()->mempool = std::move(test.m_node.mempool);
     std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), WalletLocation(), CreateMockWalletDatabase());
+||||||| merged common ancestors
+    node.context()->connman = std::move(test.m_node.connman);
+    node.context()->mempool = std::move(test.m_node.mempool);
+    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), WalletLocation(), WalletDatabase::CreateMock());
+=======
+    test.m_node.chain = interfaces::MakeChain(test.m_node);
+    g_wallet_init_interface.Construct(test.m_node);
+    node.setContext(&test.m_node);
+    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), WalletLocation(), WalletDatabase::CreateMock());
+>>>>>>> test: Remove duplicate NodeContext hacks
     bool firstRun;
     wallet->LoadWallet(firstRun);
     {
