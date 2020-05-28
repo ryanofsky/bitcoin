@@ -35,6 +35,7 @@ struct CRecipient;
 struct PartiallySignedTransaction;
 struct WalletContext;
 struct bilingual_str;
+struct WalletContext;
 typedef uint8_t isminefilter;
 
 namespace interfaces {

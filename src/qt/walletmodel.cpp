@@ -581,10 +581,16 @@ QString WalletModel::getDisplayName() const
 
 bool WalletModel::isMultiwallet()
 {
+<<<<<<< HEAD
     return m_node.walletClient().getWallets().size() > 1;
 }
 
 void WalletModel::refresh(bool pk_hash_only)
 {
     addressTableModel = new AddressTableModel(this, pk_hash_only);
+||||||| merged common ancestors
+    return m_node.getWallets().size() > 1;
+=======
+    return m_node.walletClient().getWallets().size() > 1;
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
 }

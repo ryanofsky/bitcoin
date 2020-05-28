@@ -245,6 +245,7 @@ public:
         return ::ChainstateActive().CoinsTip().GetCoin(output, coin);
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     WalletClient& walletClient() override
 ||||||| merged common ancestors
     std::string getWalletDir() override
@@ -283,7 +284,25 @@ public:
         return paths;
     }
     std::vector<std::unique_ptr<Wallet>> getWallets() override
+||||||| merged common ancestors
+    std::string getWalletDir() override
     {
+        return GetWalletDir().string();
+    }
+    std::vector<std::string> listWalletDir() override
+    {
+        std::vector<std::string> paths;
+        for (auto& path : ListWalletDir()) {
+            paths.push_back(path.string());
+        }
+        return paths;
+    }
+    std::vector<std::unique_ptr<Wallet>> getWallets() override
+=======
+    WalletClient& walletClient() override
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
+    {
+<<<<<<< HEAD
         std::vector<std::unique_ptr<Wallet>> wallets;
         for (auto& client : m_context->chain_clients) {
             auto client_wallets = client->getWallets();
@@ -314,6 +333,27 @@ public:
         status = CreateWallet(*m_context->chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
         return MakeWallet(wallet);
 >>>>>>> test: Remove duplicate NodeContext hacks
+||||||| merged common ancestors
+        std::vector<std::unique_ptr<Wallet>> wallets;
+        for (auto& client : m_context->chain_clients) {
+            auto client_wallets = client->getWallets();
+            std::move(client_wallets.begin(), client_wallets.end(), std::back_inserter(wallets));
+        }
+        return wallets;
+    }
+    std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    {
+        return MakeWallet(LoadWallet(*m_context->chain, name, error, warnings));
+    }
+    std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, WalletCreationStatus& status) override
+    {
+        std::shared_ptr<CWallet> wallet;
+        status = CreateWallet(*m_context->chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
+        return MakeWallet(wallet);
+=======
+        assert (m_context->wallet_client);
+        return *m_context->wallet_client;
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
     }
     std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) override
     {

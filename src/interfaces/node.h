@@ -34,8 +34,14 @@ struct bilingual_str;
 
 namespace interfaces {
 class Handler;
+<<<<<<< HEAD
 class WalletClient;
 struct BlockTip;
+||||||| merged common ancestors
+class Wallet;
+=======
+class WalletClient;
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
 
 //! Top-level interface for a bitcoin node (bitcoind process).
 class Node
