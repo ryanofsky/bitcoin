@@ -60,9 +60,15 @@ void EditAddressAndSubmit(
 void TestAddAddressesToSendBook(interfaces::Node& node)
 {
     TestChain100Setup test;
+<<<<<<< HEAD
     test.m_node.chain = interfaces::MakeChain(test.m_node);
     g_wallet_init_interface.Construct(test.m_node);
     node.setContext(&test.m_node);
+||||||| merged common ancestors
+=======
+    g_wallet_init_interface.Construct(test.m_node);
+    node.setContext(&test.m_node);
+>>>>>>> test: Remove duplicate NodeContext hacks
     std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), WalletLocation(), WalletDatabase::CreateMock());
     wallet->SetupLegacyScriptPubKeyMan();
     bool firstRun;
