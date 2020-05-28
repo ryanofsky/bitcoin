@@ -926,14 +926,54 @@ DBErrors WalletBatch::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<u
     return DBErrors::LOAD_OK;
 }
 
+<<<<<<< HEAD
 void MaybeCompactWalletDB()
+||||||| merged common ancestors
+DBErrors WalletBatch::ZapWalletTx(std::list<CWalletTx>& vWtx)
+{
+    // build list of wallet TXs
+    std::vector<uint256> vTxHash;
+    DBErrors err = FindWalletTx(vTxHash, vWtx);
+    if (err != DBErrors::LOAD_OK)
+        return err;
+
+    // erase each wallet TX
+    for (const uint256& hash : vTxHash) {
+        if (!EraseTx(hash))
+            return DBErrors::CORRUPT;
+    }
+
+    return DBErrors::LOAD_OK;
+}
+
+void MaybeCompactWalletDB()
+=======
+DBErrors WalletBatch::ZapWalletTx(std::list<CWalletTx>& vWtx)
+{
+    // build list of wallet TXs
+    std::vector<uint256> vTxHash;
+    DBErrors err = FindWalletTx(vTxHash, vWtx);
+    if (err != DBErrors::LOAD_OK)
+        return err;
+
+    // erase each wallet TX
+    for (const uint256& hash : vTxHash) {
+        if (!EraseTx(hash))
+            return DBErrors::CORRUPT;
+    }
+
+    return DBErrors::LOAD_OK;
+}
+
+void MaybeCompactWalletDB(WalletContext& context)
+>>>>>>> refactor: remove ::vpwallets and related global variables
 {
     static std::atomic<bool> fOneThread(false);
     if (fOneThread.exchange(true)) {
         return;
     }
 
-    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets(context)) {
         WalletDatabase& dbh = pwallet->GetDBHandle();
 
         unsigned int nUpdateCounter = dbh.nUpdateCounter;
