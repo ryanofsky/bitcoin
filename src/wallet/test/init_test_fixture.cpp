@@ -10,7 +10,13 @@
 
 InitWalletDirTestingSetup::InitWalletDirTestingSetup(const std::string& chainName) : BasicTestingSetup(chainName)
 {
+<<<<<<< HEAD
     m_chain_client = MakeWalletClient(*m_chain, *Assert(m_node.args), {});
+||||||| merged common ancestors
+    m_chain_client = MakeWalletClient(*m_chain, {});
+=======
+    m_wallet_client = MakeWalletClient(*m_chain, {});
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
 
     std::string sep;
     sep += fs::path::preferred_separator;

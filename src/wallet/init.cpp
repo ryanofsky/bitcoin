@@ -5,6 +5,7 @@
 
 #include <init.h>
 #include <interfaces/chain.h>
+#include <interfaces/wallet.h>
 #include <net.h>
 #include <node/context.h>
 #include <node/ui_interface.h>
@@ -118,6 +119,16 @@ void WalletInit::Construct(NodeContext& node) const
         LogPrintf("Wallet disabled!\n");
         return;
     }
+<<<<<<< HEAD
     args.SoftSetArg("-wallet", "");
     node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, args, args.GetArgs("-wallet")));
+||||||| merged common ancestors
+    gArgs.SoftSetArg("-wallet", "");
+    node.chain_clients.emplace_back(interfaces::MakeWalletClient(*node.chain, gArgs.GetArgs("-wallet")));
+=======
+    gArgs.SoftSetArg("-wallet", "");
+    auto wallet_client = interfaces::MakeWalletClient(*node.chain, gArgs.GetArgs("-wallet"));
+    node.wallet_client = wallet_client.get();
+    node.chain_clients.emplace_back(std::move(wallet_client));
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
 }

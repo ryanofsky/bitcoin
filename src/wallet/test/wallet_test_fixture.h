@@ -21,7 +21,13 @@ struct WalletTestingSetup : public TestingSetup {
     explicit WalletTestingSetup(const std::string& chainName = CBaseChainParams::MAIN);
 
     std::unique_ptr<interfaces::Chain> m_chain = interfaces::MakeChain(m_node);
+<<<<<<< HEAD
     std::unique_ptr<interfaces::ChainClient> m_chain_client = interfaces::MakeWalletClient(*m_chain, *Assert(m_node.args), {});
+||||||| merged common ancestors
+    std::unique_ptr<interfaces::ChainClient> m_chain_client = interfaces::MakeWalletClient(*m_chain, {});
+=======
+    std::unique_ptr<interfaces::WalletClient> m_wallet_client = interfaces::MakeWalletClient(*m_chain, {});
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
     CWallet m_wallet;
     std::unique_ptr<interfaces::Handler> m_chain_notifications_handler;
 };
