@@ -31,6 +31,7 @@
 static const bool DEFAULT_FLUSHWALLET = true;
 
 struct CBlockLocator;
+struct WalletContext;
 class CKeyPool;
 class CMasterKey;
 class CScript;
@@ -284,7 +285,7 @@ private:
 };
 
 //! Compacts BDB state so that wallet.dat is self-contained (if there are changes)
-void MaybeCompactWalletDB();
+void MaybeCompactWalletDB(WalletContext& context);
 
 //! Unserialize a given Key-Value pair and load it into the wallet
 bool ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue, std::string& strType, std::string& strErr);
