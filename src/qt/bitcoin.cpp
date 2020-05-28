@@ -348,6 +348,15 @@ void BitcoinApplication::requestShutdown()
     window->setClientModel(nullptr);
     pollShutdownTimer->stop();
 
+#ifdef ENABLE_WALLET
+    // Delete wallet controller here to unregister wallet callbacks. Without
+    // this, the callbacks may be unregistered too late after the wallet
+    // context is deleted, or the wallet may try to call back into the GUI when
+    // the GUI is deleted, resulting in segfaults either way.
+    delete m_wallet_controller;
+    m_wallet_controller = nullptr;
+#endif // ENABLE_WALLET
+
     delete clientModel;
     clientModel = nullptr;
 
