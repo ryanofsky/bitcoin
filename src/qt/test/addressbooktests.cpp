@@ -110,9 +110,20 @@ void TestAddAddressesToSendBook(interfaces::Node& node)
     std::unique_ptr<const PlatformStyle> platformStyle(PlatformStyle::instantiate("other"));
     OptionsModel optionsModel;
     ClientModel clientModel(node, &optionsModel);
+<<<<<<< HEAD
     AddWallet(wallet);
     WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
     RemoveWallet(wallet, std::nullopt);
+||||||| merged common ancestors
+    AddWallet(wallet);
+    WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
+    RemoveWallet(wallet, nullopt);
+=======
+    WalletContext& context = *node.walletClient().context();
+    AddWallet(context, wallet);
+    WalletModel walletModel(interfaces::MakeWallet(context, wallet), clientModel, platformStyle.get());
+    RemoveWallet(context, wallet, nullopt);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     EditAddressDialog editAddressDialog(EditAddressDialog::NewSendingAddress);
     editAddressDialog.setModel(walletModel.getAddressTableModel());
 

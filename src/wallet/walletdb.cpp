@@ -942,15 +942,23 @@ DBErrors WalletBatch::ZapSelectTx(std::vector<uint256>& vTxHashIn, std::vector<u
     return DBErrors::LOAD_OK;
 }
 
-void MaybeCompactWalletDB()
+void MaybeCompactWalletDB(WalletContext& context)
 {
     static std::atomic<bool> fOneThread(false);
     if (fOneThread.exchange(true)) {
         return;
     }
 
+<<<<<<< HEAD
     for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
         WalletDatabase& dbh = pwallet->GetDatabase();
+||||||| merged common ancestors
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
+        WalletDatabase& dbh = pwallet->GetDBHandle();
+=======
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets(context)) {
+        WalletDatabase& dbh = pwallet->GetDBHandle();
+>>>>>>> refactor: remove ::vpwallets and related global variables
 
         unsigned int nUpdateCounter = dbh.nUpdateCounter;
 

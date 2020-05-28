@@ -19,6 +19,7 @@
 #include <util/translation.h>
 #include <validation.h>
 #include <wallet/coincontrol.h>
+#include <wallet/context.h>
 #include <wallet/test/wallet_test_fixture.h>
 
 #include <boost/test/unit_test.hpp>
@@ -37,14 +38,14 @@ static_assert(WALLET_INCREMENTAL_RELAY_FEE >= DEFAULT_INCREMENTAL_RELAY_FEE, "wa
 
 BOOST_FIXTURE_TEST_SUITE(wallet_tests, WalletTestingSetup)
 
-static std::shared_ptr<CWallet> TestLoadWallet(interfaces::Chain& chain)
+static std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
 {
     DatabaseOptions options;
     DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
     auto database = MakeWalletDatabase("", options, status, error);
-    auto wallet = CWallet::Create(chain, "", std::move(database), options.create_flags, error, warnings);
+    auto wallet = CWallet::Create(context, "", std::move(database), options.create_flags, error, warnings);
     wallet->postInitProcess();
     return wallet;
 }
@@ -196,7 +197,8 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
         std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(m_node.chain.get(), "", CreateDummyWalletDatabase());
         wallet->SetupLegacyScriptPubKeyMan();
         WITH_LOCK(wallet->cs_wallet, wallet->SetLastBlockProcessed(newTip->nHeight, newTip->GetBlockHash()));
-        AddWallet(wallet);
+        WalletContext context;
+        AddWallet(context, wallet);
         UniValue keys;
         keys.setArray();
         UniValue key;
@@ -213,8 +215,8 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
         key.pushKV("timestamp", newTip->GetBlockTimeMax() + TIMESTAMP_WINDOW + 1);
         key.pushKV("internal", UniValue(true));
         keys.push_back(key);
-        util::Ref context;
-        JSONRPCRequest request(context);
+        util::Ref request_context{context};
+        JSONRPCRequest request{request_context};
         request.params.setArray();
         request.params.push_back(keys);
 
@@ -228,7 +230,13 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
                       "downloading and rescanning the relevant blocks (see -reindex and -rescan "
                       "options).\"}},{\"success\":true}]",
                               0, oldTip->GetBlockTimeMax(), TIMESTAMP_WINDOW));
+<<<<<<< HEAD
         RemoveWallet(wallet, std::nullopt);
+||||||| merged common ancestors
+        RemoveWallet(wallet, nullopt);
+=======
+        RemoveWallet(context, wallet, nullopt);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     }
 }
 
@@ -255,23 +263,36 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
 
     // Import key into wallet and call dumpwallet to create backup file.
     {
+<<<<<<< HEAD
         std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(m_node.chain.get(), "", CreateDummyWalletDatabase());
+||||||| merged common ancestors
+        std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(chain.get(), "", CreateDummyWalletDatabase());
+=======
+        WalletContext context;
+        std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(chain.get(), "", CreateDummyWalletDatabase());
+>>>>>>> refactor: remove ::vpwallets and related global variables
         {
             auto spk_man = wallet->GetOrCreateLegacyScriptPubKeyMan();
             LOCK2(wallet->cs_wallet, spk_man->cs_KeyStore);
             spk_man->mapKeyMetadata[coinbaseKey.GetPubKey().GetID()].nCreateTime = KEY_TIME;
             spk_man->AddKeyPubKey(coinbaseKey, coinbaseKey.GetPubKey());
 
-            AddWallet(wallet);
+            AddWallet(context, wallet);
             wallet->SetLastBlockProcessed(::ChainActive().Height(), ::ChainActive().Tip()->GetBlockHash());
         }
-        util::Ref context;
-        JSONRPCRequest request(context);
+        util::Ref request_context{context};
+        JSONRPCRequest request(request_context);
         request.params.setArray();
         request.params.push_back(backup_file);
 
         ::dumpwallet().HandleRequest(request);
+<<<<<<< HEAD
         RemoveWallet(wallet, std::nullopt);
+||||||| merged common ancestors
+        RemoveWallet(wallet, nullopt);
+=======
+        RemoveWallet(context, wallet, nullopt);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     }
 
     // Call importwallet RPC and verify all blocks with timestamps >= BLOCK_TIME
@@ -281,14 +302,21 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
         LOCK(wallet->cs_wallet);
         wallet->SetupLegacyScriptPubKeyMan();
 
-        util::Ref context;
-        JSONRPCRequest request(context);
+        WalletContext context;
+        util::Ref request_context{context};
+        JSONRPCRequest request{request_context};
         request.params.setArray();
         request.params.push_back(backup_file);
-        AddWallet(wallet);
+        AddWallet(context, wallet);
         wallet->SetLastBlockProcessed(::ChainActive().Height(), ::ChainActive().Tip()->GetBlockHash());
         ::importwallet().HandleRequest(request);
+<<<<<<< HEAD
         RemoveWallet(wallet, std::nullopt);
+||||||| merged common ancestors
+        RemoveWallet(wallet, nullopt);
+=======
+        RemoveWallet(context, wallet, nullopt);
+>>>>>>> refactor: remove ::vpwallets and related global variables
 
         BOOST_CHECK_EQUAL(wallet->mapWallet.size(), 3U);
         BOOST_CHECK_EQUAL(m_coinbase_txns.size(), 103U);
@@ -696,7 +724,17 @@ BOOST_FIXTURE_TEST_CASE(wallet_descriptor_test, BasicTestingSetup)
 BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
 {
     // Create new wallet with known key and unload it.
+<<<<<<< HEAD
     auto wallet = TestLoadWallet(*m_node.chain);
+||||||| merged common ancestors
+    auto chain = interfaces::MakeChain(m_node);
+    auto wallet = TestLoadWallet(*chain);
+=======
+    auto chain = interfaces::MakeChain(m_node);
+    WalletContext context;
+    context.chain = chain.get();
+    auto wallet = TestLoadWallet(context);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     CKey key;
     key.MakeNewKey(true);
     AddKey(*wallet, key);
@@ -736,7 +774,13 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
 
     // Reload wallet and make sure new transactions are detected despite events
     // being blocked
+<<<<<<< HEAD
     wallet = TestLoadWallet(*m_node.chain);
+||||||| merged common ancestors
+    wallet = TestLoadWallet(*chain);
+=======
+    wallet = TestLoadWallet(context);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     BOOST_CHECK(rescan_completed);
     BOOST_CHECK_EQUAL(addtx_count, 2);
     {
@@ -763,7 +807,13 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
     // deadlock during the sync and simulates a new block notification happening
     // as soon as possible.
     addtx_count = 0;
+<<<<<<< HEAD
     auto handler = HandleLoadWallet([&](std::unique_ptr<interfaces::Wallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->wallet()->cs_wallet, cs_wallets) {
+||||||| merged common ancestors
+    auto handler = HandleLoadWallet([&](std::unique_ptr<interfaces::Wallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->wallet()->cs_wallet) {
+=======
+    auto handler = HandleLoadWallet(context, [&](std::unique_ptr<interfaces::Wallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->wallet()->cs_wallet) {
+>>>>>>> refactor: remove ::vpwallets and related global variables
             BOOST_CHECK(rescan_completed);
             m_coinbase_txns.push_back(CreateAndProcessBlock({}, GetScriptForRawPubKey(coinbaseKey.GetPubKey())).vtx[0]);
             block_tx = TestSimpleSpend(*m_coinbase_txns[2], 0, coinbaseKey, GetScriptForRawPubKey(key.GetPubKey()));
@@ -776,7 +826,13 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
             ENTER_CRITICAL_SECTION(wallet->wallet()->cs_wallet);
             ENTER_CRITICAL_SECTION(cs_wallets);
         });
+<<<<<<< HEAD
     wallet = TestLoadWallet(*m_node.chain);
+||||||| merged common ancestors
+    wallet = TestLoadWallet(*chain);
+=======
+    wallet = TestLoadWallet(context);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     BOOST_CHECK_EQUAL(addtx_count, 4);
     {
         LOCK(wallet->cs_wallet);
@@ -790,7 +846,17 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
 
 BOOST_FIXTURE_TEST_CASE(ZapSelectTx, TestChain100Setup)
 {
+<<<<<<< HEAD
     auto wallet = TestLoadWallet(*m_node.chain);
+||||||| merged common ancestors
+    auto chain = interfaces::MakeChain(m_node);
+    auto wallet = TestLoadWallet(*chain);
+=======
+    auto chain = interfaces::MakeChain(m_node);
+    WalletContext context;
+    context.chain = chain.get();
+    auto wallet = TestLoadWallet(context);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     CKey key;
     key.MakeNewKey(true);
     AddKey(*wallet, key);
