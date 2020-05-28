@@ -38,6 +38,8 @@
 
 #include <boost/signals2/signal.hpp>
 
+struct WalletContext;
+
 using LoadWalletFn = std::function<void(std::unique_ptr<interfaces::Wallet> wallet)>;
 
 struct bilingual_str;
@@ -49,12 +51,12 @@ struct bilingual_str;
 //! by the shared pointer deleter.
 void UnloadWallet(std::shared_ptr<CWallet>&& wallet);
 
-bool AddWallet(const std::shared_ptr<CWallet>& wallet);
-bool RemoveWallet(const std::shared_ptr<CWallet>& wallet);
-std::vector<std::shared_ptr<CWallet>> GetWallets();
-std::shared_ptr<CWallet> GetWallet(const std::string& name);
-std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings);
-std::unique_ptr<interfaces::Handler> HandleLoadWallet(LoadWalletFn load_wallet);
+bool AddWallet(WalletContext& context, const std::shared_ptr<CWallet>& wallet);
+bool RemoveWallet(WalletContext& context, const std::shared_ptr<CWallet>& wallet);
+std::vector<std::shared_ptr<CWallet>> GetWallets(WalletContext& context);
+std::shared_ptr<CWallet> GetWallet(WalletContext& context, const std::string& name);
+std::shared_ptr<CWallet> LoadWallet(WalletContext& context, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings);
+std::unique_ptr<interfaces::Handler> HandleLoadWallet(WalletContext& context, LoadWalletFn load_wallet);
 
 enum class WalletCreationStatus {
     SUCCESS,
@@ -62,7 +64,7 @@ enum class WalletCreationStatus {
     ENCRYPTION_FAILED
 };
 
-WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result);
+WalletCreationStatus CreateWallet(WalletContext& context, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result);
 
 //! -paytxfee default
 constexpr CAmount DEFAULT_PAY_TX_FEE = 0;
@@ -1134,10 +1136,10 @@ public:
     bool MarkReplaced(const uint256& originalHash, const uint256& newHash);
 
     //! Verify wallet naming and perform salvage on the wallet if required
-    static bool Verify(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error_string, std::vector<bilingual_str>& warnings);
+    static bool Verify(WalletContext& context, const WalletLocation& location, bilingual_str& error_string, std::vector<bilingual_str>& warnings);
 
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
-    static std::shared_ptr<CWallet> CreateWalletFromFile(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings, uint64_t wallet_creation_flags = 0);
+    static std::shared_ptr<CWallet> CreateWalletFromFile(WalletContext& context, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings, uint64_t wallet_creation_flags = 0);
 
     /**
      * Wallet post-init setup
@@ -1271,7 +1273,7 @@ public:
  * Called periodically by the schedule thread. Prompts individual wallets to resend
  * their transactions. Actual rebroadcast schedule is managed by the wallets themselves.
  */
-void MaybeResendWalletTxs();
+void MaybeResendWalletTxs(WalletContext& context);
 
 /** RAII object to check and reserve a wallet rescan */
 class WalletRescanReserver
