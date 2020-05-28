@@ -196,10 +196,28 @@ void SplashScreen::ConnectWallet(std::unique_ptr<interfaces::Wallet> wallet)
 void SplashScreen::subscribeToCoreSignals()
 {
     // Connect signals to client
+<<<<<<< HEAD
     m_handler_init_message = m_node->handleInitMessage(std::bind(InitMessage, this, std::placeholders::_1));
     m_handler_show_progress = m_node->handleShowProgress(std::bind(ShowProgress, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+||||||| merged common ancestors
+    m_handler_init_message = m_node.handleInitMessage(std::bind(InitMessage, this, std::placeholders::_1));
+    m_handler_show_progress = m_node.handleShowProgress(std::bind(ShowProgress, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+=======
+    m_handler_init_message = m_node.handleInitMessage(std::bind(InitMessage, this, std::placeholders::_1));
+    m_handler_show_progress = m_node.handleShowProgress(std::bind(ShowProgress, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+}
+
+void SplashScreen::handleLoadWallet()
+{
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
 #ifdef ENABLE_WALLET
+<<<<<<< HEAD
     m_handler_load_wallet = m_node->handleLoadWallet([this](std::unique_ptr<interfaces::Wallet> wallet) { ConnectWallet(std::move(wallet)); });
+||||||| merged common ancestors
+    m_handler_load_wallet = m_node.handleLoadWallet([this](std::unique_ptr<interfaces::Wallet> wallet) { ConnectWallet(std::move(wallet)); });
+=======
+    m_handler_load_wallet = m_node.walletClient().handleLoadWallet([this](std::unique_ptr<interfaces::Wallet> wallet) { ConnectWallet(std::move(wallet)); });
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
 #endif
 }
 

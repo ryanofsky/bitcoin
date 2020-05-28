@@ -265,6 +265,7 @@ void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
     m_splash = new SplashScreen(nullptr, networkStyle);
     // We don't hold a direct pointer to the splash screen after creation, but the splash
     // screen will take care of deleting itself when finish() happens.
+<<<<<<< HEAD
     m_splash->show();
     connect(this, &BitcoinApplication::splashFinished, m_splash, &SplashScreen::finish);
     connect(this, &BitcoinApplication::requestedShutdown, m_splash, &QWidget::close);
@@ -276,6 +277,16 @@ void BitcoinApplication::setNode(interfaces::Node& node)
     m_node = &node;
     if (optionsModel) optionsModel->setNode(*m_node);
     if (m_splash) m_splash->setNode(*m_node);
+||||||| merged common ancestors
+    splash->show();
+    connect(this, &BitcoinApplication::splashFinished, splash, &SplashScreen::finish);
+    connect(this, &BitcoinApplication::requestedShutdown, splash, &QWidget::close);
+=======
+    splash->show();
+    connect(this, &BitcoinApplication::requestedInitialize, splash, &SplashScreen::handleLoadWallet);
+    connect(this, &BitcoinApplication::splashFinished, splash, &SplashScreen::finish);
+    connect(this, &BitcoinApplication::requestedShutdown, splash, &QWidget::close);
+>>>>>>> refactor: Move wallet methods out of chain.h and node.h
 }
 
 bool BitcoinApplication::baseInitialize()
