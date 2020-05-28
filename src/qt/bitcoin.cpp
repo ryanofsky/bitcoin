@@ -318,6 +318,9 @@ void BitcoinApplication::requestShutdown()
     window->setClientModel(nullptr);
     pollShutdownTimer->stop();
 
+    delete m_wallet_controller;
+    m_wallet_controller = nullptr;
+
     delete clientModel;
     clientModel = nullptr;
 
