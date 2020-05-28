@@ -250,6 +250,7 @@ public:
 };
 
 //! Return implementation of Node interface.
+<<<<<<< HEAD
 std::unique_ptr<Node> MakeNode(NodeContext* context = nullptr);
 
 //! Block tip (could be a header or not, depends on the subscribed signal).
@@ -258,6 +259,11 @@ struct BlockTip {
     int64_t block_time;
     uint256 block_hash;
 };
+||||||| merged common ancestors
+std::unique_ptr<Node> MakeNode();
+=======
+std::unique_ptr<Node> MakeNode(NodeContext* context = nullptr);
+>>>>>>> test: Remove duplicate NodeContext hacks
 
 } // namespace interfaces
 
