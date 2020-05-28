@@ -97,14 +97,16 @@ bool GetWalletNameFromJSONRPCRequest(const JSONRPCRequest& request, std::string&
 std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request)
 {
     CHECK_NONFATAL(!request.fHelp);
+    WalletContext& context = EnsureWalletContext(request.context);
+
     std::string wallet_name;
     if (GetWalletNameFromJSONRPCRequest(request, wallet_name)) {
-        std::shared_ptr<CWallet> pwallet = GetWallet(wallet_name);
+        std::shared_ptr<CWallet> pwallet = GetWallet(context, wallet_name);
         if (!pwallet) throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Requested wallet does not exist or is not loaded");
         return pwallet;
     }
 
-    std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+    std::vector<std::shared_ptr<CWallet>> wallets = GetWallets(context);
     if (wallets.size() == 1) {
         return wallets[0];
     }
@@ -2470,7 +2472,8 @@ static UniValue listwallets(const JSONRPCRequest& request)
 
     UniValue obj(UniValue::VARR);
 
-    for (const std::shared_ptr<CWallet>& wallet : GetWallets()) {
+    WalletContext& context = EnsureWalletContext(request.context);
+    for (const std::shared_ptr<CWallet>& wallet : GetWallets(context)) {
         LOCK(wallet->cs_wallet);
         obj.push_back(wallet->GetName());
     }
@@ -2516,8 +2519,14 @@ static UniValue loadwallet(const JSONRPCRequest& request)
 
     bilingual_str error;
     std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
     Optional<bool> load_on_start = request.params[1].isNull() ? nullopt : Optional<bool>(request.params[1].get_bool());
     std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, location, load_on_start, error, warnings);
+||||||| merged common ancestors
+    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, location, error, warnings);
+=======
+    std::shared_ptr<CWallet> const wallet = LoadWallet(context, location, error, warnings);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
 
     UniValue obj(UniValue::VOBJ);
@@ -2649,8 +2658,14 @@ static UniValue createwallet(const JSONRPCRequest& request)
 
     bilingual_str error;
     std::shared_ptr<CWallet> wallet;
+<<<<<<< HEAD
     Optional<bool> load_on_start = request.params[6].isNull() ? nullopt : Optional<bool>(request.params[6].get_bool());
     WalletCreationStatus status = CreateWallet(*context.chain, passphrase, flags, request.params[0].get_str(), load_on_start, error, warnings, wallet);
+||||||| merged common ancestors
+    WalletCreationStatus status = CreateWallet(*context.chain, passphrase, flags, request.params[0].get_str(), error, warnings, wallet);
+=======
+    WalletCreationStatus status = CreateWallet(context, passphrase, flags, request.params[0].get_str(), error, warnings, wallet);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     switch (status) {
         case WalletCreationStatus::CREATION_FAILED:
             throw JSONRPCError(RPC_WALLET_ERROR, error.original);
@@ -2695,7 +2710,8 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
         wallet_name = request.params[0].get_str();
     }
 
-    std::shared_ptr<CWallet> wallet = GetWallet(wallet_name);
+    WalletContext& context = EnsureWalletContext(request.context);
+    std::shared_ptr<CWallet> wallet = GetWallet(context, wallet_name);
     if (!wallet) {
         throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Requested wallet does not exist or is not loaded");
     }
@@ -2703,9 +2719,15 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
     // Release the "main" shared pointer and prevent further notifications.
     // Note that any attempt to load the same wallet would fail until the wallet
     // is destroyed (see CheckUniqueFileid).
+<<<<<<< HEAD
     std::vector<bilingual_str> warnings;
     Optional<bool> load_on_start = request.params[1].isNull() ? nullopt : Optional<bool>(request.params[1].get_bool());
     if (!RemoveWallet(wallet, load_on_start, warnings)) {
+||||||| merged common ancestors
+    if (!RemoveWallet(wallet)) {
+=======
+    if (!RemoveWallet(context, wallet)) {
+>>>>>>> refactor: remove ::vpwallets and related global variables
         throw JSONRPCError(RPC_MISC_ERROR, "Requested wallet already unloaded");
     }
 

@@ -165,9 +165,20 @@ void TestGUI(interfaces::Node& node)
     TransactionView transactionView(platformStyle.get());
     OptionsModel optionsModel;
     ClientModel clientModel(node, &optionsModel);
+<<<<<<< HEAD
     AddWallet(wallet);
     WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
     RemoveWallet(wallet, nullopt);
+||||||| merged common ancestors
+    AddWallet(wallet);
+    WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
+    RemoveWallet(wallet);
+=======
+    WalletContext& context = *node.walletClient().context();
+    AddWallet(context, wallet);
+    WalletModel walletModel(interfaces::MakeWallet(context, wallet), clientModel, platformStyle.get());
+    RemoveWallet(context, wallet);
+>>>>>>> refactor: remove ::vpwallets and related global variables
     sendCoinsDialog.setModel(&walletModel);
     transactionView.setModel(&walletModel);
 
