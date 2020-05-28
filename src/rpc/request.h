@@ -41,6 +41,7 @@ public:
     const util::Ref& context;
 
     JSONRPCRequest(const util::Ref& context) : id(NullUniValue), params(NullUniValue), fHelp(false), context(context) {}
+<<<<<<< HEAD
 
     //! Initializes request information from another request object and the
     //! given context. The implementation should be updated if any members are
@@ -55,6 +56,16 @@ public:
         , peerAddr(other.peerAddr)
         , context(context) {}
 
+||||||| merged common ancestors
+=======
+
+    //! Copy request information from another request object that may have a
+    //! different request context. This assigns all members except the context
+    //! member, and the implementation should be updated if any members are
+    //! added or removed above.
+    JSONRPCRequest& operator=(const JSONRPCRequest& other);
+
+>>>>>>> Remove g_rpc_chain global
     void parse(const UniValue& valRequest);
 };
 

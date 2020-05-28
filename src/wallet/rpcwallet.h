@@ -31,7 +31,14 @@ Span<const CRPCCommand> GetWalletRPCCommands();
 std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request);
 
 void EnsureWalletIsUnlocked(const CWallet*);
+<<<<<<< HEAD
 WalletContext& EnsureWalletContext(const util::Ref& context);
+||||||| merged common ancestors
+bool EnsureWalletIsAvailable(const CWallet*, bool avoidException);
+=======
+bool EnsureWalletIsAvailable(const CWallet*, bool avoidException);
+WalletContext& EnsureWalletContext(const util::Ref& context);
+>>>>>>> Remove g_rpc_chain global
 LegacyScriptPubKeyMan& EnsureLegacyScriptPubKeyMan(CWallet& wallet, bool also_create = false);
 
 UniValue getaddressinfo(const JSONRPCRequest& request);
