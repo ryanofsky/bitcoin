@@ -97,7 +97,7 @@ WalletTxOut MakeWalletTxOut(CWallet& wallet,
 class WalletImpl : public Wallet
 {
 public:
-    explicit WalletImpl(const std::shared_ptr<CWallet>& wallet) : m_wallet(wallet) {}
+    explicit WalletImpl(WalletContext& context, const std::shared_ptr<CWallet>& wallet) : m_context(context), m_wallet(wallet) {}
 
     bool encryptWallet(const SecureString& wallet_passphrase) override
     {
@@ -446,7 +446,7 @@ public:
     CAmount getDefaultMaxTxFee() override { return m_wallet->m_default_max_tx_fee; }
     void remove() override
     {
-        RemoveWallet(m_wallet);
+        RemoveWallet(m_context, m_wallet);
     }
     bool isLegacy() override { return m_wallet->IsLegacy(); }
     std::unique_ptr<Handler> handleUnload(UnloadFn fn) override
@@ -482,6 +482,7 @@ public:
     }
     CWallet* wallet() override { return m_wallet.get(); }
 
+    WalletContext& m_context;
     std::shared_ptr<CWallet> m_wallet;
 };
 
@@ -494,7 +495,7 @@ public:
         m_context.chain = &chain;
         m_context.args = &args;
     }
-    ~WalletClientImpl() override { UnloadWallets(); }
+    ~WalletClientImpl() override { UnloadWallets(m_context); }
 
     //! ChainClient methods
     void registerRpcs() override
@@ -506,23 +507,23 @@ public:
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }
     }
-    bool verify() override { return VerifyWallets(*m_context.chain, m_wallet_filenames); }
-    bool load() override { return LoadWallets(*m_context.chain, m_wallet_filenames); }
-    void start(CScheduler& scheduler) override { return StartWallets(scheduler, *Assert(m_context.args)); }
-    void flush() override { return FlushWallets(); }
-    void stop() override { return StopWallets(); }
+    bool verify() override { return VerifyWallets(m_context, m_wallet_filenames); }
+    bool load() override { return LoadWallets(m_context, m_wallet_filenames); }
+    void start(CScheduler& scheduler) override { return StartWallets(m_context, scheduler); }
+    void flush() override { return FlushWallets(m_context); }
+    void stop() override { return StopWallets(m_context); }
     void setMockTime(int64_t time) override { return SetMockTime(time); }
 
     //! WalletClient methods
     std::unique_ptr<Wallet> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, WalletCreationStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
         std::shared_ptr<CWallet> wallet;
-        status = CreateWallet(*m_context.chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
-        return MakeWallet(std::move(wallet));
+        status = CreateWallet(m_context, passphrase, wallet_creation_flags, name, error, warnings, wallet);
+        return MakeWallet(m_context, std::move(wallet));
     }
     std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
-        return MakeWallet(LoadWallet(*m_context.chain, WalletLocation(name), error, warnings));
+        return MakeWallet(m_context, LoadWallet(m_context, WalletLocation(name), error, warnings));
     }
     std::string getWalletDir() override
     {
@@ -539,15 +540,16 @@ public:
     std::vector<std::unique_ptr<Wallet>> getWallets() override
     {
         std::vector<std::unique_ptr<Wallet>> wallets;
-        for (const auto& wallet : GetWallets()) {
-            wallets.emplace_back(MakeWallet(wallet));
+        for (const auto& wallet : GetWallets(m_context)) {
+            wallets.emplace_back(MakeWallet(m_context, wallet));
         }
         return wallets;
     }
     std::unique_ptr<Handler> handleLoadWallet(LoadWalletFn fn) override
     {
-        return HandleLoadWallet(std::move(fn));
+        return HandleLoadWallet(m_context, std::move(fn));
     }
+    WalletContext* context() override  { return &m_context; }
 
     WalletContext m_context;
     const std::vector<std::string> m_wallet_filenames;
@@ -557,7 +559,7 @@ public:
 
 } // namespace
 
-std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet) { return wallet ? MakeUnique<WalletImpl>(wallet) : nullptr; }
+std::unique_ptr<Wallet> MakeWallet(WalletContext& context, const std::shared_ptr<CWallet>& wallet) { return wallet ? MakeUnique<WalletImpl>(context, wallet) : nullptr; }
 
 std::unique_ptr<WalletClient> MakeWalletClient(Chain& chain, ArgsManager& args, std::vector<std::string> wallet_filenames)
 {
