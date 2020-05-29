@@ -77,12 +77,19 @@ public:
     uint32_t getLogCategories() override { return LogInstance().GetCategoryMask(); }
     bool baseInitialize() override
     {
+<<<<<<< HEAD
         return AppInitBasicSetup(gArgs) && AppInitParameterInteraction(gArgs) && AppInitSanityChecks() &&
                AppInitLockDataDirectory();
+||||||| merged common ancestors
+        return AppInitBasicSetup() && AppInitParameterInteraction() && AppInitSanityChecks() &&
+               AppInitLockDataDirectory();
+=======
+        return AppInitBasicSetup() && AppInitParameterInteraction() && AppInitSanityChecks() &&
+               AppInitLockDataDirectory() && AppInitInterfaces(*m_context);
+>>>>>>> refactor: Create interfaces earlier during initialization
     }
     bool appInitMain(interfaces::BlockAndHeaderTipInfo* tip_info) override
     {
-        m_context->chain = MakeChain(*m_context);
         return AppInitMain(m_context_ref, *m_context, tip_info);
     }
     void appShutdown() override
