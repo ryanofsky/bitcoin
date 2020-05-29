@@ -6,6 +6,7 @@
 
 #include <chainparams.h>
 #include <key.h>
+#include <interfaces/node.h>
 #include <qt/bitcoin.h>
 #include <qt/bitcoingui.h>
 #include <qt/networkstyle.h>
@@ -63,6 +64,7 @@ void AppTests::appTests()
 #endif
 
     BasicTestingSetup test{CBaseChainParams::REGTEST}; // Create a temp data directory to backup the gui settings to
+    m_app.node().setContext(&test.m_node);
     ECC_Stop(); // Already started by the common test setup, so stop it to avoid interference
     LogInstance().DisconnectTestLogger();
 
