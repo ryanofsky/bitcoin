@@ -78,11 +78,10 @@ public:
     bool baseInitialize() override
     {
         return AppInitBasicSetup() && AppInitParameterInteraction() && AppInitSanityChecks() &&
-               AppInitLockDataDirectory();
+               AppInitLockDataDirectory() && AppInitInterfaces(*m_context);
     }
     bool appInitMain() override
     {
-        m_context->chain = MakeChain(*m_context);
         return AppInitMain(m_context_ref, *m_context);
     }
     void appShutdown() override
