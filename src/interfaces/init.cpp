@@ -26,6 +26,12 @@ LocalInit::LocalInit(const char* exe_name, const char* log_suffix) : m_exe_name(
 LocalInit::~LocalInit() {}
 std::unique_ptr<Echo> LocalInit::makeEcho() { return {}; }
 std::unique_ptr<Echo> LocalInit::makeEchoIpc() { return {}; }
+std::unique_ptr<Node> LocalInit::makeNode() { return {}; }
+std::unique_ptr<Chain> LocalInit::makeChain() { return {}; }
+std::unique_ptr<ChainClient> LocalInit::makeWalletClient(Chain& chain, std::vector<std::string> wallet_filenames)
+{
+    return {};
+}
 NodeContext& LocalInit::node()
 {
     throw std::logic_error("Node accessor function called from non-node binary (gui, wallet, or test program)");
