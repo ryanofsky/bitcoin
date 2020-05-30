@@ -46,6 +46,7 @@ static void WaitForShutdown(NodeContext& node)
 static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
 {
     NodeContext& node = init.node();
+    node.args = &gArgs;
     node.chain = interfaces::MakeChain(node);
 
     bool fRet = false;
@@ -56,7 +57,7 @@ static bool AppInit(interfaces::LocalInit& init, int argc, char* argv[])
     // Parameters
     //
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
-    SetupServerArgs(node);
+    SetupServerArgs();
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {
         return InitError(Untranslated(strprintf("Error parsing command line arguments: %s\n", error)));
