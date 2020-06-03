@@ -19,6 +19,7 @@ class PeerLogicValidation;
 namespace interfaces {
 class Chain;
 class ChainClient;
+class LocalInit;
 } // namespace interfaces
 
 //! NodeContext struct containing references to chain state and connection
@@ -41,6 +42,7 @@ struct NodeContext {
     std::unique_ptr<interfaces::Chain> chain;
     std::vector<std::unique_ptr<interfaces::ChainClient>> chain_clients;
     std::unique_ptr<CScheduler> scheduler;
+    interfaces::LocalInit* init{nullptr}; // FIXME: Convert to unique_ptr after #19096
 
     //! Declare default constructor and destructor that are not inline, so code
     //! instantiating the NodeContext struct doesn't need to #include class

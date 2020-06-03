@@ -5,6 +5,8 @@
 #ifndef BITCOIN_INTERFACES_NODE_H
 #define BITCOIN_INTERFACES_NODE_H
 
+#include <interfaces/base.h>
+
 #include <amount.h>     // For CAmount
 #include <net.h>        // For CConnman::NumConnections
 #include <net_types.h>  // For banmap_t
@@ -35,11 +37,12 @@ struct bilingual_str;
 
 namespace interfaces {
 class Handler;
+class LocalInit;
 class Wallet;
 struct BlockTip;
 
 //! Top-level interface for a bitcoin node (bitcoind process).
-class Node
+class Node : public Base
 {
 public:
     virtual ~Node() {}
@@ -267,7 +270,7 @@ public:
 };
 
 //! Return implementation of Node interface.
-std::unique_ptr<Node> MakeNode();
+std::unique_ptr<Node> MakeNode(LocalInit& init);
 
 //! Block tip (could be a header or not, depends on the subscribed signal).
 struct BlockTip {
