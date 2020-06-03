@@ -4,6 +4,7 @@
 
 #include <interfaces/init.h>
 
+#include <interfaces/echo.h>
 #include <node/context.h>
 #include <util/memory.h>
 
@@ -16,6 +17,16 @@ public:
     {
         m_node.init = this;
         m_request_context.Set(m_node);
+    }
+    std::unique_ptr<Echo> makeEchoIpc() override
+    {
+        // The bitcoind binary isn't linked against libmultiprocess and doesn't
+        // have IPC support, so just create a local interfaces::Echo object and
+        // return it so the `echoipc` RPC method will work, and the python test
+        // calling `echoipc` doesn't have to care whether it is testing a
+        // bitcoind process without IPC support, or a bitcoin-node process with
+        // IPC support.
+        return MakeEcho();
     }
     NodeContext& node() override { return m_node; };
     NodeContext m_node;
