@@ -15,6 +15,7 @@ struct NodeContext;
 
 namespace interfaces {
 class Base;
+class Echo;
 class IpcProcess;
 class IpcProtocol;
 
@@ -23,6 +24,7 @@ class Init
 {
 public:
     virtual ~Init() = default;
+    virtual std::unique_ptr<Echo> makeEcho() = 0;
 };
 
 //! Specialization of Init for current process.
@@ -31,8 +33,12 @@ class LocalInit : public Init
 public:
     LocalInit(const char* exe_name, const char* log_suffix);
     ~LocalInit() override;
+    std::unique_ptr<Echo> makeEcho() override;
     using MakeClientFn = std::function<Base&(Init&)>;
     void spawnProcess(const std::string& new_exe_name, const MakeClientFn& make_client);
+    //! Make echo implementation for `echoipc` test RPC. Spawn new process if
+    //! supported.
+    virtual std::unique_ptr<Echo> makeEchoIpc();
     virtual NodeContext& node();
     const char* m_exe_name;
     const char* m_log_suffix;
