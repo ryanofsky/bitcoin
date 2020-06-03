@@ -7,8 +7,10 @@
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("interfaces::capnp::messages");
 
+using Echo = import "echo.capnp";
 using Proxy = import "/mp/proxy.capnp";
 
 interface Init $Proxy.wrap("interfaces::Init") {
     construct @0 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
+    makeEcho @1 (context :Proxy.Context) -> (result :Echo.Echo);
 }

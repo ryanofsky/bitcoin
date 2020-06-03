@@ -5,6 +5,7 @@
 #ifndef BITCOIN_INTERFACES_CAPNP_INIT_H
 #define BITCOIN_INTERFACES_CAPNP_INIT_H
 
+#include <interfaces/echo.h>
 #include <interfaces/init.h>
 #include <mp/proxy.h>
 

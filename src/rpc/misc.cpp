@@ -5,6 +5,8 @@
 
 #include <httpserver.h>
 #include <interfaces/chain.h>
+#include <interfaces/echo.h>
+#include <interfaces/init.h>
 #include <key_io.h>
 #include <node/context.h>
 #include <outputtype.h>
@@ -597,6 +599,24 @@ static UniValue echo(const JSONRPCRequest& request)
     return request.params;
 }
 
+static UniValue echoipc(const JSONRPCRequest& request)
+{
+    RPCHelpMan{
+        "echoipc",
+        "\nEcho back the input argument, passing it through a spawned process in a multiprocess build.\n"
+        "This command is for testing.\n",
+        {{"echo", RPCArg::Type::STR, RPCArg::Optional::NO, "The string to echo",}},
+        RPCResult{RPCResult::Type::STR, "echo", "The echoed string."},
+        RPCExamples{HelpExampleCli("echo", "\"Hello world\"") +
+                    HelpExampleRpc("echo", "\"Hello world\"")},
+    }.Check(request);
+
+    NodeContext* context = request.context.Has<NodeContext>() ? &request.context.Get<NodeContext>() : nullptr;
+    if (!context || !context->init) throw JSONRPCError(RPC_INTERNAL_ERROR, "IPC not available");
+    std::unique_ptr<interfaces::Echo> echo = context->init->makeEchoIpc();
+    return echo->echo(request.params[0].get_str());
+}
+
 void RegisterMiscRPCCommands(CRPCTable &t)
 {
 // clang-format off
@@ -617,6 +637,7 @@ static const CRPCCommand commands[] =
     { "hidden",             "mockscheduler",          &mockscheduler,          {"delta_time"}},
     { "hidden",             "echo",                   &echo,                   {"arg0","arg1","arg2","arg3","arg4","arg5","arg6","arg7","arg8","arg9"}},
     { "hidden",             "echojson",               &echo,                   {"arg0","arg1","arg2","arg3","arg4","arg5","arg6","arg7","arg8","arg9"}},
+    { "hidden",             "echoipc",                &echoipc,                {"arg"}},
 };
 // clang-format on
 

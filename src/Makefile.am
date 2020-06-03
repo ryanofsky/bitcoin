@@ -145,6 +145,7 @@ BITCOIN_CORE_H = \
   init.h \
   interfaces/base.h \
   interfaces/chain.h \
+  interfaces/echo.h \
   interfaces/handler.h \
   interfaces/init.h \
   interfaces/node.h \
@@ -515,6 +516,7 @@ libbitcoin_util_a_SOURCES = \
   compat/strnlen.cpp \
   fs.cpp \
   interfaces/base.cpp \
+  interfaces/echo.cpp \
   interfaces/init.cpp \
   interfaces/handler.cpp \
   logging.cpp \
@@ -735,6 +737,7 @@ if HARDEN
 endif
 
 libbitcoin_ipc_mpgen_input = \
+  interfaces/capnp/echo.capnp \
   interfaces/capnp/init.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 %.capnp:
@@ -742,6 +745,8 @@ EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 if BUILD_MULTIPROCESS
 LIBBITCOIN_IPC=libbitcoin_ipc.a
 libbitcoin_ipc_a_SOURCES = \
+  interfaces/capnp/echo-types.h \
+  interfaces/capnp/echo.h \
   interfaces/capnp/init-types.h \
   interfaces/capnp/init.cpp \
   interfaces/capnp/init.h \
