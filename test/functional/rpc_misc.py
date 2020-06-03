@@ -61,6 +61,8 @@ class RpcMiscTest(BitcoinTestFramework):
         node.logging(include=['qt'])
         assert_equal(node.logging()['qt'], True)
 
+        self.log.info("test echoipc (testing spawned process in multiprocess build)")
+        assert_equal(node.echoipc("hello"), "hello")
 
 if __name__ == '__main__':
     RpcMiscTest().main()
