@@ -61,6 +61,7 @@ class RpcMiscTest(BitcoinTestFramework):
         node.logging(include=['qt'])
         assert_equal(node.logging()['qt'], True)
 
+        assert_equal(node.echoipc("hello"), "hello")
 
 if __name__ == '__main__':
     RpcMiscTest().main()
