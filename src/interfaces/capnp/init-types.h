@@ -4,4 +4,7 @@
 
 #ifndef BITCOIN_INTERFACES_CAPNP_INIT_TYPES_H
 #define BITCOIN_INTERFACES_CAPNP_INIT_TYPES_H
+
+#include <interfaces/capnp/echo.capnp.proxy-types.h>
+
 #endif // BITCOIN_INTERFACES_CAPNP_INIT_TYPES_H
