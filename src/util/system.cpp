@@ -73,6 +73,7 @@
 const int64_t nStartupTime = GetTime();
 
 const char * const BITCOIN_CONF_FILENAME = "bitcoin.conf";
+const char * const BITCOIN_SETTINGS_FILENAME = "settings.json";
 
 ArgsManager gArgs;
 
@@ -370,6 +371,86 @@ std::vector<std::string> ArgsManager::GetArgs(const std::string& strArg) const
 bool ArgsManager::IsArgSet(const std::string& strArg) const
 {
     return !GetSetting(strArg).isNull();
+}
+
+static bool GetSettingsPath(fs::path* filepath = nullptr, bool temp = false)
+{
+    if (gArgs.IsArgNegated("-settings")) return false;
+    if (filepath) {
+        std::string settings = gArgs.GetArg("-settings", BITCOIN_SETTINGS_FILENAME);
+        *filepath = fs::absolute(temp ? settings + ".tmp" : settings, GetDataDir(/* net_specific= */ true));
+    }
+    return true;
+}
+
+bool ArgsManager::EnableSettingsFile()
+{
+    return GetSettingsPath();
+}
+
+bool ArgsManager::ReadSettingsFile()
+{
+    fsbridge::ifstream file;
+    fs::path filepath;
+    if (!GetSettingsPath(&filepath, /* temp= */ false)) return true;
+    file.open(filepath);
+    if (!file.is_open()) return true; // Ok for file not to exist.
+
+    util::SettingsValue in;
+    if (!in.read(std::string{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()})) {
+        LogPrintf("Error: Unable to parse settings file %s\n", filepath.string());
+        return false;
+    }
+    if (file.fail()) {
+        LogPrintf("Error reading settings file %s\n", filepath.string());
+        return false;
+    }
+    file.close();
+
+    if (!in.isObject()) {
+        LogPrintf("Error: Settings file %s is not in expected key-value format.\n", filepath.string());
+        return false;
+    }
+
+    LOCK(cs_args);
+    m_settings.rw_settings.clear();
+    const std::vector<std::string>& keys = in.getKeys();
+    const std::vector<UniValue>& values = in.getValues();
+    for (size_t i = 0; i < keys.size(); ++i) {
+        m_settings.rw_settings.emplace(keys[i], values[i]);
+    }
+    return true;
+}
+
+bool ArgsManager::WriteSettingsFile() const
+{
+    fs::path filepath, filepath_tmp;
+    if (!GetSettingsPath(&filepath, /* temp= */ false) || !GetSettingsPath(&filepath_tmp, /* temp= */ true)) {
+        throw std::logic_error("Attempt to write settings file when dynamic settings are disabled.");
+    }
+
+    util::SettingsValue out(util::SettingsValue::VOBJ);
+    {
+        LOCK(cs_args);
+        for (const auto& value : m_settings.rw_settings) {
+            out.__pushKV(value.first, value.second);
+        }
+    }
+
+    fsbridge::ofstream file;
+    file.open(filepath_tmp);
+    if (file.fail()) {
+        LogPrintf("Error: Unable to open settings file %s for writing\n", filepath_tmp.string());
+        return false;
+    }
+    file << out.write(/* prettyIndent= */ 1, /* indentLevel= */ 4) << std::endl;
+    file.close();
+
+    if (!RenameOver(filepath_tmp, filepath)) {
+        LogPrintf("Error: Unable to rename settings file %s to %s\n", filepath_tmp.string(), filepath.string());
+        return false;
+    }
+    return true;
 }
 
 bool ArgsManager::IsArgNegated(const std::string& strArg) const
