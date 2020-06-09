@@ -42,6 +42,10 @@ public:
     FoundBlock& time(int64_t& time) { m_time = &time; return *this; }
     FoundBlock& maxTime(int64_t& max_time) { m_max_time = &max_time; return *this; }
     FoundBlock& mtpTime(int64_t& mtp_time) { m_mtp_time = &mtp_time; return *this; }
+    //! Return whether block is part of the current active (most-work) chain.
+    FoundBlock& inActiveChain(bool& in_active_chain) { m_in_active_chain = &in_active_chain; return *this; }
+    //! Return next block after this in the current active chain.
+    FoundBlock& nextBlock(const FoundBlock& next_block) { m_next_block = &next_block; return *this; }
     //! Read block data from disk. If the block exists but doesn't have data
     //! (for example due to pruning), the CBlock variable will be set to null.
     FoundBlock& data(CBlock& data) { m_data = &data; return *this; }
@@ -52,6 +56,8 @@ public:
     int64_t* m_max_time = nullptr;
     int64_t* m_mtp_time = nullptr;
     CBlock* m_data = nullptr;
+    bool* m_in_active_chain = nullptr;
+    const FoundBlock* m_next_block = nullptr;
 };
 
 //! Interface giving clients (wallet processes, maybe other analysis tools in
@@ -77,7 +83,8 @@ public:
 //!
 //! * The `guessVerificationProgress`, `getBlockHeight`, `getBlockHash`, etc
 //!   methods can go away if rescan logic is moved on the node side, and wallet
-//!   only register rescan request.
+//!   just requests scans from the node
+//!   (https://github.com/bitcoin/bitcoin/issues/11756)
 class Chain
 {
 public:
@@ -100,13 +107,6 @@ public:
     //! pruned), and contains transactions.
     virtual bool haveBlockOnDisk(int height) = 0;
 
-    //! Return height of the first block in the chain with timestamp equal
-    //! or greater than the given time and height equal or greater than the
-    //! given height, or nullopt if there is no block with a high enough
-    //! timestamp and height. Also return the block hash as an optional output parameter
-    //! (to avoid the cost of a second lookup in case this information is needed.)
-    virtual Optional<int> findFirstBlockWithTimeAndHeight(int64_t time, int height, uint256* hash) = 0;
-
     //! Get locator for the current chain tip.
     virtual CBlockLocator getTipLocator() = 0;
 
@@ -127,11 +127,6 @@ public:
     //! with a high enough timestamp and height. Optionally return block
     //! information.
     virtual bool findFirstBlockWithTimeAndHeight(int64_t min_time, int min_height, const FoundBlock& block={}) = 0;
-
-    //! Find next block if block is part of current chain. Also flag if
-    //! there was a reorg and the specified block hash is no longer in the
-    //! current chain, and optionally return block information.
-    virtual bool findNextBlock(const uint256& block_hash, int block_height, const FoundBlock& next={}, bool* reorg=nullptr) = 0;
 
     //! Find ancestor of block at specified height and optionally return
     //! ancestor information.
