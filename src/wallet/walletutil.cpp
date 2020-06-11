@@ -7,6 +7,9 @@
 #include <logging.h>
 #include <util/system.h>
 
+bool ExistsBerkeleyDatabase(const fs::path& path);
+bool ExistsSQLiteDatabase(const fs::path& path);
+
 fs::path GetWalletDir()
 {
     fs::path path;
@@ -71,7 +74,8 @@ std::vector<fs::path> ListWalletDir()
         // This can be replaced by boost::filesystem::lexically_relative once boost is bumped to 1.60.
         const fs::path path = it->path().string().substr(offset);
 
-        if (it->status().type() == fs::directory_file && IsBerkeleyBtree(it->path() / "wallet.dat")) {
+        if (it->status().type() == fs::directory_file &&
+            int(ExistsBerkeleyDatabase(it->path())) + int(ExistsSQLiteDatabase(it->path())) == 1) {
             // Found a directory which contains wallet.dat btree file, add it as a wallet.
             paths.emplace_back(path);
         } else if (it.level() == 0 && it->symlink_status().type() == fs::regular_file && IsBerkeleyBtree(it->path())) {
