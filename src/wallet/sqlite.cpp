@@ -172,6 +172,13 @@ void SQLiteBatch::Flush()
 
 void SQLiteBatch::Close()
 {
+    if (m_database.m_db && sqlite3_get_autocommit(m_database.m_db) == 0) {
+        if (TxnAbort()) {
+            LogPrintf("SQLiteBatch: Batch closed and transaction was aborted\n");
+        } else {
+            LogPrintf("SQLiteBatch: Batch closed and could not abort transaction\n");
+        }
+    }
 }
 
 bool SQLiteBatch::ReadKey(CDataStream&& key, CDataStream& value)
