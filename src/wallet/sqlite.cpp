@@ -309,7 +309,8 @@ void SQLiteDatabase::AddRef()
 
 std::unique_ptr<DatabaseBatch> SQLiteDatabase::MakeBatch(const char* mode, bool flush_on_close)
 {
-    return nullptr;
+    // We ignore flush_on_close because we don't do manual flushing for SQLite
+    return MakeUnique<SQLiteBatch>(*this, mode);
 }
 
 SQLiteBatch::SQLiteBatch(SQLiteDatabase& database, const char* mode)
