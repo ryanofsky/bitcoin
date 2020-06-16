@@ -186,6 +186,10 @@ void SQLiteBatch::Flush()
 
 void SQLiteBatch::Close()
 {
+    if (m_database.m_db && sqlite3_get_autocommit(m_database.m_db) == 0) {
+        TxnAbort();
+    }
+    m_database.RemoveRef();
 }
 
 bool SQLiteBatch::ReadKey(CDataStream&& key, CDataStream& value)
