@@ -442,6 +442,7 @@ public:
     CAmount getDefaultMaxTxFee() override { return m_wallet->m_default_max_tx_fee; }
     void remove() override
     {
+        RemoveWalletSetting(m_wallet->chain(), m_wallet->GetName());
         RemoveWallet(m_wallet);
     }
     bool isLegacy() override { return m_wallet->IsLegacy(); }

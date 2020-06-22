@@ -48,6 +48,7 @@ std::vector<std::shared_ptr<CWallet>> GetWallets();
 std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings);
 WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result);
 std::unique_ptr<interfaces::Handler> HandleLoadWallet(interfaces::Node::LoadWalletFn load_wallet);
+bool AddWalletSetting(interfaces::Chain& chain, const std::string& wallet_name);
 
 namespace interfaces {
 
@@ -277,13 +278,17 @@ public:
     }
     std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
-        return MakeWallet(LoadWallet(*m_context.chain, name, error, warnings));
+        auto ret = MakeWallet(LoadWallet(*m_context.chain, name, error, warnings));
+        if (ret && !AddWalletSetting(*m_context.chain, name)) return nullptr;
+        return ret;
     }
     std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, WalletCreationStatus& status) override
     {
         std::shared_ptr<CWallet> wallet;
         status = CreateWallet(*m_context.chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
-        return MakeWallet(wallet);
+        auto ret = MakeWallet(wallet);
+        if (ret && !AddWalletSetting(*m_context.chain, name)) return nullptr;
+        return ret;
     }
     std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) override
     {

@@ -96,4 +96,9 @@ std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet)
     throw std::logic_error("Wallet function called in non-wallet build.");
 }
 
+bool AddWalletSetting(interfaces::Chain& chain, const std::string& wallet_name)
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
 } // namespace interfaces
