@@ -242,6 +242,7 @@ BASE_SCRIPTS = [
     'p2p_permissions.py',
     'feature_blocksdir.py',
     'feature_config_args.py',
+    'feature_settings.py',
     'rpc_getdescriptorinfo.py',
     'rpc_help.py',
     'feature_help.py',
