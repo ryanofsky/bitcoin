@@ -27,10 +27,15 @@ public:
         ipc::capnp::SetupNodeClient(m_ipc->context());
     }
     interfaces::Ipc* ipc() override { return m_ipc.get(); }
+<<<<<<< HEAD
     // bitcoin-gui accepts -ipcbind option even though it does not use it
     // directly. It just returns true here to accept the option because
     // bitcoin-node accepts the option, and bitcoin-gui accepts all bitcoin-node
     // options and will start the node with those options.
+||||||| parent of 359a59bb70ab (multiprocess: Add bitcoin-gui -ipcconnect option)
+=======
+    bool canConnectIpc() override { return true; }
+>>>>>>> 359a59bb70ab (multiprocess: Add bitcoin-gui -ipcconnect option)
     bool canListenIpc() override { return true; }
     std::unique_ptr<interfaces::Ipc> m_ipc;
 };
