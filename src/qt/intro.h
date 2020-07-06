@@ -5,6 +5,8 @@
 #ifndef BITCOIN_QT_INTRO_H
 #define BITCOIN_QT_INTRO_H
 
+#include <optional.h>
+
 #include <QDialog>
 #include <QMutex>
 #include <QThread>
@@ -47,7 +49,7 @@ public:
      * @note do NOT call global GetDataDir() before calling this function, this
      * will cause the wrong path to be cached.
      */
-    static bool showIfNeeded(bool& did_show_intro, bool& prune);
+    static bool showIfNeeded(Optional<std::string>& data_dir_override, bool& did_show_intro, bool& prune);
 
 Q_SIGNALS:
     void requestCheck();
