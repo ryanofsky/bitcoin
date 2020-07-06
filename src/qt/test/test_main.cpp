@@ -53,8 +53,15 @@ int main(int argc, char* argv[])
         BasicTestingSetup dummy{CBaseChainParams::REGTEST};
     }
 
+<<<<<<< HEAD
     std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
     std::unique_ptr<interfaces::Node> node = init->makeNode();
+||||||| merged common ancestors
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = init->makeNode();
+=======
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+>>>>>>> multiprocess: Add bitcoin-gui -ipcconnect option
 
     bool fInvalid = false;
 
@@ -70,8 +77,8 @@ int main(int argc, char* argv[])
     // Don't remove this, it's needed to access
     // QApplication:: and QCoreApplication:: in the tests
     BitcoinApplication app;
-    app.setNode(*node);
     app.setApplicationName("Bitcoin-Qt-test");
+    app.createNode(*init);
 
     app.node().context()->args = &gArgs;     // Make gArgs available in the NodeContext
     AppTests app_tests(app);
