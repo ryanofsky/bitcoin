@@ -580,6 +580,7 @@ void SetupServerArgs(ArgsManager& argsman, bool include_ipc)
 
     if (include_ipc) {
         argsman.AddArg("-ipcbind=<address>", "Bind bitcoin-node process to tcp or unix socket address.", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
+        argsman.AddArg("-ipcconnect=<address>", "Instead of starting a bitcoin-node process in the background, connect to the an existing process listening at the specified address. Valid <address> values are 'auto' to try connecting to default socket in <datadir>/sockets/node.sock, but start a bitcoin-node process if it isn't available, 'unix' to connect to the default socket and fail if it isn't available, 'unix:<socket path>' to connect to a socket at a nonstandard path, and -noipcconnect to not try to connect. Default value: auto", ArgsManager::ALLOW_ANY, OptionsCategory::IPC);
     }
 
 #if HAVE_DECL_DAEMON

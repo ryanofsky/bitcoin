@@ -31,11 +31,9 @@
 #include <init.h>
 #include <interfaces/handler.h>
 #include <interfaces/node.h>
-#include <node/context.h>
 #include <node/ui_interface.h>
 #include <noui.h>
 #include <uint256.h>
-#include <util/check.h>
 #include <util/system.h>
 #include <util/threadnames.h>
 #include <util/translation.h>
@@ -274,10 +272,23 @@ void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
     connect(this, &BitcoinApplication::requestedShutdown, m_splash, &QWidget::close);
 }
 
-void BitcoinApplication::setNode(interfaces::Node& node)
+void BitcoinApplication::createNode(interfaces::LocalInit& init)
 {
     assert(!m_node);
-    m_node = &node;
+    init.initProcess();
+    m_node = init.makeNode();
+    if (!m_node) {
+        std::string address = gArgs.GetArg("-ipcconnect", "auto");
+        auto make_client = [&](interfaces::Init& server) -> interfaces::Base& {
+            m_node = server.makeNode();
+            return *m_node;
+        };
+        if (interfaces::ConnectAddress(*init.m_process, *init.m_protocol, GetDataDir(), address, make_client)) {
+            m_node_external = true;
+        } else {
+            interfaces::SpawnProcess(*init.m_process, *init.m_protocol, "bitcoin-node", make_client);
+        }
+    }
     if (optionsModel) optionsModel->setNode(*m_node);
     if (m_splash) m_splash->setNode(*m_node);
 }
@@ -328,7 +339,13 @@ void BitcoinApplication::requestInitialize()
 {
     qDebug() << __func__ << ": Requesting initialize";
     startThread();
-    Q_EMIT requestedInitialize();
+    if (m_node_external) {
+        interfaces::BlockAndHeaderTipInfo tip_info;
+        initializeResult(true, tip_info);
+    } else {
+        Q_EMIT requestedInitialize();
+    }
+
 }
 
 void BitcoinApplication::requestShutdown()
@@ -346,7 +363,7 @@ void BitcoinApplication::requestShutdown()
     window->unsubscribeFromCoreSignals();
     // Request node shutdown, which can interrupt long operations, like
     // rescanning a wallet.
-    node().startShutdown();
+    if (!m_node_external) node().startShutdown();
     // Unsetting the client model can cause the current thread to wait for node
     // to complete an operation, like wait for a RPC execution to complete.
     window->setClientModel(nullptr);
@@ -356,7 +373,11 @@ void BitcoinApplication::requestShutdown()
     clientModel = nullptr;
 
     // Request shutdown from core thread
-    Q_EMIT requestedShutdown();
+    if (m_node_external) {
+        shutdownResult();
+    } else {
+        Q_EMIT requestedShutdown();
+    }
 }
 
 void BitcoinApplication::initializeResult(bool success, interfaces::BlockAndHeaderTipInfo tip_info)
@@ -447,7 +468,6 @@ int GuiMain(int argc, char* argv[])
 #endif
 
     std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = init->makeNode();
 
     SetupEnvironment();
     util::ThreadSetInternalName("main");
@@ -473,7 +493,7 @@ int GuiMain(int argc, char* argv[])
 
     /// 2. Parse command-line options. We do this after qt in order to show an error if there are problems parsing these
     // Command-line options take precedence:
-    SetupServerArgs(gArgs);
+    SetupServerArgs(gArgs, init->m_protocol.get());
     SetupUIArgs(gArgs);
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {
@@ -603,7 +623,7 @@ int GuiMain(int argc, char* argv[])
     if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
         app.createSplashScreen(networkStyle.data());
 
-    app.setNode(*node);
+    app.createNode(*init);
 
     int rv = EXIT_SUCCESS;
     try
@@ -612,7 +632,7 @@ int GuiMain(int argc, char* argv[])
         // Perform base initialization before spinning up initialization/shutdown thread
         // This is acceptable because this function only contains steps that are quick to execute,
         // so the GUI thread won't be held up.
-        if (app.baseInitialize()) {
+        if (app.nodeExternal() || app.baseInitialize()) {
             app.requestInitialize();
 #if defined(Q_OS_WIN)
             WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(PACKAGE_NAME), (HWND)app.getMainWinId());
