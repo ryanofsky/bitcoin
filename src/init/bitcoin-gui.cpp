@@ -27,6 +27,7 @@ public:
         ipc::capnp::SetupNodeClient(m_ipc->context());
     }
     interfaces::Ipc* ipc() override { return m_ipc.get(); }
+    bool canConnectIpc() override { return true; }
     bool canListenIpc() override { return true; }
     std::unique_ptr<interfaces::Ipc> m_ipc;
 };

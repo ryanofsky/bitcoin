@@ -114,7 +114,15 @@ static bool ParseArgs(NodeContext& node, int argc, char* argv[])
 {
     ArgsManager& args{*Assert(node.args)};
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
+<<<<<<< HEAD
     SetupServerArgs(args, node.init->canListenIpc());
+||||||| parent of 5f91aa3d8b47 (multiprocess: Add bitcoin-gui -ipcconnect option)
+    ArgsManager& args = *Assert(node.args);
+    SetupServerArgs(args, node.init->canListenIpc());
+=======
+    ArgsManager& args = *Assert(node.args);
+    SetupServerArgs(args, node.init->canConnectIpc(), node.init->canListenIpc());
+>>>>>>> 5f91aa3d8b47 (multiprocess: Add bitcoin-gui -ipcconnect option)
     std::string error;
     if (!args.ParseParameters(argc, argv, error)) {
         return InitError(Untranslated(strprintf("Error parsing command line arguments: %s", error)));
