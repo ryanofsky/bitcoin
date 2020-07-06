@@ -59,7 +59,7 @@ void OptionTests::migrateSettings()
     QVERIFY(settings.contains("fUseSeparateProxyTor"));
     QVERIFY(settings.contains("addrSeparateProxyTor"));
 
-    OptionsModel options{m_node};
+    OptionsModel options{m_node, /*parent=*/nullptr};
     bilingual_str error;
     QVERIFY(options.Init(error));
     QVERIFY(!settings.contains("nDatabaseCache"));
@@ -99,7 +99,7 @@ void OptionTests::integerGetArgBug()
     });
     gArgs.WriteSettingsFile();
     bilingual_str error;
-    QVERIFY(OptionsModel{m_node}.Init(error));
+    QVERIFY((OptionsModel{m_node, /*parent=*/nullptr}.Init(error)));
     gArgs.LockSettings([&](common::Settings& settings) {
         settings.rw_settings.erase("prune");
     });
@@ -123,7 +123,7 @@ void OptionTests::parametersInteraction()
     settings.setValue("fListen", false);
 
     bilingual_str error;
-    QVERIFY(OptionsModel{m_node}.Init(error));
+    QVERIFY((OptionsModel{m_node, /*parent=*/nullptr}.Init(error)));
 
     const bool expected{false};
 

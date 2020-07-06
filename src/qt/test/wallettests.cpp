@@ -240,7 +240,7 @@ public:
     std::unique_ptr<ClientModel> clientModel;
     std::unique_ptr<WalletModel> walletModel;
 
-    MiniGUI(interfaces::Node& node, const PlatformStyle* platformStyle) : sendCoinsDialog(platformStyle), transactionView(platformStyle), optionsModel(node) {
+    MiniGUI(interfaces::Node& node, const PlatformStyle* platformStyle) : sendCoinsDialog(platformStyle), transactionView(platformStyle), optionsModel(node, nullptr /* parent */) {
         bilingual_str error;
         QVERIFY(optionsModel.Init(error));
         clientModel = std::make_unique<ClientModel>(node, &optionsModel);
