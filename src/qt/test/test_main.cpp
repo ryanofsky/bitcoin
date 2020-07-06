@@ -54,7 +54,6 @@ int main(int argc, char* argv[])
     }
 
     std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = init->makeNode();
     gArgs.ForceSetArg("-listen", "0");
     gArgs.ForceSetArg("-listenonion", "0");
     gArgs.ForceSetArg("-discover", "0");
@@ -77,8 +76,8 @@ int main(int argc, char* argv[])
     // Don't remove this, it's needed to access
     // QApplication:: and QCoreApplication:: in the tests
     BitcoinApplication app;
-    app.setNode(*node);
     app.setApplicationName("Bitcoin-Qt-test");
+    app.createNode(*init);
 
     app.node().context()->args = &gArgs;     // Make gArgs available in the NodeContext
     AppTests app_tests(app);
