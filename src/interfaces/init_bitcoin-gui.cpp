@@ -19,14 +19,14 @@ public:
         m_protocol = capnp::MakeCapnpProtocol(m_exe_name, *this);
         m_process = MakeIpcProcess(argc, argv, m_exe_name, *m_protocol);
     }
-    std::unique_ptr<Node> makeNode() override
+    void initProcess() override
     {
-        std::unique_ptr<Node> node;
-        SpawnProcess(*m_process, *m_protocol, "bitcoin-node", [&](Init& init) -> Base& {
-            node = init.makeNode();
-            return *node;
-        });
-        return node;
+        // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInit.
+        if (!LogInstance().StartLogging()) {
+            throw std::runtime_error(strprintf("Could not open debug log file %s", LogInstance().m_file_path.string()));
+        }
+        if (!LogInstance().m_log_timestamps)
+            LogPrintf("Startup time: %s\n", FormatISO8601DateTime(GetTime()));
     }
     void makeNodeClient(NodeClientParam& param) override { MakeProxy(param); }
 };
