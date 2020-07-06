@@ -247,7 +247,6 @@ void BitcoinApplication::createPaymentServer()
 void BitcoinApplication::createOptionsModel(bool resetSettings)
 {
     optionsModel = new OptionsModel(this, resetSettings);
-    optionsModel->setNode(node());
 }
 
 void BitcoinApplication::createWindow(const NetworkStyle *networkStyle)
@@ -262,7 +261,6 @@ void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
 {
     assert(!m_splash);
     m_splash = new SplashScreen(nullptr, networkStyle);
-    m_splash->setNode(node());
     // We don't hold a direct pointer to the splash screen after creation, but the splash
     // screen will take care of deleting itself when finish() happens.
     m_splash->show();
@@ -270,10 +268,11 @@ void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
     connect(this, &BitcoinApplication::requestedShutdown, m_splash, &QWidget::close);
 }
 
-void BitcoinApplication::setNode(interfaces::Node& node)
+void BitcoinApplication::createNode(interfaces::LocalInit& init)
 {
     assert(!m_node);
-    m_node = &node;
+    init.initProcess();
+    m_node = init.makeNode();
     if (optionsModel) optionsModel->setNode(*m_node);
     if (m_splash) m_splash->setNode(*m_node);
 }
@@ -443,7 +442,6 @@ int GuiMain(int argc, char* argv[])
 #endif
 
     std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = init->makeNode();
 
     SetupEnvironment();
     util::ThreadSetInternalName("main");
@@ -466,7 +464,6 @@ int GuiMain(int argc, char* argv[])
 #endif
 
     BitcoinApplication app;
-    app.setNode(*node);
 
     /// 2. Parse command-line options. We do this after qt in order to show an error if there are problems parsing these
     // Command-line options take precedence:
@@ -593,7 +590,7 @@ int GuiMain(int argc, char* argv[])
     if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
         app.createSplashScreen(networkStyle.data());
 
-    init->initProcess();
+    app.createNode(*init);
 
     int rv = EXIT_SUCCESS;
     try
