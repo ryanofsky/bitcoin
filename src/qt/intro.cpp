@@ -202,8 +202,9 @@ int64_t Intro::getPruneMiB() const
     }
 }
 
-bool Intro::showIfNeeded(bool& did_show_intro, int64_t& prune_MiB)
+bool Intro::showIfNeeded(std::optional<std::string>& data_dir_override, bool& did_show_intro, int64_t& prune_MiB)
 {
+    data_dir_override.reset();
     did_show_intro = false;
 
     QSettings settings;
@@ -263,7 +264,7 @@ bool Intro::showIfNeeded(bool& did_show_intro, int64_t& prune_MiB)
      * (to be consistent with bitcoind behavior)
      */
     if(dataDir != GUIUtil::getDefaultDataDirectory()) {
-        gArgs.SoftSetArg("-datadir", fs::PathToString(GUIUtil::QStringToPath(dataDir))); // use OS locale for path setting
+        data_dir_override = fs::PathToString(GUIUtil::QStringToPath(dataDir)); // use OS locale for path setting
     }
     return true;
 }

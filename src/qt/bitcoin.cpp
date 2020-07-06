@@ -620,10 +620,11 @@ int GuiMain(int argc, char* argv[])
 
     /// 5. Now that settings and translations are available, ask user for data directory
     // User language is set up: pick a data directory
+    std::optional<std::string> data_dir_override;
     bool did_show_intro = false;
     int64_t prune_MiB = 0;  // Intro dialog prune configuration
     // Gracefully exit if the user cancels
-    if (!Intro::showIfNeeded(did_show_intro, prune_MiB)) return EXIT_SUCCESS;
+    if (!Intro::showIfNeeded(data_dir_override, did_show_intro, prune_MiB)) return EXIT_SUCCESS;
 
     /// 6-7. Parse bitcoin.conf, determine network, switch to network specific
     /// options, and create datadir and settings.json.
@@ -631,6 +632,9 @@ int GuiMain(int argc, char* argv[])
     // - Do not call Params() before this step
     // - QSettings() will use the new application name after this, resulting in network-specific settings
     // - Needs to be done before createOptionsModel
+    if (data_dir_override) {
+        gArgs.SoftSetArg("-datadir", *data_dir_override);
+    }
     if (auto error = common::InitConfig(gArgs, ErrorSettingsRead)) {
         InitError(error->message, error->details);
         if (error->status == common::ConfigStatus::FAILED_WRITE) {
