@@ -54,6 +54,7 @@ int main(int argc, char* argv[])
     }
 
     std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
+<<<<<<< HEAD
     std::unique_ptr<interfaces::Node> node = init->makeNode();
     gArgs.ForceSetArg("-listen", "0");
     gArgs.ForceSetArg("-listenonion", "0");
@@ -62,6 +63,10 @@ int main(int argc, char* argv[])
     gArgs.ForceSetArg("-fixedseeds", "0");
     gArgs.ForceSetArg("-upnp", "0");
     gArgs.ForceSetArg("-natpmp", "0");
+||||||| parent of 871891d38cb (multiprocess: Add bitcoin-gui -ipcconnect option)
+    std::unique_ptr<interfaces::Node> node = init->makeNode();
+=======
+>>>>>>> 871891d38cb (multiprocess: Add bitcoin-gui -ipcconnect option)
 
     bool fInvalid = false;
 
@@ -77,8 +82,8 @@ int main(int argc, char* argv[])
     // Don't remove this, it's needed to access
     // QApplication:: and QCoreApplication:: in the tests
     BitcoinApplication app;
-    app.setNode(*node);
     app.setApplicationName("Bitcoin-Qt-test");
+    app.createNode(*init);
 
     app.node().context()->args = &gArgs;     // Make gArgs available in the NodeContext
     AppTests app_tests(app);

@@ -181,12 +181,12 @@ void BitcoinCore::initialize()
     }
 }
 
-void BitcoinCore::shutdown()
+void BitcoinCore::shutdown(bool node_shutdown)
 {
     try
     {
         qDebug() << __func__ << ": Running Shutdown in thread";
-        m_node.appShutdown();
+        if (node_shutdown) m_node.appShutdown();
         qDebug() << __func__ << ": Shutdown finished";
         Q_EMIT shutdownResult();
     } catch (const std::exception& e) {
@@ -275,10 +275,32 @@ void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
     connect(this, &BitcoinApplication::requestedShutdown, m_splash, &QWidget::close);
 }
 
-void BitcoinApplication::setNode(interfaces::Node& node)
+void BitcoinApplication::createNode(interfaces::Init& init)
 {
     assert(!m_node);
-    m_node = &node;
+    m_node = init.makeNode();
+    if (!m_node) {
+        // If node is not part of current process, need to initialize logging.
+        // TODO in future PR: dedup this logging code with code in AppInit.
+        if (!LogInstance().StartLogging()) {
+            throw std::runtime_error(
+                strprintf("Could not open debug log file %s", LogInstance().m_file_path.string()));
+        }
+        if (!LogInstance().m_log_timestamps) LogPrintf("Startup time: %s\n", FormatISO8601DateTime(GetTime()));
+
+        // If node is not part of current process, spawn new bitcoin-node
+        // process or connect to an existing one.
+        interfaces::Ipc* ipc = init.ipc();
+        std::string address = gArgs.GetArg("-ipcconnect", "auto");
+        auto init = ipc->connectAddress(address);
+        if (init) {
+            m_node_external = true;
+        } else {
+            init = ipc->spawnProcess("bitcoin-node");
+        }
+        m_node = init->makeNode();
+        ipc->addCleanup(*m_node, [init = init.release()] { delete init; });
+    }
     if (optionsModel) optionsModel->setNode(*m_node);
     if (m_splash) m_splash->setNode(*m_node);
 }
@@ -329,7 +351,13 @@ void BitcoinApplication::requestInitialize()
 {
     qDebug() << __func__ << ": Requesting initialize";
     startThread();
-    Q_EMIT requestedInitialize();
+    if (m_node_external) {
+        interfaces::BlockAndHeaderTipInfo tip_info;
+        initializeResult(true, tip_info);
+    } else {
+        Q_EMIT requestedInitialize();
+    }
+
 }
 
 void BitcoinApplication::requestShutdown()
@@ -347,7 +375,7 @@ void BitcoinApplication::requestShutdown()
     window->unsubscribeFromCoreSignals();
     // Request node shutdown, which can interrupt long operations, like
     // rescanning a wallet.
-    node().startShutdown();
+    if (!m_node_external) node().startShutdown();
     // Unsetting the client model can cause the current thread to wait for node
     // to complete an operation, like wait for a RPC execution to complete.
     window->setClientModel(nullptr);
@@ -362,7 +390,7 @@ void BitcoinApplication::requestShutdown()
 #endif // ENABLE_WALLET
 
     // Request shutdown from core thread
-    Q_EMIT requestedShutdown();
+    Q_EMIT requestedShutdown(!m_node_external);
 }
 
 void BitcoinApplication::initializeResult(bool success, interfaces::BlockAndHeaderTipInfo tip_info)
@@ -453,22 +481,6 @@ int GuiMain(int argc, char* argv[])
 #endif
 
     std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = init->makeNode();
-    if (!node) {
-        // If node is not part of current process, need to initialize logging.
-        // TODO in future PR: dedup this logging code with code in AppInit.
-        if (!LogInstance().StartLogging()) {
-            throw std::runtime_error(
-                strprintf("Could not open debug log file %s", LogInstance().m_file_path.string()));
-        }
-        if (!LogInstance().m_log_timestamps) LogPrintf("Startup time: %s\n", FormatISO8601DateTime(GetTime()));
-
-        // If node is not part of current process, spawn new bitcoin-node
-        // process.
-        auto server = init->ipc()->spawnProcess("bitcoin-node");
-        node = server->makeNode();
-        init->ipc()->addCleanup(*node, [server = server.release()] { delete server; });
-    }
 
     SetupEnvironment();
     util::ThreadSetInternalName("main");
@@ -500,7 +512,15 @@ int GuiMain(int argc, char* argv[])
 
     /// 2. Parse command-line options. We do this after qt in order to show an error if there are problems parsing these
     // Command-line options take precedence:
+<<<<<<< HEAD
     SetupServerArgs(gArgs, init->canListenIpc());
+||||||| parent of 871891d38cb (multiprocess: Add bitcoin-gui -ipcconnect option)
+    interfaces::Ipc* ipc = init->ipc();
+    SetupServerArgs(gArgs, ipc && ipc->canListen());
+=======
+    interfaces::Ipc* ipc = init->ipc();
+    SetupServerArgs(gArgs, ipc && ipc->canConnect(), ipc && ipc->canListen());
+>>>>>>> 871891d38cb (multiprocess: Add bitcoin-gui -ipcconnect option)
     SetupUIArgs(gArgs);
     std::string error;
     if (!gArgs.ParseParameters(argc, argv, error)) {
@@ -631,7 +651,7 @@ int GuiMain(int argc, char* argv[])
     if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
         app.createSplashScreen(networkStyle.data());
 
-    app.setNode(*node);
+    app.createNode(*init);
 
     int rv = EXIT_SUCCESS;
     try
@@ -640,7 +660,7 @@ int GuiMain(int argc, char* argv[])
         // Perform base initialization before spinning up initialization/shutdown thread
         // This is acceptable because this function only contains steps that are quick to execute,
         // so the GUI thread won't be held up.
-        if (app.baseInitialize()) {
+        if (app.nodeExternal() || app.baseInitialize()) {
             app.requestInitialize();
 #if defined(Q_OS_WIN)
             WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("%1 didn't yet exit safely...").arg(PACKAGE_NAME), (HWND)app.getMainWinId());

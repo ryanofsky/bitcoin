@@ -37,7 +37,15 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
 
     // If Qt is used, parameters/bitcoin.conf are parsed in qt/bitcoin.cpp's main()
     ArgsManager& args = *Assert(node.args);
+<<<<<<< HEAD
     SetupServerArgs(args, node.init->canListenIpc());
+||||||| parent of 871891d38cb (multiprocess: Add bitcoin-gui -ipcconnect option)
+    interfaces::Ipc* ipc = node.init->ipc();
+    SetupServerArgs(args, ipc && ipc->canListen());
+=======
+    interfaces::Ipc* ipc = node.init->ipc();
+    SetupServerArgs(args, ipc && ipc->canConnect(), ipc && ipc->canListen());
+>>>>>>> 871891d38cb (multiprocess: Add bitcoin-gui -ipcconnect option)
     std::string error;
     if (!args.ParseParameters(argc, argv, error)) {
         return InitError(Untranslated(strprintf("Error parsing command line arguments: %s\n", error)));
