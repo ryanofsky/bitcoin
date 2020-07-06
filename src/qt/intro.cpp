@@ -182,8 +182,9 @@ void Intro::setDataDirectory(const QString &dataDir)
     }
 }
 
-bool Intro::showIfNeeded(bool& did_show_intro, bool& prune)
+bool Intro::showIfNeeded(Optional<std::string>& data_dir_override, bool& did_show_intro, bool& prune)
 {
+    data_dir_override.reset();
     did_show_intro = false;
 
     QSettings settings;
@@ -243,7 +244,7 @@ bool Intro::showIfNeeded(bool& did_show_intro, bool& prune)
      * (to be consistent with bitcoind behavior)
      */
     if(dataDir != GUIUtil::getDefaultDataDirectory()) {
-        gArgs.SoftSetArg("-datadir", GUIUtil::qstringToBoostPath(dataDir).string()); // use OS locale for path setting
+        data_dir_override = GUIUtil::qstringToBoostPath(dataDir).string(); // use OS locale for path setting
     }
     return true;
 }
