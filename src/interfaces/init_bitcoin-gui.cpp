@@ -19,15 +19,6 @@ public:
         m_protocol = capnp::MakeCapnpProtocol(m_exe_name, *this);
         m_process = MakeIpcProcess(argc, argv, m_exe_name, *m_protocol);
     }
-    std::unique_ptr<Node> makeNode() override
-    {
-        std::unique_ptr<Node> node;
-        SpawnProcess(*m_process, *m_protocol, "bitcoin-node", [&](Init& init) -> Base& {
-            node = init.makeNode();
-            return *node;
-        });
-        return node;
-    }
     void initProcess() override
     {
         // TODO in future PR: Refactor bitcoin startup code, dedup this with AppInit.
