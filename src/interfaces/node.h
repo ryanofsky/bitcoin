@@ -42,11 +42,11 @@ struct BlockTip;
 //! Block and header tip information
 struct BlockAndHeaderTipInfo
 {
-    int block_height;
-    int64_t block_time;
-    int header_height;
-    int64_t header_time;
-    double verification_progress;
+    int block_height = -1;
+    int64_t block_time = -1;
+    int header_height = -1;
+    int64_t header_time = -1;
+    double verification_progress = -1;
 };
 
 //! Top-level interface for a bitcoin node (bitcoind process).
