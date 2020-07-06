@@ -31,7 +31,7 @@ class BitcoinGuiInit : public interfaces::Init
 {
 public:
     BitcoinGuiInit(int argc, char* argv[])
-        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ false, /* can_listen= */ true))
+        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ true, /* can_listen= */ true))
     {
         ipc::capnp::SetupNodeClient(m_ipc->context());
     }
