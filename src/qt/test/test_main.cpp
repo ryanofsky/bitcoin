@@ -54,7 +54,6 @@ int main(int argc, char *argv[])
     }
 
     std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
-    std::unique_ptr<interfaces::Node> node = init->makeNode();
 
     bool fInvalid = false;
 
@@ -70,8 +69,8 @@ int main(int argc, char *argv[])
     // Don't remove this, it's needed to access
     // QApplication:: and QCoreApplication:: in the tests
     BitcoinApplication app;
-    app.setNode(*node);
     app.setApplicationName("Bitcoin-Qt-test");
+    app.createNode(*init);
 
     AppTests app_tests(app);
     if (QTest::qExec(&app_tests) != 0) {
