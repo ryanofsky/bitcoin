@@ -31,7 +31,13 @@ class BitcoinGuiInit : public interfaces::Init
 {
 public:
     BitcoinGuiInit(int argc, char* argv[])
+<<<<<<< HEAD
         : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ false, /* can_listen= */ true))
+||||||| merged common ancestors
+        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ false, /* can_listen= */ false))
+=======
+        : m_ipc(interfaces::MakeIpc(argc, argv, EXE_NAME, *this, /* can_connect= */ true, /* can_listen= */ true))
+>>>>>>> multiprocess: Add bitcoin-gui -ipcconnect option
     {
         ipc::capnp::SetupNodeClient(m_ipc->context());
     }
