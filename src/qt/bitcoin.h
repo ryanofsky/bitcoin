@@ -25,7 +25,6 @@ class SplashScreen;
 class WalletController;
 class WalletModel;
 
-
 /** Class encapsulating Bitcoin Core startup and shutdown.
  * Allows running startup and shutdown in a different thread from the UI thread.
  */
@@ -73,6 +72,8 @@ public:
     void createWindow(const NetworkStyle *networkStyle);
     /// Create splash screen
     void createSplashScreen(const NetworkStyle *networkStyle);
+    /// Create or spawn node
+    void createNode(interfaces::LocalInit& init);
     /// Basic initialization, before starting initialization/shutdown thread. Return true on success.
     bool baseInitialize();
 
@@ -91,7 +92,7 @@ public:
     void setupPlatformStyle();
 
     interfaces::Node& node() const { assert(m_node); return *m_node; }
-    void setNode(interfaces::Node& node);
+    bool nodeExternal() const { return m_node_external; }
 
 public Q_SLOTS:
     void initializeResult(bool success, interfaces::BlockAndHeaderTipInfo tip_info);
@@ -119,7 +120,11 @@ private:
     const PlatformStyle *platformStyle;
     std::unique_ptr<QWidget> shutdownWindow;
     SplashScreen* m_splash = nullptr;
-    interfaces::Node* m_node = nullptr;
+    std::unique_ptr<interfaces::Node> m_node;
+    //! Whether node is external to the application and running in a
+    //! pre-existing process, or internal and initialized and shutdown when the
+    //! application is.
+    bool m_node_external = false;
 
     void startThread();
 };
