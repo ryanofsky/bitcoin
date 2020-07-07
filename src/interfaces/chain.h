@@ -5,6 +5,8 @@
 #ifndef BITCOIN_INTERFACES_CHAIN_H
 #define BITCOIN_INTERFACES_CHAIN_H
 
+#include <interfaces/wallet.h>
+
 #include <optional.h>               // For Optional and nullopt
 #include <primitives/transaction.h> // For CTransactionRef
 
@@ -78,7 +80,7 @@ public:
 //! * The `guessVerificationProgress`, `getBlockHeight`, `getBlockHash`, etc
 //!   methods can go away if rescan logic is moved on the node side, and wallet
 //!   only register rescan request.
-class Chain
+class Chain : public Base
 {
 public:
     virtual ~Chain() {}
@@ -99,13 +101,6 @@ public:
     //! Check that the block is available on disk (i.e. has not been
     //! pruned), and contains transactions.
     virtual bool haveBlockOnDisk(int height) = 0;
-
-    //! Return height of the first block in the chain with timestamp equal
-    //! or greater than the given time and height equal or greater than the
-    //! given height, or nullopt if there is no block with a high enough
-    //! timestamp and height. Also return the block hash as an optional output parameter
-    //! (to avoid the cost of a second lookup in case this information is needed.)
-    virtual Optional<int> findFirstBlockWithTimeAndHeight(int64_t time, int height, uint256* hash) = 0;
 
     //! Get locator for the current chain tip.
     virtual CBlockLocator getTipLocator() = 0;
@@ -236,7 +231,7 @@ public:
     virtual void showProgress(const std::string& title, int progress, bool resume_possible) = 0;
 
     //! Chain notifications.
-    class Notifications
+    class Notifications : public Base
     {
     public:
         virtual ~Notifications() {}
@@ -281,7 +276,7 @@ public:
 
 //! Interface to let node manage chain clients (wallets, or maybe tools for
 //! monitoring and analysis in the future).
-class ChainClient
+class ChainClient : public Base
 {
 public:
     virtual ~ChainClient() {}
@@ -295,7 +290,8 @@ public:
     //! Load saved state.
     virtual bool load() = 0;
 
-    //! Start client execution and provide a scheduler.
+    //! Start client execution and provide a scheduler. (Scheduler is
+    //! ignored if client is out-of-process).
     virtual void start(CScheduler& scheduler) = 0;
 
     //! Save state to disk.
