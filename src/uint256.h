@@ -71,7 +71,23 @@ public:
 
     const unsigned char* end() const
     {
+<<<<<<< HEAD
         return &m_data[WIDTH];
+||||||| merged common ancestors
+        return &data[WIDTH];
+=======
+        return &m_data[WIDTH];
+    }
+
+    unsigned char* data()
+    {
+        return &m_data[0];
+    }
+
+    const unsigned char* data() const
+    {
+        return &m_data[0];
+>>>>>>> Add base_blob and BaseHash data() methods
     }
 
     unsigned int size() const
