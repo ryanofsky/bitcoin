@@ -54,10 +54,16 @@ private:
     void subscribeToCoreSignals();
     /** Disconnect core signals to splash screen */
     void unsubscribeFromCoreSignals();
+<<<<<<< HEAD
     /** Initiate shutdown */
     void shutdown();
     /** Connect wallet signals to splash screen */
     void ConnectWallet(std::unique_ptr<interfaces::Wallet> wallet);
+||||||| merged common ancestors
+    /** Connect wallet signals to splash screen */
+    void ConnectWallet(std::unique_ptr<interfaces::Wallet> wallet);
+=======
+>>>>>>> gui refactor: Inline SplashScreen::ConnectWallet
 
     QPixmap pixmap;
     QString curMessage;
