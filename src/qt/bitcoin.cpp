@@ -10,6 +10,7 @@
 #include <qt/bitcoingui.h>
 
 #include <chainparams.h>
+#include <interfaces/init.h>
 #include <qt/clientmodel.h>
 #include <qt/guiconstants.h>
 #include <qt/guiutil.h>
@@ -427,10 +428,12 @@ int GuiMain(int argc, char* argv[])
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    std::unique_ptr<interfaces::LocalInit> init = interfaces::MakeInit(argc, argv);
+    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode(*init);
+
     SetupEnvironment();
     util::ThreadSetInternalName("main");
-
-    std::unique_ptr<interfaces::Node> node = interfaces::MakeNode();
 
     // Subscribe to global signals from core
     std::unique_ptr<interfaces::Handler> handler_message_box = node->handleMessageBox(noui_ThreadSafeMessageBox);
