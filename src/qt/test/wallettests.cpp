@@ -138,7 +138,16 @@ void TestGUI(interfaces::Node& node)
     for (int i = 0; i < 5; ++i) {
         test.CreateAndProcessBlock({}, GetScriptForRawPubKey(test.coinbaseKey.GetPubKey()));
     }
+<<<<<<< HEAD
     node.setContext(&test.m_node);
+||||||| merged common ancestors
+    node.context()->connman = std::move(test.m_node.connman);
+    node.context()->mempool = std::move(test.m_node.mempool);
+=======
+    node.context()->chainman = std::move(test.m_node.chainman);
+    node.context()->connman = std::move(test.m_node.connman);
+    node.context()->mempool = std::move(test.m_node.mempool);
+>>>>>>> refactor: Replace uses ChainActive() in interfaces/chain.cpp
     std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), WalletLocation(), CreateMockWalletDatabase());
     bool firstRun;
     wallet->LoadWallet(firstRun);
