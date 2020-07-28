@@ -21,6 +21,16 @@ static void WalletToolReleaseWallet(CWallet* wallet)
     delete wallet;
 }
 
+static std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path)
+{
+    DatabaseOptions options;
+    DatabaseStatus status;
+    bilingual_str error;
+    std::unique_ptr<WalletDatabase> db = MakeDatabase(path, options, status, error);
+    if (!db) tfm::format(std::cerr, "%s", error.original);
+    return db;
+}
+
 static std::shared_ptr<CWallet> CreateWallet(const std::string& name, const fs::path& path)
 {
     if (fs::exists(path)) {
@@ -28,7 +38,7 @@ static std::shared_ptr<CWallet> CreateWallet(const std::string& name, const fs::
         return nullptr;
     }
     // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
     LOCK(wallet_instance->cs_wallet);
     bool first_run = true;
     DBErrors load_wallet_ret = wallet_instance->LoadWallet(first_run);
@@ -57,7 +67,7 @@ static std::shared_ptr<CWallet> LoadWallet(const std::string& name, const fs::pa
     }
 
     // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
     DBErrors load_wallet_ret;
     try {
         bool first_run;
@@ -108,16 +118,8 @@ static bool SalvageWallet(const fs::path& path)
 {
     // Create a Database handle to allow for the db to be initialized before recovery
     std::unique_ptr<WalletDatabase> database = CreateWalletDatabase(path);
-
-    // Initialize the environment before recovery
-    bilingual_str error_string;
-    try {
-        database->Verify(error_string);
-    } catch (const fs::filesystem_error& e) {
-        error_string = Untranslated(strprintf("Error loading wallet. %s", fsbridge::get_filesystem_error_message(e)));
-    }
-    if (!error_string.original.empty()) {
-        tfm::format(std::cerr, "Failed to open wallet for salvage :%s\n", error_string.original);
+    if (!database) {
+        tfm::format(std::cerr, "Failed to open wallet for salvage\n");
         return false;
     }
 

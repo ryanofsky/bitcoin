@@ -140,7 +140,7 @@ void TestGUI(interfaces::Node& node)
     }
     node.context()->connman = std::move(test.m_node.connman);
     node.context()->mempool = std::move(test.m_node.mempool);
-    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), WalletLocation(), CreateMockWalletDatabase());
+    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), "", CreateMockWalletDatabase());
     bool firstRun;
     wallet->LoadWallet(firstRun);
     {
@@ -166,9 +166,7 @@ void TestGUI(interfaces::Node& node)
     TransactionView transactionView(platformStyle.get());
     OptionsModel optionsModel(node);
     ClientModel clientModel(node, &optionsModel);
-    AddWallet(wallet);
     WalletModel walletModel(interfaces::MakeWallet(wallet), clientModel, platformStyle.get());
-    RemoveWallet(wallet);
     sendCoinsDialog.setModel(&walletModel);
     transactionView.setModel(&walletModel);
 

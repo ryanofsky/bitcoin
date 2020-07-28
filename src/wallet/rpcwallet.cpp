@@ -30,6 +30,7 @@
 #include <wallet/coincontrol.h>
 #include <wallet/context.h>
 #include <wallet/feebumper.h>
+#include <wallet/load.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
@@ -96,14 +97,15 @@ bool GetWalletNameFromJSONRPCRequest(const JSONRPCRequest& request, std::string&
 std::shared_ptr<CWallet> GetWalletForJSONRPCRequest(const JSONRPCRequest& request)
 {
     CHECK_NONFATAL(!request.fHelp);
+    WalletContext& context = EnsureWalletContext(request.context);
     std::string wallet_name;
     if (GetWalletNameFromJSONRPCRequest(request, wallet_name)) {
-        std::shared_ptr<CWallet> pwallet = GetWallet(wallet_name);
+        std::shared_ptr<CWallet> pwallet = GetWallet(context, wallet_name);
         if (!pwallet) throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Requested wallet does not exist or is not loaded");
         return pwallet;
     }
 
-    std::vector<std::shared_ptr<CWallet>> wallets = GetWallets();
+    std::vector<std::shared_ptr<CWallet>> wallets = GetWallets(context);
     if (wallets.size() == 1) {
         return wallets[0];
     }
@@ -2467,7 +2469,8 @@ static UniValue listwallets(const JSONRPCRequest& request)
 
     UniValue obj(UniValue::VARR);
 
-    for (const std::shared_ptr<CWallet>& wallet : GetWallets()) {
+    WalletContext& context = EnsureWalletContext(request.context);
+    for (const std::shared_ptr<CWallet>& wallet : GetWallets(context)) {
         LOCK(wallet->cs_wallet);
         obj.push_back(wallet->GetName());
     }
@@ -2498,22 +2501,20 @@ static UniValue loadwallet(const JSONRPCRequest& request)
             }.Check(request);
 
     WalletContext& context = EnsureWalletContext(request.context);
-    WalletLocation location(request.params[0].get_str());
 
-    if (!location.Exists()) {
-        throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Wallet " + location.GetName() + " not found.");
-    } else if (fs::is_directory(location.GetPath())) {
-        // The given filename is a directory. Check that there's a wallet.dat file.
-        fs::path wallet_dat_file = location.GetPath() / "wallet.dat";
-        if (fs::symlink_status(wallet_dat_file).type() == fs::file_not_found) {
-            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Directory " + location.GetName() + " does not contain a wallet.dat file.");
-        }
-    }
-
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_existing = true;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, location, error, warnings);
-    if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
+
+    std::shared_ptr<CWallet> wallet = LoadWallet(context, request.params[0].get_str(), options, status, error, warnings);
+    if (status == DatabaseStatus::FAILED_NOT_FOUND) {
+        throw JSONRPCError(RPC_WALLET_NOT_FOUND, error.original);
+    } else if (status != DatabaseStatus::SUCCESS) {
+        throw JSONRPCError(RPC_WALLET_ERROR, error.original);
+    }
+    wallet->postInitProcess();
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
@@ -2642,17 +2643,20 @@ static UniValue createwallet(const JSONRPCRequest& request)
     }
 
     bilingual_str error;
-    std::shared_ptr<CWallet> wallet;
-    WalletCreationStatus status = CreateWallet(*context.chain, passphrase, flags, request.params[0].get_str(), error, warnings, wallet);
-    switch (status) {
-        case WalletCreationStatus::CREATION_FAILED:
-            throw JSONRPCError(RPC_WALLET_ERROR, error.original);
-        case WalletCreationStatus::ENCRYPTION_FAILED:
-            throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, error.original);
-        case WalletCreationStatus::SUCCESS:
-            break;
-        // no default case, so the compiler can warn about missing cases
+
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.require_create = true;
+    options.create_flags = flags;
+    options.create_passphrase = passphrase;
+
+    std::shared_ptr<CWallet> wallet = LoadWallet(context, request.params[0].get_str(), options, status, error, warnings);
+    if (status == DatabaseStatus::FAILED_ENCRYPT) {
+        throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, error.original);
+    } else if (status != DatabaseStatus::SUCCESS) {
+        throw JSONRPCError(RPC_WALLET_ERROR, error.original);
     }
+    wallet->postInitProcess();
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
@@ -2685,19 +2689,15 @@ static UniValue unloadwallet(const JSONRPCRequest& request)
         wallet_name = request.params[0].get_str();
     }
 
-    std::shared_ptr<CWallet> wallet = GetWallet(wallet_name);
-    if (!wallet) {
+    WalletContext& context = EnsureWalletContext(request.context);
+    if (!GetWallet(context, wallet_name)) {
         throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Requested wallet does not exist or is not loaded");
     }
 
-    // Release the "main" shared pointer and prevent further notifications.
-    // Note that any attempt to load the same wallet would fail until the wallet
-    // is destroyed (see CheckUniqueFileid).
-    if (!RemoveWallet(wallet)) {
-        throw JSONRPCError(RPC_MISC_ERROR, "Requested wallet already unloaded");
+    bilingual_str error;
+    if (!UnloadWallet(context, wallet_name, true /* wait */, error)) {
+        throw JSONRPCError(RPC_MISC_ERROR, error.original);
     }
-
-    UnloadWallet(std::move(wallet));
 
     return NullUniValue;
 }

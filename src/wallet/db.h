@@ -9,6 +9,7 @@
 #include <clientversion.h>
 #include <fs.h>
 #include <streams.h>
+#include <support/allocators/secure.h>
 
 #include <atomic>
 #include <memory>
@@ -17,7 +18,6 @@
 struct bilingual_str;
 
 /** Given a wallet directory path or legacy file path, return path to main data file in the wallet database. */
-fs::path WalletDataFilePath(const fs::path& wallet_path);
 void SplitWalletPath(const fs::path& wallet_path, fs::path& env_directory, std::string& database_filename);
 
 /** RAII class that provides access to a WalletDatabase */
@@ -146,12 +146,35 @@ public:
     int64_t nLastWalletUpdate;
 
     /** Verifies the environment and database file */
-    virtual bool Verify(bilingual_str& error) = 0;
+    virtual std::string Filename() = 0;
 
     std::string m_file_path;
 
     /** Make a DatabaseBatch connected to this database */
     virtual std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) = 0;
 };
+
+struct DatabaseOptions {
+    bool require_existing = false;
+    bool require_create = false;
+    uint64_t create_flags = 0;
+    SecureString create_passphrase;
+    bool verify = true;
+};
+
+enum class DatabaseStatus {
+    SUCCESS,
+    FAILED_BAD_PATH,
+    FAILED_ALREADY_LOADED,
+    FAILED_ALREADY_EXISTS,
+    FAILED_NOT_FOUND,
+    FAILED_CREATE,
+    FAILED_VERIFY,
+    FAILED_ENCRYPT,
+    FAILED_LOAD
+};
+
+/** Return object for accessing database at specified path. */
+std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
 
 #endif // BITCOIN_WALLET_DB_H

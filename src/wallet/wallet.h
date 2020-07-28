@@ -20,6 +20,7 @@
 #include <util/ui_change_type.h>
 #include <validationinterface.h>
 #include <wallet/coinselection.h>
+#include <wallet/context.h>
 #include <wallet/crypter.h>
 #include <wallet/scriptpubkeyman.h>
 #include <wallet/walletdb.h>
@@ -38,31 +39,13 @@
 
 #include <boost/signals2/signal.hpp>
 
-using LoadWalletFn = std::function<void(std::unique_ptr<interfaces::Wallet> wallet)>;
-
 struct bilingual_str;
 
-//! Explicitly unload and delete the wallet.
-//! Blocks the current thread after signaling the unload intent so that all
-//! wallet clients release the wallet.
-//! Note that, when blocking is not required, the wallet is implicitly unloaded
-//! by the shared pointer deleter.
-void UnloadWallet(std::shared_ptr<CWallet>&& wallet);
-
-bool AddWallet(const std::shared_ptr<CWallet>& wallet);
-bool RemoveWallet(const std::shared_ptr<CWallet>& wallet);
-std::vector<std::shared_ptr<CWallet>> GetWallets();
-std::shared_ptr<CWallet> GetWallet(const std::string& name);
-std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings);
-std::unique_ptr<interfaces::Handler> HandleLoadWallet(LoadWalletFn load_wallet);
-
-enum class WalletCreationStatus {
-    SUCCESS,
-    CREATION_FAILED,
-    ENCRYPTION_FAILED
-};
-
-WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result);
+std::shared_ptr<CWallet> LoadWallet(WalletContext& context, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings);
+bool UnloadWallet(WalletContext& context, const std::string& name, bool async, bilingual_str& error);
+std::shared_ptr<CWallet> GetWallet(WalletContext& context, const std::string& name);
+std::vector<std::shared_ptr<CWallet>> GetWallets(WalletContext& context);
+std::unique_ptr<interfaces::Handler> HandleLoadWallet(WalletContext& context, LoadWalletFn load_wallet);
 
 //! -paytxfee default
 constexpr CAmount DEFAULT_PAY_TX_FEE = 0;
@@ -690,9 +673,6 @@ private:
     /** Interface for accessing chain state. */
     interfaces::Chain* m_chain;
 
-    /** Wallet location which includes wallet name (see WalletLocation). */
-    WalletLocation m_location;
-
     /** Internal database handle. */
     std::unique_ptr<WalletDatabase> database;
 
@@ -743,29 +723,23 @@ public:
     bool SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAmount& nTargetValue, std::set<CInputCoin>& setCoinsRet, CAmount& nValueRet,
                     const CCoinControl& coin_control, CoinSelectionParams& coin_selection_params, bool& bnb_used) const EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
-    const WalletLocation& GetLocation() const { return m_location; }
-
     /** Get a name for this wallet for logging/debugging purposes.
      */
-    const std::string& GetName() const { return m_location.GetName(); }
+    const std::string& GetName() const { return m_name; }
 
     typedef std::map<unsigned int, CMasterKey> MasterKeyMap;
     MasterKeyMap mapMasterKeys;
     unsigned int nMasterKeyMaxID = 0;
 
     /** Construct wallet with specified name and database implementation. */
-    CWallet(interfaces::Chain* chain, const WalletLocation& location, std::unique_ptr<WalletDatabase> database)
+    CWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database)
         : m_chain(chain),
-          m_location(location),
+          m_name(name),
           database(std::move(database))
     {
     }
 
-    ~CWallet()
-    {
-        // Should not have slots connected at this point.
-        assert(NotifyUnload.empty());
-    }
+    ~CWallet();
 
     bool IsCrypted() const;
     bool IsLocked() const override;
@@ -792,6 +766,9 @@ public:
 
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
+
+    /** Wallet name (absolute path or path relative to wallets dir) */
+    std::string m_name;
 
     const CWalletTx* GetWalletTx(const uint256& hash) const;
 
@@ -1140,11 +1117,17 @@ public:
     /** Mark a transaction as replaced by another transaction (e.g., BIP 125). */
     bool MarkReplaced(const uint256& originalHash, const uint256& newHash);
 
-    //! Verify wallet naming and perform salvage on the wallet if required
-    static bool Verify(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error_string, std::vector<bilingual_str>& warnings);
+    /** Create or load wallet by name */
+    static bool Open(std::shared_ptr<CWallet> wallet, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings);
+
+    /** Get wallet path */
+    static bool Path(const std::string& wallet_name, fs::path& wallet_path, bilingual_str& error_string);
+
+    /** Create and load wallet */
+    static bool Create(std::shared_ptr<CWallet> wallet, std::unique_ptr<WalletDatabase> database, const SecureString& passphrase, uint64_t wallet_creation_flags, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings);
 
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
-    static std::shared_ptr<CWallet> CreateWalletFromFile(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings, uint64_t wallet_creation_flags = 0);
+    static std::shared_ptr<CWallet> Load(std::shared_ptr<CWallet> walletInstance, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings);
 
     /**
      * Wallet post-init setup
@@ -1285,7 +1268,7 @@ public:
  * Called periodically by the schedule thread. Prompts individual wallets to resend
  * their transactions. Actual rebroadcast schedule is managed by the wallets themselves.
  */
-void MaybeResendWalletTxs();
+void MaybeResendWalletTxs(WalletContext& context);
 
 /** RAII object to check and reserve a wallet rescan */
 class WalletRescanReserver

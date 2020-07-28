@@ -6,12 +6,49 @@
 #include <wallet/load.h>
 
 #include <interfaces/chain.h>
+#include <interfaces/wallet.h>
 #include <scheduler.h>
 #include <util/string.h>
 #include <util/system.h>
 #include <util/translation.h>
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
+
+namespace {
+//! Shared pointer delete helper that does extra cleanup after deletion.
+template<typename T>
+struct Deleter
+{
+    void operator()(T* p)
+    {
+        delete p;
+        if (cleanup) cleanup();
+    }
+
+    std::function<void()> cleanup;
+};
+
+//! Block waiting for wallet to finish loading or unloading. Blocking instead of
+//! returning more complicated "in-progress" errors avoids need for simple RPC
+//! clients to poll repeatedly when they want to load or unload wallets on
+//! demand.
+void WaitReady(WalletContext& context, UniqueLock<Mutex>& lock, const std::string& name)
+{
+    context.wallets_cv.wait(lock, [&]() EXCLUSIVE_LOCKS_REQUIRED(context.wallets_mutex) {
+        auto it = context.wallets.find(name);
+        return it == context.wallets.end() || it->second;
+    });
+}
+
+//! Release shared pointers associated with wallet.
+bool ReleaseWallet(std::shared_ptr<CWallet>&& wallet)
+{
+    if (!wallet) return false;
+    wallet->m_chain_notifications_handler.reset();
+    wallet->NotifyUnload();
+    return true;
+}
+} // namespace
 
 bool VerifyWallets(interfaces::Chain& chain, const std::vector<std::string>& wallet_files)
 {
@@ -42,18 +79,21 @@ bool VerifyWallets(interfaces::Chain& chain, const std::vector<std::string>& wal
     std::set<fs::path> wallet_paths;
 
     for (const auto& wallet_file : wallet_files) {
-        WalletLocation location(wallet_file);
+        fs::path path;
+        bilingual_str error_string;
+        if (!CWallet::Path(wallet_file, path, error_string)) {
+            chain.initError(error_string);
+            return false;
+        }
 
-        if (!wallet_paths.insert(location.GetPath()).second) {
+        if (!wallet_paths.insert(path).second) {
             chain.initError(strprintf(_("Error loading wallet %s. Duplicate -wallet filename specified."), wallet_file));
             return false;
         }
 
-        bilingual_str error_string;
-        std::vector<bilingual_str> warnings;
-        bool verify_success = CWallet::Verify(chain, location, error_string, warnings);
-        if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
-        if (!verify_success) {
+        DatabaseOptions options;
+        DatabaseStatus status;
+        if (MakeDatabase(path, options, status, error_string)) {
             chain.initError(error_string);
             return false;
         }
@@ -62,61 +102,138 @@ bool VerifyWallets(interfaces::Chain& chain, const std::vector<std::string>& wal
     return true;
 }
 
-bool LoadWallets(interfaces::Chain& chain, const std::vector<std::string>& wallet_files)
+std::shared_ptr<CWallet> LoadWallet(WalletContext& context, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
-    try {
-        for (const std::string& walletFile : wallet_files) {
-            bilingual_str error;
-            std::vector<bilingual_str> warnings;
-            std::shared_ptr<CWallet> pwallet = CWallet::CreateWalletFromFile(chain, WalletLocation(walletFile), error, warnings);
-            if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
-            if (!pwallet) {
-                chain.initError(error);
-                return false;
-            }
-            AddWallet(pwallet);
+    std::shared_ptr<CWallet> wallet{new CWallet{context.chain, name, nullptr}, Deleter<CWallet>{}};
+    std::shared_ptr<CWallet>* map_wallet = nullptr;
+    {
+        WAIT_LOCK(context.wallets_mutex, lock);
+        WaitReady(context, lock, name);
+        auto inserted = context.wallets.insert({name, nullptr});
+        if (!inserted.second) {
+            status = DatabaseStatus::FAILED_ALREADY_LOADED;
+            return nullptr;
         }
-        return true;
-    } catch (const std::runtime_error& e) {
-        chain.initError(Untranslated(e.what()));
-        return false;
+        std::get_deleter<Deleter<CWallet>>(wallet)->cleanup = [&context, inserted] {
+            LOCK(context.wallets_mutex);
+            context.wallets.erase(inserted.first);
+            context.wallets_cv.notify_all();
+        };
+        map_wallet = &inserted.first->second;
     }
+
+    if (!CWallet::Open(wallet, options, status, error, warnings)) return nullptr;
+    {
+        LOCK(context.wallets_mutex);
+        *map_wallet = wallet;
+        context.wallets_cv.notify_all();
+        for (auto& load_wallet : context.load_wallet_fns) {
+            load_wallet(interfaces::MakeWallet(wallet));
+        }
+    }
+
+    return wallet;
 }
 
-void StartWallets(CScheduler& scheduler, const ArgsManager& args)
+bool LoadWallets(WalletContext& context, const std::vector<std::string>& wallet_files)
 {
-    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
+    for (const std::string& walletFile : wallet_files) {
+        DatabaseOptions options;
+        options.verify = false;
+        DatabaseStatus status;
+        bilingual_str error;
+        std::vector<bilingual_str> warnings;
+        std::shared_ptr<CWallet> wallet = LoadWallet(context, walletFile, options, status, error, warnings);
+        if (!wallet) {
+            context.chain->initError(error);
+            return false;
+        }
+    }
+    return true;
+}
+
+void StartWallets(WalletContext& context, CScheduler& scheduler, const ArgsManager& args)
+{
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets(context)) {
         pwallet->postInitProcess();
     }
 
     // Schedule periodic wallet flushes and tx rebroadcasts
     if (args.GetBoolArg("-flushwallet", DEFAULT_FLUSHWALLET)) {
-        scheduler.scheduleEvery(MaybeCompactWalletDB, std::chrono::milliseconds{500});
+        scheduler.scheduleEvery([&context]{ MaybeCompactWalletDB(context); }, std::chrono::milliseconds{500});
     }
-    scheduler.scheduleEvery(MaybeResendWalletTxs, std::chrono::milliseconds{1000});
+    scheduler.scheduleEvery([&context]{ MaybeResendWalletTxs(context); }, std::chrono::milliseconds{1000});
 }
 
-void FlushWallets()
+void FlushWallets(WalletContext& context)
 {
-    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets(context)) {
         pwallet->Flush();
     }
 }
 
-void StopWallets()
+void StopWallets(WalletContext& context)
 {
-    for (const std::shared_ptr<CWallet>& pwallet : GetWallets()) {
+    for (const std::shared_ptr<CWallet>& pwallet : GetWallets(context)) {
         pwallet->Close();
     }
 }
 
-void UnloadWallets()
+bool UnloadWallet(WalletContext& context, const std::string& name, bool wait, bilingual_str& error)
 {
-    auto wallets = GetWallets();
-    while (!wallets.empty()) {
-        auto wallet = wallets.back();
-        wallets.pop_back();
-        RemoveWallet(wallet);
-        UnloadWallet(std::move(wallet));
+    WAIT_LOCK(context.wallets_mutex, lock);
+    bool unloaded = false;
+    if (std::shared_ptr<CWallet>* wallet = util::FindKey(context.wallets, name)) {
+        REVERSE_LOCK(lock);
+        unloaded = ReleaseWallet(std::move(*wallet));
     }
+    if (wait) WaitReady(context, lock, name);
+    if (!unloaded) {
+        error = Untranslated(strprintf("Failed to unload wallet. Wallet '%s' is not currently loaded.", name));
+        return false;
+    }
+    return true;
+}
+
+void UnloadWallets(WalletContext& context)
+{
+    WAIT_LOCK(context.wallets_mutex, lock);
+    while (!context.wallets.empty()) {
+        std::vector<std::shared_ptr<CWallet>> release_wallets;
+        for (auto& wallet : context.wallets) {
+            if (wallet.second) release_wallets.emplace_back(std::move(wallet.second));
+        }
+        if (!release_wallets.empty()) {
+            REVERSE_LOCK(lock);
+            for (auto& wallet : release_wallets) {
+                ReleaseWallet(std::move(wallet));
+            }
+        } else {
+            context.wallets_cv.wait(lock);
+        }
+    }
+}
+
+std::shared_ptr<CWallet> GetWallet(WalletContext& context, const std::string& name)
+{
+    LOCK(context.wallets_mutex);
+    auto it = context.wallets.find(name);
+    return it == context.wallets.end() ? nullptr : it->second;
+}
+
+std::vector<std::shared_ptr<CWallet>> GetWallets(WalletContext& context)
+{
+    LOCK(context.wallets_mutex);
+    std::vector<std::shared_ptr<CWallet>> wallets;
+    for (auto& wallet : context.wallets) {
+        if (wallet.second) wallets.push_back(wallet.second);
+    }
+    return wallets;
+}
+
+std::unique_ptr<interfaces::Handler> HandleLoadWallet(WalletContext& context, LoadWalletFn load_wallet)
+{
+    LOCK(context.wallets_mutex);
+    auto it = context.load_wallet_fns.emplace(context.load_wallet_fns.end(), std::move(load_wallet));
+    return interfaces::MakeHandler([&context, it] { LOCK(context.wallets_mutex); context.load_wallet_fns.erase(it); });
 }

@@ -856,3 +856,54 @@ std::unique_ptr<DatabaseBatch> BerkeleyDatabase::MakeBatch(const char* mode, boo
 {
     return MakeUnique<BerkeleyBatch>(*this, mode, flush_on_close);
 }
+
+/** Return object for accessing database at specified path. */
+std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
+{
+    status = DatabaseStatus::SUCCESS;
+
+    fs::path env_directory;
+    std::string data_filename;
+    try {
+        SplitWalletPath(path, env_directory, data_filename);
+    } catch (const fs::filesystem_error& e) {
+        error = Untranslated(strprintf("Failed to access database path '%s': %s", path.string(), fsbridge::get_filesystem_error_message(e)));
+        status = DatabaseStatus::FAILED_BAD_PATH;
+        return nullptr;
+    }
+
+    fs::path data_path = env_directory / data_filename;
+    bool exists = fs::symlink_status(data_path).type() != fs::file_not_found;
+
+    if (exists && options.require_create) {
+        error = Untranslated(strprintf("Failed to create database. Data file '%s' already exists.", data_path.string()));
+        status = DatabaseStatus::FAILED_ALREADY_EXISTS;
+        return nullptr;
+    }
+
+    if (!exists && options.require_existing) {
+        error = Untranslated(strprintf("Failed to load database. Data file '%s' does not exist.", data_path.string()));
+        status = DatabaseStatus::FAILED_NOT_FOUND;
+        return nullptr;
+    }
+
+    LOCK(cs_db);
+    std::shared_ptr<BerkeleyEnvironment> env = GetWalletEnv(path, data_filename);
+    if (env->m_databases.count(data_filename)) {
+        // This condition will only happen if database is loaded twice with
+        // different paths. For example if aa legacy file path is used at the
+        // same time as a directory path: -wallet="wallet.dat" -wallet=""
+        error = Untranslated(strprintf("Refusing to load database. Data file '%s' is already loaded.", data_path.string()));
+        status = DatabaseStatus::FAILED_ALREADY_LOADED;
+        return nullptr;
+    }
+
+    auto db = MakeUnique<BerkeleyDatabase>(std::move(env), std::move(data_filename));
+
+    if (options.verify && !db->Verify(error)) {
+        status = DatabaseStatus::FAILED_VERIFY;
+        return nullptr;
+    }
+
+    return db;
+}

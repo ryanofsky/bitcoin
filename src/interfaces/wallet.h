@@ -25,6 +25,7 @@ class CCoinControl;
 class CFeeRate;
 class CKey;
 class CWallet;
+class WalletContext;
 enum class FeeReason;
 enum class OutputType;
 enum class TransactionError;
@@ -377,7 +378,7 @@ struct WalletTxOut
 
 //! Return implementation of Wallet interface. This function is defined in
 //! dummywallet.cpp and throws if the wallet component is not compiled.
-std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet);
+std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet, WalletContext* context=nullptr);
 
 } // namespace interfaces
 
