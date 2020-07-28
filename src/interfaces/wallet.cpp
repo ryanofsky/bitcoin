@@ -522,7 +522,13 @@ public:
     }
     std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
+<<<<<<< HEAD
         return MakeWallet(LoadWallet(*m_context.chain, WalletLocation(name), true /* load_on_start */, error, warnings));
+||||||| merged common ancestors
+        return MakeWallet(LoadWallet(*m_context.chain, WalletLocation(name), error, warnings));
+=======
+        return MakeWallet(LoadWallet(*m_context.chain, name, error, warnings));
+>>>>>>> Remove WalletLocation class
     }
     std::string getWalletDir() override
     {
