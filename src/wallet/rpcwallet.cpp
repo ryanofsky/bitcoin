@@ -2514,24 +2514,25 @@ static UniValue loadwallet(const JSONRPCRequest& request)
             }.Check(request);
 
     WalletContext& context = EnsureWalletContext(request.context);
-    WalletLocation location(request.params[0].get_str());
+    const std::string name(request.params[0].get_str());
+    fs::path path(fs::absolute(name, GetWalletDir()));
 
-    if (!location.Exists()) {
-        throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Wallet " + location.GetName() + " not found.");
-    } else if (fs::is_directory(location.GetPath())) {
+    if (fs::symlink_status(path).type() == fs::file_not_found) {
+        throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Wallet " + name + " not found.");
+    } else if (fs::is_directory(path)) {
         // The given filename is a directory. Check that there's a wallet.dat file.
-        fs::path wallet_dat_file = location.GetPath() / "wallet.dat";
+        fs::path wallet_dat_file = path / "wallet.dat";
         if (fs::symlink_status(wallet_dat_file).type() == fs::file_not_found) {
-            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Directory " + location.GetName() + " does not contain a wallet.dat file.");
+            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Directory " + name + " does not contain a wallet.dat file.");
         }
     }
 
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, location, error, warnings);
+    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, error, warnings);
     if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
 
-    UpdateWalletSetting(*context.chain, location.GetName(), request.params[1], warnings);
+    UpdateWalletSetting(*context.chain, name, request.params[1], warnings);
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
