@@ -61,8 +61,16 @@ bool VerifyWallets(interfaces::Chain& chain)
     // Keep track of each wallet absolute path to detect duplicates.
     std::set<fs::path> wallet_paths;
 
+<<<<<<< HEAD
     for (const auto& wallet_file : gArgs.GetArgs("-wallet")) {
         const fs::path path = fs::absolute(wallet_file, GetWalletDir());
+||||||| merged common ancestors
+    for (const auto& wallet_file : wallet_files) {
+        WalletLocation location(wallet_file);
+=======
+    for (const auto& wallet_file : wallet_files) {
+        const fs::path path = fs::absolute(wallet_file, GetWalletDir());
+>>>>>>> Remove WalletLocation class
 
         if (!wallet_paths.insert(path).second) {
             chain.initError(strprintf(_("Error loading wallet %s. Duplicate -wallet filename specified."), wallet_file));
@@ -73,7 +81,19 @@ bool VerifyWallets(interfaces::Chain& chain)
         DatabaseStatus status;
         options.verify = true;
         bilingual_str error_string;
+<<<<<<< HEAD
         if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
+||||||| merged common ancestors
+        std::vector<bilingual_str> warnings;
+        bool verify_success = CWallet::Verify(chain, location, error_string, warnings);
+        if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
+        if (!verify_success) {
+=======
+        std::vector<bilingual_str> warnings;
+        bool verify_success = CWallet::Verify(chain, wallet_file, error_string, warnings);
+        if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
+        if (!verify_success) {
+>>>>>>> Remove WalletLocation class
             chain.initError(error_string);
             return false;
         }
@@ -91,8 +111,14 @@ bool LoadWallets(interfaces::Chain& chain)
             options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
             bilingual_str error;
             std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
             std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
             std::shared_ptr<CWallet> pwallet = database ? CWallet::Create(chain, name, std::move(database), options.create_flags, error, warnings) : nullptr;
+||||||| merged common ancestors
+            std::shared_ptr<CWallet> pwallet = CWallet::CreateWalletFromFile(chain, WalletLocation(walletFile), error, warnings);
+=======
+            std::shared_ptr<CWallet> pwallet = CWallet::CreateWalletFromFile(chain, walletFile, error, warnings);
+>>>>>>> Remove WalletLocation class
             if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
             if (!pwallet) {
                 chain.initError(error);

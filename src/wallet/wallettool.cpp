@@ -23,6 +23,22 @@ static void WalletToolReleaseWallet(CWallet* wallet)
 
 static void WalletCreate(CWallet* wallet_instance)
 {
+<<<<<<< HEAD
+||||||| merged common ancestors
+    if (fs::exists(path)) {
+        tfm::format(std::cerr, "Error: File exists already\n");
+        return nullptr;
+    }
+    // dummy chain interface
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+=======
+    if (fs::exists(path)) {
+        tfm::format(std::cerr, "Error: File exists already\n");
+        return nullptr;
+    }
+    // dummy chain interface
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
+>>>>>>> Remove WalletLocation class
     LOCK(wallet_instance->cs_wallet);
 
     wallet_instance->SetMinVersion(FEATURE_HD_SPLIT);
@@ -53,7 +69,13 @@ static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::pa
     }
 
     // dummy chain interface
+<<<<<<< HEAD
     std::shared_ptr<CWallet> wallet_instance{new CWallet(nullptr /* chain */, name, std::move(database)), WalletToolReleaseWallet};
+||||||| merged common ancestors
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
+=======
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
+>>>>>>> Remove WalletLocation class
     DBErrors load_wallet_ret;
     try {
         bool first_run;
