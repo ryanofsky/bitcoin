@@ -129,7 +129,8 @@ class RpcCreateMultiSigTest(BitcoinTestFramework):
             try:
                 node1.loadwallet('wmulti')
             except JSONRPCException as e:
-                if e.error['code'] == -18 and 'Wallet wmulti not found' in e.error['message']:
+                dat = os.path.join(self.options.tmpdir, "node1", "regtest", "wallets", "wmulti", "wallet.dat")
+                if e.error['code'] == -18 and "Wallet loading failed. Failed to load database. Data file '{}' does not exist.".format(dat) in e.error['message']:
                     node1.createwallet(wallet_name='wmulti', disable_private_keys=True)
                 else:
                     raise
