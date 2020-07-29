@@ -249,13 +249,16 @@ class MultiWalletTest(BitcoinTestFramework):
         assert_equal(set(self.nodes[0].listwallets()), set(wallet_names))
 
         # Fail to load if wallet doesn't exist
-        assert_raises_rpc_error(-18, 'Wallet wallets not found.', self.nodes[0].loadwallet, 'wallets')
+        dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "wallets", "wallet.dat")
+        assert_raises_rpc_error(-18, "Wallet loading failed. Failed to load database. Data file '{}' does not exist.".format(dat), self.nodes[0].loadwallet, 'wallets')
 
         # Fail to load duplicate wallets
-        assert_raises_rpc_error(-4, 'Wallet file verification failed. Error loading wallet w1. Duplicate -wallet filename specified.', self.nodes[0].loadwallet, wallet_names[0])
+        dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "w1", "wallet.dat")
+        assert_raises_rpc_error(-4, "Wallet loading failed. Refusing to load database. Data file '{}' is already loaded.".format(dat), self.nodes[0].loadwallet, wallet_names[0])
 
         # Fail to load duplicate wallets by different ways (directory and filepath)
-        assert_raises_rpc_error(-4, "Wallet file verification failed. Error loading wallet wallet.dat. Duplicate -wallet filename specified.", self.nodes[0].loadwallet, 'wallet.dat')
+        dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "wallet.dat")
+        assert_raises_rpc_error(-4, "Wallet loading failed. Refusing to load database. Data file '{}' is already loaded.".format(dat), self.nodes[0].loadwallet, 'wallet.dat')
 
         # Fail to load if one wallet is a copy of another
         assert_raises_rpc_error(-4, "BerkeleyDatabase: Can't open database w8_copy (duplicates fileid", self.nodes[0].loadwallet, 'w8_copy')
@@ -263,18 +266,19 @@ class MultiWalletTest(BitcoinTestFramework):
         # Fail to load if one wallet is a copy of another, test this twice to make sure that we don't re-introduce #14304
         assert_raises_rpc_error(-4, "BerkeleyDatabase: Can't open database w8_copy (duplicates fileid", self.nodes[0].loadwallet, 'w8_copy')
 
-
         # Fail to load if wallet file is a symlink
-        assert_raises_rpc_error(-4, "Wallet file verification failed. Invalid -wallet path 'w8_symlink'", self.nodes[0].loadwallet, 'w8_symlink')
+        assert_raises_rpc_error(-4, "Wallet loading failed. Invalid -wallet path 'w8_symlink'", self.nodes[0].loadwallet, 'w8_symlink')
 
         # Fail to load if a directory is specified that doesn't contain a wallet
         os.mkdir(wallet_dir('empty_wallet_dir'))
-        assert_raises_rpc_error(-18, "Directory empty_wallet_dir does not contain a wallet.dat file", self.nodes[0].loadwallet, 'empty_wallet_dir')
+        dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "empty_wallet_dir", "wallet.dat")
+        assert_raises_rpc_error(-18, "Wallet loading failed. Failed to load database. Data file '{}' does not exist.".format(dat), self.nodes[0].loadwallet, 'empty_wallet_dir')
 
         self.log.info("Test dynamic wallet creation.")
 
         # Fail to create a wallet if it already exists.
-        assert_raises_rpc_error(-4, "Wallet w2 already exists.", self.nodes[0].createwallet, 'w2')
+        dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "w2", "wallet.dat")
+        assert_raises_rpc_error(-4, "Failed to create database. Data file '{}' already exists.".format(dat), self.nodes[0].createwallet, 'w2')
 
         # Successfully create a wallet with a new name
         loadwallet_name = self.nodes[0].createwallet('w9')

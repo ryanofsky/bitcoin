@@ -9,6 +9,7 @@
 #include <clientversion.h>
 #include <fs.h>
 #include <streams.h>
+#include <support/allocators/secure.h>
 #include <util/memory.h>
 
 #include <atomic>
@@ -17,8 +18,6 @@
 
 struct bilingual_str;
 
-/** Given a wallet directory path or legacy file path, return path to main data file in the wallet database. */
-fs::path WalletDataFilePath(const fs::path& wallet_path);
 void SplitWalletPath(const fs::path& wallet_path, fs::path& env_directory, std::string& database_filename);
 
 /** RAII class that provides access to a WalletDatabase */
@@ -141,13 +140,13 @@ public:
 
     virtual void ReloadDbEnv() = 0;
 
+    /** Return path to main database file for logs and error messages. */
+    virtual std::string Filename() = 0;
+
     std::atomic<unsigned int> nUpdateCounter;
     unsigned int nLastSeen;
     unsigned int nLastFlushed;
     int64_t nLastWalletUpdate;
-
-    /** Verifies the environment and database file */
-    virtual bool Verify(bilingual_str& error) = 0;
 
     std::string m_file_path;
 
@@ -191,8 +190,30 @@ public:
     bool PeriodicFlush() override { return true; }
     void IncrementUpdateCounter() override { ++nUpdateCounter; }
     void ReloadDbEnv() override {}
-    bool Verify(bilingual_str& errorStr) override { return true; }
+    std::string Filename() override { return "dummy"; }
     std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) override { return MakeUnique<DummyBatch>(); }
 };
+
+struct DatabaseOptions {
+    bool require_existing = false;
+    bool require_create = false;
+    uint64_t create_flags = 0;
+    SecureString create_passphrase;
+    bool verify = true;
+};
+
+enum class DatabaseStatus {
+    SUCCESS,
+    FAILED_BAD_PATH,
+    FAILED_ALREADY_LOADED,
+    FAILED_ALREADY_EXISTS,
+    FAILED_NOT_FOUND,
+    FAILED_CREATE,
+    FAILED_VERIFY,
+    FAILED_ENCRYPT,
+    FAILED_LOAD
+};
+
+std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
 
 #endif // BITCOIN_WALLET_DB_H

@@ -29,7 +29,6 @@ class RPCTimerInterface;
 class UniValue;
 class proxyType;
 enum class SynchronizationState;
-enum class WalletCreationStatus;
 struct CNodeStateStats;
 struct NodeContext;
 struct bilingual_str;
@@ -216,7 +215,7 @@ public:
     virtual std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) = 0;
 
     //! Create a wallet from file
-    virtual std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, WalletCreationStatus& status) = 0;
+    virtual std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) = 0;
 
     //! Register handler for init messages.
     using InitMessageFn = std::function<void(const std::string& message)>;
