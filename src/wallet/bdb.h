@@ -150,7 +150,10 @@ public:
     void ReloadDbEnv() override;
 
     /** Verifies the environment and database file */
-    bool Verify(bilingual_str& error) override;
+    bool Verify(bilingual_str& error);
+
+    /** Return path to main database filename */
+    std::string Filename() override { return (env->Directory() / strFile).string(); }
 
     /**
      * Pointer to shared database environment.
@@ -237,5 +240,7 @@ public:
 };
 
 std::string BerkeleyDatabaseVersion();
+
+std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
 
 #endif // BITCOIN_WALLET_BDB_H
