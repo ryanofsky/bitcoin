@@ -90,6 +90,8 @@ public:
     /// Setup platform style
     void setupPlatformStyle();
 
+    interfaces::Node& node() { return m_node; }
+
 public Q_SLOTS:
     void initializeResult(bool success);
     void shutdownResult();
