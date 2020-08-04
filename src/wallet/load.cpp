@@ -82,6 +82,7 @@ bool VerifyWallets(interfaces::Chain& chain)
         options.verify = true;
         bilingual_str error_string;
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
 ||||||| merged common ancestors
         std::vector<bilingual_str> warnings;
@@ -94,6 +95,14 @@ bool VerifyWallets(interfaces::Chain& chain)
         if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
         if (!verify_success) {
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+        std::vector<bilingual_str> warnings;
+        bool verify_success = CWallet::Verify(chain, wallet_file, error_string, warnings);
+        if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
+        if (!verify_success) {
+=======
+        if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
+>>>>>>> wallet: Remove Verify and IsLoaded methods
             chain.initError(error_string);
             return false;
         }

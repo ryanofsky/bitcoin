@@ -1037,6 +1037,7 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
     return MakeBerkeleyDatabase(path, options, status, error);
 }
 
+<<<<<<< HEAD
 bool IsWalletLoaded(const fs::path& wallet_path)
 >>>>>>> wallet: Add MakeDatabase function
 {
@@ -1073,6 +1074,24 @@ bool IsWalletLoaded(const fs::path& wallet_path)
     }
 
     return MakeBerkeleyDatabase(path, options, status, error);
+||||||| merged common ancestors
+bool IsWalletLoaded(const fs::path& wallet_path)
+{
+    return IsBDBWalletLoaded(wallet_path);
+}
+
+/** Return object for accessing database at specified path. */
+std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path)
+{
+    std::string filename;
+    return MakeUnique<BerkeleyDatabase>(GetWalletEnv(path, filename), std::move(filename));
+=======
+/** Return object for accessing database at specified path. */
+std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path)
+{
+    std::string filename;
+    return MakeUnique<BerkeleyDatabase>(GetWalletEnv(path, filename), std::move(filename));
+>>>>>>> wallet: Remove Verify and IsLoaded methods
 }
 
 /** Return object for accessing dummy database with no read/write capabilities. */

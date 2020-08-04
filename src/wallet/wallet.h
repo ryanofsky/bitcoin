@@ -71,7 +71,12 @@ std::shared_ptr<CWallet> CreateWallet(interfaces::Chain& chain, const std::strin
 >>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 std::unique_ptr<interfaces::Handler> HandleLoadWallet(LoadWalletFn load_wallet);
 <<<<<<< HEAD
+<<<<<<< HEAD
 std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+||||||| merged common ancestors
+=======
+std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+>>>>>>> wallet: Remove Verify and IsLoaded methods
 
 ||||||| merged common ancestors
 
@@ -1173,6 +1178,7 @@ public:
     bool MarkReplaced(const uint256& originalHash, const uint256& newHash);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| merged common ancestors
     //! Verify wallet naming and perform salvage on the wallet if required
     static bool Verify(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error_string, std::vector<bilingual_str>& warnings);
@@ -1182,6 +1188,12 @@ public:
     static bool Verify(interfaces::Chain& chain, const std::string& name, bilingual_str& error_string, std::vector<bilingual_str>& warnings);
 
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+    //! Verify wallet naming and perform salvage on the wallet if required
+    static bool Verify(interfaces::Chain& chain, const std::string& name, bilingual_str& error_string, std::vector<bilingual_str>& warnings);
+
+=======
+>>>>>>> wallet: Remove Verify and IsLoaded methods
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
 <<<<<<< HEAD
     static std::shared_ptr<CWallet> Create(interfaces::Chain& chain, const std::string& name, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings);

@@ -148,6 +148,17 @@ public:
     unsigned int nLastFlushed;
     int64_t nLastWalletUpdate;
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+    /** Verifies the environment and database file */
+    virtual bool Verify(bilingual_str& error) = 0;
+
+    std::string m_file_path;
+
+=======
+    std::string m_file_path;
+
+>>>>>>> wallet: Remove Verify and IsLoaded methods
     /** Make a DatabaseBatch connected to this database */
     virtual std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) = 0;
 };
@@ -188,7 +199,12 @@ public:
     bool PeriodicFlush() override { return true; }
     void IncrementUpdateCounter() override { ++nUpdateCounter; }
     void ReloadDbEnv() override {}
+<<<<<<< HEAD
     std::string Filename() override { return "dummy"; }
+||||||| merged common ancestors
+    bool Verify(bilingual_str& errorStr) override { return true; }
+=======
+>>>>>>> wallet: Remove Verify and IsLoaded methods
     std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) override { return MakeUnique<DummyBatch>(); }
 };
 

@@ -86,9 +86,16 @@ public:
 /** Get BerkeleyEnvironment and database filename given a wallet path. */
 std::shared_ptr<BerkeleyEnvironment> GetWalletEnv(const fs::path& wallet_path, std::string& database_filename);
 
+<<<<<<< HEAD
 /** Check format of database file */
 bool IsBerkeleyBtree(const fs::path& path);
 
+||||||| merged common ancestors
+/** Return whether a BDB wallet database is currently loaded. */
+bool IsBDBWalletLoaded(const fs::path& wallet_path);
+
+=======
+>>>>>>> wallet: Remove Verify and IsLoaded methods
 /** Check format of database file */
 bool IsBerkeleyBtree(const fs::path& path);
 
@@ -145,10 +152,16 @@ public:
     void ReloadDbEnv() override;
 
     /** Verifies the environment and database file */
+<<<<<<< HEAD
     bool Verify(bilingual_str& error);
 
     /** Return path to main database filename */
     std::string Filename() override { return (env->Directory() / strFile).string(); }
+||||||| merged common ancestors
+    bool Verify(bilingual_str& error) override;
+=======
+    bool Verify(bilingual_str& error);
+>>>>>>> wallet: Remove Verify and IsLoaded methods
 
     /**
      * Pointer to shared database environment.
