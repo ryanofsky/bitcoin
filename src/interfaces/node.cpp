@@ -32,6 +32,7 @@
 #include <util/system.h>
 #include <util/translation.h>
 #include <validation.h>
+#include <wallet/db.h>
 #include <warnings.h>
 
 #if defined(HAVE_CONFIG_H)
@@ -42,6 +43,26 @@
 
 #include <boost/signals2/signal.hpp>
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+class CWallet;
+fs::path GetWalletDir();
+std::vector<fs::path> ListWalletDir();
+std::vector<std::shared_ptr<CWallet>> GetWallets();
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings);
+WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result);
+std::unique_ptr<interfaces::Handler> HandleLoadWallet(interfaces::Node::LoadWalletFn load_wallet);
+
+=======
+class CWallet;
+fs::path GetWalletDir();
+std::vector<fs::path> ListWalletDir();
+std::vector<std::shared_ptr<CWallet>> GetWallets();
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings);
+std::shared_ptr<CWallet> CreateWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings);
+std::unique_ptr<interfaces::Handler> HandleLoadWallet(interfaces::Node::LoadWalletFn load_wallet);
+
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 namespace interfaces {
 namespace {
 
@@ -233,7 +254,49 @@ public:
     }
     WalletClient& walletClient() override
     {
+<<<<<<< HEAD
         return *Assert(m_context->wallet_client);
+||||||| merged common ancestors
+        std::vector<std::unique_ptr<Wallet>> wallets;
+        for (auto& client : m_context->chain_clients) {
+            auto client_wallets = client->getWallets();
+            std::move(client_wallets.begin(), client_wallets.end(), std::back_inserter(wallets));
+        }
+        return wallets;
+    }
+    std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    {
+        return MakeWallet(LoadWallet(*m_context->chain, name, error, warnings));
+    }
+    std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, WalletCreationStatus& status) override
+    {
+        std::shared_ptr<CWallet> wallet;
+        status = CreateWallet(*m_context->chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
+        return MakeWallet(wallet);
+=======
+        std::vector<std::unique_ptr<Wallet>> wallets;
+        for (auto& client : m_context->chain_clients) {
+            auto client_wallets = client->getWallets();
+            std::move(client_wallets.begin(), client_wallets.end(), std::back_inserter(wallets));
+        }
+        return wallets;
+    }
+    std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    {
+        DatabaseOptions options;
+        DatabaseStatus status;
+        options.require_existing = true;
+        return MakeWallet(LoadWallet(*m_context->chain, name, options, status, error, warnings));
+    }
+    std::unique_ptr<Wallet> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings) override
+    {
+        DatabaseOptions options;
+        DatabaseStatus status;
+        options.require_create = true;
+        options.create_flags = wallet_creation_flags;
+        options.create_passphrase = passphrase;
+        return MakeWallet(CreateWallet(*m_context->chain, name, options, status, error, warnings));
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     }
     std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) override
     {
