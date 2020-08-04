@@ -2511,9 +2511,11 @@ static UniValue loadwallet(const JSONRPCRequest& request)
         }
     }
 
+    DatabaseOptions options;
+    DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, error, warnings);
+    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, options, status, error, warnings);
     if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
 
     UniValue obj(UniValue::VOBJ);
@@ -2642,17 +2644,15 @@ static UniValue createwallet(const JSONRPCRequest& request)
         warnings.emplace_back(Untranslated("Wallet is an experimental descriptor wallet"));
     }
 
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.create_flags = flags;
+    options.create_passphrase = passphrase;
     bilingual_str error;
-    std::shared_ptr<CWallet> wallet;
-    WalletCreationStatus status = CreateWallet(*context.chain, passphrase, flags, request.params[0].get_str(), error, warnings, wallet);
-    switch (status) {
-        case WalletCreationStatus::CREATION_FAILED:
-            throw JSONRPCError(RPC_WALLET_ERROR, error.original);
-        case WalletCreationStatus::ENCRYPTION_FAILED:
-            throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, error.original);
-        case WalletCreationStatus::SUCCESS:
-            break;
-        // no default case, so the compiler can warn about missing cases
+    std::shared_ptr<CWallet> wallet = CreateWallet(*context.chain, request.params[0].get_str(), options, status, error, warnings);
+    if (!wallet) {
+        RPCErrorCode code = status == DatabaseStatus::FAILED_ENCRYPT ? RPC_WALLET_ENCRYPTION_FAILED : RPC_WALLET_ERROR;
+        throw JSONRPCError(code, error.original);
     }
 
     UniValue obj(UniValue::VOBJ);

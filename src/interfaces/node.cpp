@@ -31,6 +31,7 @@
 #include <util/system.h>
 #include <util/translation.h>
 #include <validation.h>
+#include <wallet/db.h>
 #include <warnings.h>
 
 #if defined(HAVE_CONFIG_H)
@@ -45,8 +46,8 @@ class CWallet;
 fs::path GetWalletDir();
 std::vector<fs::path> ListWalletDir();
 std::vector<std::shared_ptr<CWallet>> GetWallets();
-std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings);
-WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result);
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings);
+std::shared_ptr<CWallet> CreateWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings);
 std::unique_ptr<interfaces::Handler> HandleLoadWallet(interfaces::Node::LoadWalletFn load_wallet);
 
 namespace interfaces {
@@ -278,13 +279,35 @@ public:
     }
     std::unique_ptr<Wallet> loadWallet(const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
+<<<<<<< HEAD
         return MakeWallet(LoadWallet(*m_context->chain, name, error, warnings));
+||||||| merged common ancestors
+        return MakeWallet(LoadWallet(*m_context.chain, name, error, warnings));
+=======
+        DatabaseOptions options;
+        DatabaseStatus status;
+        options.require_existing = true;
+        return MakeWallet(LoadWallet(*m_context.chain, name, options, status, error, warnings));
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     }
-    std::unique_ptr<Wallet> createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, WalletCreationStatus& status) override
+    std::unique_ptr<Wallet> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings) override
     {
+<<<<<<< HEAD
         std::shared_ptr<CWallet> wallet;
         status = CreateWallet(*m_context->chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
         return MakeWallet(wallet);
+||||||| merged common ancestors
+        std::shared_ptr<CWallet> wallet;
+        status = CreateWallet(*m_context.chain, passphrase, wallet_creation_flags, name, error, warnings, wallet);
+        return MakeWallet(wallet);
+=======
+        DatabaseOptions options;
+        DatabaseStatus status;
+        options.require_create = true;
+        options.create_flags = wallet_creation_flags;
+        options.create_passphrase = passphrase;
+        return MakeWallet(CreateWallet(*m_context.chain, name, options, status, error, warnings));
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     }
     std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) override
     {
