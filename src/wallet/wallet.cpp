@@ -201,12 +201,18 @@ void UnloadWallet(std::shared_ptr<CWallet>&& wallet)
 
 namespace {
 <<<<<<< HEAD
+<<<<<<< HEAD
 std::shared_ptr<CWallet> LoadWalletInternal(interfaces::Chain& chain, const std::string& name, Optional<bool> load_on_start, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
 ||||||| merged common ancestors
 std::shared_ptr<CWallet> LoadWalletInternal(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings)
 =======
 std::shared_ptr<CWallet> LoadWalletInternal(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings)
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+std::shared_ptr<CWallet> LoadWalletInternal(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings)
+=======
+std::shared_ptr<CWallet> LoadWalletInternal(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 {
     try {
 <<<<<<< HEAD
@@ -249,12 +255,18 @@ std::shared_ptr<CWallet> LoadWalletInternal(interfaces::Chain& chain, const std:
 } // namespace
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, Optional<bool> load_on_start, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
 ||||||| merged common ancestors
 std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings)
 =======
 std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings)
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings)
+=======
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 {
     auto result = WITH_LOCK(g_loading_wallet_mutex, return g_loading_wallet_set.insert(name));
     if (!result.second) {
@@ -263,16 +275,23 @@ std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string&
         return nullptr;
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     auto wallet = LoadWalletInternal(chain, name, load_on_start, options, status, error, warnings);
 ||||||| merged common ancestors
     auto wallet = LoadWalletInternal(chain, location, error, warnings);
 =======
     auto wallet = LoadWalletInternal(chain, name, error, warnings);
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+    auto wallet = LoadWalletInternal(chain, name, error, warnings);
+=======
+    auto wallet = LoadWalletInternal(chain, name, options, status, error, warnings);
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     WITH_LOCK(g_loading_wallet_mutex, g_loading_wallet_set.erase(result.first));
     return wallet;
 }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 std::shared_ptr<CWallet> CreateWallet(interfaces::Chain& chain, const std::string& name, Optional<bool> load_on_start, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
@@ -286,11 +305,23 @@ std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string&
 }
 
 WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result)
+||||||| merged common ancestors
+WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result)
+=======
+std::shared_ptr<CWallet> CreateWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 {
+<<<<<<< HEAD
 =======
 WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result)
 {
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+=======
+    uint64_t wallet_creation_flags = options.create_flags;
+    const SecureString& passphrase = options.create_passphrase;
+
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     // Indicate that the wallet is actually supposed to be blank and not just blank to make it encrypted
     bool create_blank = (wallet_creation_flags & WALLET_FLAG_BLANK_WALLET);
 
@@ -312,7 +343,8 @@ WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& 
     // Check the wallet file location
     if (fs::symlink_status(fs::absolute(name.empty() ? "wallet.dat" : name, GetWalletDir())).type() != fs::file_not_found) {
         error = strprintf(Untranslated("Wallet %s already exists."), name);
-        return WalletCreationStatus::CREATION_FAILED;
+        status = DatabaseStatus::FAILED_CREATE;
+        return nullptr;
     }
 
 >>>>>>> Remove WalletLocation class
@@ -388,6 +420,16 @@ WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& 
     }
     AddWallet(wallet);
     wallet->postInitProcess();
+<<<<<<< HEAD
+||||||| merged common ancestors
+    result = wallet;
+    return WalletCreationStatus::SUCCESS;
+}
+=======
+    status = DatabaseStatus::SUCCESS;
+    return wallet;
+}
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 
     // Write the wallet settings
     UpdateWalletSetting(chain, name, load_on_start, warnings);

@@ -6,6 +6,15 @@
 #include <walletinitinterface.h>
 
 class CWallet;
+<<<<<<< HEAD
+||||||| merged common ancestors
+enum class WalletCreationStatus;
+struct bilingual_str;
+=======
+enum class DatabaseStatus;
+struct DatabaseOptions;
+struct bilingual_str;
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 
 namespace interfaces {
 class Chain;
@@ -55,6 +64,72 @@ void DummyWalletInit::AddWalletOptions(ArgsManager& argsman) const
 
 const WalletInitInterface& g_wallet_init_interface = DummyWalletInit();
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+fs::path GetWalletDir()
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+std::vector<fs::path> ListWalletDir()
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+std::vector<std::shared_ptr<CWallet>> GetWallets()
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings)
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, std::shared_ptr<CWallet>& result)
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+using LoadWalletFn = std::function<void(std::unique_ptr<interfaces::Wallet> wallet)>;
+std::unique_ptr<interfaces::Handler> HandleLoadWallet(LoadWalletFn load_wallet)
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+=======
+fs::path GetWalletDir()
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+std::vector<fs::path> ListWalletDir()
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+std::vector<std::shared_ptr<CWallet>> GetWallets()
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+std::shared_ptr<CWallet> LoadWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+std::shared_ptr<CWallet> CreateWallet(interfaces::Chain& chain, const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+using LoadWalletFn = std::function<void(std::unique_ptr<interfaces::Wallet> wallet)>;
+std::unique_ptr<interfaces::Handler> HandleLoadWallet(LoadWalletFn load_wallet)
+{
+    throw std::logic_error("Wallet function called in non-wallet build.");
+}
+
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 namespace interfaces {
 
 std::unique_ptr<Wallet> MakeWallet(const std::shared_ptr<CWallet>& wallet)

@@ -253,7 +253,14 @@ void CreateWalletActivity::createWallet()
     }
 
     QTimer::singleShot(500, worker(), [this, name, flags] {
+<<<<<<< HEAD
         std::unique_ptr<interfaces::Wallet> wallet = node().walletClient().createWallet(name, m_passphrase, flags, m_error_message, m_warning_message);
+||||||| merged common ancestors
+        WalletCreationStatus status;
+        std::unique_ptr<interfaces::Wallet> wallet = node().createWallet(m_passphrase, flags, name, m_error_message, m_warning_message, status);
+=======
+        std::unique_ptr<interfaces::Wallet> wallet = node().createWallet(name, m_passphrase, flags, m_error_message, m_warning_message);
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
 
         if (wallet) m_wallet_model = m_wallet_controller->getOrCreateWallet(std::move(wallet));
 

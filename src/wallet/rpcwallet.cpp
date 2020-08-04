@@ -2625,11 +2625,18 @@ static RPCHelpMan loadwallet()
     }
 >>>>>>> Remove WalletLocation class
 
+<<<<<<< HEAD
     DatabaseOptions options;
     DatabaseStatus status;
     options.require_existing = true;
+||||||| merged common ancestors
+=======
+    DatabaseOptions options;
+    DatabaseStatus status;
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     bilingual_str error;
     std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
 <<<<<<< HEAD
     Optional<bool> load_on_start = request.params[1].isNull() ? nullopt : Optional<bool>(request.params[1].get_bool());
     std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, load_on_start, options, status, error, warnings);
@@ -2646,6 +2653,11 @@ static RPCHelpMan loadwallet()
     UpdateWalletSetting(*context.chain, location.GetName(), request.params[1], warnings);
 =======
     std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, error, warnings);
+||||||| merged common ancestors
+    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, error, warnings);
+=======
+    std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, options, status, error, warnings);
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
 
     UpdateWalletSetting(*context.chain, name, request.params[1], warnings);
@@ -2783,17 +2795,43 @@ static RPCHelpMan createwallet()
         warnings.emplace_back(Untranslated("Wallet is an experimental descriptor wallet"));
     }
 
+<<<<<<< HEAD
     DatabaseOptions options;
     DatabaseStatus status;
     options.require_create = true;
     options.create_flags = flags;
     options.create_passphrase = passphrase;
+||||||| merged common ancestors
+=======
+    DatabaseOptions options;
+    DatabaseStatus status;
+    options.create_flags = flags;
+    options.create_passphrase = passphrase;
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     bilingual_str error;
+<<<<<<< HEAD
     Optional<bool> load_on_start = request.params[6].isNull() ? nullopt : Optional<bool>(request.params[6].get_bool());
     std::shared_ptr<CWallet> wallet = CreateWallet(*context.chain, request.params[0].get_str(), load_on_start, options, status, error, warnings);
     if (!wallet) {
         RPCErrorCode code = status == DatabaseStatus::FAILED_ENCRYPT ? RPC_WALLET_ENCRYPTION_FAILED : RPC_WALLET_ERROR;
         throw JSONRPCError(code, error.original);
+||||||| merged common ancestors
+    std::shared_ptr<CWallet> wallet;
+    WalletCreationStatus status = CreateWallet(*context.chain, passphrase, flags, request.params[0].get_str(), error, warnings, wallet);
+    switch (status) {
+        case WalletCreationStatus::CREATION_FAILED:
+            throw JSONRPCError(RPC_WALLET_ERROR, error.original);
+        case WalletCreationStatus::ENCRYPTION_FAILED:
+            throw JSONRPCError(RPC_WALLET_ENCRYPTION_FAILED, error.original);
+        case WalletCreationStatus::SUCCESS:
+            break;
+        // no default case, so the compiler can warn about missing cases
+=======
+    std::shared_ptr<CWallet> wallet = CreateWallet(*context.chain, request.params[0].get_str(), options, status, error, warnings);
+    if (!wallet) {
+        RPCErrorCode code = status == DatabaseStatus::FAILED_ENCRYPT ? RPC_WALLET_ENCRYPTION_FAILED : RPC_WALLET_ERROR;
+        throw JSONRPCError(code, error.original);
+>>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types
     }
 
     UniValue obj(UniValue::VOBJ);
