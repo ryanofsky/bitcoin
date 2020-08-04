@@ -13,6 +13,7 @@
 #include <util/bip32.h>
 #include <util/system.h>
 #include <util/time.h>
+#include <wallet/bdb.h>
 #include <wallet/wallet.h>
 
 #include <atomic>
@@ -1004,6 +1005,11 @@ bool WalletBatch::TxnCommit()
 bool WalletBatch::TxnAbort()
 {
     return m_batch->TxnAbort();
+}
+
+std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
+{
+    return MakeBerkeleyDatabase(path, options, status, error);
 }
 
 bool IsWalletLoaded(const fs::path& wallet_path)
