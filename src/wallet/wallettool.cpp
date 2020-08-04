@@ -104,6 +104,46 @@ static void WalletShowInfo(CWallet* wallet_instance)
     tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->m_address_book.size());
 }
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+static bool SalvageWallet(const fs::path& path)
+{
+    // Create a Database handle to allow for the db to be initialized before recovery
+    std::unique_ptr<WalletDatabase> database = CreateWalletDatabase(path);
+
+    // Initialize the environment before recovery
+    bilingual_str error_string;
+    try {
+        database->Verify(error_string);
+    } catch (const fs::filesystem_error& e) {
+        error_string = Untranslated(strprintf("Error loading wallet. %s", fsbridge::get_filesystem_error_message(e)));
+    }
+    if (!error_string.original.empty()) {
+        tfm::format(std::cerr, "Failed to open wallet for salvage :%s\n", error_string.original);
+        return false;
+    }
+
+    // Perform the recovery
+    return RecoverDatabaseFile(path);
+}
+
+=======
+static bool SalvageWallet(const fs::path& path)
+{
+    // Create a Database handle to allow for the db to be initialized before recovery
+    DatabaseOptions options;
+    DatabaseStatus status;
+    bilingual_str error_string;
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, status, error_string);
+    if (!database) {
+        return false;
+    }
+
+    // Perform the recovery
+    return RecoverDatabaseFile(path);
+}
+
+>>>>>>> wallet: Remove Verify and IsLoaded methods
 bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
 {
     fs::path path = fs::absolute(name, GetWalletDir());
