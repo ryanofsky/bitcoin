@@ -42,6 +42,7 @@ static std::shared_ptr<CWallet> TestLoadWallet(interfaces::Chain& chain)
     bilingual_str error;
     std::vector<bilingual_str> warnings;
 <<<<<<< HEAD
+<<<<<<< HEAD
     auto database = MakeWalletDatabase("", options, status, error);
     auto wallet = CWallet::Create(chain, "", std::move(database), options.create_flags, error, warnings);
 ||||||| merged common ancestors
@@ -49,6 +50,12 @@ static std::shared_ptr<CWallet> TestLoadWallet(interfaces::Chain& chain)
 =======
     auto wallet = CWallet::CreateWalletFromFile(chain, "", error, warnings);
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+    auto wallet = CWallet::CreateWalletFromFile(chain, "", error, warnings);
+=======
+    auto database = MakeWalletDatabase("", options, status, error);
+    auto wallet = CWallet::Create(chain, "", std::move(database), options.create_flags, error, warnings);
+>>>>>>> refactor: Pass wallet database into CWallet::Create
     wallet->postInitProcess();
     return wallet;
 }

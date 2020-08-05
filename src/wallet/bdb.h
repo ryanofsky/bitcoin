@@ -163,6 +163,9 @@ public:
     bool Verify(bilingual_str& error);
 >>>>>>> wallet: Remove Verify and IsLoaded methods
 
+    /** Return path to main database filename */
+    std::string Filename() override { return (env->Directory() / strFile).string(); }
+
     /**
      * Pointer to shared database environment.
      *

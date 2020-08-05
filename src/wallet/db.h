@@ -149,6 +149,7 @@ public:
     int64_t nLastWalletUpdate;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| merged common ancestors
     /** Verifies the environment and database file */
     virtual bool Verify(bilingual_str& error) = 0;
@@ -159,6 +160,11 @@ public:
     std::string m_file_path;
 
 >>>>>>> wallet: Remove Verify and IsLoaded methods
+||||||| merged common ancestors
+    std::string m_file_path;
+
+=======
+>>>>>>> refactor: Pass wallet database into CWallet::Create
     /** Make a DatabaseBatch connected to this database */
     virtual std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) = 0;
 };
@@ -200,11 +206,16 @@ public:
     void IncrementUpdateCounter() override { ++nUpdateCounter; }
     void ReloadDbEnv() override {}
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::string Filename() override { return "dummy"; }
 ||||||| merged common ancestors
     bool Verify(bilingual_str& errorStr) override { return true; }
 =======
 >>>>>>> wallet: Remove Verify and IsLoaded methods
+||||||| merged common ancestors
+=======
+    std::string Filename() override { return "dummy"; }
+>>>>>>> refactor: Pass wallet database into CWallet::Create
     std::unique_ptr<DatabaseBatch> MakeBatch(const char* mode = "r+", bool flush_on_close = true) override { return MakeUnique<DummyBatch>(); }
 };
 

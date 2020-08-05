@@ -114,12 +114,22 @@ bool VerifyWallets(interfaces::Chain& chain)
 bool LoadWallets(interfaces::Chain& chain)
 {
     try {
+<<<<<<< HEAD
         for (const std::string& name : gArgs.GetArgs("-wallet")) {
             DatabaseOptions options;
             DatabaseStatus status;
             options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
+||||||| merged common ancestors
+        for (const std::string& walletFile : wallet_files) {
+=======
+        for (const std::string& name : wallet_files) {
+            DatabaseOptions options;
+            DatabaseStatus status;
+            options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
+>>>>>>> refactor: Pass wallet database into CWallet::Create
             bilingual_str error;
             std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
 <<<<<<< HEAD
             std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
             std::shared_ptr<CWallet> pwallet = database ? CWallet::Create(chain, name, std::move(database), options.create_flags, error, warnings) : nullptr;
@@ -128,6 +138,12 @@ bool LoadWallets(interfaces::Chain& chain)
 =======
             std::shared_ptr<CWallet> pwallet = CWallet::CreateWalletFromFile(chain, walletFile, error, warnings);
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+            std::shared_ptr<CWallet> pwallet = CWallet::CreateWalletFromFile(chain, walletFile, error, warnings);
+=======
+            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
+            std::shared_ptr<CWallet> pwallet = database ? CWallet::Create(chain, name, std::move(database), options.create_flags, error, warnings) : nullptr;
+>>>>>>> refactor: Pass wallet database into CWallet::Create
             if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
             if (!pwallet) {
                 chain.initError(error);

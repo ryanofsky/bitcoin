@@ -1196,12 +1196,18 @@ public:
 >>>>>>> wallet: Remove Verify and IsLoaded methods
     /* Initializes the wallet, returns a new CWallet instance or a null pointer in case of an error */
 <<<<<<< HEAD
+<<<<<<< HEAD
     static std::shared_ptr<CWallet> Create(interfaces::Chain& chain, const std::string& name, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings);
 ||||||| merged common ancestors
     static std::shared_ptr<CWallet> CreateWalletFromFile(interfaces::Chain& chain, const WalletLocation& location, bilingual_str& error, std::vector<bilingual_str>& warnings, uint64_t wallet_creation_flags = 0);
 =======
     static std::shared_ptr<CWallet> CreateWalletFromFile(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, uint64_t wallet_creation_flags = 0);
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+    static std::shared_ptr<CWallet> CreateWalletFromFile(interfaces::Chain& chain, const std::string& name, bilingual_str& error, std::vector<bilingual_str>& warnings, uint64_t wallet_creation_flags = 0);
+=======
+    static std::shared_ptr<CWallet> Create(interfaces::Chain& chain, const std::string& name, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings);
+>>>>>>> refactor: Pass wallet database into CWallet::Create
 
     /**
      * Wallet post-init setup
