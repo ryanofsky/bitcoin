@@ -2500,24 +2500,17 @@ static UniValue loadwallet(const JSONRPCRequest& request)
 
     WalletContext& context = EnsureWalletContext(request.context);
     std::string name(request.params[0].get_str());
-    fs::path path(fs::absolute(name, GetWalletDir()));
-
-    if (fs::symlink_status(path).type() == fs::file_not_found) {
-        throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Wallet " + name + " not found.");
-    } else if (fs::is_directory(path)) {
-        // The given filename is a directory. Check that there's a wallet.dat file.
-        fs::path wallet_dat_file = path / "wallet.dat";
-        if (fs::symlink_status(wallet_dat_file).type() == fs::file_not_found) {
-            throw JSONRPCError(RPC_WALLET_NOT_FOUND, "Directory " + name + " does not contain a wallet.dat file.");
-        }
-    }
 
     DatabaseOptions options;
     DatabaseStatus status;
+    options.require_existing = true;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
     std::shared_ptr<CWallet> const wallet = LoadWallet(*context.chain, name, options, status, error, warnings);
-    if (!wallet) throw JSONRPCError(RPC_WALLET_ERROR, error.original);
+    if (!wallet) {
+        RPCErrorCode code = status == DatabaseStatus::FAILED_NOT_FOUND || status == DatabaseStatus::FAILED_BAD_FORMAT ? RPC_WALLET_NOT_FOUND : RPC_WALLET_ERROR;
+        throw JSONRPCError(code, error.original);
+    }
 
     UniValue obj(UniValue::VOBJ);
     obj.pushKV("name", wallet->GetName());
