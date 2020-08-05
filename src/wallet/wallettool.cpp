@@ -24,6 +24,7 @@ static void WalletToolReleaseWallet(CWallet* wallet)
 static void WalletCreate(CWallet* wallet_instance)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| merged common ancestors
     if (fs::exists(path)) {
         tfm::format(std::cerr, "Error: File exists already\n");
@@ -40,6 +41,23 @@ static void WalletCreate(CWallet* wallet_instance)
     std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
 >>>>>>> Remove WalletLocation class
     LOCK(wallet_instance->cs_wallet);
+||||||| merged common ancestors
+    if (fs::exists(path)) {
+        tfm::format(std::cerr, "Error: File exists already\n");
+        return nullptr;
+    }
+    // dummy chain interface
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
+    LOCK(wallet_instance->cs_wallet);
+    bool first_run = true;
+    DBErrors load_wallet_ret = wallet_instance->LoadWallet(first_run);
+    if (load_wallet_ret != DBErrors::LOAD_OK) {
+        tfm::format(std::cerr, "Error creating %s", name);
+        return nullptr;
+    }
+=======
+    LOCK(wallet_instance->cs_wallet);
+>>>>>>> wallet: Remove path checking code from bitcoin-wallet tool
 
     wallet_instance->SetMinVersion(FEATURE_HD_SPLIT);
 
@@ -70,12 +88,18 @@ static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::pa
 
     // dummy chain interface
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::shared_ptr<CWallet> wallet_instance{new CWallet(nullptr /* chain */, name, std::move(database)), WalletToolReleaseWallet};
 ||||||| merged common ancestors
     std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, WalletLocation(name), CreateWalletDatabase(path)), WalletToolReleaseWallet);
 =======
     std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+    std::shared_ptr<CWallet> wallet_instance(new CWallet(nullptr /* chain */, name, CreateWalletDatabase(path)), WalletToolReleaseWallet);
+=======
+    std::shared_ptr<CWallet> wallet_instance{new CWallet(nullptr /* chain */, name, std::move(database)), WalletToolReleaseWallet};
+>>>>>>> wallet: Remove path checking code from bitcoin-wallet tool
     DBErrors load_wallet_ret;
     try {
         bool first_run;

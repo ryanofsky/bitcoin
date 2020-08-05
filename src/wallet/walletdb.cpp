@@ -1038,6 +1038,7 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 bool IsWalletLoaded(const fs::path& wallet_path)
 >>>>>>> wallet: Add MakeDatabase function
 {
@@ -1094,6 +1095,16 @@ std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path)
 >>>>>>> wallet: Remove Verify and IsLoaded methods
 }
 
+||||||| merged common ancestors
+/** Return object for accessing database at specified path. */
+std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path)
+{
+    std::string filename;
+    return MakeUnique<BerkeleyDatabase>(GetWalletEnv(path, filename), std::move(filename));
+}
+
+=======
+>>>>>>> wallet: Remove path checking code from bitcoin-wallet tool
 /** Return object for accessing dummy database with no read/write capabilities. */
 std::unique_ptr<WalletDatabase> CreateDummyWalletDatabase()
 {

@@ -298,10 +298,17 @@ std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path);
 //! Unserialize a given Key-Value pair and load it into the wallet
 bool ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue, std::string& strType, std::string& strErr);
 
+<<<<<<< HEAD
 /** Return object for accessing database at specified path. */
 std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path);
 >>>>>>> wallet: Remove Verify and IsLoaded methods
 
+||||||| merged common ancestors
+/** Return object for accessing database at specified path. */
+std::unique_ptr<WalletDatabase> CreateWalletDatabase(const fs::path& path);
+
+=======
+>>>>>>> wallet: Remove path checking code from bitcoin-wallet tool
 /** Return object for accessing dummy database with no read/write capabilities. */
 std::unique_ptr<WalletDatabase> CreateDummyWalletDatabase();
 
