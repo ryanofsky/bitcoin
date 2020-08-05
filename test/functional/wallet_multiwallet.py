@@ -249,7 +249,8 @@ class MultiWalletTest(BitcoinTestFramework):
         assert_equal(set(self.nodes[0].listwallets()), set(wallet_names))
 
         # Fail to load if wallet doesn't exist
-        assert_raises_rpc_error(-18, 'Wallet wallets not found.', self.nodes[0].loadwallet, 'wallets')
+        dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "wallets", "wallet.dat")
+        assert_raises_rpc_error(-18, "Wallet file verification failed. Failed to load database. Data file '{}' does not exist.".format(dat), self.nodes[0].loadwallet, 'wallets')
 
         # Fail to load duplicate wallets
         dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "w1", "wallet.dat")
@@ -271,7 +272,8 @@ class MultiWalletTest(BitcoinTestFramework):
 
         # Fail to load if a directory is specified that doesn't contain a wallet
         os.mkdir(wallet_dir('empty_wallet_dir'))
-        assert_raises_rpc_error(-18, "Directory empty_wallet_dir does not contain a wallet.dat file", self.nodes[0].loadwallet, 'empty_wallet_dir')
+        dat = os.path.join(self.options.tmpdir, "node0", "regtest", "wallets", "empty_wallet_dir", "wallet.dat")
+        assert_raises_rpc_error(-18, "Wallet file verification failed. Failed to load database. Data file '{}' does not exist.".format(dat), self.nodes[0].loadwallet, 'empty_wallet_dir')
 
         self.log.info("Test dynamic wallet creation.")
 
