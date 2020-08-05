@@ -2834,6 +2834,7 @@ static RPCHelpMan createwallet()
 =======
     DatabaseOptions options;
     DatabaseStatus status;
+    options.require_create = true;
     options.create_flags = flags;
     options.create_passphrase = passphrase;
 >>>>>>> refactor: Use DatabaseStatus and DatabaseOptions types

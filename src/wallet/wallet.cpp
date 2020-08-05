@@ -350,6 +350,7 @@ WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& 
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| merged common ancestors
     // Check the wallet file location
     WalletLocation location(name);
@@ -367,6 +368,16 @@ WalletCreationStatus CreateWallet(interfaces::Chain& chain, const SecureString& 
     }
 
 >>>>>>> Remove WalletLocation class
+||||||| merged common ancestors
+    // Check the wallet file location
+    if (fs::symlink_status(fs::absolute(name.empty() ? "wallet.dat" : name, GetWalletDir())).type() != fs::file_not_found) {
+        error = strprintf(Untranslated("Wallet %s already exists."), name);
+        status = DatabaseStatus::FAILED_CREATE;
+        return nullptr;
+    }
+
+=======
+>>>>>>> wallet: Remove path checking code from createwallet RPC
     // Wallet::Verify will check if we're trying to create a wallet with a duplicate name.
 <<<<<<< HEAD
 <<<<<<< HEAD
