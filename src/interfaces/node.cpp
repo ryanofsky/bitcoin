@@ -11,6 +11,7 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
+#include <interfaces/init.h>
 #include <interfaces/wallet.h>
 #include <net.h>
 #include <net_processing.h>
@@ -56,7 +57,7 @@ namespace {
 class NodeImpl : public Node
 {
 public:
-    NodeImpl(NodeContext* context) { setContext(context); }
+    explicit NodeImpl(LocalInit& init) : m_init(init) { setContext(&m_init.node()); }
     void initError(const bilingual_str& message) override { InitError(message); }
     bool parseParameters(int argc, const char* const argv[], std::string& error) override
     {
@@ -109,7 +110,12 @@ public:
             StopMapPort();
         }
     }
-    void setupServerArgs() override { return SetupServerArgs(*m_context); }
+    void setupServerArgs() override
+    {
+        assert(!m_context->args);
+        m_context->args = &gArgs;
+        return SetupServerArgs(*m_context->args);
+    }
     bool getProxy(Network net, proxyType& proxy_info) override { return GetProxy(net, proxy_info); }
     size_t getNodeCount(CConnman::NumConnections flags) override
     {
@@ -347,12 +353,13 @@ public:
             m_context_ref.Clear();
         }
     }
+    LocalInit& m_init;
     NodeContext* m_context{nullptr};
     util::Ref m_context_ref;
 };
 
 } // namespace
 
-std::unique_ptr<Node> MakeNode(NodeContext* context) { return MakeUnique<NodeImpl>(context); }
+std::unique_ptr<Node> MakeNode(LocalInit& init) { return MakeUnique<NodeImpl>(init); }
 
 } // namespace interfaces

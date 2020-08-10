@@ -6,8 +6,8 @@
 
 #include <chain.h>
 #include <chainparams.h>
+#include <interfaces/base.h>
 #include <interfaces/handler.h>
-#include <interfaces/wallet.h>
 #include <net.h>
 #include <net_processing.h>
 #include <node/coin.h>
@@ -175,16 +175,6 @@ public:
         LOCK(cs_main);
         CBlockIndex* block = ::ChainActive()[height];
         return block && ((block->nStatus & BLOCK_HAVE_DATA) != 0) && block->nTx > 0;
-    }
-    Optional<int> findFirstBlockWithTimeAndHeight(int64_t time, int height, uint256* hash) override
-    {
-        LOCK(cs_main);
-        CBlockIndex* block = ::ChainActive().FindEarliestAtLeast(time, height);
-        if (block) {
-            if (hash) *hash = block->GetBlockHash();
-            return block->nHeight;
-        }
-        return nullopt;
     }
     CBlockLocator getTipLocator() override
     {
