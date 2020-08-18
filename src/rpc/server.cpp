@@ -426,6 +426,21 @@ static inline JSONRPCRequest transformNamedArguments(const JSONRPCRequest& in, c
             hole += 1;
         }
     }
+    // If leftover "args" param was found, use it as a source of positional
+    // arguments and add named arguments after.
+    auto positional_args = argsIn.find("args");
+    if (positional_args != argsIn.end() && positional_args->second->isArray()) {
+        UniValue named_args = out.params;
+        out.params = *positional_args->second;
+        argsIn.erase(positional_args);
+        for (size_t i = 0; i < named_args.size(); ++i) {
+            if (i >= out.params.size()) {
+                out.params.push_back(named_args[i]);
+            } else if (!named_args[i].isNull()) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Parameter " + argNames[i] + " specified twice both as positional and named argument");
+            }
+        }
+    }
     // If there are still arguments in the argsIn map, this is an error.
     if (!argsIn.empty()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown named parameter " + argsIn.begin()->first);
