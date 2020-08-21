@@ -871,6 +871,7 @@ class TestNodeCLI():
         p_args = [self.binary, f"-datadir={self.datadir}"] + self.options
         if named_args:
             p_args += ["-named"]
+            pos_args = [("=" + arg if "=" in arg else arg) for arg in pos_args]
         if clicommand is not None:
             p_args += [clicommand]
         p_args += pos_args + named_args

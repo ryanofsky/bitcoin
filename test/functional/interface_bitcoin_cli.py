@@ -87,6 +87,7 @@ class TestBitcoinCli(BitcoinTestFramework):
 
         self.log.info("Test named arguments")
         assert_equal(self.nodes[0].cli.echo(0, 1, arg3=3, arg5=5), ['0', '1', None, '3', None, '5'])
+        assert_equal(self.nodes[0].cli.echo('=0', '1=', arg3='=3', arg5='5='), ['=0', '1=', None, '=3', None, '5='])
         assert_raises_rpc_error(-8, "Parameter arg1 specified twice both as positional and named argument", self.nodes[0].cli.echo, 0, 1, arg1=1)
         assert_raises_rpc_error(-8, "Parameter arg1 specified twice both as positional and named argument", self.nodes[0].cli.echo, 0, None, 2, arg1=1)
 

@@ -373,13 +373,13 @@ UniValue RPCConvertNamedValues(const std::string &strMethod, const std::vector<s
 
     for (std::string_view s: strParams) {
         size_t pos = s.find('=');
-        if (pos == std::string::npos) {
-            positional_args.push_back(rpcCvtTable.ArgToUniValue(s, strMethod, positional_args.size()));
+        std::string name{s.substr(0, pos == std::string_view::npos ? 0 : pos)};
+        std::string_view value{s.substr(pos == std::string_view::npos ? 0 : pos+1)};
+
+        if (name.empty()) {
+            positional_args.push_back(rpcCvtTable.ArgToUniValue(value, strMethod, positional_args.size()));
             continue;
         }
-
-        std::string name{s.substr(0, pos)};
-        std::string_view value{s.substr(pos+1)};
 
         // Intentionally overwrite earlier named values with later ones as a
         // convenience for scripts and command line users that want to merge
