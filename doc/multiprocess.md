@@ -15,7 +15,7 @@ Specific next steps after [#10102](https://github.com/bitcoin/bitcoin/pull/10102
 
 ## Debugging
 
-After [#10102](https://github.com/bitcoin/bitcoin/pull/10102), the `-debug=ipc` command line option can be used to see requests and responses between processes.
+The `-debug=ipc` command line option can be used to see requests and responses between processes. As much as possible, calls between processes are meant to work the same as calls within a single process without adding limitations or requiring extra implementation effort. Processes communicate with each other by calling regular [C++ interface methods](../src/interfaces/README.md). Method arguments and return values are automatically serialized and sent between processes. Object references and `std::function` arguments are automatically tracked and mapped to allow invoked code to call back into invoking code at any time, and there is a 1:1 threading model where any thread invoking a method in another process has a corresponding thread in the invoked process responsible for executing all method calls from the source thread, without blocking I/O or holding up another calls, and using the same thread local variables, locks, and callbacks between calls. The forwarding, tracking, and threading is implemented inside the [libmultiprocess](https://github.com/chaincodelabs/libmultiprocess) library which has the design goal of making calls between processes look exactly like calls in the same process to the extent possible.
 
 ## Installation
 
