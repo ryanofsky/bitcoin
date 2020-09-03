@@ -331,7 +331,6 @@ std::string COutput::ToString() const
 
 const CWalletTx* CWallet::GetWalletTx(const uint256& hash) const
 {
-    AssertLockHeld(cs_wallet);
     std::map<uint256, CWalletTx>::const_iterator it = mapWallet.find(hash);
     if (it == mapWallet.end())
         return nullptr;
@@ -467,7 +466,6 @@ bool CWallet::SetMaxVersion(int nVersion)
 std::set<uint256> CWallet::GetConflicts(const uint256& txid) const
 {
     std::set<uint256> result;
-    AssertLockHeld(cs_wallet);
 
     std::map<uint256, CWalletTx>::const_iterator it = mapWallet.find(txid);
     if (it == mapWallet.end())
@@ -489,7 +487,6 @@ std::set<uint256> CWallet::GetConflicts(const uint256& txid) const
 
 bool CWallet::HasWalletSpend(const uint256& txid) const
 {
-    AssertLockHeld(cs_wallet);
     auto iter = mapTxSpends.lower_bound(COutPoint(txid, 0));
     return (iter != mapTxSpends.end() && iter->first.hash == txid);
 }
@@ -751,7 +748,6 @@ DBErrors CWallet::ReorderTransactions()
 
 int64_t CWallet::IncOrderPosNext(WalletBatch* batch)
 {
-    AssertLockHeld(cs_wallet);
     int64_t nRet = nOrderPosNext++;
     if (batch) {
         batch->WriteOrderPosNext(nOrderPosNext);
@@ -801,7 +797,6 @@ bool CWallet::MarkReplaced(const uint256& originalHash, const uint256& newHash)
 
 void CWallet::SetSpentKeyState(WalletBatch& batch, const uint256& hash, unsigned int n, bool used, std::set<CTxDestination>& tx_destinations)
 {
-    AssertLockHeld(cs_wallet);
     const CWalletTx* srctx = GetWalletTx(hash);
     if (!srctx) return;
 
@@ -821,7 +816,6 @@ void CWallet::SetSpentKeyState(WalletBatch& batch, const uint256& hash, unsigned
 
 bool CWallet::IsSpentKey(const uint256& hash, unsigned int n) const
 {
-    AssertLockHeld(cs_wallet);
     const CWalletTx* srctx = GetWalletTx(hash);
     if (srctx) {
         assert(srctx->tx->vout.size() > n);
@@ -996,7 +990,6 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, CWalletTx::Co
 {
     const CTransaction& tx = *ptx;
     {
-        AssertLockHeld(cs_wallet);
 
         if (!confirm.hashBlock.IsNull()) {
             for (const CTxIn& txin : tx.vin) {
@@ -1265,7 +1258,6 @@ void CWallet::BlockUntilSyncedToCurrentChain() const {
 
 isminetype CWallet::IsMine(const CTxIn &txin) const
 {
-    AssertLockHeld(cs_wallet);
     std::map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
     if (mi != mapWallet.end())
     {
@@ -1296,19 +1288,16 @@ CAmount CWallet::GetDebit(const CTxIn &txin, const isminefilter& filter) const
 
 isminetype CWallet::IsMine(const CTxOut& txout) const
 {
-    AssertLockHeld(cs_wallet);
     return IsMine(txout.scriptPubKey);
 }
 
 isminetype CWallet::IsMine(const CTxDestination& dest) const
 {
-    AssertLockHeld(cs_wallet);
     return IsMine(GetScriptForDestination(dest));
 }
 
 isminetype CWallet::IsMine(const CScript& script) const
 {
-    AssertLockHeld(cs_wallet);
     isminetype result = ISMINE_NO;
     for (const auto& spk_man_pair : m_spk_managers) {
         result = std::max(result, spk_man_pair.second->IsMine(script));
@@ -1338,7 +1327,6 @@ bool CWallet::IsChange(const CScript& script) const
     // a better way of identifying which outputs are 'the send' and which are
     // 'the change' will need to be implemented (maybe extend CWalletTx to remember
     // which output, if any, was change).
-    AssertLockHeld(cs_wallet);
     if (IsMine(script))
     {
         CTxDestination address;
@@ -1353,7 +1341,6 @@ bool CWallet::IsChange(const CScript& script) const
 
 CAmount CWallet::GetChange(const CTxOut& txout) const
 {
-    AssertLockHeld(cs_wallet);
     if (!MoneyRange(txout.nValue))
         throw std::runtime_error(std::string(__func__) + ": value out of range");
     return (IsChange(txout) ? txout.nValue : 0);
@@ -1361,7 +1348,6 @@ CAmount CWallet::GetChange(const CTxOut& txout) const
 
 bool CWallet::IsMine(const CTransaction& tx) const
 {
-    AssertLockHeld(cs_wallet);
     for (const CTxOut& txout : tx.vout)
         if (IsMine(txout))
             return true;
@@ -2032,7 +2018,6 @@ bool CWalletTx::IsTrusted() const
 
 bool CWallet::IsTrusted(const CWalletTx& wtx, std::set<uint256>& trusted_parents) const
 {
-    AssertLockHeld(cs_wallet);
     // Quick answer in most cases
     if (!chain().checkFinalTx(*wtx.tx)) return false;
     int nDepth = wtx.GetDepthInMainChain();
@@ -2178,7 +2163,6 @@ CAmount CWallet::GetAvailableBalance(const CCoinControl* coinControl) const
 
 void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe, const CCoinControl* coinControl, const CAmount& nMinimumAmount, const CAmount& nMaximumAmount, const CAmount& nMinimumSumAmount, const uint64_t nMaximumCount) const
 {
-    AssertLockHeld(cs_wallet);
 
     vCoins.clear();
     CAmount nTotal = 0;
@@ -2305,7 +2289,6 @@ void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlySafe, const
 
 std::map<CTxDestination, std::vector<COutput>> CWallet::ListCoins() const
 {
-    AssertLockHeld(cs_wallet);
 
     std::map<CTxDestination, std::vector<COutput>> result;
     std::vector<COutput> availableCoins;
@@ -2508,7 +2491,6 @@ bool CWallet::SelectCoins(const std::vector<COutput>& vAvailableCoins, const CAm
 
 bool CWallet::SignTransaction(CMutableTransaction& tx) const
 {
-    AssertLockHeld(cs_wallet);
 
     // Build coins map
     std::map<COutPoint, Coin> coins;
@@ -3206,7 +3188,6 @@ DBErrors CWallet::LoadWallet(bool& fFirstRunRet)
 
 DBErrors CWallet::ZapSelectTx(std::vector<uint256>& vHashIn, std::vector<uint256>& vHashOut)
 {
-    AssertLockHeld(cs_wallet);
     DBErrors nZapSelectTxRet = WalletBatch(*database, "cr+").ZapSelectTx(vHashIn, vHashOut);
     for (const uint256& hash : vHashOut) {
         const auto& it = mapWallet.find(hash);
@@ -3291,7 +3272,6 @@ bool CWallet::DelAddressBook(const CTxDestination& address)
 
 size_t CWallet::KeypoolCountExternalKeys() const
 {
-    AssertLockHeld(cs_wallet);
 
     unsigned int count = 0;
     for (auto spk_man : GetActiveScriptPubKeyMans()) {
@@ -3303,7 +3283,6 @@ size_t CWallet::KeypoolCountExternalKeys() const
 
 unsigned int CWallet::GetKeyPoolSize() const
 {
-    AssertLockHeld(cs_wallet);
 
     unsigned int count = 0;
     for (auto spk_man : GetActiveScriptPubKeyMans()) {
@@ -3420,7 +3399,6 @@ std::map<CTxDestination, CAmount> CWallet::GetAddressBalances() const
 
 std::set< std::set<CTxDestination> > CWallet::GetAddressGroupings() const
 {
-    AssertLockHeld(cs_wallet);
     std::set< std::set<CTxDestination> > groupings;
     std::set<CTxDestination> grouping;
 
@@ -3568,25 +3546,21 @@ void ReserveDestination::ReturnDestination()
 
 void CWallet::LockCoin(const COutPoint& output)
 {
-    AssertLockHeld(cs_wallet);
     setLockedCoins.insert(output);
 }
 
 void CWallet::UnlockCoin(const COutPoint& output)
 {
-    AssertLockHeld(cs_wallet);
     setLockedCoins.erase(output);
 }
 
 void CWallet::UnlockAllCoins()
 {
-    AssertLockHeld(cs_wallet);
     setLockedCoins.clear();
 }
 
 bool CWallet::IsLockedCoin(uint256 hash, unsigned int n) const
 {
-    AssertLockHeld(cs_wallet);
     COutPoint outpt(hash, n);
 
     return (setLockedCoins.count(outpt) > 0);
@@ -3594,7 +3568,6 @@ bool CWallet::IsLockedCoin(uint256 hash, unsigned int n) const
 
 void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts) const
 {
-    AssertLockHeld(cs_wallet);
     for (std::set<COutPoint>::iterator it = setLockedCoins.begin();
          it != setLockedCoins.end(); it++) {
         COutPoint outpt = (*it);
@@ -3605,7 +3578,6 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts) const
 /** @} */ // end of Actions
 
 void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t>& mapKeyBirth) const {
-    AssertLockHeld(cs_wallet);
     mapKeyBirth.clear();
 
     LegacyScriptPubKeyMan* spk_man = GetLegacyScriptPubKeyMan();
@@ -4190,7 +4162,6 @@ CKeyPool::CKeyPool(const CPubKey& vchPubKeyIn, bool internalIn)
 int CWalletTx::GetDepthInMainChain() const
 {
     assert(pwallet != nullptr);
-    AssertLockHeld(pwallet->cs_wallet);
     if (isUnconfirmed() || isAbandoned()) return 0;
 
     return (pwallet->GetLastBlockHeight() - m_confirm.block_height + 1) * (isConflicted() ? -1 : 1);
@@ -4439,7 +4410,6 @@ void CWallet::LoadDescriptorScriptPubKeyMan(uint256 id, WalletDescriptor& desc)
 
 void CWallet::SetupDescriptorScriptPubKeyMans()
 {
-    AssertLockHeld(cs_wallet);
 
     // Make a seed
     CKey seed_key;

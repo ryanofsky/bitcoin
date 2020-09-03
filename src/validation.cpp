@@ -172,14 +172,12 @@ namespace {
 
 CBlockIndex* LookupBlockIndex(const uint256& hash)
 {
-    AssertLockHeld(cs_main);
     BlockMap::const_iterator it = g_chainman.BlockIndex().find(hash);
     return it == g_chainman.BlockIndex().end() ? nullptr : it->second;
 }
 
 CBlockIndex* FindForkInGlobalIndex(const CChain& chain, const CBlockLocator& locator)
 {
-    AssertLockHeld(cs_main);
 
     // Find the latest block common to locator and chain - we expect that
     // locator.vHave is sorted descending by height.
@@ -208,7 +206,6 @@ static FlatFileSeq UndoFileSeq();
 
 bool CheckFinalTx(const CTransaction &tx, int flags)
 {
-    AssertLockHeld(cs_main);
 
     // By convention a negative value for flags indicates that the
     // current network-enforced consensus rules should be used. In
@@ -240,7 +237,6 @@ bool CheckFinalTx(const CTransaction &tx, int flags)
 
 bool TestLockPointValidity(const LockPoints* lp)
 {
-    AssertLockHeld(cs_main);
     assert(lp);
     // If there are relative lock times then the maxInputBlock will be set
     // If there are no relative lock times, the LockPoints don't depend on the chain
@@ -258,8 +254,6 @@ bool TestLockPointValidity(const LockPoints* lp)
 
 bool CheckSequenceLocks(const CTxMemPool& pool, const CTransaction& tx, int flags, LockPoints* lp, bool useExistingLockPoints)
 {
-    AssertLockHeld(cs_main);
-    AssertLockHeld(pool.cs);
 
     CBlockIndex* tip = ::ChainActive().Tip();
     assert(tip != nullptr);
@@ -347,7 +341,6 @@ static void LimitMempoolSize(CTxMemPool& pool, size_t limit, std::chrono::second
 
 static bool IsCurrentForFeeEstimation() EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    AssertLockHeld(cs_main);
     if (::ChainstateActive().IsInitialBlockDownload())
         return false;
     if (::ChainActive().Tip()->GetBlockTime() < count_seconds(GetTime<std::chrono::seconds>() - MAX_FEE_ESTIMATION_TIP_AGE))
@@ -372,8 +365,6 @@ static bool IsCurrentForFeeEstimation() EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 
 static void UpdateMempoolForReorg(CTxMemPool& mempool, DisconnectedBlockTransactions& disconnectpool, bool fAddToMempool) EXCLUSIVE_LOCKS_REQUIRED(cs_main, mempool.cs)
 {
-    AssertLockHeld(cs_main);
-    AssertLockHeld(mempool.cs);
     std::vector<uint256> vHashUpdate;
     // disconnectpool's insertion_order index sorts the entries from
     // oldest to newest, but the oldest entry will be the last tx from the
@@ -414,7 +405,6 @@ static void UpdateMempoolForReorg(CTxMemPool& mempool, DisconnectedBlockTransact
 // were somehow broken and returning the wrong scriptPubKeys
 static bool CheckInputsFromMempoolAndCache(const CTransaction& tx, TxValidationState& state, const CCoinsViewCache& view, const CTxMemPool& pool,
                  unsigned int flags, PrecomputedTransactionData& txdata) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
-    AssertLockHeld(cs_main);
 
     // pool.cs should be locked already, but go ahead and re-take the lock here
     // to enforce that mempool doesn't change between when we check the view
@@ -1030,7 +1020,6 @@ bool MemPoolAccept::Finalize(ATMPArgs& args, Workspace& ws)
 
 bool MemPoolAccept::AcceptSingleTransaction(const CTransactionRef& ptx, ATMPArgs& args)
 {
-    AssertLockHeld(cs_main);
     LOCK(m_pool.cs); // mempool "read lock" (held through GetMainSignals().TransactionAddedToMempool())
 
     Workspace workspace(ptx);
@@ -1332,7 +1321,6 @@ static void AlertNotify(const std::string& strMessage)
 
 static void CheckForkWarningConditions() EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    AssertLockHeld(cs_main);
     // Before we get past initial download, we cannot reliably alert about forks
     // (we assume we don't get stuck on a fork before finishing our initial sync)
     if (::ChainstateActive().IsInitialBlockDownload())
@@ -1373,7 +1361,6 @@ static void CheckForkWarningConditions() EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 
 static void CheckForkWarningConditionsOnNewFork(CBlockIndex* pindexNewForkTip) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    AssertLockHeld(cs_main);
     // If we are on a fork that is sufficiently large, set a warning flag
     CBlockIndex* pfork = pindexNewForkTip;
     CBlockIndex* plonger = ::ChainActive().Tip();
@@ -1525,7 +1512,6 @@ bool CheckInputScripts(const CTransaction& tx, TxValidationState &state, const C
     uint256 hashCacheEntry;
     CSHA256 hasher = g_scriptExecutionCacheHasher;
     hasher.Write(tx.GetWitnessHash().begin(), 32).Write((unsigned char*)&flags, sizeof(flags)).Finalize(hashCacheEntry.begin());
-    AssertLockHeld(cs_main); //TODO: Remove this requirement by making CuckooCache not require external locks
     if (g_scriptExecutionCache.contains(hashCacheEntry, !cacheFullScriptStore)) {
         return true;
     }
@@ -1868,7 +1854,6 @@ static bool IsScriptWitnessEnabled(const Consensus::Params& params)
 }
 
 static unsigned int GetBlockScriptFlags(const CBlockIndex* pindex, const Consensus::Params& consensusparams) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
-    AssertLockHeld(cs_main);
 
     unsigned int flags = SCRIPT_VERIFY_NONE;
 
@@ -1930,7 +1915,6 @@ static int64_t nBlocksTotal = 0;
 bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state, CBlockIndex* pindex,
                   CCoinsViewCache& view, const CChainParams& chainparams, bool fJustCheck)
 {
-    AssertLockHeld(cs_main);
     assert(pindex);
     assert(*pindex->phashBlock == block.GetHash());
     int64_t nTimeStart = GetTimeMicros();
@@ -2488,8 +2472,6 @@ static void UpdateTip(CTxMemPool& mempool, const CBlockIndex* pindexNew, const C
   */
 bool CChainState::DisconnectTip(BlockValidationState& state, const CChainParams& chainparams, DisconnectedBlockTransactions* disconnectpool)
 {
-    AssertLockHeld(cs_main);
-    AssertLockHeld(m_mempool.cs);
 
     CBlockIndex *pindexDelete = m_chain.Tip();
     assert(pindexDelete);
@@ -2589,8 +2571,6 @@ public:
  */
 bool CChainState::ConnectTip(BlockValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions &disconnectpool)
 {
-    AssertLockHeld(cs_main);
-    AssertLockHeld(m_mempool.cs);
 
     assert(pindexNew->pprev == m_chain.Tip());
     // Read block from disk.
@@ -2725,8 +2705,6 @@ void CChainState::PruneBlockIndexCandidates() {
  */
 bool CChainState::ActivateBestChainStep(BlockValidationState& state, const CChainParams& chainparams, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace)
 {
-    AssertLockHeld(cs_main);
-    AssertLockHeld(m_mempool.cs);
 
     const CBlockIndex *pindexOldTip = m_chain.Tip();
     const CBlockIndex *pindexFork = m_chain.FindFork(pindexMostWork);
@@ -3124,7 +3102,6 @@ bool InvalidateBlock(BlockValidationState& state, const CChainParams& chainparam
 }
 
 void CChainState::ResetBlockFailureFlags(CBlockIndex *pindex) {
-    AssertLockHeld(cs_main);
 
     int nHeight = pindex->nHeight;
 
@@ -3163,7 +3140,6 @@ void ResetBlockFailureFlags(CBlockIndex *pindex) {
 
 CBlockIndex* BlockManager::AddToBlockIndex(const CBlockHeader& block)
 {
-    AssertLockHeld(cs_main);
 
     // Check for duplicate
     uint256 hash = block.GetHash();
@@ -3621,7 +3597,6 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
 
 bool BlockManager::AcceptBlockHeader(const CBlockHeader& block, BlockValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex)
 {
-    AssertLockHeld(cs_main);
     // Check for duplicate
     uint256 hash = block.GetHash();
     BlockMap::iterator miSelf = m_block_index.find(hash);
@@ -3760,7 +3735,6 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, Block
     const CBlock& block = *pblock;
 
     if (fNewBlock) *fNewBlock = false;
-    AssertLockHeld(cs_main);
 
     CBlockIndex *pindexDummy = nullptr;
     CBlockIndex *&pindex = ppindex ? *ppindex : pindexDummy;
@@ -3874,7 +3848,6 @@ bool ChainstateManager::ProcessNewBlock(const CChainParams& chainparams, const s
 
 bool TestBlockValidity(BlockValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW, bool fCheckMerkleRoot)
 {
-    AssertLockHeld(cs_main);
     assert(pindexPrev && pindexPrev == ::ChainActive().Tip());
     CCoinsViewCache viewNew(&::ChainstateActive().CoinsTip());
     uint256 block_hash(block.GetHash());
@@ -3915,7 +3888,6 @@ uint64_t CalculateCurrentUsage()
 
 void ChainstateManager::PruneOneBlockFile(const int fileNumber)
 {
-    AssertLockHeld(cs_main);
     LOCK(cs_LastBlockFile);
 
     for (const auto& entry : m_blockman.m_block_index) {
@@ -4088,7 +4060,6 @@ fs::path GetBlockPosFilename(const FlatFilePos &pos)
 
 CBlockIndex * BlockManager::InsertBlockIndex(const uint256& hash)
 {
-    AssertLockHeld(cs_main);
 
     if (hash.IsNull())
         return nullptr;
@@ -4229,7 +4200,6 @@ bool static LoadBlockIndexDB(ChainstateManager& chainman, const CChainParams& ch
 
 bool CChainState::LoadChainTip(const CChainParams& chainparams)
 {
-    AssertLockHeld(cs_main);
     const CCoinsViewCache& coins_cache = CoinsTip();
     assert(!coins_cache.GetBestBlock().IsNull()); // Never called when the coins view is empty
     const CBlockIndex* tip = m_chain.Tip();
@@ -4454,7 +4424,6 @@ bool CChainState::ReplayBlocks(const CChainParams& params)
 //! Helper for CChainState::RewindBlockIndex
 void CChainState::EraseBlockData(CBlockIndex* index)
 {
-    AssertLockHeld(cs_main);
     assert(!m_chain.Contains(index)); // Make sure this block isn't active
 
     // Reduce validity
@@ -4618,7 +4587,6 @@ void UnloadBlockIndex(CTxMemPool* mempool)
 
 bool ChainstateManager::LoadBlockIndex(const CChainParams& chainparams)
 {
-    AssertLockHeld(cs_main);
     // Load block index from databases
     bool needs_init = fReindex;
     if (!fReindex) {
