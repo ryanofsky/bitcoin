@@ -991,11 +991,6 @@ Threads and synchronization
   - Prefer locks that are in a class rather than global, and that are
     internal to a class (private or protected) rather than public.
 
-  - Combine annotations in function declarations with run-time asserts in
-    function definitions (`AssertLockNotHeld()` can be omitted if `LOCK()` is
-    called unconditionally after it because `LOCK()` does the same check as
-    `AssertLockNotHeld()` internally, for non-recursive mutexes):
-
 ```C++
 // txmempool.h
 class CTxMemPool
@@ -1005,12 +1000,6 @@ public:
     mutable RecursiveMutex cs;
     ...
     void UpdateTransactionsFromBlock(...) EXCLUSIVE_LOCKS_REQUIRED(::cs_main, cs);
-    ...
-}
-
-// txmempool.cpp
-void CTxMemPool::UpdateTransactionsFromBlock(...)
-{
     ...
 }
 ```
@@ -1035,19 +1024,6 @@ public:
         EXCLUSIVE_LOCKS_REQUIRED(!m_chainstate_mutex)
         LOCKS_EXCLUDED(::cs_main);
     ...
-}
-
-// validation.cpp
-bool Chainstate::PreciousBlock(BlockValidationState& state, CBlockIndex* pindex)
-{
-    AssertLockNotHeld(m_chainstate_mutex);
-    AssertLockNotHeld(::cs_main);
-    {
-        LOCK(cs_main);
-        ...
-    }
-
-    return ActivateBestChain(state, std::shared_ptr<const CBlock>());
 }
 ```
 
