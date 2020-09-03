@@ -127,7 +127,6 @@ bool BaseIndex::Init()
 
 static const CBlockIndex* NextSyncBlock(const CBlockIndex* pindex_prev, CChain& chain) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
-    AssertLockHeld(cs_main);
 
     if (!pindex_prev) {
         return chain.Genesis();

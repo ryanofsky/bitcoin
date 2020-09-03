@@ -452,7 +452,6 @@ bool LoadHDChain(CWallet* pwallet, DataStream& ssValue, std::string& strErr)
 
 static DBErrors LoadMinVersion(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
     int nMinVersion = 0;
     if (batch.Read(DBKeys::MINVERSION, nMinVersion)) {
         if (nMinVersion > FEATURE_LATEST)
@@ -464,7 +463,6 @@ static DBErrors LoadMinVersion(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE
 
 static DBErrors LoadWalletFlags(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
     uint64_t flags;
     if (batch.Read(DBKeys::FLAGS, flags)) {
         if (!pwallet->LoadWalletFlags(flags)) {
@@ -528,7 +526,6 @@ static LoadResult LoadRecords(CWallet* pwallet, DatabaseBatch& batch, const std:
 
 static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, int last_client) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
     DBErrors result = DBErrors::LOAD_OK;
 
     // Make sure descriptor wallets don't have any legacy records
@@ -784,7 +781,6 @@ static DataStream PrefixStream(const Args&... args)
 
 static DBErrors LoadDescriptorWalletRecords(CWallet* pwallet, DatabaseBatch& batch, int last_client) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
 
     // Load descriptor record
     int num_keys = 0;
@@ -955,7 +951,6 @@ static DBErrors LoadDescriptorWalletRecords(CWallet* pwallet, DatabaseBatch& bat
 
 static DBErrors LoadAddressBookRecords(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
     DBErrors result = DBErrors::LOAD_OK;
 
     // Load name record
@@ -1016,7 +1011,6 @@ static DBErrors LoadAddressBookRecords(CWallet* pwallet, DatabaseBatch& batch) E
 
 static DBErrors LoadTxRecords(CWallet* pwallet, DatabaseBatch& batch, std::vector<uint256>& upgraded_txs, bool& any_unordered) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
     DBErrors result = DBErrors::LOAD_OK;
 
     // Load tx record
@@ -1104,7 +1098,6 @@ static DBErrors LoadTxRecords(CWallet* pwallet, DatabaseBatch& batch, std::vecto
 
 static DBErrors LoadActiveSPKMs(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
     DBErrors result = DBErrors::LOAD_OK;
 
     // Load spk records
@@ -1133,7 +1126,6 @@ static DBErrors LoadActiveSPKMs(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIV
 
 static DBErrors LoadDecryptionKeys(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
-    AssertLockHeld(pwallet->cs_wallet);
 
     // Load decryption key (mkey) records
     LoadResult mkey_res = LoadRecords(pwallet, batch, DBKeys::MASTER_KEY,

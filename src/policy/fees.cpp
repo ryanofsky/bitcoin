@@ -523,7 +523,6 @@ bool CBlockPolicyEstimator::removeTx(uint256 hash)
 
 bool CBlockPolicyEstimator::_removeTx(const uint256& hash, bool inBlock)
 {
-    AssertLockHeld(m_cs_fee_estimator);
     std::map<uint256, TxStatsInfo>::iterator pos = mapMemPoolTxs.find(hash);
     if (pos != mapMemPoolTxs.end()) {
         feeStats->removeTx(pos->second.blockHeight, nBestSeenHeight, pos->second.bucketIndex, inBlock);
@@ -636,7 +635,6 @@ void CBlockPolicyEstimator::processTransaction(const NewMempoolTransactionInfo& 
 
 bool CBlockPolicyEstimator::processBlockTx(unsigned int nBlockHeight, const RemovedMempoolTransactionInfo& tx)
 {
-    AssertLockHeld(m_cs_fee_estimator);
     if (!_removeTx(tx.info.m_tx->GetHash(), true)) {
         // This transaction wasn't being tracked for fee estimation
         return false;

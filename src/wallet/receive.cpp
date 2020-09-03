@@ -11,7 +11,6 @@
 namespace wallet {
 isminetype InputIsMine(const CWallet& wallet, const CTxIn& txin)
 {
-    AssertLockHeld(wallet.cs_wallet);
     const CWalletTx* prev = wallet.GetWalletTx(txin.prevout.hash);
     if (prev && txin.prevout.n < prev->tx->vout.size()) {
         return wallet.IsMine(prev->tx->vout[txin.prevout.n]);
@@ -57,7 +56,6 @@ bool ScriptIsChange(const CWallet& wallet, const CScript& script)
     // a better way of identifying which outputs are 'the send' and which are
     // 'the change' will need to be implemented (maybe extend CWalletTx to remember
     // which output, if any, was change).
-    AssertLockHeld(wallet.cs_wallet);
     if (wallet.IsMine(script))
     {
         CTxDestination address;
@@ -77,7 +75,6 @@ bool OutputIsChange(const CWallet& wallet, const CTxOut& txout)
 
 CAmount OutputGetChange(const CWallet& wallet, const CTxOut& txout)
 {
-    AssertLockHeld(wallet.cs_wallet);
     if (!MoneyRange(txout.nValue))
         throw std::runtime_error(std::string(__func__) + ": value out of range");
     return (OutputIsChange(wallet, txout) ? txout.nValue : 0);
@@ -108,7 +105,6 @@ static CAmount GetCachableAmount(const CWallet& wallet, const CWalletTx& wtx, CW
 
 CAmount CachedTxGetCredit(const CWallet& wallet, const CWalletTx& wtx, const isminefilter& filter)
 {
-    AssertLockHeld(wallet.cs_wallet);
 
     // Must wait until coinbase is safely deep enough in the chain before valuing it
     if (wallet.IsTxImmatureCoinBase(wtx))
@@ -147,7 +143,6 @@ CAmount CachedTxGetChange(const CWallet& wallet, const CWalletTx& wtx)
 
 CAmount CachedTxGetImmatureCredit(const CWallet& wallet, const CWalletTx& wtx, const isminefilter& filter)
 {
-    AssertLockHeld(wallet.cs_wallet);
 
     if (wallet.IsTxImmatureCoinBase(wtx) && wtx.isConfirmed()) {
         return GetCachableAmount(wallet, wtx, CWalletTx::IMMATURE_CREDIT, filter);
@@ -158,7 +153,6 @@ CAmount CachedTxGetImmatureCredit(const CWallet& wallet, const CWalletTx& wtx, c
 
 CAmount CachedTxGetAvailableCredit(const CWallet& wallet, const CWalletTx& wtx, const isminefilter& filter)
 {
-    AssertLockHeld(wallet.cs_wallet);
 
     // Avoid caching ismine for NO or ALL cases (could remove this check and simplify in the future).
     bool allow_cache = (filter & ISMINE_ALL) && (filter & ISMINE_ALL) != ISMINE_ALL;
@@ -256,7 +250,6 @@ bool CachedTxIsFromMe(const CWallet& wallet, const CWalletTx& wtx, const isminef
 // NOLINTNEXTLINE(misc-no-recursion)
 bool CachedTxIsTrusted(const CWallet& wallet, const CWalletTx& wtx, std::set<uint256>& trusted_parents)
 {
-    AssertLockHeld(wallet.cs_wallet);
     if (wtx.isConfirmed()) return true;
     if (wtx.isBlockConflicted()) return false;
     // using wtx's cached debit
@@ -359,7 +352,6 @@ std::map<CTxDestination, CAmount> GetAddressBalances(const CWallet& wallet)
 
 std::set< std::set<CTxDestination> > GetAddressGroupings(const CWallet& wallet)
 {
-    AssertLockHeld(wallet.cs_wallet);
     std::set< std::set<CTxDestination> > groupings;
     std::set<CTxDestination> grouping;
 

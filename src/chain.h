@@ -208,7 +208,6 @@ public:
 
     FlatFilePos GetBlockPos() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         FlatFilePos ret;
         if (nStatus & BLOCK_HAVE_DATA) {
             ret.nFile = nFile;
@@ -219,7 +218,6 @@ public:
 
     FlatFilePos GetUndoPos() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         FlatFilePos ret;
         if (nStatus & BLOCK_HAVE_UNDO) {
             ret.nFile = nFile;
@@ -296,7 +294,6 @@ public:
     bool IsValid(enum BlockStatus nUpTo = BLOCK_VALID_TRANSACTIONS) const
         EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         assert(!(nUpTo & ~BLOCK_VALID_MASK)); // Only validity flags allowed.
         if (nStatus & BLOCK_FAILED_MASK)
             return false;
@@ -307,7 +304,6 @@ public:
     //! Returns true if the validity was changed.
     bool RaiseValidity(enum BlockStatus nUpTo) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         assert(!(nUpTo & ~BLOCK_VALID_MASK)); // Only validity flags allowed.
         if (nStatus & BLOCK_FAILED_MASK) return false;
 

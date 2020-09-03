@@ -94,7 +94,7 @@ inline bool LockStackEmpty() { return true; }
  * @note Compile and run-time checks here may be disabled in some builds, or
  * produce non-fatal warnings instead of errors (see developer notes).
  */
-#define AssertLockHeld(mutex) [&]() EXCLUSIVE_LOCKS_REQUIRED(mutex) { AssertLockHeldInternal(#mutex, __FILE__, __LINE__, &mutex); }()
+#define AssertLockHeld(mutex) [&]() ASSERT_EXCLUSIVE_LOCK(mutex) { AssertLockHeldInternal(#mutex, __FILE__, __LINE__, &mutex); }()
 
 /**
  * Assert that a mutex is locked. This assert behaves exactly the same as

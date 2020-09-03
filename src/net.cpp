@@ -705,7 +705,6 @@ Transport::Info V1Transport::GetInfo() const noexcept
 
 int V1Transport::readHeader(Span<const uint8_t> msg_bytes)
 {
-    AssertLockHeld(m_recv_mutex);
     // copy data to temporary parsing buffer
     unsigned int nRemaining = CMessageHeader::HEADER_SIZE - nHdrPos;
     unsigned int nCopy = std::min<unsigned int>(nRemaining, msg_bytes.size());
@@ -746,7 +745,6 @@ int V1Transport::readHeader(Span<const uint8_t> msg_bytes)
 
 int V1Transport::readData(Span<const uint8_t> msg_bytes)
 {
-    AssertLockHeld(m_recv_mutex);
     unsigned int nRemaining = hdr.nMessageSize - nDataPos;
     unsigned int nCopy = std::min<unsigned int>(nRemaining, msg_bytes.size());
 
@@ -764,7 +762,6 @@ int V1Transport::readData(Span<const uint8_t> msg_bytes)
 
 const uint256& V1Transport::GetMessageHash() const
 {
-    AssertLockHeld(m_recv_mutex);
     assert(CompleteInternal());
     if (data_hash.IsNull())
         hasher.Finalize(data_hash);
@@ -959,7 +956,6 @@ std::vector<uint8_t> GenerateRandomGarbage() noexcept
 
 void V2Transport::StartSendingHandshake() noexcept
 {
-    AssertLockHeld(m_send_mutex);
     Assume(m_send_state == SendState::AWAITING_KEY);
     Assume(m_send_buffer.empty());
     // Initialize the send buffer with ellswift pubkey + provided garbage.
@@ -990,7 +986,6 @@ V2Transport::V2Transport(NodeId nodeid, bool initiating) noexcept
 
 void V2Transport::SetReceiveState(RecvState recv_state) noexcept
 {
-    AssertLockHeld(m_recv_mutex);
     // Enforce allowed state transitions.
     switch (m_recv_state) {
     case RecvState::KEY_MAYBE_V1:
@@ -1021,7 +1016,6 @@ void V2Transport::SetReceiveState(RecvState recv_state) noexcept
 
 void V2Transport::SetSendState(SendState send_state) noexcept
 {
-    AssertLockHeld(m_send_mutex);
     // Enforce allowed state transitions.
     switch (m_send_state) {
     case SendState::MAYBE_V1:
@@ -1050,7 +1044,6 @@ bool V2Transport::ReceivedMessageComplete() const noexcept
 
 void V2Transport::ProcessReceivedMaybeV1Bytes() noexcept
 {
-    AssertLockHeld(m_recv_mutex);
     AssertLockNotHeld(m_send_mutex);
     Assume(m_recv_state == RecvState::KEY_MAYBE_V1);
     // We still have to determine if this is a v1 or v2 connection. The bytes being received could
@@ -1088,7 +1081,6 @@ void V2Transport::ProcessReceivedMaybeV1Bytes() noexcept
 
 bool V2Transport::ProcessReceivedKeyBytes() noexcept
 {
-    AssertLockHeld(m_recv_mutex);
     AssertLockNotHeld(m_send_mutex);
     Assume(m_recv_state == RecvState::KEY);
     Assume(m_recv_buffer.size() <= EllSwiftPubKey::size());
@@ -1148,7 +1140,6 @@ bool V2Transport::ProcessReceivedKeyBytes() noexcept
 
 bool V2Transport::ProcessReceivedGarbageBytes() noexcept
 {
-    AssertLockHeld(m_recv_mutex);
     Assume(m_recv_state == RecvState::GARB_GARBTERM);
     Assume(m_recv_buffer.size() <= MAX_GARBAGE_LEN + BIP324Cipher::GARBAGE_TERMINATOR_LEN);
     if (m_recv_buffer.size() >= BIP324Cipher::GARBAGE_TERMINATOR_LEN) {
@@ -1175,7 +1166,6 @@ bool V2Transport::ProcessReceivedGarbageBytes() noexcept
 
 bool V2Transport::ProcessReceivedPacketBytes() noexcept
 {
-    AssertLockHeld(m_recv_mutex);
     Assume(m_recv_state == RecvState::VERSION || m_recv_state == RecvState::APP);
 
     // The maximum permitted contents length for a packet, consisting of:
@@ -1244,7 +1234,6 @@ bool V2Transport::ProcessReceivedPacketBytes() noexcept
 
 size_t V2Transport::GetMaxBytesToProcess() noexcept
 {
-    AssertLockHeld(m_recv_mutex);
     switch (m_recv_state) {
     case RecvState::KEY_MAYBE_V1:
         // During the KEY_MAYBE_V1 state we do not allow more than the length of v1 prefix into the
@@ -2428,7 +2417,6 @@ std::unordered_set<Network> CConnman::GetReachableEmptyNetworks() const
 
 bool CConnman::MultipleManualOrFullOutboundConns(Network net) const
 {
-    AssertLockHeld(m_nodes_mutex);
     return m_network_conn_counts[net] > 1;
 }
 
@@ -3637,7 +3625,6 @@ std::chrono::seconds CConnman::GetMaxOutboundTimeLeftInCycle() const
 
 std::chrono::seconds CConnman::GetMaxOutboundTimeLeftInCycle_() const
 {
-    AssertLockHeld(m_total_bytes_sent_mutex);
 
     if (nMaxOutboundLimit == 0)
         return 0s;

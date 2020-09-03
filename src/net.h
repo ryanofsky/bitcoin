@@ -381,7 +381,6 @@ private:
     int readData(Span<const uint8_t> msg_bytes) EXCLUSIVE_LOCKS_REQUIRED(m_recv_mutex);
 
     void Reset() EXCLUSIVE_LOCKS_REQUIRED(m_recv_mutex) {
-        AssertLockHeld(m_recv_mutex);
         vRecv.clear();
         hdrbuf.clear();
         hdrbuf.resize(24);
@@ -394,7 +393,6 @@ private:
 
     bool CompleteInternal() const noexcept EXCLUSIVE_LOCKS_REQUIRED(m_recv_mutex)
     {
-        AssertLockHeld(m_recv_mutex);
         if (!in_data) return false;
         return hdr.nMessageSize == nDataPos;
     }

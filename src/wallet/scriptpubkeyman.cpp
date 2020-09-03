@@ -709,7 +709,6 @@ uint256 LegacyScriptPubKeyMan::GetID() const
  */
 void LegacyScriptPubKeyMan::UpdateTimeFirstKey(int64_t nCreateTime)
 {
-    AssertLockHeld(cs_KeyStore);
     if (nCreateTime <= 1) {
         // Cannot determine birthday information, so set the wallet birthday to
         // the beginning of time.
@@ -735,7 +734,6 @@ bool LegacyScriptPubKeyMan::AddKeyPubKey(const CKey& secret, const CPubKey &pubk
 
 bool LegacyScriptPubKeyMan::AddKeyPubKeyWithDB(WalletBatch& batch, const CKey& secret, const CPubKey& pubkey)
 {
-    AssertLockHeld(cs_KeyStore);
 
     // Make sure we aren't adding private keys to private key disabled wallets
     assert(!m_storage.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS));
@@ -1065,7 +1063,6 @@ CPubKey LegacyScriptPubKeyMan::GenerateNewKey(WalletBatch &batch, CHDChain& hd_c
 {
     assert(!m_storage.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS));
     assert(!m_storage.IsWalletFlagSet(WALLET_FLAG_BLANK_WALLET));
-    AssertLockHeld(cs_KeyStore);
     bool fCompressed = m_storage.CanSupportFeature(FEATURE_COMPRPUBKEY); // default to compressed public keys if we want 0.6.0 wallets
 
     CKey secret;
@@ -1492,7 +1489,6 @@ void LegacyScriptPubKeyMan::LearnAllRelatedScripts(const CPubKey& key)
 
 std::vector<CKeyPool> LegacyScriptPubKeyMan::MarkReserveKeysAsUsed(int64_t keypool_id)
 {
-    AssertLockHeld(cs_KeyStore);
     bool internal = setInternalKeyPool.count(keypool_id);
     if (!internal) assert(setExternalKeyPool.count(keypool_id) || set_pre_split_keypool.count(keypool_id));
     std::set<int64_t> *setKeyPool = internal ? &setInternalKeyPool : (set_pre_split_keypool.empty() ? &setExternalKeyPool : &set_pre_split_keypool);
@@ -2132,7 +2128,6 @@ void DescriptorScriptPubKeyMan::ReturnDestination(int64_t index, bool internal, 
 
 std::map<CKeyID, CKey> DescriptorScriptPubKeyMan::GetKeys() const
 {
-    AssertLockHeld(cs_desc_man);
     if (m_storage.HasEncryptionKeys() && !m_storage.IsLocked()) {
         KeyMap keys;
         for (const auto& key_pair : m_map_crypted_keys) {
@@ -2151,13 +2146,11 @@ std::map<CKeyID, CKey> DescriptorScriptPubKeyMan::GetKeys() const
 
 bool DescriptorScriptPubKeyMan::HasPrivKey(const CKeyID& keyid) const
 {
-    AssertLockHeld(cs_desc_man);
     return m_map_keys.contains(keyid) || m_map_crypted_keys.contains(keyid);
 }
 
 std::optional<CKey> DescriptorScriptPubKeyMan::GetKey(const CKeyID& keyid) const
 {
-    AssertLockHeld(cs_desc_man);
     if (m_storage.HasEncryptionKeys() && !m_storage.IsLocked()) {
         const auto& it = m_map_crypted_keys.find(keyid);
         if (it == m_map_crypted_keys.end()) {
@@ -2292,7 +2285,6 @@ void DescriptorScriptPubKeyMan::AddDescriptorKey(const CKey& key, const CPubKey 
 
 bool DescriptorScriptPubKeyMan::AddDescriptorKeyWithDB(WalletBatch& batch, const CKey& key, const CPubKey &pubkey)
 {
-    AssertLockHeld(cs_desc_man);
     assert(!m_storage.IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS));
 
     // Check if provided key already exists
@@ -2421,7 +2413,6 @@ std::unique_ptr<FlatSigningProvider> DescriptorScriptPubKeyMan::GetSigningProvid
 
 std::unique_ptr<FlatSigningProvider> DescriptorScriptPubKeyMan::GetSigningProvider(int32_t index, bool include_private) const
 {
-    AssertLockHeld(cs_desc_man);
 
     std::unique_ptr<FlatSigningProvider> out_keys = std::make_unique<FlatSigningProvider>();
 

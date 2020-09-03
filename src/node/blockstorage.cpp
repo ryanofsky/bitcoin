@@ -104,7 +104,6 @@ bool BlockTreeDB::ReadFlag(const std::string& name, bool& fValue)
 
 bool BlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, std::function<CBlockIndex*(const uint256&)> insertBlockIndex, const util::SignalInterrupt& interrupt)
 {
-    AssertLockHeld(::cs_main);
     std::unique_ptr<CDBIterator> pcursor(NewIterator());
     pcursor->Seek(std::make_pair(DB_BLOCK_INDEX, uint256()));
 
@@ -177,7 +176,6 @@ bool CBlockIndexHeightOnlyComparator::operator()(const CBlockIndex* pa, const CB
 
 std::vector<CBlockIndex*> BlockManager::GetAllBlockIndices()
 {
-    AssertLockHeld(cs_main);
     std::vector<CBlockIndex*> rv;
     rv.reserve(m_block_index.size());
     for (auto& [_, block_index] : m_block_index) {
@@ -188,21 +186,18 @@ std::vector<CBlockIndex*> BlockManager::GetAllBlockIndices()
 
 CBlockIndex* BlockManager::LookupBlockIndex(const uint256& hash)
 {
-    AssertLockHeld(cs_main);
     BlockMap::iterator it = m_block_index.find(hash);
     return it == m_block_index.end() ? nullptr : &it->second;
 }
 
 const CBlockIndex* BlockManager::LookupBlockIndex(const uint256& hash) const
 {
-    AssertLockHeld(cs_main);
     BlockMap::const_iterator it = m_block_index.find(hash);
     return it == m_block_index.end() ? nullptr : &it->second;
 }
 
 CBlockIndex* BlockManager::AddToBlockIndex(const CBlockHeader& block, CBlockIndex*& best_header)
 {
-    AssertLockHeld(cs_main);
 
     auto [mi, inserted] = m_block_index.try_emplace(block.GetHash(), block);
     if (!inserted) {
@@ -236,7 +231,6 @@ CBlockIndex* BlockManager::AddToBlockIndex(const CBlockHeader& block, CBlockInde
 
 void BlockManager::PruneOneBlockFile(const int fileNumber)
 {
-    AssertLockHeld(cs_main);
     LOCK(cs_LastBlockFile);
 
     for (auto& entry : m_block_index) {
@@ -373,13 +367,11 @@ void BlockManager::FindFilesToPrune(
 }
 
 void BlockManager::UpdatePruneLock(const std::string& name, const PruneLockInfo& lock_info) {
-    AssertLockHeld(::cs_main);
     m_prune_locks[name] = lock_info;
 }
 
 CBlockIndex* BlockManager::InsertBlockIndex(const uint256& hash)
 {
-    AssertLockHeld(cs_main);
 
     if (hash.IsNull()) {
         return nullptr;
@@ -476,7 +468,6 @@ bool BlockManager::LoadBlockIndex(const std::optional<uint256>& snapshot_blockha
 
 bool BlockManager::WriteBlockIndexDB()
 {
-    AssertLockHeld(::cs_main);
     std::vector<std::pair<int, const CBlockFileInfo*>> vFiles;
     vFiles.reserve(m_dirty_fileinfo.size());
     for (std::set<int>::iterator it = m_dirty_fileinfo.begin(); it != m_dirty_fileinfo.end();) {
@@ -560,7 +551,6 @@ bool BlockManager::LoadBlockIndexDB(const std::optional<uint256>& snapshot_block
 
 void BlockManager::ScanAndUnlinkAlreadyPrunedFiles()
 {
-    AssertLockHeld(::cs_main);
     int max_blockfile = WITH_LOCK(cs_LastBlockFile, return this->MaxBlockfileNum());
     if (!m_have_pruned) {
         return;
@@ -592,13 +582,11 @@ const CBlockIndex* BlockManager::GetLastCheckpoint(const CCheckpointData& data)
 
 bool BlockManager::IsBlockPruned(const CBlockIndex& block)
 {
-    AssertLockHeld(::cs_main);
     return m_have_pruned && !(block.nStatus & BLOCK_HAVE_DATA) && (block.nTx > 0);
 }
 
 const CBlockIndex* BlockManager::GetFirstStoredBlock(const CBlockIndex& upper_block, const CBlockIndex* lower_block)
 {
-    AssertLockHeld(::cs_main);
     const CBlockIndex* last_block = &upper_block;
     assert(last_block->nStatus & BLOCK_HAVE_DATA); // 'upper_block' must have data
     while (last_block->pprev && (last_block->pprev->nStatus & BLOCK_HAVE_DATA)) {
@@ -1010,7 +998,6 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
 
 bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex& block)
 {
-    AssertLockHeld(::cs_main);
     const BlockfileType type = BlockfileTypeForHeight(block.nHeight);
     auto& cursor = *Assert(WITH_LOCK(cs_LastBlockFile, return m_blockfile_cursors[type]));
 

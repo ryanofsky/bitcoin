@@ -246,7 +246,6 @@ static int UpdatePackagesForAdded(const CTxMemPool& mempool,
                                   const CTxMemPool::setEntries& alreadyAdded,
                                   indexed_modified_transaction_set& mapModifiedTx) EXCLUSIVE_LOCKS_REQUIRED(mempool.cs)
 {
-    AssertLockHeld(mempool.cs);
 
     int nDescendantsUpdated = 0;
     for (CTxMemPool::txiter it : alreadyAdded) {
@@ -292,7 +291,6 @@ void BlockAssembler::SortForBlock(const CTxMemPool::setEntries& package, std::ve
 // transaction package to work on next.
 void BlockAssembler::addPackageTxs(const CTxMemPool& mempool, int& nPackagesSelected, int& nDescendantsUpdated)
 {
-    AssertLockHeld(mempool.cs);
 
     // mapModifiedTx will store sorted packages after they are modified
     // because some of their txs are already in the block

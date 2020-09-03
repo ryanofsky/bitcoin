@@ -71,8 +71,6 @@ static inline std::pair<CTransactionRef, CTransactionRef> make_two_siblings(cons
 static CTransactionRef add_descendants(const CTransactionRef& tx, int32_t num_descendants, CTxMemPool& pool)
     EXCLUSIVE_LOCKS_REQUIRED(::cs_main, pool.cs)
 {
-    AssertLockHeld(::cs_main);
-    AssertLockHeld(pool.cs);
     TestMemPoolEntryHelper entry;
     // Assumes this isn't already spent in mempool
     auto tx_to_spend = tx;
@@ -88,8 +86,6 @@ static CTransactionRef add_descendants(const CTransactionRef& tx, int32_t num_de
 static CTransactionRef add_descendant_to_parents(const std::vector<CTransactionRef>& parents, CTxMemPool& pool)
     EXCLUSIVE_LOCKS_REQUIRED(::cs_main, pool.cs)
 {
-    AssertLockHeld(::cs_main);
-    AssertLockHeld(pool.cs);
     TestMemPoolEntryHelper entry;
     // Assumes this isn't already spent in mempool
     auto child_tx = make_tx(/*inputs=*/parents, /*output_values=*/{50 * CENT});
@@ -102,8 +98,6 @@ static CTransactionRef add_descendant_to_parents(const std::vector<CTransactionR
 static std::pair<CTransactionRef, CTransactionRef> add_children_to_parent(const CTransactionRef parent, CTxMemPool& pool)
     EXCLUSIVE_LOCKS_REQUIRED(::cs_main, pool.cs)
 {
-    AssertLockHeld(::cs_main);
-    AssertLockHeld(pool.cs);
     TestMemPoolEntryHelper entry;
     // Assumes this isn't already spent in mempool
     auto children_tx = make_two_siblings(/*parent=*/parent, /*output_values=*/{50 * CENT});

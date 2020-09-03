@@ -281,7 +281,6 @@ static std::vector<RPCResult> MempoolEntryDescription()
 
 static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPoolEntry& e) EXCLUSIVE_LOCKS_REQUIRED(pool.cs)
 {
-    AssertLockHeld(pool.cs);
 
     info.pushKV("vsize", (int)e.GetTxSize());
     info.pushKV("weight", (int)e.GetTxWeight());

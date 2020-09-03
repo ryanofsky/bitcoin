@@ -651,13 +651,11 @@ public:
 
     uint64_t GetTotalTxSize() const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
-        AssertLockHeld(cs);
         return totalTxSize;
     }
 
     CAmount GetTotalFee() const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
-        AssertLockHeld(cs);
         return m_total_fee;
     }
 
@@ -675,7 +673,6 @@ public:
     CTransactionRef get(const uint256& hash) const;
     txiter get_iter_from_wtxid(const uint256& wtxid) const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
-        AssertLockHeld(cs);
         return mapTx.project<0>(mapTx.get<index_by_wtxid>().find(wtxid));
     }
     TxMempoolInfo info(const GenTxid& gtxid) const;
@@ -710,7 +707,6 @@ public:
     /** Returns whether a txid is in the unbroadcast set */
     bool IsUnbroadcastTx(const uint256& txid) const EXCLUSIVE_LOCKS_REQUIRED(cs)
     {
-        AssertLockHeld(cs);
         return m_unbroadcast_txids.count(txid) != 0;
     }
 

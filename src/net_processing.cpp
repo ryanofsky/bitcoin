@@ -1351,7 +1351,6 @@ bool PeerManagerImpl::BlockRequested(NodeId nodeid, const CBlockIndex& block, st
 
 void PeerManagerImpl::MaybeSetPeerAsAnnouncingHeaderAndIDs(NodeId nodeid)
 {
-    AssertLockHeld(cs_main);
 
     // When in -blocksonly mode, never request high-bandwidth mode from peers. Our
     // mempool will not contain the transactions necessary to reconstruct the
@@ -1409,7 +1408,6 @@ void PeerManagerImpl::MaybeSetPeerAsAnnouncingHeaderAndIDs(NodeId nodeid)
 
 bool PeerManagerImpl::TipMayBeStale()
 {
-    AssertLockHeld(cs_main);
     const Consensus::Params& consensusParams = m_chainparams.GetConsensus();
     if (m_last_tip_update.load() == 0s) {
         m_last_tip_update = GetTime<std::chrono::seconds>();
@@ -1638,7 +1636,6 @@ void PeerManagerImpl::PushNodeVersion(CNode& pnode, const Peer& peer)
 
 void PeerManagerImpl::AddTxAnnouncement(const CNode& node, const GenTxid& gtxid, std::chrono::microseconds current_time)
 {
-    AssertLockHeld(::cs_main); // For m_txrequest
     NodeId nodeid = node.GetId();
     if (!node.HasPermission(NetPermissionFlags::Relay) && m_txrequest.Count(nodeid) >= MAX_PEER_TX_ANNOUNCEMENTS) {
         // Too many queued announcements from this peer
@@ -1997,7 +1994,6 @@ bool PeerManagerImpl::MaybePunishNodeForTx(NodeId nodeid, const TxValidationStat
 
 bool PeerManagerImpl::BlockRequestAllowed(const CBlockIndex* pindex)
 {
-    AssertLockHeld(cs_main);
     if (m_chainman.ActiveChain().Contains(pindex)) return true;
     return pindex->IsValid(BLOCK_VALID_SCRIPTS) && (m_chainman.m_best_header != nullptr) &&
            (m_chainman.m_best_header->GetBlockTime() - pindex->GetBlockTime() < STALE_RELAY_AGE_LIMIT) &&
@@ -3198,8 +3194,6 @@ void PeerManagerImpl::ProcessInvalidTx(NodeId nodeid, const CTransactionRef& ptx
                                        bool maybe_add_extra_compact_tx)
 {
     AssertLockNotHeld(m_peer_mutex);
-    AssertLockHeld(g_msgproc_mutex);
-    AssertLockHeld(cs_main);
 
     LogDebug(BCLog::MEMPOOLREJ, "%s (wtxid=%s) from peer=%d was not accepted: %s\n",
         ptx->GetHash().ToString(),
@@ -3263,8 +3257,6 @@ void PeerManagerImpl::ProcessInvalidTx(NodeId nodeid, const CTransactionRef& ptx
 void PeerManagerImpl::ProcessValidTx(NodeId nodeid, const CTransactionRef& tx, const std::list<CTransactionRef>& replaced_transactions)
 {
     AssertLockNotHeld(m_peer_mutex);
-    AssertLockHeld(g_msgproc_mutex);
-    AssertLockHeld(cs_main);
 
     // As this version of the transaction was acceptable, we can forget about any requests for it.
     // No-op if the tx is not in txrequest.
@@ -3291,8 +3283,6 @@ void PeerManagerImpl::ProcessValidTx(NodeId nodeid, const CTransactionRef& tx, c
 void PeerManagerImpl::ProcessPackageResult(const PackageToValidate& package_to_validate, const PackageMempoolAcceptResult& package_result)
 {
     AssertLockNotHeld(m_peer_mutex);
-    AssertLockHeld(g_msgproc_mutex);
-    AssertLockHeld(cs_main);
 
     const auto& package = package_to_validate.m_txns;
     const auto& senders = package_to_validate.m_senders;
@@ -3347,8 +3337,6 @@ void PeerManagerImpl::ProcessPackageResult(const PackageToValidate& package_to_v
 std::optional<PeerManagerImpl::PackageToValidate> PeerManagerImpl::Find1P1CPackage(const CTransactionRef& ptx, NodeId nodeid)
 {
     AssertLockNotHeld(m_peer_mutex);
-    AssertLockHeld(g_msgproc_mutex);
-    AssertLockHeld(cs_main);
 
     const auto& parent_wtxid{ptx->GetWitnessHash()};
 
@@ -3400,7 +3388,6 @@ std::optional<PeerManagerImpl::PackageToValidate> PeerManagerImpl::Find1P1CPacka
 
 bool PeerManagerImpl::ProcessOrphanTx(Peer& peer)
 {
-    AssertLockHeld(g_msgproc_mutex);
     LOCK(cs_main);
 
     CTransactionRef porphanTx = nullptr;
@@ -3704,7 +3691,6 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                                      const std::chrono::microseconds time_received,
                                      const std::atomic<bool>& interruptMsgProc)
 {
-    AssertLockHeld(g_msgproc_mutex);
 
     LogPrint(BCLog::NET, "received: %s (%u bytes) peer=%d\n", SanitizeString(msg_type), vRecv.size(), pfrom.GetId());
 
@@ -5370,7 +5356,6 @@ bool PeerManagerImpl::MaybeDiscourageAndDisconnect(CNode& pnode, Peer& peer)
 
 bool PeerManagerImpl::ProcessMessages(CNode* pfrom, std::atomic<bool>& interruptMsgProc)
 {
-    AssertLockHeld(g_msgproc_mutex);
 
     PeerRef peer = GetPeerRef(pfrom->GetId());
     if (peer == nullptr) return false;
@@ -5445,7 +5430,6 @@ bool PeerManagerImpl::ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt
 
 void PeerManagerImpl::ConsiderEviction(CNode& pto, Peer& peer, std::chrono::seconds time_in_seconds)
 {
-    AssertLockHeld(cs_main);
 
     CNodeState &state = *State(pto.GetId());
 
@@ -5856,7 +5840,6 @@ bool PeerManagerImpl::SetupAddressRelay(const CNode& node, Peer& peer)
 
 bool PeerManagerImpl::SendMessages(CNode* pto)
 {
-    AssertLockHeld(g_msgproc_mutex);
 
     PeerRef peer = GetPeerRef(pto->GetId());
     if (!peer) return false;

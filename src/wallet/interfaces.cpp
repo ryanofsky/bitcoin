@@ -89,7 +89,6 @@ WalletTx MakeWalletTx(CWallet& wallet, const CWalletTx& wtx)
 WalletTxStatus MakeWalletTxStatus(const CWallet& wallet, const CWalletTx& wtx)
     EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
 {
-    AssertLockHeld(wallet.cs_wallet);
 
     WalletTxStatus result;
     result.block_height =

@@ -561,7 +561,6 @@ public:
     //!          safely flush this object to disk.
     bool CanFlushToDisk() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         return m_coins_views && m_coins_views->m_cacheview;
     }
 
@@ -595,7 +594,6 @@ public:
     //! @returns A reference to the in-memory cache of the UTXO set.
     CCoinsViewCache& CoinsTip() EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         Assert(m_coins_views);
         return *Assert(m_coins_views->m_cacheview);
     }
@@ -603,7 +601,6 @@ public:
     //! @returns A reference to the on-disk UTXO set database.
     CCoinsViewDB& CoinsDB() EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         return Assert(m_coins_views)->m_dbview;
     }
 
@@ -617,7 +614,6 @@ public:
     //!     handles disk read errors gracefully.
     CCoinsViewErrorCatcher& CoinsErrorCatcher() EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         return Assert(m_coins_views)->m_catcherview;
     }
 
@@ -994,7 +990,6 @@ public:
     // (used by tests to reset state)
     void ResetBlockSequenceCounters() EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         nBlockSequenceId = 1;
         nBlockReverseSequenceId = -1;
     }
@@ -1087,7 +1082,6 @@ public:
 
     node::BlockMap& BlockIndex() EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
-        AssertLockHeld(::cs_main);
         return m_blockman.m_block_index;
     }
 

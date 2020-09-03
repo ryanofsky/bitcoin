@@ -22,7 +22,6 @@ namespace node {
 
 bool WriteSnapshotBaseBlockhash(Chainstate& snapshot_chainstate)
 {
-    AssertLockHeld(::cs_main);
     assert(snapshot_chainstate.m_from_snapshot_blockhash);
 
     const std::optional<fs::path> chaindir = snapshot_chainstate.CoinsDB().StoragePath();

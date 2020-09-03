@@ -23,7 +23,6 @@
 
 RBFTransactionState IsRBFOptIn(const CTransaction& tx, const CTxMemPool& pool)
 {
-    AssertLockHeld(pool.cs);
 
     // First check the transaction itself.
     if (SignalsOptInRBF(tx)) {
@@ -61,7 +60,6 @@ std::optional<std::string> GetEntriesForConflicts(const CTransaction& tx,
                                                   const CTxMemPool::setEntries& iters_conflicting,
                                                   CTxMemPool::setEntries& all_conflicts)
 {
-    AssertLockHeld(pool.cs);
     const uint256 txid = tx.GetHash();
     uint64_t nConflictingCount = 0;
     for (const auto& mi : iters_conflicting) {
@@ -88,7 +86,6 @@ std::optional<std::string> HasNoNewUnconfirmed(const CTransaction& tx,
                                                const CTxMemPool& pool,
                                                const CTxMemPool::setEntries& iters_conflicting)
 {
-    AssertLockHeld(pool.cs);
     std::set<uint256> parents_of_conflicts;
     for (const auto& mi : iters_conflicting) {
         for (const CTxIn& txin : mi->GetTx().vin) {

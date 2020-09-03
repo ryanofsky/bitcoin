@@ -2888,7 +2888,6 @@ return RPCHelpMan{
     ChainstateManager& chainman = EnsureAnyChainman(request.context);
 
     auto make_chain_data = [&](const Chainstate& cs, bool validated) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
-        AssertLockHeld(::cs_main);
         UniValue data(UniValue::VOBJ);
         if (!cs.m_chain.Tip()) {
             return data;

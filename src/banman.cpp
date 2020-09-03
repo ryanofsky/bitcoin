@@ -181,7 +181,6 @@ void BanMan::GetBanned(banmap_t& banmap)
 
 void BanMan::SweepBanned()
 {
-    AssertLockHeld(m_banned_mutex);
 
     int64_t now = GetTime();
     bool notify_ui = false;

@@ -311,7 +311,6 @@ CoinsResult AvailableCoins(const CWallet& wallet,
                            std::optional<CFeeRate> feerate,
                            const CoinFilterParams& params)
 {
-    AssertLockHeld(wallet.cs_wallet);
 
     CoinsResult result;
     // Either the WALLET_FLAG_AVOID_REUSE flag is not set (in which case we always allow), or we default to avoiding, and only in the case where
@@ -478,7 +477,6 @@ CoinsResult AvailableCoinsListUnspent(const CWallet& wallet, const CCoinControl*
 
 const CTxOut& FindNonChangeParentOutput(const CWallet& wallet, const COutPoint& outpoint)
 {
-    AssertLockHeld(wallet.cs_wallet);
     const CWalletTx* wtx{Assert(wallet.GetWalletTx(outpoint.hash))};
 
     const CTransaction* ptx = wtx->tx.get();
@@ -498,7 +496,6 @@ const CTxOut& FindNonChangeParentOutput(const CWallet& wallet, const COutPoint& 
 
 std::map<CTxDestination, std::vector<COutput>> ListCoins(const CWallet& wallet)
 {
-    AssertLockHeld(wallet.cs_wallet);
 
     std::map<CTxDestination, std::vector<COutput>> result;
 
@@ -983,7 +980,6 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
         const CCoinControl& coin_control,
         bool sign) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
 {
-    AssertLockHeld(wallet.cs_wallet);
 
     FastRandomContext rng_fast;
     CMutableTransaction txNew; // The resulting transaction that we make

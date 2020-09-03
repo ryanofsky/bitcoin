@@ -400,7 +400,6 @@ void AddrManImpl::Unserialize(Stream& s_)
 
 AddrInfo* AddrManImpl::Find(const CService& addr, int* pnId)
 {
-    AssertLockHeld(cs);
 
     const auto it = mapAddr.find(addr);
     if (it == mapAddr.end())
@@ -415,7 +414,6 @@ AddrInfo* AddrManImpl::Find(const CService& addr, int* pnId)
 
 AddrInfo* AddrManImpl::Create(const CAddress& addr, const CNetAddr& addrSource, int* pnId)
 {
-    AssertLockHeld(cs);
 
     int nId = nIdCount++;
     mapInfo[nId] = AddrInfo(addr, addrSource);
@@ -431,7 +429,6 @@ AddrInfo* AddrManImpl::Create(const CAddress& addr, const CNetAddr& addrSource, 
 
 void AddrManImpl::SwapRandom(unsigned int nRndPos1, unsigned int nRndPos2) const
 {
-    AssertLockHeld(cs);
 
     if (nRndPos1 == nRndPos2)
         return;
@@ -455,7 +452,6 @@ void AddrManImpl::SwapRandom(unsigned int nRndPos1, unsigned int nRndPos2) const
 
 void AddrManImpl::Delete(int nId)
 {
-    AssertLockHeld(cs);
 
     assert(mapInfo.count(nId) != 0);
     AddrInfo& info = mapInfo[nId];
@@ -472,7 +468,6 @@ void AddrManImpl::Delete(int nId)
 
 void AddrManImpl::ClearNew(int nUBucket, int nUBucketPos)
 {
-    AssertLockHeld(cs);
 
     // if there is an entry in the specified bucket, delete it.
     if (vvNew[nUBucket][nUBucketPos] != -1) {
@@ -490,7 +485,6 @@ void AddrManImpl::ClearNew(int nUBucket, int nUBucketPos)
 
 void AddrManImpl::MakeTried(AddrInfo& info, int nId)
 {
-    AssertLockHeld(cs);
 
     // remove the entry from all new buckets
     const int start_bucket{info.GetNewBucket(nKey, m_netgroupman)};
@@ -549,7 +543,6 @@ void AddrManImpl::MakeTried(AddrInfo& info, int nId)
 
 bool AddrManImpl::AddSingle(const CAddress& addr, const CNetAddr& source, std::chrono::seconds time_penalty)
 {
-    AssertLockHeld(cs);
 
     if (!addr.IsRoutable())
         return false;
@@ -625,7 +618,6 @@ bool AddrManImpl::AddSingle(const CAddress& addr, const CNetAddr& source, std::c
 
 bool AddrManImpl::Good_(const CService& addr, bool test_before_evict, NodeSeconds time)
 {
-    AssertLockHeld(cs);
 
     int nId;
 
@@ -692,7 +684,6 @@ bool AddrManImpl::Add_(const std::vector<CAddress>& vAddr, const CNetAddr& sourc
 
 void AddrManImpl::Attempt_(const CService& addr, bool fCountFailure, NodeSeconds time)
 {
-    AssertLockHeld(cs);
 
     AddrInfo* pinfo = Find(addr);
 
@@ -712,7 +703,6 @@ void AddrManImpl::Attempt_(const CService& addr, bool fCountFailure, NodeSeconds
 
 std::pair<CAddress, NodeSeconds> AddrManImpl::Select_(bool new_only, std::optional<Network> network) const
 {
-    AssertLockHeld(cs);
 
     if (vRandom.empty()) return {};
 
@@ -788,7 +778,6 @@ std::pair<CAddress, NodeSeconds> AddrManImpl::Select_(bool new_only, std::option
 
 int AddrManImpl::GetEntry(bool use_tried, size_t bucket, size_t position) const
 {
-    AssertLockHeld(cs);
 
     if (use_tried) {
         if (Assume(position < ADDRMAN_BUCKET_SIZE) && Assume(bucket < ADDRMAN_TRIED_BUCKET_COUNT)) {
@@ -805,7 +794,6 @@ int AddrManImpl::GetEntry(bool use_tried, size_t bucket, size_t position) const
 
 std::vector<CAddress> AddrManImpl::GetAddr_(size_t max_addresses, size_t max_pct, std::optional<Network> network, const bool filtered) const
 {
-    AssertLockHeld(cs);
 
     size_t nNodes = vRandom.size();
     if (max_pct != 0) {
@@ -843,7 +831,6 @@ std::vector<CAddress> AddrManImpl::GetAddr_(size_t max_addresses, size_t max_pct
 
 std::vector<std::pair<AddrInfo, AddressPosition>> AddrManImpl::GetEntries_(bool from_tried) const
 {
-    AssertLockHeld(cs);
 
     const int bucket_count = from_tried ? ADDRMAN_TRIED_BUCKET_COUNT : ADDRMAN_NEW_BUCKET_COUNT;
     std::vector<std::pair<AddrInfo, AddressPosition>> infos;
@@ -867,7 +854,6 @@ std::vector<std::pair<AddrInfo, AddressPosition>> AddrManImpl::GetEntries_(bool 
 
 void AddrManImpl::Connected_(const CService& addr, NodeSeconds time)
 {
-    AssertLockHeld(cs);
 
     AddrInfo* pinfo = Find(addr);
 
@@ -886,7 +872,6 @@ void AddrManImpl::Connected_(const CService& addr, NodeSeconds time)
 
 void AddrManImpl::SetServices_(const CService& addr, ServiceFlags nServices)
 {
-    AssertLockHeld(cs);
 
     AddrInfo* pinfo = Find(addr);
 
@@ -902,7 +887,6 @@ void AddrManImpl::SetServices_(const CService& addr, ServiceFlags nServices)
 
 void AddrManImpl::ResolveCollisions_()
 {
-    AssertLockHeld(cs);
 
     for (std::set<int>::iterator it = m_tried_collisions.begin(); it != m_tried_collisions.end();) {
         int id_new = *it;
@@ -965,7 +949,6 @@ void AddrManImpl::ResolveCollisions_()
 
 std::pair<CAddress, NodeSeconds> AddrManImpl::SelectTriedCollision_()
 {
-    AssertLockHeld(cs);
 
     if (m_tried_collisions.size() == 0) return {};
 
@@ -993,7 +976,6 @@ std::pair<CAddress, NodeSeconds> AddrManImpl::SelectTriedCollision_()
 
 std::optional<AddressPosition> AddrManImpl::FindAddressEntry_(const CAddress& addr)
 {
-    AssertLockHeld(cs);
 
     AddrInfo* addr_info = Find(addr);
 
@@ -1016,7 +998,6 @@ std::optional<AddressPosition> AddrManImpl::FindAddressEntry_(const CAddress& ad
 
 size_t AddrManImpl::Size_(std::optional<Network> net, std::optional<bool> in_new) const
 {
-    AssertLockHeld(cs);
 
     if (!net.has_value()) {
         if (in_new.has_value()) {
@@ -1038,7 +1019,6 @@ size_t AddrManImpl::Size_(std::optional<Network> net, std::optional<bool> in_new
 
 void AddrManImpl::Check() const
 {
-    AssertLockHeld(cs);
 
     // Run consistency checks 1 in m_consistency_check_ratio times if enabled
     if (m_consistency_check_ratio == 0) return;
@@ -1053,7 +1033,6 @@ void AddrManImpl::Check() const
 
 int AddrManImpl::CheckAddrman() const
 {
-    AssertLockHeld(cs);
 
     LOG_TIME_MILLIS_WITH_CATEGORY_MSG_ONCE(
         strprintf("new %i, tried %i, total %u", nNew, nTried, vRandom.size()), BCLog::ADDRMAN);

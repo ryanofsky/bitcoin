@@ -61,7 +61,6 @@ int TxOrphanage::EraseTx(const Wtxid& wtxid)
 
 int TxOrphanage::EraseTxNoLock(const Wtxid& wtxid)
 {
-    AssertLockHeld(m_mutex);
     std::map<Wtxid, OrphanTx>::iterator it = m_orphans.find(wtxid);
     if (it == m_orphans.end())
         return 0;
