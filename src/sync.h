@@ -53,7 +53,7 @@ void LeaveCritical();
 void CheckLastCritical(void* cs, std::string& lockname, const char* guardname, const char* file, int line);
 std::string LocksHeld();
 template <typename MutexType>
-void AssertLockHeldInternal(const char* pszName, const char* pszFile, int nLine, MutexType* cs) EXCLUSIVE_LOCKS_REQUIRED(cs);
+void AssertLockHeldInternal(const char* pszName, const char* pszFile, int nLine, MutexType* cs);
 template <typename MutexType>
 void AssertLockNotHeldInternal(const char* pszName, const char* pszFile, int nLine, MutexType* cs) EXCLUSIVE_LOCKS_REQUIRED(!cs);
 void DeleteLock(void* cs);
@@ -70,13 +70,41 @@ inline void EnterCritical(const char* pszName, const char* pszFile, int nLine, v
 inline void LeaveCritical() {}
 inline void CheckLastCritical(void* cs, std::string& lockname, const char* guardname, const char* file, int line) {}
 template <typename MutexType>
-inline void AssertLockHeldInternal(const char* pszName, const char* pszFile, int nLine, MutexType* cs) EXCLUSIVE_LOCKS_REQUIRED(cs) {}
+inline void AssertLockHeldInternal(const char* pszName, const char* pszFile, int nLine, MutexType* cs) {}
 template <typename MutexType>
 void AssertLockNotHeldInternal(const char* pszName, const char* pszFile, int nLine, MutexType* cs) EXCLUSIVE_LOCKS_REQUIRED(!cs) {}
 inline void DeleteLock(void* cs) {}
 inline bool LockStackEmpty() { return true; }
 #endif
-#define AssertLockHeld(cs) AssertLockHeldInternal(#cs, __FILE__, __LINE__, &cs)
+
+/**
+ * Assert at compile time and runtime that a mutex is locked. Triggering the
+ * runtime check is only possible if the compile time check is bypassed. Like
+ * assert(n >= 0) when n is an unsigned int, this just asserts a condition the
+ * compiler can already determine is true, but it provides redundancy with
+ * other checks and can help with readability.
+ *
+ * @note Compile and runtime checks here may be disabled in some builds, or
+ * produce non-fatal warnings instead of errors (see developer notes).
+ */
+#define AssertLockHeld(mutex) [&]() EXCLUSIVE_LOCKS_REQUIRED(mutex) { AssertLockHeldInternal(#mutex, __FILE__, __LINE__, &mutex); }()
+
+/**
+ * Assert at runtime that a mutex is locked. Calling this should be avoided
+ * when it is possible to call AssertLockHeld instead. But it may be necessary
+ * to use this to work around EXCLUSIVE_LOCKS_REQUIRED errors when compiler
+ * analysis is unable to determine that a mutex is locked due to discarded type
+ * information.
+ *
+ * @note: Checks may be disabled in some builds, see note in AssertLockHeld.
+ */
+#define WeaklyAssertLockHeld(mutex) [&]() ASSERT_EXCLUSIVE_LOCK(mutex) { AssertLockHeldInternal(#mutex, __FILE__, __LINE__, &mutex); }()
+
+/**
+ * Assert at compile time and runtime that a mutex is not locked.
+ *
+ * @note: Checks may be disabled in some builds, see note in AssertLockHeld.
+ */
 #define AssertLockNotHeld(cs) AssertLockNotHeldInternal(#cs, __FILE__, __LINE__, &cs)
 
 /**
@@ -350,20 +378,6 @@ public:
     {
         return fHaveGrant;
     }
-};
-
-// Utility class for indicating to compiler thread analysis that a mutex is
-// locked (when it couldn't be determined otherwise).
-struct SCOPED_LOCKABLE LockAssertion
-{
-    template <typename Mutex>
-    explicit LockAssertion(Mutex& mutex) EXCLUSIVE_LOCK_FUNCTION(mutex)
-    {
-#ifdef DEBUG_LOCKORDER
-        AssertLockHeld(mutex);
-#endif
-    }
-    ~LockAssertion() UNLOCK_FUNCTION() {}
 };
 
 #endif // BITCOIN_SYNC_H
