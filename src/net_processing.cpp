@@ -1386,8 +1386,8 @@ void PeerManagerImpl::MaybeSetPeerAsAnnouncingHeaderAndIDs(NodeId nodeid)
             }
         }
     }
-    m_connman.ForNode(nodeid, [this](CNode* pfrom) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
-        AssertLockHeld(::cs_main);
+    m_connman.ForNode(nodeid, [this](CNode* pfrom) {
+        AssertLockHeldUnverified(::cs_main);
         if (lNodesAnnouncingHeaderAndIDs.size() >= 3) {
             // As per BIP152, we only get 3 of our peers to announce
             // blocks using compact encodings.
@@ -2179,8 +2179,8 @@ void PeerManagerImpl::NewPoWValidBlock(const CBlockIndex *pindex, const std::sha
         m_most_recent_block_txs = std::move(most_recent_block_txs);
     }
 
-    m_connman.ForEachNode([this, pindex, &lazy_ser, &hashBlock](CNode* pnode) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
-        AssertLockHeld(::cs_main);
+    m_connman.ForEachNode([this, pindex, &lazy_ser, &hashBlock](CNode* pnode) {
+        AssertLockHeldUnverified(::cs_main);
 
         if (pnode->GetCommonVersion() < INVALID_CB_NO_BAN_VERSION || pnode->fDisconnect)
             return;
@@ -5528,8 +5528,8 @@ void PeerManagerImpl::EvictExtraOutboundPeers(std::chrono::seconds now)
             // disconnect our second youngest.
             to_disconnect = next_youngest_peer.first;
         }
-        m_connman.ForNode(to_disconnect, [&](CNode* pnode) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
-            AssertLockHeld(::cs_main);
+        m_connman.ForNode(to_disconnect, [&](CNode* pnode) {
+            AssertLockHeldUnverified(::cs_main);
             // Make sure we're not getting a block right now, and that
             // we've been connected long enough for this eviction to happen
             // at all.
@@ -5561,8 +5561,8 @@ void PeerManagerImpl::EvictExtraOutboundPeers(std::chrono::seconds now)
         NodeId worst_peer = -1;
         int64_t oldest_block_announcement = std::numeric_limits<int64_t>::max();
 
-        m_connman.ForEachNode([&](CNode* pnode) EXCLUSIVE_LOCKS_REQUIRED(::cs_main, m_connman.GetNodesMutex()) {
-            AssertLockHeld(::cs_main);
+        m_connman.ForEachNode([&](CNode* pnode) {
+            AssertLockHeldUnverified(::cs_main);
 
             // Only consider outbound-full-relay peers that are not already
             // marked for disconnection
@@ -5580,8 +5580,8 @@ void PeerManagerImpl::EvictExtraOutboundPeers(std::chrono::seconds now)
             }
         });
         if (worst_peer != -1) {
-            bool disconnected = m_connman.ForNode(worst_peer, [&](CNode* pnode) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
-                AssertLockHeld(::cs_main);
+            bool disconnected = m_connman.ForNode(worst_peer, [&](CNode *pnode) {
+                AssertLockHeldUnverified(::cs_main);
 
                 // Only disconnect a peer that has been connected to us for
                 // some reasonable fraction of our check-frequency, to give

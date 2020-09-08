@@ -1053,6 +1053,25 @@ bool Chainstate::PreciousBlock(BlockValidationState& state, CBlockIndex* pindex)
 }
 ```
 
+- When Clang Thread Safety Analysis is unable to determine if a mutex is locked, use `AssertLockHeldUnverified`:
+
+```C++
+// net_processing.h
+void RelayTransaction(...) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+
+// net_processing.cpp
+void RelayTransaction(...)
+{
+    AssertLockHeld(::cs_main);
+
+    connman.ForEachNode([&txid, &wtxid](CNode* pnode) {
+        AssertLockHeldUnverified(::cs_main);
+        ...
+    });
+}
+
+```
+
 - Build and run tests with `-DDEBUG_LOCKORDER` to verify that no potential
   deadlocks are introduced. As of 0.12, this is defined by default when
   configuring with `--enable-debug`.

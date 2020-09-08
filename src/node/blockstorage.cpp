@@ -396,7 +396,9 @@ CBlockIndex* BlockManager::InsertBlockIndex(const uint256& hash)
 bool BlockManager::LoadBlockIndex(const std::optional<uint256>& snapshot_blockhash)
 {
     if (!m_block_tree_db->LoadBlockIndexGuts(
-            GetConsensus(), [this](const uint256& hash) EXCLUSIVE_LOCKS_REQUIRED(cs_main) { return this->InsertBlockIndex(hash); }, m_interrupt)) {
+            GetConsensus(), [this](const uint256& hash) {
+          AssertLockHeldUnverified(::cs_main);
+          return this->InsertBlockIndex(hash); }, m_interrupt)) {
         return false;
     }
 

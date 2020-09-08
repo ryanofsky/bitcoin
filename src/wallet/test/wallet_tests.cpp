@@ -409,7 +409,8 @@ BOOST_AUTO_TEST_CASE(ComputeTimeSmart)
     BOOST_CHECK_EQUAL(AddTx(*m_node.chainman, m_wallet, 5, 50, 600), 300);
 }
 
-void TestLoadWallet(const std::string& name, DatabaseFormat format, std::function<void(std::shared_ptr<CWallet>)> f)
+template<typename F>
+void TestLoadWallet(const std::string& name, DatabaseFormat format, F&& f)
 {
     node::NodeContext node;
     auto chain{interfaces::MakeChain(node)};
@@ -428,7 +429,7 @@ BOOST_FIXTURE_TEST_CASE(LoadReceiveRequests, TestingSetup)
 {
     for (DatabaseFormat format : DATABASE_FORMATS) {
         const std::string name{strprintf("receive-requests-%i", format)};
-        TestLoadWallet(name, format, [](std::shared_ptr<CWallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->cs_wallet) {
+        TestLoadWallet(name, format, [](std::shared_ptr<CWallet> wallet) {
             BOOST_CHECK(!wallet->IsAddressPreviouslySpent(PKHash()));
             WalletBatch batch{wallet->GetDatabase()};
             BOOST_CHECK(batch.WriteAddressPreviouslySpent(PKHash(), true));
@@ -439,7 +440,7 @@ BOOST_FIXTURE_TEST_CASE(LoadReceiveRequests, TestingSetup)
             BOOST_CHECK(wallet->SetAddressReceiveRequest(batch, PKHash(), "1", "val_rr11"));
             BOOST_CHECK(wallet->SetAddressReceiveRequest(batch, ScriptHash(), "2", "val_rr20"));
         });
-        TestLoadWallet(name, format, [](std::shared_ptr<CWallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->cs_wallet) {
+        TestLoadWallet(name, format, [](std::shared_ptr<CWallet> wallet) {
             BOOST_CHECK(wallet->IsAddressPreviouslySpent(PKHash()));
             BOOST_CHECK(wallet->IsAddressPreviouslySpent(ScriptHash()));
             auto requests = wallet->GetAddressReceiveRequests();
@@ -451,7 +452,7 @@ BOOST_FIXTURE_TEST_CASE(LoadReceiveRequests, TestingSetup)
                 return true;
             });
         });
-        TestLoadWallet(name, format, [](std::shared_ptr<CWallet> wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet->cs_wallet) {
+        TestLoadWallet(name, format, [](std::shared_ptr<CWallet> wallet) {
             BOOST_CHECK(!wallet->IsAddressPreviouslySpent(PKHash()));
             BOOST_CHECK(!wallet->IsAddressPreviouslySpent(ScriptHash()));
             auto requests = wallet->GetAddressReceiveRequests();
