@@ -18,6 +18,8 @@
 
 static const char* DATABASE_FILENAME = "wallet.sqlite";
 
+static const int32_t WALLET_SCHEMA_VERSION = 0;
+
 std::atomic<int> g_dbs_open{0};
 
 static void ErrorLogCallback(void* arg, int code, const char* msg)
@@ -144,6 +146,30 @@ bool SQLiteDatabase::Verify(bilingual_str& error)
         return false;
     }
 
+    // Check our schema version
+    sqlite3_stmt* user_ver_stmt;
+    ret = sqlite3_prepare_v2(db, "PRAGMA user_version", -1, &user_ver_stmt, nullptr);
+    if (ret != SQLITE_OK) {
+        sqlite3_finalize(user_ver_stmt);
+        sqlite3_close(db);
+        error = strprintf(_("SQLiteDatabase: Failed to prepare the statement to fetch sqlite wallet schema version: %s"), sqlite3_errstr(ret));
+        return false;
+    }
+    ret = sqlite3_step(user_ver_stmt);
+    if (ret != SQLITE_ROW) {
+        sqlite3_finalize(user_ver_stmt);
+        sqlite3_close(db);
+        error = strprintf(_("SQLiteDatabase: Failed to fetch sqlite wallet schema version: %s"), sqlite3_errstr(ret));
+        return false;
+    }
+    int32_t user_ver = sqlite3_column_int(user_ver_stmt, 0);
+    sqlite3_finalize(user_ver_stmt);
+    if (user_ver != WALLET_SCHEMA_VERSION) {
+        sqlite3_close(db);
+        error = strprintf(_("SQLiteDatabase: Unknown sqlite wallet schema version %d. Only version %d is supported"), user_ver, WALLET_SCHEMA_VERSION);
+        return false;
+    }
+
     sqlite3_stmt* stmt;
     ret = sqlite3_prepare_v2(db, "PRAGMA integrity_check", -1, &stmt, nullptr);
     if (ret != SQLITE_OK) {
@@ -249,6 +275,13 @@ void SQLiteDatabase::Open(const char* mode)
             ret = sqlite3_exec(db, set_app_id.c_str(), nullptr, nullptr, nullptr);
             if (ret != SQLITE_OK) {
                 throw std::runtime_error(strprintf("SQLiteDatabase: Failed to set the application id: %s\n", sqlite3_errstr(ret)));
+            }
+
+            // Set the user version
+            std::string set_user_ver = strprintf("PRAGMA user_version = %d", WALLET_SCHEMA_VERSION);
+            ret = sqlite3_exec(db, set_user_ver.c_str(), nullptr, nullptr, nullptr);
+            if (ret != SQLITE_OK) {
+                throw std::runtime_error(strprintf("SQLiteDatabase: Failed to set the wallet schema version: %s\n", sqlite3_errstr(ret)));
             }
         }
 
