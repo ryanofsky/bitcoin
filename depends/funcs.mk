@@ -163,12 +163,16 @@ $(1)_cmake=env CC="$$($(1)_cc)" \
                CXXFLAGS="$$($(1)_cppflags) $$($(1)_cxxflags)" \
                LDFLAGS="$$($(1)_ldflags)" \
              cmake -DCMAKE_INSTALL_PREFIX:PATH="$$($($(1)_type)_prefix)"
+$(1)_cmake_conf_native=-DCMAKE_INSTALL_RPATH:PATH="$$($($(1)_type)_prefix)/lib"
+$(1)_cmake_conf_cross=-DCMAKE_SYSTEM_NAME=$($(host_os)_cmake_system) -DCMAKE_C_COMPILER_TARGET=$(host) -DCMAKE_CXX_COMPILER_TARGET=$(host)
 ifneq ($($(1)_type),build)
 ifneq ($(host),$(build))
-$(1)_cmake += -DCMAKE_SYSTEM_NAME=$($(host_os)_cmake_system)
-$(1)_cmake += -DCMAKE_C_COMPILER_TARGET=$(host)
-$(1)_cmake += -DCMAKE_CXX_COMPILER_TARGET=$(host)
+$(1)_cmake += $$($(1)_cmake_conf_cross)
+else
+$(1)_cmake += $$($(1)_cmake_conf_native)
 endif
+else
+$(1)_cmake += $$($(1)_cmake_conf_native)
 endif
 endef
 
