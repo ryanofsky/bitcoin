@@ -38,7 +38,11 @@ void test_one_input(const std::vector<uint8_t>& buffer)
             break;
         }
         case 1: {
-            args_manager.SoftSetArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeRandomLengthString(16));
+            // Avoid Can't call SoftSetBoolArg on arg registered with flags 0x8d8d8d00 (requires 0x2, disallows 0x10)
+            try {
+                args_manager.SoftSetArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeRandomLengthString(16));
+            } catch (const std::logic_error&) {
+            }
             break;
         }
         case 2: {
@@ -46,7 +50,11 @@ void test_one_input(const std::vector<uint8_t>& buffer)
             break;
         }
         case 3: {
-            args_manager.SoftSetBoolArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeBool());
+            // Avoid Can't call SoftSetBoolArg on arg registered with flags 0x8d8d8d00 (requires 0x2, disallows 0x10)
+            try {
+                args_manager.SoftSetBoolArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeBool());
+            } catch (const std::logic_error&) {
+            }
             break;
         }
         case 4: {
@@ -57,7 +65,16 @@ void test_one_input(const std::vector<uint8_t>& buffer)
             if (args_manager.GetArgFlags(argument_name) != nullopt) {
                 break;
             }
-            args_manager.AddArg(argument_name, fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeIntegral<unsigned int>(), options_category);
+            unsigned int flags = fuzzed_data_provider.ConsumeIntegral<unsigned int>();
+            // Avoid hitting "ALLOW_{BOOL|INT|STRING} flags would have no effect with ALLOW_ANY present (ALLOW_ANY disables validation)"
+            if (flags & ArgsManager::ALLOW_ANY) {
+                flags &= ~(ArgsManager::ALLOW_BOOL | ArgsManager::ALLOW_INT | ArgsManager::ALLOW_STRING);
+            }
+            // Avoid hitting "ALLOW_INT would have no effect with ALLOW_STRING present (any valid integer is also a valid string)"
+            if (flags & ArgsManager::ALLOW_STRING) {
+                flags &= ~ArgsManager::ALLOW_INT;
+            }
+            args_manager.AddArg(argument_name, fuzzed_data_provider.ConsumeRandomLengthString(16), flags, options_category);
             break;
         }
         case 5: {
@@ -104,11 +121,23 @@ void test_one_input(const std::vector<uint8_t>& buffer)
     const int64_t i64 = fuzzed_data_provider.ConsumeIntegral<int64_t>();
     const bool b = fuzzed_data_provider.ConsumeBool();
 
-    (void)args_manager.GetArg(s1, i64);
-    (void)args_manager.GetArg(s1, s2);
+    try {
+        (void)args_manager.GetArg(s1, i64);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetArg(s1, s2);
+    } catch (const std::logic_error&) {
+    }
     (void)args_manager.GetArgFlags(s1);
-    (void)args_manager.GetArgs(s1);
-    (void)args_manager.GetBoolArg(s1, b);
+    try {
+        (void)args_manager.GetArgs(s1);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetBoolArg(s1, b);
+    } catch (const std::logic_error&) {
+    }
     try {
         (void)args_manager.GetChainName();
     } catch (const std::runtime_error&) {
