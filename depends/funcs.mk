@@ -163,12 +163,12 @@ $(1)_cmake=env CC="$$($(1)_cc)" \
                CXXFLAGS="$$($(1)_cppflags) $$($(1)_cxxflags)" \
                LDFLAGS="$$($(1)_ldflags)" \
              cmake -DCMAKE_INSTALL_PREFIX:PATH="$$($($(1)_type)_prefix)"
-ifneq ($($(1)_type),build)
-ifneq ($(host),$(build))
+ifeq ($(host)/$($(1)_type),$(build)/build)
+$(1)_cmake += -DCMAKE_INSTALL_RPATH:PATH="$$($($(1)_type)_prefix)/lib"
+else
 $(1)_cmake += -DCMAKE_SYSTEM_NAME=$($(host_os)_cmake_system)
 $(1)_cmake += -DCMAKE_C_COMPILER_TARGET=$(host)
 $(1)_cmake += -DCMAKE_CXX_COMPILER_TARGET=$(host)
-endif
 endif
 endef
 
