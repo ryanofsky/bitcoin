@@ -63,7 +63,7 @@ class TestNode():
     To make things easier for the test writer, any unrecognised messages will
     be dispatched to the RPC connection."""
 
-    def __init__(self, i, datadir, *, chain, rpchost, timewait, timeout_factor, bitcoind, bitcoin_cli, coverage_dir, cwd, extra_conf=None, extra_args=None, use_cli=False, start_perf=False, use_valgrind=False, version=None, descriptors=False):
+    def __init__(self, i, datadir, *, chain, rpchost, timewait, timeout_factor, bitcoind, bitcoin_cli, coverage_dir, cwd, extra_conf=None, extra_args=None, use_cli=False, start_perf=False, use_valgrind=False, version=None):
         """
         Kwargs:
             start_perf (bool): If True, begin profiling the node with `perf` as soon as
@@ -81,7 +81,6 @@ class TestNode():
         self.binary = bitcoind
         self.coverage_dir = coverage_dir
         self.cwd = cwd
-        self.descriptors = descriptors
         if extra_conf is not None:
             append_config(datadir, extra_conf)
         # Most callers will just need to add extra args to the standard list below.
@@ -174,10 +173,10 @@ class TestNode():
     def __getattr__(self, name):
         """Dispatches any unrecognised messages to the RPC connection or a CLI instance."""
         if self.use_cli:
-            return getattr(RPCOverloadWrapper(self.cli, True, self.descriptors), name)
+            return getattr(RPCOverloadWrapper(self.cli, True), name)
         else:
             assert self.rpc_connected and self.rpc is not None, self._node_msg("Error: no RPC connection")
-            return getattr(RPCOverloadWrapper(self.rpc, descriptors=self.descriptors), name)
+            return getattr(RPCOverloadWrapper(self.rpc), name)
 
     def start(self, extra_args=None, *, cwd=None, stdout=None, stderr=None, **kwargs):
         """Start the node."""
@@ -299,11 +298,11 @@ class TestNode():
 
     def get_wallet_rpc(self, wallet_name):
         if self.use_cli:
-            return RPCOverloadWrapper(self.cli("-rpcwallet={}".format(wallet_name)), True, self.descriptors)
+            return RPCOverloadWrapper(self.cli("-rpcwallet={}".format(wallet_name)), True)
         else:
             assert self.rpc_connected and self.rpc, self._node_msg("RPC not connected")
             wallet_path = "wallet/{}".format(urllib.parse.quote(wallet_name))
-            return RPCOverloadWrapper(self.rpc / wallet_path, descriptors=self.descriptors)
+            return RPCOverloadWrapper(self.rpc / wallet_path)
 
     def version_is_at_least(self, ver):
         return self.version is None or self.version >= ver
@@ -633,18 +632,12 @@ class TestNodeCLI():
             return cli_stdout.rstrip("\n")
 
 class RPCOverloadWrapper():
-    def __init__(self, rpc, cli=False, descriptors=False):
+    def __init__(self, rpc, cli=False):
         self.rpc = rpc
         self.is_cli = cli
-        self.descriptors = descriptors
 
     def __getattr__(self, name):
         return getattr(self.rpc, name)
-
-    def createwallet(self, wallet_name, disable_private_keys=None, blank=None, passphrase='', avoid_reuse=None, descriptors=None, load_on_startup=None):
-        if descriptors is None:
-            descriptors = self.descriptors
-        return self.__getattr__('createwallet')(wallet_name, disable_private_keys, blank, passphrase, avoid_reuse, descriptors, load_on_startup)
 
     def importprivkey(self, privkey, label=None, rescan=None):
         wallet_info = self.getwalletinfo()
