@@ -79,7 +79,7 @@ class PSBTTest(BitcoinTestFramework):
         self.disconnect_nodes(0, 1)
 
         # Create watchonly on online_node
-        online_node.createwallet(wallet_name='wonline', disable_private_keys=True)
+        online_node.createwallet(wallet_name='wonline', disable_private_keys=True, descriptors=self.options.descriptors)
         wonline = online_node.get_wallet_rpc('wonline')
         w2 = online_node.get_wallet_rpc(self.default_wallet_name)
 
@@ -243,7 +243,7 @@ class PSBTTest(BitcoinTestFramework):
         pubkey2 = self.nodes[2].getaddressinfo(self.nodes[2].getnewaddress())['pubkey']
 
         # Setup watchonly wallets
-        self.nodes[2].createwallet(wallet_name='wmulti', disable_private_keys=True)
+        self.nodes[2].createwallet(wallet_name='wmulti', disable_private_keys=True, descriptors=self.options.descriptors)
         wmulti = self.nodes[2].get_wallet_rpc('wmulti')
 
         # Create all the addresses
@@ -558,7 +558,7 @@ class PSBTTest(BitcoinTestFramework):
 
         # Signer tests
         for i, signer in enumerate(signers):
-            self.nodes[2].createwallet(wallet_name="wallet{}".format(i))
+            self.nodes[2].createwallet(wallet_name="wallet{}".format(i), descriptors=self.options.descriptors)
             wrpc = self.nodes[2].get_wallet_rpc("wallet{}".format(i))
             for key in signer['privkeys']:
                 wrpc.importprivkey(key)

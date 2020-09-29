@@ -112,10 +112,7 @@ class InactiveHDChainsTest(BitcoinTestFramework):
         self.log.info("Test that topping up inactive HD chains does not need upgraded key origin")
 
         self.nodes[0].createwallet(wallet_name="keymeta_base", descriptors=False, blank=True)
-        # Createwallet is overridden in the test framework so that the descriptor option can be filled
-        # depending on the test's cli args. However we don't want to do that when using old nodes that
-        # do not support descriptors. So we use the createwallet_passthrough function.
-        self.nodes[1].createwallet_passthrough(wallet_name="keymeta_test")
+        self.nodes[1].createwallet(wallet_name="keymeta_test")
         base_wallet = self.nodes[0].get_wallet_rpc("keymeta_base")
         test_wallet = self.nodes[1].get_wallet_rpc("keymeta_test")
 
