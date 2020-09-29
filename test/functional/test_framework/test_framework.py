@@ -470,7 +470,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 use_cli=self.options.usecli,
                 start_perf=self.options.perf,
                 use_valgrind=self.options.valgrind,
-                descriptors=self.options.descriptors,
             )
             self.nodes.append(test_node_i)
             if not test_node_i.version_is_at_least(170000):
@@ -666,7 +665,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                     bitcoin_cli=self.options.bitcoincli,
                     coverage_dir=None,
                     cwd=self.options.tmpdir,
-                    descriptors=self.options.descriptors,
                 ))
             self.start_node(CACHE_NODE_ID)
             cache_node = self.nodes[CACHE_NODE_ID]

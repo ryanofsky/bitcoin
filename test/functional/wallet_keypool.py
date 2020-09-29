@@ -139,7 +139,7 @@ class KeyPoolTest(BitcoinTestFramework):
             assert_equal(wi['keypoolsize'], 100)
 
         # create a blank wallet
-        nodes[0].createwallet(wallet_name='w2', blank=True, disable_private_keys=True)
+        nodes[0].createwallet(wallet_name='w2', blank=True, disable_private_keys=True, descriptors=self.options.descriptors)
         w2 = nodes[0].get_wallet_rpc('w2')
 
         # refer to initial wallet as w1
