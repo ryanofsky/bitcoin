@@ -70,7 +70,7 @@ Subdirectory | File(s)           | Description
 -------------|-------------------|------------
 `database/`  | BDB logging files | Part of BDB environment; created at start and deleted on shutdown; a user *must keep it as safe* as personal wallet `wallet.dat`
 `./`         | `db.log`          | BDB error file
-`./`         | `wallet.dat`      | Personal wallet (BDB) with keys and transactions
+`./`         | `wallet.dat`      | Personal wallet with keys and transactions. May be either a BDB or SQLite3 database file.
 `./`         | `.walletlock`     | Wallet lock file
 
 1. Each user-defined wallet named "wallet_name" resides in `wallets/wallet_name/` subdirectory.
