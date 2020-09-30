@@ -25,6 +25,7 @@ These are the dependencies currently used by Bitcoin Core. You can find instruct
 | xkbcommon |  |  |  |  | [Yes](https://github.com/bitcoin/bitcoin/blob/master/depends/packages/qt.mk) (Linux only) |
 | ZeroMQ | [4.3.1](https://github.com/zeromq/libzmq/releases) | 4.0.0 | No |  |  |
 | zlib | [1.2.11](https://zlib.net/) |  |  |  | No |
+| SQLite 3 | [3.32.1](https://sqlite.org/download.html) |  |  |  |  |
 
 Controlling dependencies
 ------------------------
@@ -33,6 +34,7 @@ Some dependencies are not needed in all configurations. The following are some f
 #### Options passed to `./configure`
 * MiniUPnPc is not needed with  `--with-miniupnpc=no`.
 * Berkeley DB is not needed with `--disable-wallet`.
+* SQLite 3 is not needed with `--disable-wallet`.
 * Qt is not needed with `--without-gui`.
 * If the qrencode dependency is absent, QR support won't be added. To force an error when that happens, pass `--with-qrencode`.
 * ZeroMQ is needed only with the `--with-zmq` option.
