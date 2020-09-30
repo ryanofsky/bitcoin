@@ -36,7 +36,7 @@ static void WalletCreate(CWallet* wallet_instance)
     wallet_instance->TopUpKeyPool();
 }
 
-static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, bool create)
+static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, interfaces::Chain* chain, bool create)
 {
     DatabaseOptions options;
     DatabaseStatus status;
@@ -52,8 +52,7 @@ static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::pa
         return nullptr;
     }
 
-    // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance{new CWallet(nullptr /* chain */, name, std::move(database)), WalletToolReleaseWallet};
+    std::shared_ptr<CWallet> wallet_instance{new CWallet(chain, name, std::move(database)), WalletToolReleaseWallet};
     DBErrors load_wallet_ret;
     try {
         bool first_run;
@@ -102,19 +101,19 @@ static void WalletShowInfo(CWallet* wallet_instance)
     tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->m_address_book.size());
 }
 
-bool ExecuteWalletToolFunc(const std::string& command, const std::string& name)
+bool ExecuteWalletToolFunc(interfaces::Chain* chain, const std::string& command, const std::string& name)
 {
     fs::path path = fs::absolute(name, GetWalletDir());
 
     if (command == "create") {
-        std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ true);
+        std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, chain, /* create= */ true);
         if (wallet_instance) {
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Close();
         }
     } else if (command == "info" || command == "salvage") {
         if (command == "info") {
-            std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, /* create= */ false);
+            std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, chain, /* create= */ false);
             if (!wallet_instance) return false;
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Close();
