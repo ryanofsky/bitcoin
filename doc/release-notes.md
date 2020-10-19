@@ -292,15 +292,18 @@ Wallet
   changed from `-32601` (method not found) to `-18` (wallet not found).
   (#20101)
 
-### Default Wallet
+### Automatic wallet creation removed
 
-Bitcoin Core will no longer create an unnamed `""` wallet by default when no
-wallet is specified on the command line or in the configuration files. For
-backwards compatibility, if an unnamed `""` wallet already exists and would
-have been loaded previously, then it will still be loaded. Users without an
-unnamed `""` wallet and without any other wallets to be loaded on startup will
-be prompted to either choose a wallet to load, or to create a new wallet.
-(#15454)
+Bitcoin Core will no longer automatically create new wallets on startup. It will
+load existing wallets specified by `-wallet` options on the command line,
+wallets listed in `bitcoin.conf` or `settings.json` files, and a top-level
+unnamed ("") wallet. But if specified wallets don't exist, Bitcoin Core will log
+warnings instead of creating new wallets with random keys and addresses like
+previous releases did.
+
+New wallets can be created through the GUI (which has a more prominent create
+wallet option), through the `bitcoin-cli createwallet` or `bitcoin-wallet
+create` commands, or the `createwallet` RPC. (#15454)
 
 ### Experimental Descriptor Wallets
 
@@ -327,15 +330,13 @@ as described below.
 
 #### Creating Descriptor Wallets
 
-Descriptor Wallets are not created by default. They must be explicitly created using the
-`createwallet` RPC or via the GUI. A `descriptors` option has been added to `createwallet`.
-Setting `descriptors` to `true` will create a Descriptor Wallet instead of a Legacy Wallet.
+Descriptor wallets are not the default type of wallet.
 
 In the GUI, a checkbox has been added to the Create Wallet Dialog to indicate that a
-Descriptor Wallet should be created.
+Descriptor Wallet should be created. And a `descriptors` option has been added to `createwallet` RPC.
+Setting `descriptors` to `true` will create a Descriptor Wallet instead of a Legacy Wallet.
 
-Without those options being set, a Legacy Wallet will be created instead. Additionally the
-Default Wallet created upon first startup of Bitcoin Core will be a Legacy Wallet.
+Without those options being set, a Legacy Wallet will be created instead.
 
 #### `IsMine` Semantics
 
