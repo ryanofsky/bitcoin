@@ -10,8 +10,6 @@
 
 #include <string>
 
-fs::path GetWalletDir();
-
 bool ExistsBerkeleyDatabase(const fs::path& path);
 #ifdef USE_SQLITE
 bool ExistsSQLiteDatabase(const fs::path& path);
@@ -19,9 +17,8 @@ bool ExistsSQLiteDatabase(const fs::path& path);
 #   define ExistsSQLiteDatabase(path)  (false)
 #endif
 
-std::vector<fs::path> ListWalletDir()
+std::vector<fs::path> ListDatabases(const fs::path& wallet_dir)
 {
-    const fs::path wallet_dir = GetWalletDir();
     const size_t offset = wallet_dir.string().size() + 1;
     std::vector<fs::path> paths;
     boost::system::error_code ec;
