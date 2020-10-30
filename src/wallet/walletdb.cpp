@@ -1050,13 +1050,14 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
     // Format is not set when a db doesn't already exist, so use the format specified by the options if it is set.
     if (!format && options.require_format) format = options.require_format;
 
-#ifdef USE_SQLITE
     if (format && format == DatabaseFormat::SQLITE) {
+#ifdef USE_SQLITE
         return MakeSQLiteDatabase(path, options, status, error);
-    }
-#else
-    assert(format != DatabaseFormat::SQLITE);
 #endif
+        error = Untranslated(strprintf("Failed to load database path '%s'. Build does not support SQLite database format.", path.string()));
+        status = DatabaseStatus::FAILED_BAD_FORMAT;
+        return nullptr;
+    }
 
     return MakeBerkeleyDatabase(path, options, status, error);
 }
