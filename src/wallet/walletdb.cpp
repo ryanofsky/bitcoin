@@ -1011,11 +1011,10 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
 
     Optional<DatabaseFormat> format;
     if (exists) {
-        if (ExistsBerkeleyDatabase(path)) {
+        if (IsBDBFile(BDBDataFile(path))) {
             format = DatabaseFormat::BERKELEY;
         }
-#ifdef USE_SQLITE
-        if (ExistsSQLiteDatabase(path)) {
+        if (IsSQLiteFile(SQLiteDataFile(path))) {
             if (format) {
                 error = Untranslated(strprintf("Failed to load database path '%s'. Data is in ambiguous format.", path.string()));
                 status = DatabaseStatus::FAILED_BAD_FORMAT;
@@ -1023,7 +1022,6 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
             }
             format = DatabaseFormat::SQLITE;
         }
-#endif
     } else if (options.require_existing) {
         error = Untranslated(strprintf("Failed to load database path '%s'. Path does not exist.", path.string()));
         status = DatabaseStatus::FAILED_NOT_FOUND;
