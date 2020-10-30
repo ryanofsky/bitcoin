@@ -1068,6 +1068,7 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
     // Format is not set when a db doesn't already exist, so use the format specified by the options if it is set.
     if (!format && options.require_format) format = options.require_format;
 
+<<<<<<< HEAD
     // If the format is not specified or detected, choose the default format based on what is available. We prefer BDB over SQLite for now.
     if (!format) {
 #ifdef USE_SQLITE
@@ -1081,11 +1082,31 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
     if (format == DatabaseFormat::SQLITE) {
 #ifdef USE_SQLITE
         return MakeSQLiteDatabase(path, options, status, error);
+||||||| merged common ancestors
+#ifdef USE_SQLITE
+    if (format && format == DatabaseFormat::SQLITE) {
+        return MakeSQLiteDatabase(path, options, status, error);
+    }
+#else
+    assert(format != DatabaseFormat::SQLITE);
+=======
+    if (format && format == DatabaseFormat::SQLITE) {
+#ifdef USE_SQLITE
+        return MakeSQLiteDatabase(path, options, status, error);
+>>>>>>> wallet: List SQLite wallets in non-SQLite builds
 #endif
+<<<<<<< HEAD
         error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support SQLite database format.", path.string()));
         status = DatabaseStatus::FAILED_BAD_FORMAT;
         return nullptr;
     }
+||||||| merged common ancestors
+=======
+        error = Untranslated(strprintf("Failed to load database path '%s'. Build does not support SQLite database format.", path.string()));
+        status = DatabaseStatus::FAILED_BAD_FORMAT;
+        return nullptr;
+    }
+>>>>>>> wallet: List SQLite wallets in non-SQLite builds
 
 #ifdef USE_BDB
     return MakeBerkeleyDatabase(path, options, status, error);
