@@ -26,7 +26,9 @@ class Ipc;
 //! There is a different Init interface implementation for each process
 //! (bitcoin-gui, bitcoin-node, bitcoin-wallet, bitcoind, bitcoin-qt) and each
 //! implementation can implement the make methods for interfaces it supports.
-//! The default make methods all return null.
+//! The default make methods all return null. If IPC is enabled Init is the
+//! initial interface returned from the process being controlled to the
+//! controlling process when the connection is established.
 class Init
 {
 public:
