@@ -2,15 +2,14 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-@0xf2c5cfa319406aa6;
+@0x888b4f7f51e691f7;
 
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ipc::capnp::messages");
 
-using Echo = import "echo.capnp";
 using Proxy = import "/mp/proxy.capnp";
 
-interface Init $Proxy.wrap("interfaces::Init") {
-    construct @0 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
-    makeEcho @1 (context :Proxy.Context) -> (result :Echo.Echo);
+interface Echo $Proxy.wrap("interfaces::Echo") {
+    destroy @0 (context :Proxy.Context) -> ();
+    echo @1 (context :Proxy.Context, echo: Text) -> (result :Text);
 }

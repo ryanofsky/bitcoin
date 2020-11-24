@@ -10,6 +10,7 @@
 struct NodeContext;
 
 namespace interfaces {
+class Echo;
 class Ipc;
 
 //! Initial interface used to get access to other interfaces.
@@ -21,6 +22,7 @@ class Init
 {
 public:
     virtual ~Init() = default;
+    virtual std::unique_ptr<Echo> makeEcho();
     // Note: More methods will be added here in upcoming changes as more remote
     // interfaces are supported: makeNode, makeWallet, makeWalletClient
     virtual Ipc* ipc() { return nullptr; }
