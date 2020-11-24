@@ -3,8 +3,16 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <interfaces/echo.h>
-#include <interfaces/init.h>
+
+#include <util/memory.h>
 
 namespace interfaces {
-std::unique_ptr<Echo> Init::makeEcho() { return {}; }
+namespace {
+class EchoImpl : public Echo
+{
+public:
+    std::string echo(const std::string& echo) override { return echo; }
+};
+} // namespace
+std::unique_ptr<Echo> MakeEcho() { return MakeUnique<EchoImpl>(); }
 } // namespace interfaces
