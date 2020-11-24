@@ -5,4 +5,5 @@
 #include <interfaces/init.h>
 
 namespace interfaces {
+std::unique_ptr<Echo> Init::makeEcho() { return {}; }
 } // namespace interfaces
