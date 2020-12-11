@@ -142,6 +142,7 @@ enum class OptionsCategory {
     GUI,
     COMMANDS,
     REGISTER_COMMANDS,
+    IPC,
 
     HIDDEN // Always the last option to avoid printing these in the help
 };
@@ -197,6 +198,7 @@ protected:
      */
     bool UseDefaultSection(const std::string& arg) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
 
+ public:
     /**
      * Get setting value.
      *
@@ -211,7 +213,6 @@ protected:
      */
     std::vector<util::SettingsValue> GetSettingsList(const std::string& arg) const;
 
-public:
     ArgsManager();
     ~ArgsManager();
 
