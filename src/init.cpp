@@ -316,7 +316,7 @@ void Shutdown(NodeContext& node)
 #ifndef WIN32
 static void HandleSIGTERM(int)
 {
-    StartShutdown();
+    StartShutdown(true);
 }
 
 static void HandleSIGHUP(int)

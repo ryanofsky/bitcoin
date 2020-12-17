@@ -110,7 +110,7 @@ private:
     OptionsModel *optionsModel;
     ClientModel *clientModel;
     BitcoinGUI *window;
-    QTimer *pollShutdownTimer;
+    std::unique_ptr<interfaces::Handler> m_handler_shutdown;
 #ifdef ENABLE_WALLET
     PaymentServer* paymentServer{nullptr};
     WalletController* m_wallet_controller{nullptr};

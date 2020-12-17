@@ -78,9 +78,6 @@ public:
     //! Start shutdown.
     virtual void startShutdown() = 0;
 
-    //! Return whether shutdown was requested.
-    virtual bool shutdownRequested() = 0;
-
     //! Map port.
     virtual void mapPort(bool use_upnp) = 0;
 
@@ -171,6 +168,10 @@ public:
 
     //! Get wallet client.
     virtual WalletClient& walletClient() = 0;
+
+    //! Register handler for shutdown requests.
+    using RequestShutdownFn = std::function<void()>;
+    virtual std::unique_ptr<Handler> handleRequestShutdown(RequestShutdownFn fn) = 0;
 
     //! Register handler for init messages.
     using InitMessageFn = std::function<void(const std::string& message)>;

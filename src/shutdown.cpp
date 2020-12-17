@@ -3,12 +3,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <node/ui_interface.h>
 #include <shutdown.h>
+#include <util/threadnames.h>
 
 #include <config/bitcoin-config.h>
 
 #include <assert.h>
 #include <atomic>
+#include <boost/signals2/connection.hpp>
+#include <future>
 #ifdef WIN32
 #include <condition_variable>
 #else
@@ -17,6 +21,7 @@
 #include <unistd.h>
 #endif
 
+std::future<void> g_async_shutdown;
 static std::atomic<bool> fRequestShutdown(false);
 #ifdef WIN32
 /** On windows it is possible to simply use a condition variable. */
@@ -47,7 +52,7 @@ bool InitShutdownState()
     return true;
 }
 
-void StartShutdown()
+void StartShutdown(bool posix_signal)
 {
 #ifdef WIN32
     std::unique_lock<std::mutex> lk(g_shutdown_mutex);
@@ -109,4 +114,14 @@ void WaitForShutdown()
         }
     }
 #endif
+}
+
+void HandleAsyncShutdown()
+{
+    assert (!g_async_shutdown.valid());
+    g_async_shutdown = std::async([]() {
+        util::ThreadRename("shutdown-thread");
+        WaitForShutdown();
+        ::uiInterface.RequestShutdown();
+    });
 }

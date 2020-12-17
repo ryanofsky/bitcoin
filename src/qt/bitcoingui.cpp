@@ -1357,14 +1357,11 @@ void BitcoinGUI::toggleHidden()
     showNormalIfMinimized(true);
 }
 
-void BitcoinGUI::detectShutdown()
+void BitcoinGUI::requestShutdown()
 {
-    if (m_node.shutdownRequested())
-    {
         if(rpcConsole)
             rpcConsole->hide();
         qApp->quit();
-    }
 }
 
 void BitcoinGUI::showProgress(const QString &title, int nProgress)

@@ -73,6 +73,9 @@ public:
     using signal_name##Sig = rtype(__VA_ARGS__);                                           \
     boost::signals2::connection signal_name##_connect(std::function<signal_name##Sig> fn);
 
+    /** Request shutdown. */
+    ADD_SIGNALS_DECL_WRAPPER(RequestShutdown, void, );
+
     /** Show message box. */
     ADD_SIGNALS_DECL_WRAPPER(ThreadSafeMessageBox, bool, const bilingual_str& message, const std::string& caption, unsigned int style);
 

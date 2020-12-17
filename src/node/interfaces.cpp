@@ -92,7 +92,6 @@ public:
             StopRPC();
         }
     }
-    bool shutdownRequested() override { return ShutdownRequested(); }
     void mapPort(bool use_upnp) override
     {
         if (use_upnp) {
@@ -243,6 +242,11 @@ public:
     WalletClient& walletClient() override
     {
         return *Assert(m_context->wallet_client);
+    }
+    std::unique_ptr<Handler> handleRequestShutdown(RequestShutdownFn fn) override
+    {
+        HandleAsyncShutdown();
+        return MakeHandler(::uiInterface.RequestShutdown_connect(fn));
     }
     std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) override
     {

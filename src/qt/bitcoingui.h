@@ -312,8 +312,8 @@ public Q_SLOTS:
     /** Simply calls showNormalIfMinimized(true) for use in SLOT() macro */
     void toggleHidden();
 
-    /** called by a timer to check if ShutdownRequested() has been set **/
-    void detectShutdown();
+    /** called if shutdown was requested outside the gui (from validation or an RPC) **/
+    void requestShutdown();
 
     /** Show progress dialog e.g. for verifychain */
     void showProgress(const QString &title, int nProgress);

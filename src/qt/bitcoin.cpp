@@ -202,7 +202,6 @@ BitcoinApplication::BitcoinApplication():
     optionsModel(nullptr),
     clientModel(nullptr),
     window(nullptr),
-    pollShutdownTimer(nullptr),
     returnValue(0),
     platformStyle(nullptr)
 {
@@ -255,9 +254,6 @@ void BitcoinApplication::createOptionsModel(bool resetSettings)
 void BitcoinApplication::createWindow(const NetworkStyle *networkStyle)
 {
     window = new BitcoinGUI(node(), platformStyle, networkStyle, nullptr);
-
-    pollShutdownTimer = new QTimer(window);
-    connect(pollShutdownTimer, &QTimer::timeout, window, &BitcoinGUI::detectShutdown);
 }
 
 void BitcoinApplication::createSplashScreen(const NetworkStyle *networkStyle)
@@ -348,7 +344,7 @@ void BitcoinApplication::requestShutdown()
     // Unsetting the client model can cause the current thread to wait for node
     // to complete an operation, like wait for a RPC execution to complete.
     window->setClientModel(nullptr);
-    pollShutdownTimer->stop();
+    m_handler_shutdown.reset();
 
     delete clientModel;
     clientModel = nullptr;
@@ -401,7 +397,9 @@ void BitcoinApplication::initializeResult(bool success, interfaces::BlockAndHead
             QTimer::singleShot(100, paymentServer, &PaymentServer::uiReady);
         }
 #endif
-        pollShutdownTimer->start(200);
+        m_handler_shutdown = m_node->handleRequestShutdown([this]() {
+            GUIUtil::ObjectInvoke(window, [this] { window->requestShutdown(); });
+        });
     } else {
         Q_EMIT splashFinished(); // Make sure splash screen doesn't stick around during shutdown
         quit(); // Exit first main loop invocation

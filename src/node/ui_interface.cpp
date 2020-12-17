@@ -12,6 +12,7 @@
 CClientUIInterface uiInterface;
 
 struct UISignals {
+    boost::signals2::signal<CClientUIInterface::RequestShutdownSig> RequestShutdown;
     boost::signals2::signal<CClientUIInterface::ThreadSafeMessageBoxSig, boost::signals2::optional_last_value<bool>> ThreadSafeMessageBox;
     boost::signals2::signal<CClientUIInterface::ThreadSafeQuestionSig, boost::signals2::optional_last_value<bool>> ThreadSafeQuestion;
     boost::signals2::signal<CClientUIInterface::InitMessageSig> InitMessage;
@@ -31,6 +32,7 @@ static UISignals g_ui_signals;
         return g_ui_signals.signal_name.connect(fn);                                                          \
     }
 
+ADD_SIGNALS_IMPL_WRAPPER(RequestShutdown);
 ADD_SIGNALS_IMPL_WRAPPER(ThreadSafeMessageBox);
 ADD_SIGNALS_IMPL_WRAPPER(ThreadSafeQuestion);
 ADD_SIGNALS_IMPL_WRAPPER(InitMessage);
@@ -42,6 +44,7 @@ ADD_SIGNALS_IMPL_WRAPPER(NotifyBlockTip);
 ADD_SIGNALS_IMPL_WRAPPER(NotifyHeaderTip);
 ADD_SIGNALS_IMPL_WRAPPER(BannedListChanged);
 
+void CClientUIInterface::RequestShutdown() { return g_ui_signals.RequestShutdown(); }
 bool CClientUIInterface::ThreadSafeMessageBox(const bilingual_str& message, const std::string& caption, unsigned int style) { return g_ui_signals.ThreadSafeMessageBox(message, caption, style).value_or(false);}
 bool CClientUIInterface::ThreadSafeQuestion(const bilingual_str& message, const std::string& non_interactive_message, const std::string& caption, unsigned int style) { return g_ui_signals.ThreadSafeQuestion(message, non_interactive_message, caption, style).value_or(false);}
 void CClientUIInterface::InitMessage(const std::string& message) { return g_ui_signals.InitMessage(message); }
