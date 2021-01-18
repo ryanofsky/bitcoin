@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2017 The Bitcoin Core developers
+// Copyright (c) 2011-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,7 +6,7 @@
 #include <qt/forms/ui_openuridialog.h>
 
 #include <qt/guiutil.h>
-#include <qt/walletmodel.h>
+#include <qt/sendcoinsrecipient.h>
 
 #include <QUrl>
 
@@ -15,9 +15,8 @@ OpenURIDialog::OpenURIDialog(QWidget *parent) :
     ui(new Ui::OpenURIDialog)
 {
     ui->setupUi(this);
-#if QT_VERSION >= 0x040700
-    ui->uriEdit->setPlaceholderText("bitcoin:");
-#endif
+
+    GUIUtil::handleCloseWindowShortcut(this);
 }
 
 OpenURIDialog::~OpenURIDialog()
@@ -40,13 +39,4 @@ void OpenURIDialog::accept()
     } else {
         ui->uriEdit->setValid(false);
     }
-}
-
-void OpenURIDialog::on_selectFileButton_clicked()
-{
-    QString filename = GUIUtil::getOpenFileName(this, tr("Select payment request file to open"), "", "", nullptr);
-    if(filename.isEmpty())
-        return;
-    QUrl fileUri = QUrl::fromLocalFile(filename);
-    ui->uriEdit->setText("bitcoin:?r=" + QUrl::toPercentEncoding(fileUri.toString()));
 }

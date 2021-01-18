@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2017 The Bitcoin Core developers
+// Copyright (c) 2011-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,25 +9,24 @@
 #include <qt/optionsmodel.h>
 
 #include <qt/bitcoinunits.h>
+#include <qt/guiconstants.h>
 #include <qt/guiutil.h>
 
-#include <init.h>
-#include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
+#include <interfaces/node.h>
+#include <mapport.h>
 #include <net.h>
 #include <netbase.h>
-#include <txdb.h> // for -dbcache defaults
-#include <qt/intro.h>
+#include <txdb.h>       // for -dbcache defaults
+#include <util/string.h>
+#include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
 
-#ifdef ENABLE_WALLET
-#include <wallet/wallet.h>
-#include <wallet/walletdb.h>
-#endif
-
-#include <QNetworkProxy>
+#include <QDebug>
 #include <QSettings>
 #include <QStringList>
 
 const char *DEFAULT_GUI_PROXY_HOST = "127.0.0.1";
+
+static const QString GetDefaultProxyAddress();
 
 OptionsModel::OptionsModel(QObject *parent, bool resetSettings) :
     QAbstractListModel(parent)
@@ -56,14 +55,15 @@ void OptionsModel::Init(bool resetSettings)
     // These are Qt-only settings:
 
     // Window
-    if (!settings.contains("fHideTrayIcon"))
+    if (!settings.contains("fHideTrayIcon")) {
         settings.setValue("fHideTrayIcon", false);
-    fHideTrayIcon = settings.value("fHideTrayIcon").toBool();
-    Q_EMIT hideTrayIconChanged(fHideTrayIcon);
-    
+    }
+    m_show_tray_icon = !settings.value("fHideTrayIcon").toBool();
+    Q_EMIT showTrayIconChanged(m_show_tray_icon);
+
     if (!settings.contains("fMinimizeToTray"))
         settings.setValue("fMinimizeToTray", false);
-    fMinimizeToTray = settings.value("fMinimizeToTray").toBool() && !fHideTrayIcon;
+    fMinimizeToTray = settings.value("fMinimizeToTray").toBool() && m_show_tray_icon;
 
     if (!settings.contains("fMinimizeOnClose"))
         settings.setValue("fMinimizeOnClose", false);
@@ -91,6 +91,12 @@ void OptionsModel::Init(bool resetSettings)
     // by command-line and show this in the UI.
 
     // Main
+    if (!settings.contains("bPrune"))
+        settings.setValue("bPrune", false);
+    if (!settings.contains("nPruneSize"))
+        settings.setValue("nPruneSize", DEFAULT_PRUNE_TARGET_GB);
+    SetPruneEnabled(settings.value("bPrune").toBool());
+
     if (!settings.contains("nDatabaseCache"))
         settings.setValue("nDatabaseCache", (qint64)nDefaultDbCache);
     if (!gArgs.SoftSetArg("-dbcache", settings.value("nDatabaseCache").toString().toStdString()))
@@ -102,7 +108,7 @@ void OptionsModel::Init(bool resetSettings)
         addOverriddenOption("-par");
 
     if (!settings.contains("strDataDir"))
-        settings.setValue("strDataDir", Intro::getDefaultDataDirectory());
+        settings.setValue("strDataDir", GUIUtil::getDefaultDataDirectory());
 
     // Wallet
 #ifdef ENABLE_WALLET
@@ -118,6 +124,13 @@ void OptionsModel::Init(bool resetSettings)
     if (!gArgs.SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool()))
         addOverriddenOption("-upnp");
 
+    if (!settings.contains("fUseNatpmp")) {
+        settings.setValue("fUseNatpmp", DEFAULT_NATPMP);
+    }
+    if (!gArgs.SoftSetBoolArg("-natpmp", settings.value("fUseNatpmp").toBool())) {
+        addOverriddenOption("-natpmp");
+    }
+
     if (!settings.contains("fListen"))
         settings.setValue("fListen", DEFAULT_LISTEN);
     if (!gArgs.SoftSetBoolArg("-listen", settings.value("fListen").toBool()))
@@ -126,9 +139,9 @@ void OptionsModel::Init(bool resetSettings)
     if (!settings.contains("fUseProxy"))
         settings.setValue("fUseProxy", false);
     if (!settings.contains("addrProxy"))
-        settings.setValue("addrProxy", QString("%1:%2").arg(DEFAULT_GUI_PROXY_HOST, DEFAULT_GUI_PROXY_PORT));
+        settings.setValue("addrProxy", GetDefaultProxyAddress());
     // Only try to set -proxy, if user has enabled fUseProxy
-    if (settings.value("fUseProxy").toBool() && !gArgs.SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString()))
+    if ((settings.value("fUseProxy").toBool() && !gArgs.SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString())))
         addOverriddenOption("-proxy");
     else if(!settings.value("fUseProxy").toBool() && !gArgs.GetArg("-proxy", "").empty())
         addOverriddenOption("-proxy");
@@ -136,9 +149,9 @@ void OptionsModel::Init(bool resetSettings)
     if (!settings.contains("fUseSeparateProxyTor"))
         settings.setValue("fUseSeparateProxyTor", false);
     if (!settings.contains("addrSeparateProxyTor"))
-        settings.setValue("addrSeparateProxyTor", QString("%1:%2").arg(DEFAULT_GUI_PROXY_HOST, DEFAULT_GUI_PROXY_PORT));
+        settings.setValue("addrSeparateProxyTor", GetDefaultProxyAddress());
     // Only try to set -onion, if user has enabled fUseSeparateProxyTor
-    if (settings.value("fUseSeparateProxyTor").toBool() && !gArgs.SoftSetArg("-onion", settings.value("addrSeparateProxyTor").toString().toStdString()))
+    if ((settings.value("fUseSeparateProxyTor").toBool() && !gArgs.SoftSetArg("-onion", settings.value("addrSeparateProxyTor").toString().toStdString())))
         addOverriddenOption("-onion");
     else if(!settings.value("fUseSeparateProxyTor").toBool() && !gArgs.GetArg("-onion", "").empty())
         addOverriddenOption("-onion");
@@ -165,7 +178,7 @@ static void CopySettings(QSettings& dst, const QSettings& src)
 /** Back up a QSettings to an ini-formatted file. */
 static void BackupSettings(const fs::path& filename, const QSettings& src)
 {
-    qWarning() << "Backing up GUI settings to" << GUIUtil::boostPathToQString(filename);
+    qInfo() << "Backing up GUI settings to" << GUIUtil::boostPathToQString(filename);
     QSettings dst(GUIUtil::boostPathToQString(filename), QSettings::IniFormat);
     dst.clear();
     CopySettings(dst, src);
@@ -179,7 +192,7 @@ void OptionsModel::Reset()
     BackupSettings(GetDataDir(true) / "guisettings.ini.bak", settings);
 
     // Save the strDataDir setting
-    QString dataDir = Intro::getDefaultDataDirectory();
+    QString dataDir = GUIUtil::getDefaultDataDirectory();
     dataDir = settings.value("strDataDir", dataDir).toString();
 
     // Remove all entries from our QSettings object
@@ -215,7 +228,7 @@ static ProxySetting GetProxySetting(QSettings &settings, const QString &name)
         return default_val;
     }
     // contains IP at index 0 and port at index 1
-    QStringList ip_port = settings.value(name).toString().split(":", QString::SkipEmptyParts);
+    QStringList ip_port = GUIUtil::SplitSkipEmptyParts(settings.value(name).toString(), ":");
     if (ip_port.size() == 2) {
         return {true, ip_port.at(0), ip_port.at(1)};
     } else { // Invalid: return default
@@ -228,6 +241,36 @@ static void SetProxySetting(QSettings &settings, const QString &name, const Prox
     settings.setValue(name, ip_port.ip + ":" + ip_port.port);
 }
 
+static const QString GetDefaultProxyAddress()
+{
+    return QString("%1:%2").arg(DEFAULT_GUI_PROXY_HOST).arg(DEFAULT_GUI_PROXY_PORT);
+}
+
+void OptionsModel::SetPruneEnabled(bool prune, bool force)
+{
+    QSettings settings;
+    settings.setValue("bPrune", prune);
+    const int64_t prune_target_mib = PruneGBtoMiB(settings.value("nPruneSize").toInt());
+    std::string prune_val = prune ? ToString(prune_target_mib) : "0";
+    if (force) {
+        gArgs.ForceSetArg("-prune", prune_val);
+        return;
+    }
+    if (!gArgs.SoftSetArg("-prune", prune_val)) {
+        addOverriddenOption("-prune");
+    }
+}
+
+void OptionsModel::SetPruneTargetGB(int prune_target_gb, bool force)
+{
+    const bool prune = prune_target_gb > 0;
+    if (prune) {
+        QSettings settings;
+        settings.setValue("nPruneSize", prune_target_gb);
+    }
+    SetPruneEnabled(prune, force);
+}
+
 // read QSettings values and return them
 QVariant OptionsModel::data(const QModelIndex & index, int role) const
 {
@@ -238,8 +281,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
         {
         case StartAtStartup:
             return GUIUtil::GetStartOnSystemStartup();
-        case HideTrayIcon:
-            return fHideTrayIcon;
+        case ShowTrayIcon:
+            return m_show_tray_icon;
         case MinimizeToTray:
             return fMinimizeToTray;
         case MapPortUPnP:
@@ -247,7 +290,13 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("fUseUPnP");
 #else
             return false;
-#endif
+#endif // USE_UPNP
+        case MapPortNatpmp:
+#ifdef USE_NATPMP
+            return settings.value("fUseNatpmp");
+#else
+            return false;
+#endif // USE_NATPMP
         case MinimizeOnClose:
             return fMinimizeOnClose;
 
@@ -279,6 +328,10 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("language");
         case CoinControlFeatures:
             return fCoinControlFeatures;
+        case Prune:
+            return settings.value("bPrune");
+        case PruneSize:
+            return settings.value("nPruneSize");
         case DatabaseCache:
             return settings.value("nDatabaseCache");
         case ThreadsScriptVerif:
@@ -304,10 +357,10 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
         case StartAtStartup:
             successful = GUIUtil::SetStartOnSystemStartup(value.toBool());
             break;
-        case HideTrayIcon:
-            fHideTrayIcon = value.toBool();
-            settings.setValue("fHideTrayIcon", fHideTrayIcon);
-    		Q_EMIT hideTrayIconChanged(fHideTrayIcon);
+        case ShowTrayIcon:
+            m_show_tray_icon = value.toBool();
+            settings.setValue("fHideTrayIcon", !m_show_tray_icon);
+            Q_EMIT showTrayIconChanged(m_show_tray_icon);
             break;
         case MinimizeToTray:
             fMinimizeToTray = value.toBool();
@@ -315,12 +368,9 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             break;
         case MapPortUPnP: // core option - can be changed on-the-fly
             settings.setValue("fUseUPnP", value.toBool());
-            if (value.toBool()) {
-                StartMapPort();
-            } else {
-                InterruptMapPort();
-                StopMapPort();
-            }
+            break;
+        case MapPortNatpmp: // core option - can be changed on-the-fly
+            settings.setValue("fUseNatpmp", value.toBool());
             break;
         case MinimizeOnClose:
             fMinimizeOnClose = value.toBool();
@@ -408,6 +458,18 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             settings.setValue("fCoinControlFeatures", fCoinControlFeatures);
             Q_EMIT coinControlFeaturesChanged(fCoinControlFeatures);
             break;
+        case Prune:
+            if (settings.value("bPrune") != value) {
+                settings.setValue("bPrune", value);
+                setRestartRequired(true);
+            }
+            break;
+        case PruneSize:
+            if (settings.value("nPruneSize") != value) {
+                settings.setValue("nPruneSize", value);
+                setRestartRequired(true);
+            }
+            break;
         case DatabaseCache:
             if (settings.value("nDatabaseCache") != value) {
                 settings.setValue("nDatabaseCache", value);
@@ -448,24 +510,6 @@ void OptionsModel::setDisplayUnit(const QVariant &value)
     }
 }
 
-bool OptionsModel::getProxySettings(QNetworkProxy& proxy) const
-{
-    // Directly query current base proxy, because
-    // GUI settings can be overridden with -proxy.
-    proxyType curProxy;
-    if (GetProxy(NET_IPV4, curProxy)) {
-        proxy.setType(QNetworkProxy::Socks5Proxy);
-        proxy.setHostName(QString::fromStdString(curProxy.proxy.ToStringIP()));
-        proxy.setPort(curProxy.proxy.GetPort());
-
-        return true;
-    }
-    else
-        proxy.setType(QNetworkProxy::NoProxy);
-
-    return false;
-}
-
 void OptionsModel::setRestartRequired(bool fRequired)
 {
     QSettings settings;
@@ -494,5 +538,17 @@ void OptionsModel::checkAndMigrate()
             settings.setValue("nDatabaseCache", (qint64)nDefaultDbCache);
 
         settings.setValue(strSettingsVersionKey, CLIENT_VERSION);
+    }
+
+    // Overwrite the 'addrProxy' setting in case it has been set to an illegal
+    // default value (see issue #12623; PR #12650).
+    if (settings.contains("addrProxy") && settings.value("addrProxy").toString().endsWith("%2")) {
+        settings.setValue("addrProxy", GetDefaultProxyAddress());
+    }
+
+    // Overwrite the 'addrSeparateProxyTor' setting in case it has been set to an illegal
+    // default value (see issue #12623; PR #12650).
+    if (settings.contains("addrSeparateProxyTor") && settings.value("addrSeparateProxyTor").toString().endsWith("%2")) {
+        settings.setValue("addrSeparateProxyTor", GetDefaultProxyAddress());
     }
 }
