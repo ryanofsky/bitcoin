@@ -91,9 +91,9 @@ void BerkeleyEnvironment::Close()
     }
 
     FILE* error_file = nullptr;
-    dbenv->get_errfile(&error_file);
+    m_db_env.get_errfile(&error_file);
 
-    int ret = dbenv->close(0);
+    int ret = m_db_env.close(0);
     if (ret != 0)
         LogPrintf("BerkeleyEnvironment::Close: Error %d closing database environment: %s\n", ret, DbEnv::strerror(ret));
     if (!fMockDb)
@@ -104,16 +104,8 @@ void BerkeleyEnvironment::Close()
     UnlockDirectory(strPath, ".walletlock");
 }
 
-void BerkeleyEnvironment::Reset()
-{
-    dbenv.reset(new DbEnv(DB_CXX_NO_EXCEPTIONS));
-    fDbEnvInit = false;
-    fMockDb = false;
-}
-
 BerkeleyEnvironment::BerkeleyEnvironment(const fs::path& dir_path) : strPath(dir_path.string())
 {
-    Reset();
 }
 
 BerkeleyEnvironment::~BerkeleyEnvironment()
@@ -146,17 +138,17 @@ bool BerkeleyEnvironment::Open(bilingual_str& err)
     if (gArgs.GetBoolArg("-privdb", DEFAULT_WALLET_PRIVDB))
         nEnvFlags |= DB_PRIVATE;
 
-    dbenv->set_lg_dir(pathLogDir.string().c_str());
-    dbenv->set_cachesize(0, 0x100000, 1); // 1 MiB should be enough for just the wallet
-    dbenv->set_lg_bsize(0x10000);
-    dbenv->set_lg_max(1048576);
-    dbenv->set_lk_max_locks(40000);
-    dbenv->set_lk_max_objects(40000);
-    dbenv->set_errfile(fsbridge::fopen(pathErrorFile, "a")); /// debug
-    dbenv->set_flags(DB_AUTO_COMMIT, 1);
-    dbenv->set_flags(DB_TXN_WRITE_NOSYNC, 1);
-    dbenv->log_set_config(DB_LOG_AUTO_REMOVE, 1);
-    int ret = dbenv->open(strPath.c_str(),
+    m_db_env.set_lg_dir(pathLogDir.string().c_str());
+    m_db_env.set_cachesize(0, 0x100000, 1); // 1 MiB should be enough for just the wallet
+    m_db_env.set_lg_bsize(0x10000);
+    m_db_env.set_lg_max(1048576);
+    m_db_env.set_lk_max_locks(40000);
+    m_db_env.set_lk_max_objects(40000);
+    m_db_env.set_errfile(fsbridge::fopen(pathErrorFile, "a")); /// debug
+    m_db_env.set_flags(DB_AUTO_COMMIT, 1);
+    m_db_env.set_flags(DB_TXN_WRITE_NOSYNC, 1);
+    m_db_env.log_set_config(DB_LOG_AUTO_REMOVE, 1);
+    int ret = m_db_env.open(strPath.c_str(),
                          DB_CREATE |
                              DB_INIT_LOCK |
                              DB_INIT_LOG |
@@ -168,11 +160,10 @@ bool BerkeleyEnvironment::Open(bilingual_str& err)
                          S_IRUSR | S_IWUSR);
     if (ret != 0) {
         LogPrintf("BerkeleyEnvironment::Open: Error %d opening database environment: %s\n", ret, DbEnv::strerror(ret));
-        int ret2 = dbenv->close(0);
+        int ret2 = m_db_env.close(0);
         if (ret2 != 0) {
             LogPrintf("BerkeleyEnvironment::Open: Error %d closing failed database environment: %s\n", ret2, DbEnv::strerror(ret2));
         }
-        Reset();
         err = strprintf(_("Error initializing wallet database environment %s!"), Directory());
         if (ret == DB_RUNRECOVERY) {
             err += Untranslated(" ") + _("This error could occur if this wallet was not shutdown cleanly and was last loaded using a build with a newer version of Berkeley DB. If so, please use the software that last loaded this wallet");
@@ -188,18 +179,16 @@ bool BerkeleyEnvironment::Open(bilingual_str& err)
 //! Construct an in-memory mock Berkeley environment for testing
 BerkeleyEnvironment::BerkeleyEnvironment()
 {
-    Reset();
-
     LogPrint(BCLog::WALLETDB, "BerkeleyEnvironment::MakeMock\n");
 
-    dbenv->set_cachesize(1, 0, 1);
-    dbenv->set_lg_bsize(10485760 * 4);
-    dbenv->set_lg_max(10485760);
-    dbenv->set_lk_max_locks(10000);
-    dbenv->set_lk_max_objects(10000);
-    dbenv->set_flags(DB_AUTO_COMMIT, 1);
-    dbenv->log_set_config(DB_LOG_IN_MEMORY, 1);
-    int ret = dbenv->open(nullptr,
+    m_db_env.set_cachesize(1, 0, 1);
+    m_db_env.set_lg_bsize(10485760 * 4);
+    m_db_env.set_lg_max(10485760);
+    m_db_env.set_lk_max_locks(10000);
+    m_db_env.set_lk_max_objects(10000);
+    m_db_env.set_flags(DB_AUTO_COMMIT, 1);
+    m_db_env.log_set_config(DB_LOG_IN_MEMORY, 1);
+    int ret = m_db_env.open(nullptr,
                          DB_CREATE |
                              DB_INIT_LOCK |
                              DB_INIT_LOG |
@@ -271,7 +260,7 @@ bool BerkeleyDatabase::Verify(bilingual_str& errorStr)
     {
         assert(m_refcount == 0);
 
-        Db db(env->dbenv.get(), 0);
+        Db db(&env->m_db_env, 0);
         int result = db.verify(strFile.c_str(), nullptr, nullptr, 0);
         if (result != 0) {
             errorStr = strprintf(_("%s corrupt. Try using the wallet tool bitcoin-wallet to salvage or restoring a backup."), file_path);
@@ -284,10 +273,10 @@ bool BerkeleyDatabase::Verify(bilingual_str& errorStr)
 
 void BerkeleyEnvironment::CheckpointLSN(const std::string& strFile)
 {
-    dbenv->txn_checkpoint(0, 0, 0);
+    m_db_env.txn_checkpoint(0, 0, 0);
     if (fMockDb)
         return;
-    dbenv->lsn_reset(strFile.c_str(), 0);
+    m_db_env.lsn_reset(strFile.c_str(), 0);
 }
 
 BerkeleyDatabase::~BerkeleyDatabase()
@@ -331,7 +320,7 @@ void BerkeleyDatabase::Open()
 
         if (m_db == nullptr) {
             int ret;
-            std::unique_ptr<Db> pdb_temp = MakeUnique<Db>(env->dbenv.get(), 0);
+            std::unique_ptr<Db> pdb_temp = MakeUnique<Db>(&env->m_db_env, 0);
 
             bool fMockDb = env->IsMock();
             if (fMockDb) {
@@ -375,7 +364,7 @@ void BerkeleyBatch::Flush()
         nMinutes = 1;
 
     if (env) { // env is nullptr for dummy databases (i.e. in tests). Don't actually flush if env is nullptr so we don't segfault
-        env->dbenv->txn_checkpoint(nMinutes ? gArgs.GetArg("-dblogsize", DEFAULT_WALLET_DBLOGSIZE) * 1024 : 0, nMinutes, 0);
+        env->m_db_env.txn_checkpoint(nMinutes ? gArgs.GetArg("-dblogsize", DEFAULT_WALLET_DBLOGSIZE) * 1024 : 0, nMinutes, 0);
     }
 }
 
@@ -441,7 +430,8 @@ void BerkeleyEnvironment::ReloadDbEnv()
     }
     // Reset the environment
     Flush(true); // This will flush and close the environment
-    Reset();
+    fDbEnvInit = false;
+    fMockDb = false;
     bilingual_str open_err;
     Open(open_err);
 }
@@ -462,7 +452,7 @@ bool BerkeleyDatabase::Rewrite(const char* pszSkip)
                 std::string strFileRes = strFile + ".rewrite";
                 { // surround usage of db with extra {}
                     BerkeleyBatch db(*this, true);
-                    std::unique_ptr<Db> pdbCopy = MakeUnique<Db>(env->dbenv.get(), 0);
+                    std::unique_ptr<Db> pdbCopy = MakeUnique<Db>(&env->m_db_env, 0);
 
                     int ret = pdbCopy->open(nullptr,               // Txn pointer
                                             strFileRes.c_str(), // Filename
@@ -513,10 +503,10 @@ bool BerkeleyDatabase::Rewrite(const char* pszSkip)
                     }
                 }
                 if (fSuccess) {
-                    Db dbA(env->dbenv.get(), 0);
+                    Db dbA(&env->m_db_env, 0);
                     if (dbA.remove(strFile.c_str(), nullptr, 0))
                         fSuccess = false;
-                    Db dbB(env->dbenv.get(), 0);
+                    Db dbB(&env->m_db_env, 0);
                     if (dbB.rename(strFileRes.c_str(), nullptr, strFile.c_str(), 0))
                         fSuccess = false;
                 }
@@ -549,10 +539,10 @@ void BerkeleyEnvironment::Flush(bool fShutdown)
                 // Move log data to the dat file
                 CloseDb(strFile);
                 LogPrint(BCLog::WALLETDB, "BerkeleyEnvironment::Flush: %s checkpoint\n", strFile);
-                dbenv->txn_checkpoint(0, 0, 0);
+                m_db_env.txn_checkpoint(0, 0, 0);
                 LogPrint(BCLog::WALLETDB, "BerkeleyEnvironment::Flush: %s detach\n", strFile);
                 if (!fMockDb)
-                    dbenv->lsn_reset(strFile.c_str(), 0);
+                    m_db_env.lsn_reset(strFile.c_str(), 0);
                 LogPrint(BCLog::WALLETDB, "BerkeleyEnvironment::Flush: %s closed\n", strFile);
                 nRefCount = -1;
             } else {
@@ -563,7 +553,7 @@ void BerkeleyEnvironment::Flush(bool fShutdown)
         if (fShutdown) {
             char** listp;
             if (no_dbs_accessed) {
-                dbenv->log_archive(&listp, DB_ARCH_REMOVE);
+                m_db_env.log_archive(&listp, DB_ARCH_REMOVE);
                 Close();
                 if (!fMockDb) {
                     fs::remove_all(fs::path(strPath) / "database");
