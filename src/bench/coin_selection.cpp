@@ -6,6 +6,7 @@
 #include <interfaces/chain.h>
 #include <node/context.h>
 #include <wallet/coinselection.h>
+#include <wallet/spend.h>
 #include <wallet/wallet.h>
 
 #include <set>
@@ -45,7 +46,7 @@ static void CoinSelection(benchmark::Bench& bench)
     // Create coins
     std::vector<COutput> coins;
     for (const auto& wtx : wtxs) {
-        coins.emplace_back(wtx.get(), 0 /* iIn */, 6 * 24 /* nDepthIn */, true /* spendable */, true /* solvable */, true /* safe */);
+        coins.emplace_back(wallet, *wtx, 0 /* iIn */, 6 * 24 /* nDepthIn */, true /* spendable */, true /* solvable */, true /* safe */);
     }
 
     const CoinEligibilityFilter filter_standard(1, 6, 0);
@@ -54,7 +55,7 @@ static void CoinSelection(benchmark::Bench& bench)
         std::set<CInputCoin> setCoinsRet;
         CAmount nValueRet;
         bool bnb_used;
-        bool success = wallet.SelectCoinsMinConf(1003 * COIN, filter_standard, coins, setCoinsRet, nValueRet, coin_selection_params, bnb_used);
+        bool success = SelectCoinsMinConf(wallet, 1003 * COIN, filter_standard, coins, setCoinsRet, nValueRet, coin_selection_params, bnb_used);
         assert(success);
         assert(nValueRet == 1003 * COIN);
         assert(setCoinsRet.size() == 2);
@@ -75,7 +76,7 @@ static void add_coin(const CAmount& nValue, int nInput, std::vector<OutputGroup>
     tx.vout[nInput].nValue = nValue;
     std::unique_ptr<CWalletTx> wtx = MakeUnique<CWalletTx>(&testWallet, MakeTransactionRef(std::move(tx)));
     set.emplace_back();
-    set.back().Insert(COutput(wtx.get(), nInput, 0, true, true, true).GetInputCoin(), 0, true, 0, 0, false);
+    set.back().Insert(COutput(testWallet, *wtx, nInput, 0, true, true, true).GetInputCoin(), 0, true, 0, 0, false);
     wtxn.emplace_back(std::move(wtx));
 }
 // Copied from src/wallet/test/coinselector_tests.cpp
