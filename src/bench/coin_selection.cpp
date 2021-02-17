@@ -19,12 +19,18 @@ static void addCoin(const CAmount& nValue, const CWallet& wallet, std::vector<st
     tx.vout.resize(1);
     tx.vout[0].nValue = nValue;
 <<<<<<< HEAD
+<<<<<<< HEAD
     wtxs.push_back(std::make_unique<CWalletTx>(&wallet, MakeTransactionRef(std::move(tx))));
 ||||||| merged common ancestors
     wtxs.push_back(MakeUnique<CWalletTx>(&wallet, MakeTransactionRef(std::move(tx))));
 =======
     wtxs.push_back(MakeUnique<CWalletTx>(MakeTransactionRef(std::move(tx))));
 >>>>>>> refactor: Detach wallet transaction methods (followup for move-only)
+||||||| merged common ancestors
+    wtxs.push_back(MakeUnique<CWalletTx>(MakeTransactionRef(std::move(tx))));
+=======
+    wtxs.push_back(MakeUnique<CWalletTx>(MakeTransactionRef(std::move(tx)), TxStateInactive{}));
+>>>>>>> refactor: Make CWalletTx sync state type-safe
 }
 
 // Simple benchmark for wallet coin selection. Note that it maybe be necessary
@@ -84,12 +90,18 @@ static void add_coin(const CAmount& nValue, int nInput, std::vector<OutputGroup>
     tx.vout.resize(nInput + 1);
     tx.vout[nInput].nValue = nValue;
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::unique_ptr<CWalletTx> wtx = std::make_unique<CWalletTx>(&testWallet, MakeTransactionRef(std::move(tx)));
 ||||||| merged common ancestors
     std::unique_ptr<CWalletTx> wtx = MakeUnique<CWalletTx>(&testWallet, MakeTransactionRef(std::move(tx)));
 =======
     std::unique_ptr<CWalletTx> wtx = MakeUnique<CWalletTx>(MakeTransactionRef(std::move(tx)));
 >>>>>>> refactor: Detach wallet transaction methods (followup for move-only)
+||||||| merged common ancestors
+    std::unique_ptr<CWalletTx> wtx = MakeUnique<CWalletTx>(MakeTransactionRef(std::move(tx)));
+=======
+    std::unique_ptr<CWalletTx> wtx = MakeUnique<CWalletTx>(MakeTransactionRef(std::move(tx)), TxStateInactive{});
+>>>>>>> refactor: Make CWalletTx sync state type-safe
     set.emplace_back();
     set.back().Insert(COutput(testWallet, *wtx, nInput, 0, true, true, true).GetInputCoin(), 0, true, 0, 0, false);
     wtxn.emplace_back(std::move(wtx));
