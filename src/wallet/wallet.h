@@ -267,7 +267,7 @@ private:
      * Abandoned state should probably be more carefully tracked via different
      * posInBlock signals or by checking mempool presence when necessary.
      */
-    bool AddToWalletIfInvolvingMe(const CTransactionRef& tx, CWalletTx::Confirmation confirm, bool fUpdate) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    bool AddToWalletIfInvolvingMe(const CTransactionRef& tx, const SyncTxState& state, bool fUpdate) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /** Mark a transaction (and its in-wallet descendants) as conflicting with a particular block. */
     void MarkConflicted(const uint256& hashBlock, int conflicting_height, const uint256& hashTx);
@@ -279,7 +279,7 @@ private:
 
     /* Used by TransactionAddedToMemorypool/BlockConnected/Disconnected/ScanForWalletTransactions.
      * Should be called with non-zero block_hash and posInBlock if this is for a transaction that is included in a block. */
-    void SyncTransaction(const CTransactionRef& tx, CWalletTx::Confirmation confirm, bool update_tx = true) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
+    void SyncTransaction(const CTransactionRef& tx, const SyncTxState& state, bool update_tx = true) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
 
     /** WalletFlags set on this wallet. */
     std::atomic<uint64_t> m_wallet_flags{0};
@@ -495,7 +495,7 @@ public:
     //! @return true if wtx is changed and needs to be saved to disk, otherwise false
     using UpdateWalletTxFn = std::function<bool(CWalletTx& wtx, bool new_tx)>;
 
-    CWalletTx* AddToWallet(CTransactionRef tx, const CWalletTx::Confirmation& confirm, const UpdateWalletTxFn& update_wtx=nullptr, bool fFlushOnClose=true);
+    CWalletTx* AddToWallet(CTransactionRef tx, const TxState& state, const UpdateWalletTxFn& update_wtx=nullptr, bool fFlushOnClose=true);
     bool LoadToWallet(const uint256& hash, const UpdateWalletTxFn& fill_wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void transactionAddedToMempool(const CTransactionRef& tx, uint64_t mempool_sequence) override;
     void blockConnected(const CBlock& block, int height) override;
@@ -563,7 +563,7 @@ public:
     void CommitTransaction(CTransactionRef tx, mapValue_t mapValue, std::vector<std::pair<std::string, std::string>> orderForm);
 
     /** Pass this transaction to node for mempool insertion and relay to peers if flag set to true */
-    bool SubmitTxMemoryPoolAndRelay(const CWalletTx& wtx, std::string& err_string, bool relay) const;
+    bool SubmitTxMemoryPoolAndRelay(CWalletTx& wtx, std::string& err_string, bool relay) const;
 
     bool DummySignTx(CMutableTransaction &txNew, const std::set<CTxOut> &txouts, bool use_max_sig = false) const
     {
