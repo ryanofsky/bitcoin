@@ -18,7 +18,7 @@ static void addCoin(const CAmount& nValue, const CWallet& wallet, std::vector<st
     tx.nLockTime = nextLockTime++; // so all transactions get different hashes
     tx.vout.resize(1);
     tx.vout[0].nValue = nValue;
-    wtxs.push_back(std::make_unique<CWalletTx>(MakeTransactionRef(std::move(tx))));
+    wtxs.push_back(std::make_unique<CWalletTx>(MakeTransactionRef(std::move(tx)), TxStateInactive{}));
 }
 
 // Simple benchmark for wallet coin selection. Note that it maybe be necessary
@@ -76,7 +76,7 @@ static void add_coin(const CAmount& nValue, int nInput, std::vector<OutputGroup>
     CMutableTransaction tx;
     tx.vout.resize(nInput + 1);
     tx.vout[nInput].nValue = nValue;
-    std::unique_ptr<CWalletTx> wtx = std::make_unique<CWalletTx>(MakeTransactionRef(std::move(tx)));
+    std::unique_ptr<CWalletTx> wtx = std::make_unique<CWalletTx>(MakeTransactionRef(std::move(tx)), TxStateInactive{});
     set.emplace_back();
     set.back().Insert(COutput(testWallet, *wtx, nInput, 0, true, true, true).GetInputCoin(), 0, true, 0, 0, false);
     wtxn.emplace_back(std::move(wtx));
