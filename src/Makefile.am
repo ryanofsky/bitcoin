@@ -240,6 +240,7 @@ BITCOIN_CORE_H = \
   util/memory.h \
   util/message.h \
   util/moneystr.h \
+  util/overloaded.h \
   util/rbf.h \
   util/ref.h \
   util/settings.h \
