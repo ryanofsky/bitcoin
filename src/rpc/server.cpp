@@ -496,6 +496,7 @@ UniValue CRPCTable::dumpArgMap(const JSONRPCRequest& args_request) const
 {
     JSONRPCRequest request(args_request);
     request.mode = JSONRPCRequest::GET_ARGS;
+    request.params = UniValue();
 
     UniValue ret{UniValue::VARR};
     for (const auto& cmd : mapCommands) {

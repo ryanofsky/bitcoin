@@ -335,7 +335,7 @@ public:
 
     UniValue HandleRequest(const JSONRPCRequest& request);
     std::string ToString() const;
-    /** Return the named args that need to be converted from string to another JSON type */
+    /** Append the named args that need to be converted from string to another JSON type */
     UniValue GetArgMap() const;
     /** If the supplied number of args is neither too small nor too high */
     bool IsValidNumArgs(size_t num_args) const;
