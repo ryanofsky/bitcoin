@@ -114,6 +114,13 @@ static constexpr size_t ADDR_CJDNS_SIZE = 16;
 static constexpr size_t ADDR_INTERNAL_SIZE = 10;
 
 /**
+ * Maximum size of an address as defined in BIP155 (in bytes).
+ * This is only the size of the address, not the entire CNetAddr object
+ * when serialized.
+ */
+static constexpr size_t MAX_ADDRV2_SIZE = 512;
+
+/**
  * Network address.
  */
 class CNetAddr
@@ -292,13 +299,6 @@ class CNetAddr
          * Size of CNetAddr when serialized as ADDRv1 (pre-BIP155) (in bytes).
          */
         static constexpr size_t V1_SERIALIZATION_SIZE = ADDR_IPV6_SIZE;
-
-        /**
-         * Maximum size of an address as defined in BIP155 (in bytes).
-         * This is only the size of the address, not the entire CNetAddr object
-         * when serialized.
-         */
-        static constexpr size_t MAX_ADDRV2_SIZE = 512;
 
         /**
          * Get the BIP155 network id of this address.
