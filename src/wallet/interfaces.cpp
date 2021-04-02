@@ -525,6 +525,7 @@ public:
         for (const CRPCCommand& command : GetSignerRPCCommands()) {
             m_rpc_commands.emplace_back(command.category, command.name, [this, &command](const JSONRPCRequest& request, UniValue& result, bool last_handler) {
 <<<<<<< HEAD
+<<<<<<< HEAD
                 JSONRPCRequest wallet_request = request;
                 wallet_request.context = &m_context;
                 return command.actor(wallet_request, result, last_handler);
@@ -533,6 +534,13 @@ public:
 =======
                 return command.actor({request, &m_context}, result, last_handler);
 >>>>>>> Fix wrong wallet RPC context set after #21366
+||||||| merged common ancestors
+                return command.actor({request, &m_context}, result, last_handler);
+=======
+                JSONRPCRequest wallet_request = request;
+                wallet_request.context = &m_context;
+                return command.actor(wallet_request, result, last_handler);
+>>>>>>> Drop JSONRPCRequest constructors after #21366
             }, command.argNames, command.unique_id);
             m_rpc_handlers.emplace_back(m_context.chain->handleRpc(m_rpc_commands.back()));
         }
