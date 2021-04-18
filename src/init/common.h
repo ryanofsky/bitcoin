@@ -11,6 +11,11 @@
 namespace init {
 void SetGlobals();
 void UnsetGlobals();
+/** Sanity checks
+ *  Ensure that Bitcoin is running in a usable environment with all
+ *  necessary library support.
+ */
+bool SanityChecks();
 } // namespace init
 
 #endif // BITCOIN_INIT_COMMON_H
