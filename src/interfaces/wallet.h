@@ -198,9 +198,9 @@ public:
     virtual TransactionError fillPSBT(int sighash_type,
         bool sign,
         bool bip32derivs,
+        size_t* n_signed,
         PartiallySignedTransaction& psbtx,
-        bool& complete,
-        size_t* n_signed) = 0;
+        bool& complete) = 0;
 
     //! Get balances.
     virtual WalletBalances getBalances() = 0;
@@ -338,6 +338,8 @@ struct WalletAddress
     isminetype is_mine;
     std::string name;
     std::string purpose;
+
+    WalletAddress() = default;
 
     WalletAddress(CTxDestination dest, isminetype is_mine, std::string name, std::string purpose)
         : dest(std::move(dest)), is_mine(is_mine), name(std::move(name)), purpose(std::move(purpose))
