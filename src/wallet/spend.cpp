@@ -782,6 +782,7 @@ bool CWallet::CreateTransactionInternal(
         nFeeRet = change_and_fee - change_amount;
     }
 
+<<<<<<< HEAD
     // Reduce output values for subtractFeeFromAmount
     if (coin_selection_params.m_subtract_fee_outputs) {
         CAmount to_reduce = fee_needed + change_amount - change_and_fee;
@@ -791,18 +792,85 @@ bool CWallet::CreateTransactionInternal(
         {
             if (i == nChangePosInOut) {
                 ++i;
+||||||| merged common ancestors
+            // Subtract fee from the change output if not subtrating it from recipient outputs
+            CAmount fee_needed = nFeeRet;
+            if (nSubtractFeeFromAmount == 0) {
+                change_position->nValue -= fee_needed;
+=======
+            // Subtract fee from the change output if not subtrating it from recipient outputs
+            if (nSubtractFeeFromAmount == 0) {
+                change_position->nValue -= nFeeRet;
+>>>>>>> refactor: Remove CreateTransactionInternal fee_needed variable
             }
             CTxOut& txout = txNew.vout[i];
 
             if (recipient.fSubtractFeeFromAmount)
             {
+<<<<<<< HEAD
                 txout.nValue -= to_reduce / outputs_to_subtract_fee_from; // Subtract fee equally from each selected recipient
 
                 if (fFirst) // first receiver pays the remainder not divisible by output count
+||||||| merged common ancestors
+                nChangePosInOut = -1;
+                change_amount = 0;
+                txNew.vout.erase(change_position);
+
+                // Because we have dropped this change, the tx size and required fee will be different, so let's recalculate those
+                tx_sizes = CalculateMaximumSignedTxSize(CTransaction(txNew), this, coin_control.fAllowWatchOnly);
+                nBytes = tx_sizes.vsize;
+                fee_needed = coin_selection_params.m_effective_feerate.GetFee(nBytes);
+            }
+
+            // Update nFeeRet in case fee_needed changed due to dropping the change output
+            if (fee_needed <= change_and_fee - change_amount) {
+                nFeeRet = change_and_fee - change_amount;
+            }
+
+            // Reduce output values for subtractFeeFromAmount
+            if (nSubtractFeeFromAmount != 0) {
+                CAmount to_reduce = fee_needed + change_amount - change_and_fee;
+                int i = 0;
+                bool fFirst = true;
+                for (const auto& recipient : vecSend)
+=======
+                nChangePosInOut = -1;
+                change_amount = 0;
+                txNew.vout.erase(change_position);
+
+                // Because we have dropped this change, the tx size and required fee will be different, so let's recalculate those
+                tx_sizes = CalculateMaximumSignedTxSize(CTransaction(txNew), this, coin_control.fAllowWatchOnly);
+                nBytes = tx_sizes.vsize;
+                nFeeRet = coin_selection_params.m_effective_feerate.GetFee(nBytes);
+            }
+
+            // Reduce output values for subtractFeeFromAmount
+            if (nSubtractFeeFromAmount != 0) {
+                CAmount to_reduce = nFeeRet + change_amount - change_and_fee;
+                int i = 0;
+                bool fFirst = true;
+                for (const auto& recipient : vecSend)
+>>>>>>> refactor: Remove CreateTransactionInternal fee_needed variable
                 {
                     fFirst = false;
                     txout.nValue -= to_reduce % outputs_to_subtract_fee_from;
                 }
+<<<<<<< HEAD
+||||||| merged common ancestors
+                nFeeRet = fee_needed;
+            }
+=======
+            } else if (nFeeRet <= change_and_fee - change_amount) {
+                // If dropping the change output covered the fee, update the returned
+                // fee amount. Note that that in subtract-fee-from-recipients case
+                // above, if the change output is dropped, the change dust value will
+                // be paid to recipients, rather than to the miner (`to_reduce` above
+                // will be negative). In that case, the dust amount sent is an
+                // additional cost of the transaction, but it's not considered part of
+                // the fee since it isn't paid to the miner.
+                nFeeRet = change_and_fee - change_amount;
+            }
+>>>>>>> refactor: Remove CreateTransactionInternal fee_needed variable
 
                 // Error if this output is reduced to be below dust
                 if (IsDust(txout, chain().relayDustFee())) {
