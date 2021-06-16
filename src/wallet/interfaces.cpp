@@ -5,6 +5,7 @@
 #include <interfaces/wallet.h>
 
 #include <amount.h>
+#include <chainparams.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
 #include <policy/fees.h>
@@ -496,6 +497,16 @@ public:
     std::shared_ptr<CWallet> m_wallet;
 };
 
+class ExternalSignerImpl : public interfaces::ExternalSigner
+{
+public:
+#ifdef ENABLE_EXTERNAL_SIGNER
+    ExternalSignerImpl(::ExternalSigner signer) : m_signer(std::move(signer)) {}
+    std::string getName() override { return m_signer.m_name; }
+    ::ExternalSigner m_signer;
+#endif
+};
+
 class WalletClientImpl : public WalletClient
 {
 public:
@@ -554,6 +565,22 @@ public:
             paths.push_back(path.string());
         }
         return paths;
+    }
+    std::vector<std::unique_ptr<interfaces::ExternalSigner>> listExternalSigners() override
+    {
+#ifdef ENABLE_EXTERNAL_SIGNER
+        const std::string command = gArgs.GetArg("-signer", "");
+        if (command == "") return {};
+        std::vector<::ExternalSigner> signers;
+        ExternalSigner::Enumerate(command, signers, Params().NetworkIDString());
+        std::vector<std::unique_ptr<interfaces::ExternalSigner>> result;
+        for (auto& signer : signers) {
+            result.emplace_back(std::make_unique<ExternalSignerImpl>(std::move(signer)));
+        }
+        return result;
+#else
+        throw std::logic_error("External Signer function called in non-external signer build.");
+#endif
     }
     std::vector<std::unique_ptr<Wallet>> getWallets() override
     {

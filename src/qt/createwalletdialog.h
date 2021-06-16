@@ -9,9 +9,9 @@
 
 class WalletModel;
 
-#ifdef ENABLE_EXTERNAL_SIGNER
+namespace interfaces {
 class ExternalSigner;
-#endif
+} // namespace interfaces
 
 namespace Ui {
     class CreateWalletDialog;
@@ -28,7 +28,7 @@ public:
     virtual ~CreateWalletDialog();
 
 #ifdef ENABLE_EXTERNAL_SIGNER
-    void setSigners(std::vector<ExternalSigner>& signers);
+    void setSigners(std::vector<std::unique_ptr<interfaces::ExternalSigner>>& signers);
 #endif
 
     QString walletName() const;
