@@ -296,9 +296,17 @@ void CreateWalletActivity::create()
 {
     m_create_wallet_dialog = new CreateWalletDialog(m_parent_widget);
 
+<<<<<<< HEAD
     std::vector<ExternalSigner> signers;
+||||||| merged common ancestors
+#ifdef ENABLE_EXTERNAL_SIGNER
+    std::vector<ExternalSigner> signers;
+=======
+#ifdef ENABLE_EXTERNAL_SIGNER
+    std::vector<std::unique_ptr<interfaces::ExternalSigner>> signers;
+>>>>>>> Run external signer in bitcoin-wallet process
     try {
-        signers = node().externalSigners();
+        signers = node().walletClient().listExternalSigners();
     } catch (const std::runtime_error& e) {
         QMessageBox::critical(nullptr, tr("Can't list signers"), e.what());
     }
