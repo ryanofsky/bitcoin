@@ -9,6 +9,10 @@
 #include <memory>
 #include <typeindex>
 
+namespace ipc {
+struct Context;
+} // namespace ipc
+
 namespace interfaces {
 class Init;
 
@@ -57,6 +61,9 @@ public:
     {
         addCleanup(typeid(Interface), &iface, std::move(cleanup));
     }
+
+    //! Context accessor.
+    virtual ipc::Context& context() = 0;
 
 protected:
     //! Internal implementation of public addCleanup method (above) as a
