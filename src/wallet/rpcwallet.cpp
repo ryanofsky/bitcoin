@@ -397,7 +397,7 @@ void ParseRecipients(const UniValue& address_amounts, const UniValue& subtract_f
     }
 }
 
-UniValue SendMoney(CWallet& wallet, const CCoinControl &coin_control, std::vector<CRecipient> &recipients, mapValue_t map_value, bool verbose)
+UniValue SendMoney(CWallet& wallet, RecursiveMutex::UniqueLock& lock, const CCoinControl &coin_control, std::vector<CRecipient> &recipients, mapValue_t map_value, bool verbose)
 {
     EnsureWalletIsUnlocked(wallet);
 
@@ -421,6 +421,7 @@ UniValue SendMoney(CWallet& wallet, const CCoinControl &coin_control, std::vecto
         throw JSONRPCError(RPC_WALLET_INSUFFICIENT_FUNDS, error.original);
     }
     wallet.CommitTransaction(tx, std::move(map_value), {} /* orderForm */);
+    wallet.m_pending_mempool_cv.wait(lock, [&]() EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet) { return !wallet.m_chain_notifications_handler || !IsPendingMempoolState(wallet.mapWallet.at(tx->GetHash()).m_state); });
     if (verbose) {
         UniValue entry(UniValue::VOBJ);
         entry.pushKV("txid", tx->GetHash().GetHex());
@@ -488,7 +489,7 @@ static RPCHelpMan sendtoaddress()
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
-    LOCK(pwallet->cs_wallet);
+    WAIT_LOCK(pwallet->cs_wallet, lock);
 
     // Wallet comments
     mapValue_t mapValue;
@@ -527,7 +528,7 @@ static RPCHelpMan sendtoaddress()
     ParseRecipients(address_amounts, subtractFeeFromAmount, recipients);
     const bool verbose{request.params[10].isNull() ? false : request.params[10].get_bool()};
 
-    return SendMoney(*pwallet, coin_control, recipients, mapValue, verbose);
+    return SendMoney(*pwallet, lock, coin_control, recipients, mapValue, verbose);
 },
     };
 }
@@ -912,7 +913,7 @@ static RPCHelpMan sendmany()
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
-    LOCK(pwallet->cs_wallet);
+    WAIT_LOCK(pwallet->cs_wallet, lock);
 
     if (!request.params[0].isNull() && !request.params[0].get_str().empty()) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Dummy value must be set to \"\"");
@@ -938,7 +939,7 @@ static RPCHelpMan sendmany()
     ParseRecipients(sendTo, subtractFeeFromAmount, recipients);
     const bool verbose{request.params[9].isNull() ? false : request.params[9].get_bool()};
 
-    return SendMoney(*pwallet, coin_control, recipients, std::move(mapValue), verbose);
+    return SendMoney(*pwallet, lock, coin_control, recipients, std::move(mapValue), verbose);
 },
     };
 }
@@ -3495,7 +3496,7 @@ static RPCHelpMan bumpfee_helper(std::string method_name)
     // the user could have gotten from another RPC command prior to now
     pwallet->BlockUntilSyncedToCurrentChain();
 
-    LOCK(pwallet->cs_wallet);
+    WAIT_LOCK(pwallet->cs_wallet, lock);
 
     EnsureWalletIsUnlocked(*pwallet);
 
@@ -3540,6 +3541,7 @@ static RPCHelpMan bumpfee_helper(std::string method_name)
         if (feebumper::CommitTransaction(*pwallet, hash, std::move(mtx), errors, txid) != feebumper::Result::OK) {
             throw JSONRPCError(RPC_WALLET_ERROR, errors[0].original);
         }
+        pwallet->m_pending_mempool_cv.wait(lock, [&]() EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet) { return !pwallet->m_chain_notifications_handler || !IsPendingMempoolState(pwallet->mapWallet.at(txid).m_state); });
 
         result.pushKV("txid", txid.GetHex());
     } else {
@@ -4203,6 +4205,8 @@ static RPCHelpMan send()
                 result.pushKV("txid", tx->GetHash().GetHex());
                 if (add_to_wallet && !psbt_opt_in) {
                     pwallet->CommitTransaction(tx, {}, {} /* orderForm */);
+                    WAIT_LOCK(pwallet->cs_wallet, lock);
+                    pwallet->m_pending_mempool_cv.wait(lock, [&]() EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet) { return !pwallet->m_chain_notifications_handler || !IsPendingMempoolState(pwallet->mapWallet.at(tx->GetHash()).m_state); });
                 } else {
                     result.pushKV("hex", hex);
                 }

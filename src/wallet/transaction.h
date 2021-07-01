@@ -30,6 +30,7 @@ struct TxStateConfirmed {
 
 //! State of transaction added to mempool.
 struct TxStateInMempool {
+    bool pending_remove = false;
 };
 
 //! State of rejected transaction that conflicts with a confirmed block.
@@ -45,9 +46,8 @@ struct TxStateConflicted {
 //! or be abandoned, never broadcast, or rejected from the mempool for another
 //! reason.
 struct TxStateInactive {
-    bool abandoned;
-
-    explicit TxStateInactive(bool abandoned = false) : abandoned(abandoned) {}
+    bool abandoned = false;
+    bool pending_broadcast = false;
 };
 
 //! State of transaction loaded in an unrecognized state with unexpected hash or
@@ -106,6 +106,29 @@ static inline int TxStateSerializedIndex(const TxState& state)
     }, state);
 }
 
+static inline void SetPendingMempoolAdd(TxState& state)
+{
+    if (std::get_if<TxStateInMempool>(&state)) return;
+    auto* inactive = std::get_if<TxStateInactive>(&state);
+    if (!inactive) inactive = &state.emplace<TxStateInactive>();
+    inactive->pending_broadcast = true;
+}
+
+static inline void SetPendingMempoolRemove(TxState& state)
+{
+    if (auto* mempool = std::get_if<TxStateInMempool>(&state)) {
+        mempool->pending_remove = true;
+    }
+}
+
+static bool IsPendingMempoolState(const TxState& state) {
+    if (auto* mempool = std::get_if<TxStateInMempool>(&state)) {
+        return mempool->pending_remove;
+    } else if (auto* inactive = std::get_if<TxStateInactive>(&state)) {
+        return inactive->pending_broadcast;
+    }
+    return false;
+}
 
 typedef std::map<std::string, std::string> mapValue_t;
 

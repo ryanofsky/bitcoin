@@ -394,6 +394,9 @@ public:
     /** Registered interfaces::Chain::Notifications handler. */
     std::unique_ptr<interfaces::Handler> m_chain_notifications_handler;
 
+    /** Condition variable notified when transaction is added or removed from mempool */
+    std::condition_variable_any m_pending_mempool_cv;
+
     /** Interface for accessing chain state. */
     interfaces::Chain& chain() const { assert(m_chain); return *m_chain; }
 

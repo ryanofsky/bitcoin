@@ -1186,6 +1186,7 @@ void CWallet::transactionAddedToMempool(const CTransactionRef& tx, uint64_t memp
     auto it = mapWallet.find(tx->GetHash());
     if (it != mapWallet.end()) {
         CHECK_NONFATAL(it->second.InMempool());
+        m_pending_mempool_cv.notify_all();
     }
 }
 
@@ -1194,6 +1195,7 @@ void CWallet::transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRe
     auto it = mapWallet.find(tx->GetHash());
     if (it != mapWallet.end() && it->second.InMempool()) {
         it->second.m_state = TxStateInactive{};
+        m_pending_mempool_cv.notify_all();
     }
     // Handle transactions that were removed from the mempool because they
     // conflict with transactions in a newly connected block.
@@ -1701,17 +1703,8 @@ bool CWallet::SubmitTxMemoryPoolAndRelay(CWalletTx& wtx, std::string& err_string
 
     // Submit transaction to mempool for relay
     WalletLogPrintf("Submitting wtx %s to mempool for relay\n", wtx.GetHash().ToString());
-    // We must set fInMempool here - while it will be re-set to true by the
-    // entered-mempool callback, if we did not there would be a race where a
-    // user could call sendmoney in a loop and hit spurious out of funds errors
-    // because we think that this newly generated transaction's change is
-    // unavailable as we're not yet aware that it is in the mempool.
-    //
-    // Irrespective of the failure reason, un-marking fInMempool
-    // out-of-order is incorrect - it should be unmarked when
-    // TransactionRemovedFromMempool fires.
     bool ret = chain().broadcastTransaction(wtx.tx, m_default_max_tx_fee, relay, err_string);
-    if (ret) wtx.m_state = TxStateInMempool{};
+    if (ret) SetPendingMempoolAdd(wtx.m_state);
     return ret;
 }
 
