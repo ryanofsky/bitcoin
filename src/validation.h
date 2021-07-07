@@ -799,6 +799,8 @@ private:
 
     bool LoadBlockIndexDB() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
+    RecursiveMutex* MempoolMutex() const LOCK_RETURNED(m_mempool->cs) { return m_mempool ? &m_mempool->cs : nullptr; }
+
     friend ChainstateManager;
 };
 

@@ -2646,7 +2646,7 @@ bool CChainState::ActivateBestChain(BlockValidationState& state, std::shared_ptr
         {
             LOCK(cs_main);
             // Lock transaction pool for at least as long as it takes for connectTrace to be consumed
-            if (m_mempool) LOCK(m_mempool->cs);
+            LOCK(MempoolMutex());
             CBlockIndex* starting_tip = m_chain.Tip();
             bool blocks_connected = false;
             do {
@@ -2798,7 +2798,7 @@ bool CChainState::InvalidateBlock(BlockValidationState& state, CBlockIndex* pind
         LOCK(cs_main);
         // Lock for as long as disconnectpool is in scope to make sure UpdateMempoolForReorg is
         // called after DisconnectTip without unlocking in between
-        if (m_mempool) LOCK(m_mempool->cs);
+        LOCK(MempoolMutex());
         if (!m_chain.Contains(pindex)) break;
         pindex_was_in_chain = true;
         CBlockIndex *invalid_walk_tip = m_chain.Tip();
