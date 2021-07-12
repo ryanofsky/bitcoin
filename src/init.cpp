@@ -57,6 +57,7 @@
 #include <txorphanage.h>
 #include <util/asmap.h>
 #include <util/check.h>
+#include <util/memory.h>
 #include <util/moneystr.h>
 #include <util/string.h>
 #include <util/system.h>
@@ -1163,6 +1164,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     node.addrman = std::make_unique<CAddrMan>();
     assert(!node.banman);
     node.banman = std::make_unique<BanMan>(gArgs.GetDataDirNet() / "banlist", &uiInterface, args.GetArg("-bantime", DEFAULT_MISBEHAVING_BANTIME));
+    util::Reconstruct(*node.banman, gArgs.GetDataDirNet() / "banlist", &uiInterface, args.GetArg("-bantime", DEFAULT_MISBEHAVING_BANTIME));
     assert(!node.connman);
     node.connman = std::make_unique<CConnman>(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max()), *node.addrman, args.GetBoolArg("-networkactive", true));
 
