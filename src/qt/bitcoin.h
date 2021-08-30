@@ -45,7 +45,7 @@ public:
     void createPaymentServer();
 #endif
     /// parameter interaction/setup based on rules
-    void parameterSetup();
+    void parameterSetup(interfaces::Init& init);
     /// Create options model
     [[nodiscard]] bool createOptionsModel(bool resetSettings);
     /// Initialize prune setting
