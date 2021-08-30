@@ -14,7 +14,12 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+<<<<<<< HEAD
 #include <kernel/context.h>
+||||||| parent of 6ea638ca4f28 (multiprocess: Add debug.log .wallet/.gui suffixes)
+=======
+#include <interfaces/ipc.h>
+>>>>>>> 6ea638ca4f28 (multiprocess: Add debug.log .wallet/.gui suffixes)
 #include <node/context.h>
 #include <node/interface_ui.h>
 #include <noui.h>
@@ -170,7 +175,8 @@ static bool AppInit(NodeContext& node)
         // -server defaults to true for bitcoind but not for the GUI so do this here
         args.SoftSetBoolArg("-server", true);
         // Set this early so that parameter interactions go to console
-        InitLogging(args);
+        interfaces::Ipc* ipc = node.init->ipc();
+        InitLogging(args, ipc ? ipc->logSuffix() : nullptr);
         InitParameterInteraction(args);
         if (!AppInitBasicSetup(args, node.exit_status)) {
             // InitError will have been called with detailed error, which ends up on console
