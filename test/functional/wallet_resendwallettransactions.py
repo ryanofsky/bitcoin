@@ -72,7 +72,7 @@ class ResendWalletTransactionsTest(BitcoinTestFramework):
         self.log.info("Bump time & check that transaction is rebroadcast")
         # Transaction should be rebroadcast approximately 24 hours in the future,
         # but can range from 12-36. So bump 36 hours to be sure.
-        with node.assert_debug_log(['resubmit 1 unconfirmed transactions']):
+        with node.assert_debug_log(['resubmit 1 unconfirmed transactions'], wallet=True):
             node.setmocktime(now + RESEND_TIMER_LIMIT)
             # Tell scheduler to call MaybeResendWalletTxs now.
             node.mockscheduler(60)
@@ -103,11 +103,25 @@ class ResendWalletTransactionsTest(BitcoinTestFramework):
                 node.setmocktime(evict_time)
                 node.mockscheduler(60)
 
+<<<<<<< HEAD
             # Evict these txs from the mempool
             indep_send = node.send(outputs=[{node.getnewaddress(): 1}], inputs=[indep_utxo])
             node.getmempoolentry(indep_send["txid"])
             assert_raises_rpc_error(-5, "Transaction not in mempool", node.getmempoolentry, txid)
             assert_raises_rpc_error(-5, "Transaction not in mempool", node.getmempoolentry, child_txid)
+||||||| parent of 9739ae30262 (multiprocess: Add debug.log .wallet/.gui suffixes)
+        evict_time = block_time + 60 * 60 * DEFAULT_MEMPOOL_EXPIRY_HOURS + 5
+        # Flush out currently scheduled resubmit attempt now so that there can't be one right between eviction and check.
+        with node.assert_debug_log(['resubmit 2 unconfirmed transactions'], timeout=2):
+            node.setmocktime(evict_time)
+            node.mockscheduler(60)
+=======
+        evict_time = block_time + 60 * 60 * DEFAULT_MEMPOOL_EXPIRY_HOURS + 5
+        # Flush out currently scheduled resubmit attempt now so that there can't be one right between eviction and check.
+        with node.assert_debug_log(['resubmit 2 unconfirmed transactions'], timeout=2, wallet=True):
+            node.setmocktime(evict_time)
+            node.mockscheduler(60)
+>>>>>>> 9739ae30262 (multiprocess: Add debug.log .wallet/.gui suffixes)
 
             # Rebroadcast and check that parent and child are both in the mempool
             with node.assert_debug_log(['resubmit 2 unconfirmed transactions'], timeout=2):
@@ -116,10 +130,26 @@ class ResendWalletTransactionsTest(BitcoinTestFramework):
             node.getmempoolentry(txid)
             node.getmempoolentry(child_txid)
 
+<<<<<<< HEAD
             # clear mempool
             self.generate(node, 1, sync_fun=self.no_op)
             parent_utxo, indep_utxo = node.listunspent()[:2]
             txid = node.send(outputs=[{addr: 1}], inputs=[parent_utxo])["txid"]
+||||||| parent of 9739ae30262 (multiprocess: Add debug.log .wallet/.gui suffixes)
+        # Rebroadcast and check that parent and child are both in the mempool
+        with node.assert_debug_log(['resubmit 2 unconfirmed transactions'], timeout=2):
+            node.setmocktime(evict_time + RESEND_TIMER_LIMIT)
+            node.mockscheduler(60)
+        node.getmempoolentry(txid)
+        node.getmempoolentry(child_txid)
+=======
+        # Rebroadcast and check that parent and child are both in the mempool
+        with node.assert_debug_log(['resubmit 2 unconfirmed transactions'], timeout=2, wallet=True):
+            node.setmocktime(evict_time + RESEND_TIMER_LIMIT)
+            node.mockscheduler(60)
+        node.getmempoolentry(txid)
+        node.getmempoolentry(child_txid)
+>>>>>>> 9739ae30262 (multiprocess: Add debug.log .wallet/.gui suffixes)
 
         self.log.info("Test rebroadcast of transactions received by others")
         # clear mempool
@@ -152,7 +182,7 @@ class ResendWalletTransactionsTest(BitcoinTestFramework):
         peer = node1.add_p2p_connection(P2PTxInvStore())
 
         self.log.info("Check that rebroadcast happens after 36 hours")
-        with node1.assert_debug_log(['resubmit 1 unconfirmed transactions']):
+        with node1.assert_debug_log(['resubmit 1 unconfirmed transactions'], wallet=True):
             node1.bumpmocktime(RESEND_TIMER_LIMIT)
             node1.mockscheduler(60)
             peer.wait_for_broadcast([recv_wtxid])
