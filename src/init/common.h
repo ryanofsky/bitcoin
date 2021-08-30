@@ -14,9 +14,19 @@ class ArgsManager;
 
 namespace init {
 void AddLoggingArgs(ArgsManager& args);
+<<<<<<< HEAD
 void SetLoggingOptions(const ArgsManager& args);
 [[nodiscard]] util::Result<void> SetLoggingCategories(const ArgsManager& args);
 [[nodiscard]] util::Result<void> SetLoggingLevel(const ArgsManager& args);
+||||||| parent of 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
+void SetLoggingOptions(const ArgsManager& args);
+void SetLoggingCategories(const ArgsManager& args);
+void SetLoggingLevel(const ArgsManager& args);
+=======
+void SetLoggingOptions(const ArgsManager& args, const char* log_suffix);
+void SetLoggingCategories(const ArgsManager& args);
+void SetLoggingLevel(const ArgsManager& args);
+>>>>>>> 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
 bool StartLogging(const ArgsManager& args);
 void LogPackageVersion();
 } // namespace init

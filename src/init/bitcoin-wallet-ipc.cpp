@@ -42,7 +42,7 @@ const char* EXE_NAME = "bitcoin-wallet";
 class BitcoinWalletInit : public interfaces::Init
 {
 public:
-    BitcoinWalletInit(const char* arg0) : m_ipc(interfaces::MakeIpc(EXE_NAME, arg0, *this))
+    BitcoinWalletInit(const char* arg0) : m_ipc(interfaces::MakeIpc(EXE_NAME, ".wallet", arg0, *this))
     {
         // Extra initialization code that runs when a bitcoin-wallet process is
         // spawned by a bitcoin-node process, after the ArgsManager
@@ -56,7 +56,7 @@ public:
             // that should be called instead. Alternately there can be a
             // util::Globals class that becomes a memberof kernel::Context
             m_kernel.emplace();
-            init::SetLoggingOptions(gArgs);
+            init::SetLoggingOptions(gArgs, m_ipc->logSuffix());
             init::SetLoggingCategories(gArgs);
             if (!init::StartLogging(gArgs)) {
                 throw std::runtime_error("Logging start failure");

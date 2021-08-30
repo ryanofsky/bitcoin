@@ -427,10 +427,15 @@ class TestNode():
     def chain_path(self) -> Path:
         return self.datadir_path / self.chain
 
-    @property
-    def debug_log_path(self) -> Path:
-        return self.chain_path / 'debug.log'
+    def debug_log_path(self, wallet: bool) -> Path:
+        path = self.chain_path / 'debug.log'
+        if wallet:
+            wallet_path = path.with_name(path.name + ".wallet")
+            if wallet_path.exists():
+                path = wallet_path
+        return path
 
+<<<<<<< HEAD
     @property
     def blocks_path(self) -> Path:
         return self.chain_path / "blocks"
@@ -441,21 +446,40 @@ class TestNode():
 
     def debug_log_size(self, **kwargs) -> int:
         with open(self.debug_log_path, **kwargs) as dl:
+||||||| parent of 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
+    def debug_log_bytes(self) -> int:
+        with open(self.debug_log_path, encoding='utf-8') as dl:
+=======
+    def debug_log_bytes(self, wallet: bool) -> int:
+        with open(self.debug_log_path(wallet), encoding='utf-8') as dl:
+>>>>>>> 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
             dl.seek(0, 2)
             return dl.tell()
 
     @contextlib.contextmanager
-    def assert_debug_log(self, expected_msgs, unexpected_msgs=None, timeout=2):
+    def assert_debug_log(self, expected_msgs, unexpected_msgs=None, timeout=2, wallet=False):
         if unexpected_msgs is None:
             unexpected_msgs = []
         time_end = time.time() + timeout * self.timeout_factor
+<<<<<<< HEAD
         prev_size = self.debug_log_size(encoding="utf-8")  # Must use same encoding that is used to read() below
+||||||| parent of 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
+        prev_size = self.debug_log_bytes()
+=======
+        prev_size = self.debug_log_bytes(wallet)
+>>>>>>> 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
 
         yield
 
         while True:
             found = True
+<<<<<<< HEAD
             with open(self.debug_log_path, encoding="utf-8", errors="replace") as dl:
+||||||| parent of 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
+            with open(self.debug_log_path, encoding='utf-8') as dl:
+=======
+            with open(self.debug_log_path(wallet), encoding='utf-8') as dl:
+>>>>>>> 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
                 dl.seek(prev_size)
                 log = dl.read()
             print_log = " - " + "\n - ".join(log.splitlines())
@@ -473,20 +497,26 @@ class TestNode():
         self._raise_assertion_error('Expected messages "{}" does not partially match log:\n\n{}\n\n'.format(str(expected_msgs), print_log))
 
     @contextlib.contextmanager
-    def wait_for_debug_log(self, expected_msgs, timeout=60):
+    def wait_for_debug_log(self, expected_msgs, timeout=60, wallet=False):
         """
         Block until we see a particular debug log message fragment or until we exceed the timeout.
         Return:
             the number of log lines we encountered when matching
         """
         time_end = time.time() + timeout * self.timeout_factor
+<<<<<<< HEAD
         prev_size = self.debug_log_size(mode="rb")  # Must use same mode that is used to read() below
+||||||| parent of 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
+        prev_size = self.debug_log_bytes()
+=======
+        prev_size = self.debug_log_bytes(wallet)
+>>>>>>> 06380b771a00 (multiprocess: Add debug.log .wallet/.gui suffixes)
 
         yield
 
         while True:
             found = True
-            with open(self.debug_log_path, "rb") as dl:
+            with open(self.debug_log_path(wallet), "rb") as dl:
                 dl.seek(prev_size)
                 log = dl.read()
 
