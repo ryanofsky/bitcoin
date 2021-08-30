@@ -171,6 +171,7 @@ class CreateWalletTest(BitcoinTestFramework):
 
         # Craft the expected version message.
         client_version = node.getnetworkinfo()["version"]
+<<<<<<< HEAD
         version_message = f"Last client version = {client_version}"
 
         # Should not be logged when creating.
@@ -179,6 +180,18 @@ class CreateWalletTest(BitcoinTestFramework):
             node.unloadwallet("version_check")
         # Should be logged when loading.
         with node.assert_debug_log(expected_msgs=[version_message]):
+||||||| parent of c5b9fe54c9c (multiprocess: Add debug.log .wallet/.gui suffixes)
+        wallet.unloadwallet()
+        with node.assert_debug_log(
+            expected_msgs=[f"Last client version = {client_version}"]
+        ):
+=======
+        wallet.unloadwallet()
+        with node.assert_debug_log(
+            expected_msgs=[f"Last client version = {client_version}"],
+            wallet=True,
+        ):
+>>>>>>> c5b9fe54c9c (multiprocess: Add debug.log .wallet/.gui suffixes)
             node.loadwallet("version_check")
 
 
