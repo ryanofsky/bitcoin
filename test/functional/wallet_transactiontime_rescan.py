@@ -185,6 +185,90 @@ class TransactionTimeRescanTest(BitcoinTestFramework):
         enc_wallet = usernode.get_wallet_rpc("enc_wallet")
         assert_raises_rpc_error(-13, "Error: Please enter the wallet passphrase with walletpassphrase first.", enc_wallet.rescanblockchain)
 
+<<<<<<< HEAD
+||||||| parent of a504fcc0d1c6 (multiprocess: Add debug.log .wallet/.gui suffixes)
+        if not self.options.descriptors:
+            self.log.info("Test rescanning an encrypted wallet")
+            hd_seed = get_generate_key().privkey
+
+            usernode.createwallet(wallet_name="temp_wallet", blank=True, descriptors=False)
+            temp_wallet = usernode.get_wallet_rpc("temp_wallet")
+            temp_wallet.sethdseed(seed=hd_seed)
+
+            for i in range(399):
+                temp_wallet.getnewaddress()
+
+            self.generatetoaddress(usernode, COINBASE_MATURITY + 1, temp_wallet.getnewaddress())
+            self.generatetoaddress(usernode, COINBASE_MATURITY + 1, temp_wallet.getnewaddress())
+
+            minernode.createwallet("encrypted_wallet", blank=True, passphrase="passphrase", descriptors=False)
+            encrypted_wallet = minernode.get_wallet_rpc("encrypted_wallet")
+
+            encrypted_wallet.walletpassphrase("passphrase", 99999)
+            encrypted_wallet.sethdseed(seed=hd_seed)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as thread:
+                with minernode.assert_debug_log(expected_msgs=["Rescan started from block 0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206... (slow variant inspecting all blocks)"], timeout=5):
+                    rescanning = thread.submit(encrypted_wallet.rescanblockchain)
+
+                # set the passphrase timeout to 1 to test that the wallet remains unlocked during the rescan
+                minernode.cli("-rpcwallet=encrypted_wallet").walletpassphrase("passphrase", 1)
+
+                try:
+                    minernode.cli("-rpcwallet=encrypted_wallet").walletlock()
+                except JSONRPCException as e:
+                    assert e.error["code"] == -4 and "Error: the wallet is currently being used to rescan the blockchain for related transactions. Please call `abortrescan` before locking the wallet." in e.error["message"]
+
+                try:
+                    minernode.cli("-rpcwallet=encrypted_wallet").walletpassphrasechange("passphrase", "newpassphrase")
+                except JSONRPCException as e:
+                    assert e.error["code"] == -4 and "Error: the wallet is currently being used to rescan the blockchain for related transactions. Please call `abortrescan` before changing the passphrase." in e.error["message"]
+
+                assert_equal(rescanning.result(), {"start_height": 0, "stop_height": 803})
+
+            assert_equal(encrypted_wallet.getbalance(), temp_wallet.getbalance())
+=======
+        if not self.options.descriptors:
+            self.log.info("Test rescanning an encrypted wallet")
+            hd_seed = get_generate_key().privkey
+
+            usernode.createwallet(wallet_name="temp_wallet", blank=True, descriptors=False)
+            temp_wallet = usernode.get_wallet_rpc("temp_wallet")
+            temp_wallet.sethdseed(seed=hd_seed)
+
+            for i in range(399):
+                temp_wallet.getnewaddress()
+
+            self.generatetoaddress(usernode, COINBASE_MATURITY + 1, temp_wallet.getnewaddress())
+            self.generatetoaddress(usernode, COINBASE_MATURITY + 1, temp_wallet.getnewaddress())
+
+            minernode.createwallet("encrypted_wallet", blank=True, passphrase="passphrase", descriptors=False)
+            encrypted_wallet = minernode.get_wallet_rpc("encrypted_wallet")
+
+            encrypted_wallet.walletpassphrase("passphrase", 99999)
+            encrypted_wallet.sethdseed(seed=hd_seed)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as thread:
+                with minernode.assert_debug_log(expected_msgs=["Rescan started from block 0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206... (slow variant inspecting all blocks)"], timeout=5, wallet=True):
+                    rescanning = thread.submit(encrypted_wallet.rescanblockchain)
+
+                # set the passphrase timeout to 1 to test that the wallet remains unlocked during the rescan
+                minernode.cli("-rpcwallet=encrypted_wallet").walletpassphrase("passphrase", 1)
+
+                try:
+                    minernode.cli("-rpcwallet=encrypted_wallet").walletlock()
+                except JSONRPCException as e:
+                    assert e.error["code"] == -4 and "Error: the wallet is currently being used to rescan the blockchain for related transactions. Please call `abortrescan` before locking the wallet." in e.error["message"]
+
+                try:
+                    minernode.cli("-rpcwallet=encrypted_wallet").walletpassphrasechange("passphrase", "newpassphrase")
+                except JSONRPCException as e:
+                    assert e.error["code"] == -4 and "Error: the wallet is currently being used to rescan the blockchain for related transactions. Please call `abortrescan` before changing the passphrase." in e.error["message"]
+
+                assert_equal(rescanning.result(), {"start_height": 0, "stop_height": 803})
+
+            assert_equal(encrypted_wallet.getbalance(), temp_wallet.getbalance())
+>>>>>>> a504fcc0d1c6 (multiprocess: Add debug.log .wallet/.gui suffixes)
 
 if __name__ == '__main__':
     TransactionTimeRescanTest(__file__).main()
