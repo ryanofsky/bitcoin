@@ -108,6 +108,7 @@ class MultiWalletTest(BitcoinTestFramework):
             return
 
         self.log.info("Verify warning is emitted when failing to scan the wallets directory")
+<<<<<<< HEAD
         self.start_node(0)
         with node.assert_debug_log(unexpected_msgs=['Error scanning directory entries under'], expected_msgs=[]):
             result = node.listwalletdir()
@@ -119,6 +120,41 @@ class MultiWalletTest(BitcoinTestFramework):
         self.stop_node(0)
         # Restore permissions
         os.chmod(data_dir(node, 'wallets'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+||||||| parent of b542da4969d (multiprocess: Add debug.log .wallet/.gui suffixes)
+        if platform.system() == 'Windows':
+            self.log.warning('Skipping test involving chmod as Windows does not support it.')
+        elif os.geteuid() == 0:
+            self.log.warning('Skipping test involving chmod as it requires a non-root user.')
+        else:
+            self.start_node(0)
+            with self.nodes[0].assert_debug_log(unexpected_msgs=['Error scanning directory entries under'], expected_msgs=[]):
+                result = self.nodes[0].listwalletdir()
+                assert_equal(result, {'wallets': [{'name': 'default_wallet', 'warnings': []}]})
+            os.chmod(data_dir('wallets'), 0)
+            with self.nodes[0].assert_debug_log(expected_msgs=['Error scanning directory entries under']):
+                result = self.nodes[0].listwalletdir()
+                assert_equal(result, {'wallets': []})
+            self.stop_node(0)
+            # Restore permissions
+            os.chmod(data_dir('wallets'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+=======
+        if platform.system() == 'Windows':
+            self.log.warning('Skipping test involving chmod as Windows does not support it.')
+        elif os.geteuid() == 0:
+            self.log.warning('Skipping test involving chmod as it requires a non-root user.')
+        else:
+            self.start_node(0)
+            with self.nodes[0].assert_debug_log(unexpected_msgs=['Error scanning directory entries under'], expected_msgs=[]):
+                result = self.nodes[0].listwalletdir()
+                assert_equal(result, {'wallets': [{'name': 'default_wallet', 'warnings': []}]})
+            os.chmod(data_dir('wallets'), 0)
+            with self.nodes[0].assert_debug_log(expected_msgs=['Error scanning directory entries under'], wallet=True):
+                result = self.nodes[0].listwalletdir()
+                assert_equal(result, {'wallets': []})
+            self.stop_node(0)
+            # Restore permissions
+            os.chmod(data_dir('wallets'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+>>>>>>> b542da4969d (multiprocess: Add debug.log .wallet/.gui suffixes)
 
     def test_mixed_wallets(self, node):
         self.log.info("Test mixed wallets")
@@ -168,6 +204,7 @@ class MultiWalletTest(BitcoinTestFramework):
         for wallet_name in to_load:
             node.loadwallet(wallet_name)
 
+<<<<<<< HEAD
         return empty_wallet, empty_created_wallet, wallet_names, in_wallet_dir
 
     def test_scanning_sub_dir(self, node, in_wallet_dir):
@@ -178,6 +215,25 @@ class MultiWalletTest(BitcoinTestFramework):
         # Baseline, no errors.
         with node.assert_debug_log(expected_msgs=[], unexpected_msgs=["Error while scanning wallet dir"]):
             walletlist = node.listwalletdir()['wallets']
+||||||| parent of b542da4969d (multiprocess: Add debug.log .wallet/.gui suffixes)
+        os.mkdir(wallet_dir('no_access'))
+        os.chmod(wallet_dir('no_access'), 0)
+        try:
+            with self.nodes[0].assert_debug_log(expected_msgs=["Error while scanning wallet dir"]):
+                walletlist = self.nodes[0].listwalletdir()['wallets']
+        finally:
+            # Need to ensure access is restored for cleanup
+            os.chmod(wallet_dir('no_access'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+=======
+        os.mkdir(wallet_dir('no_access'))
+        os.chmod(wallet_dir('no_access'), 0)
+        try:
+            with self.nodes[0].assert_debug_log(expected_msgs=["Error while scanning wallet dir"], wallet=True):
+                walletlist = self.nodes[0].listwalletdir()['wallets']
+        finally:
+            # Need to ensure access is restored for cleanup
+            os.chmod(wallet_dir('no_access'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+>>>>>>> b542da4969d (multiprocess: Add debug.log .wallet/.gui suffixes)
         assert_equal(sorted(map(lambda w: w['name'], walletlist)), sorted(in_wallet_dir))
 
         # "Permission denied" error.

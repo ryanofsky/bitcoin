@@ -200,7 +200,15 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
     gArgs.ForceSetArg("-datadir", fs::PathToString(m_path_root));
 
     SelectParams(chainType);
+<<<<<<< HEAD
     InitLogging(*m_node.args);
+||||||| parent of b542da4969d (multiprocess: Add debug.log .wallet/.gui suffixes)
+    if (G_TEST_LOG_FUN) LogInstance().PushBackCallback(G_TEST_LOG_FUN);
+    InitLogging(*m_node.args);
+=======
+    if (G_TEST_LOG_FUN) LogInstance().PushBackCallback(G_TEST_LOG_FUN);
+    InitLogging(*m_node.args, /* log_suffix= */ nullptr);
+>>>>>>> b542da4969d (multiprocess: Add debug.log .wallet/.gui suffixes)
     AppInitParameterInteraction(*m_node.args);
     LogInstance().StartLogging();
     m_node.warnings = std::make_unique<node::Warnings>();
