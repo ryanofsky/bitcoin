@@ -113,7 +113,7 @@ class MultiWalletTest(BitcoinTestFramework):
             result = node.listwalletdir()
             assert_equal(result, {'wallets': [{'name': 'default_wallet', 'warnings': []}]})
         os.chmod(data_dir(node, 'wallets'), 0)
-        with node.assert_debug_log(expected_msgs=['Error scanning directory entries under']):
+        with node.assert_debug_log(expected_msgs=['Error scanning directory entries under'], wallet=True):
             result = node.listwalletdir()
             assert_equal(result, {'wallets': []})
         self.stop_node(0)
@@ -183,7 +183,7 @@ class MultiWalletTest(BitcoinTestFramework):
         # "Permission denied" error.
         os.mkdir(wallet_dir(node, 'no_access'))
         os.chmod(wallet_dir(node, 'no_access'), 0)
-        with node.assert_debug_log(expected_msgs=["Error while scanning wallet dir"]):
+        with node.assert_debug_log(expected_msgs=["Error while scanning wallet dir"], wallet=True):
             walletlist = node.listwalletdir()['wallets']
         # Need to ensure access is restored for cleanup
         os.chmod(wallet_dir(node, 'no_access'), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
