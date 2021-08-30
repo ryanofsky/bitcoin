@@ -179,7 +179,7 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vecto
     SelectParams(chainType);
     SeedInsecureRand();
     if (G_TEST_LOG_FUN) LogInstance().PushBackCallback(G_TEST_LOG_FUN);
-    InitLogging(*m_node.args);
+    InitLogging(*m_node.args, /* log_suffix= */ nullptr);
     AppInitParameterInteraction(*m_node.args);
     LogInstance().StartLogging();
     m_node.kernel = std::make_unique<kernel::Context>();
