@@ -1,6 +1,6 @@
 # Multiprocess Bitcoin
 
-On unix systems, the `--enable-multiprocess` build option can be passed to `./configure` to build new `bitcoin-node`, `bitcoin-wallet`, and `bitcoin-gui` executables alongside existing `bitcoind` and `bitcoin-qt` executables.
+On unix systems, the `--enable-multiprocess` build option can be passed to `./configure` to build new `bitcoin-node`, `bitcoin-wallet`, and `bitcoin-gui` executables alongside existing `bitcoind` and `bitcoin-qt` executables. 
 
 `bitcoin-node` is a drop-in replacement for `bitcoind`, and `bitcoin-gui` is a drop-in replacement for `bitcoin-qt`, and there are no differences in use or external behavior between the new and old executables. But internally `bitcoin-gui` will spawn a `bitcoin-node` process to run P2P and RPC code, communicating with it across a socket pair, and `bitcoin-node` will spawn `bitcoin-wallet` to run wallet code, also communicating over a socket pair. This lets node, wallet, and GUI code run in separate address spaces for better isolation, and allow future improvements like being able to start and stop components independently on different machines and environments.
 
