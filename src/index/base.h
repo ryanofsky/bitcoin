@@ -154,19 +154,33 @@ protected:
     const std::string m_name;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex) override;
 ||||||| parent of 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex) override;
 =======
     void BlockConnected(const interfaces::BlockInfo& block_info);
 >>>>>>> 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+||||||| parent of 8d0cc07587d4 (indexes, refactor: Remove index validationinterface hooks)
+    void BlockConnected(const interfaces::BlockInfo& block_info);
+=======
+    /// Return whether to ignore stale, out-of-sync block connected event
+    bool IgnoreBlockConnected(const interfaces::BlockInfo& block);
+>>>>>>> 8d0cc07587d4 (indexes, refactor: Remove index validationinterface hooks)
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     void ChainStateFlushed(ChainstateRole role, const CBlockLocator& locator) override;
 ||||||| parent of 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
     void ChainStateFlushed(const CBlockLocator& locator) override;
 =======
     void ChainStateFlushed(const CBlockLocator& locator);
+||||||| parent of 8d0cc07587d4 (indexes, refactor: Remove index validationinterface hooks)
+    void ChainStateFlushed(const CBlockLocator& locator);
+=======
+    /// Return whether to ignore stale, out-of-sync chain flushed event
+    bool IgnoreChainStateFlushed(const CBlockLocator& locator);
+>>>>>>> 8d0cc07587d4 (indexes, refactor: Remove index validationinterface hooks)
 
     /// Return custom notification options for index.
     [[nodiscard]] virtual interfaces::Chain::NotifyOptions CustomOptions() { return {}; }
