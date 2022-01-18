@@ -59,12 +59,37 @@ public:
 
 void BaseIndexNotifications::blockConnected(ChainstateRole role, const interfaces::BlockInfo& block)
 {
-    m_index.BlockConnected(role, block);
+    if (m_index.IgnoreBlockConnected(role, block)) return;
+
+    const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
+    const CBlockIndex* best_block_index = m_index.m_best_block_index.load();
+    if (best_block_index && best_block_index != pindex->pprev && !m_index.Rewind(best_block_index, pindex->pprev)) {
+        m_index.FatalErrorf("%s: Failed to rewind index %s to a previous chain tip",
+                   __func__, m_index.GetName());
+        return;
+    }
+
+    if (!m_index.CustomAppend(block)) {
+        m_index.FatalErrorf("%s: Failed to write block %s to index",
+                   __func__, pindex->GetBlockHash().ToString());
+        return;
+    }
+
+    // Setting the best block index is intentionally the last step of this
+    // function, so BlockUntilSyncedToCurrentChain callers waiting for the
+    // best block index to be updated can rely on the block being fully
+    // processed, and the index object being safe to delete.
+    m_index.SetBestBlockIndex(pindex);
 }
 
 void BaseIndexNotifications::chainStateFlushed(ChainstateRole role, const CBlockLocator& locator)
 {
-    m_index.ChainStateFlushed(role, locator);
+    if (m_index.IgnoreChainStateFlushed(role, locator)) return;
+
+    // No need to handle errors in Commit. If it fails, the error will be already be logged. The
+    // best way to recover is to continue, as index cannot be corrupted by a missed commit to disk
+    // for an advanced index state.
+    m_index.Commit();
 }
 
 BaseIndex::DB::DB(const fs::path& path, size_t n_cache_size, bool f_memory, bool f_wipe, bool f_obfuscate) :
@@ -336,7 +361,7 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
     return true;
 }
 
-void BaseIndex::BlockConnected(ChainstateRole role, const interfaces::BlockInfo& block_info)
+bool BaseIndex::IgnoreBlockConnected(ChainstateRole role, const interfaces::BlockInfo& block)
 {
     // Ignore events from the assumed-valid chain; we will process its blocks
     // (sequentially) after it is fully verified by the background chainstate. This
@@ -345,21 +370,21 @@ void BaseIndex::BlockConnected(ChainstateRole role, const interfaces::BlockInfo&
     // TODO at some point we could parameterize whether a particular index can be
     // built out of order, but for now just do the conservative simple thing.
     if (role == ChainstateRole::ASSUMEDVALID) {
-        return;
+        return true;
     }
 
     // Ignore BlockConnected signals until we have fully indexed the chain.
     if (!m_ready) {
-        return;
+        return true;
     }
 
-    const CBlockIndex* pindex = &BlockIndex(block_info.hash);
+    const CBlockIndex* pindex = &BlockIndex(block.hash);
     const CBlockIndex* best_block_index = m_best_block_index.load();
     if (!best_block_index) {
         if (pindex->nHeight != 0) {
             FatalErrorf("%s: First block connected is not the genesis block (height=%d)",
                        __func__, pindex->nHeight);
-            return;
+            return true;
         }
     } else {
         // To allow handling reorgs, this only checks that the new block
@@ -368,36 +393,20 @@ void BaseIndex::BlockConnected(ChainstateRole role, const interfaces::BlockInfo&
         // reorg, Rewind call below will remove existing blocks from the index
         // before adding the new one.
         assert(best_block_index->GetAncestor(pindex->nHeight - 1) == pindex->pprev);
-
-        if (best_block_index != pindex->pprev && !Rewind(best_block_index, pindex->pprev)) {
-            FatalErrorf("%s: Failed to rewind index %s to a previous chain tip",
-                       __func__, GetName());
-            return;
-        }
     }
-    if (CustomAppend(block_info)) {
-        // Setting the best block index is intentionally the last step of this
-        // function, so BlockUntilSyncedToCurrentChain callers waiting for the
-        // best block index to be updated can rely on the block being fully
-        // processed, and the index object being safe to delete.
-        SetBestBlockIndex(pindex);
-    } else {
-        FatalErrorf("%s: Failed to write block %s to index",
-                   __func__, pindex->GetBlockHash().ToString());
-        return;
-    }
+    return false;
 }
 
-void BaseIndex::ChainStateFlushed(ChainstateRole role, const CBlockLocator& locator)
+bool BaseIndex::IgnoreChainStateFlushed(ChainstateRole role, const CBlockLocator& locator)
 {
     // Ignore events from the assumed-valid chain; we will process its blocks
     // (sequentially) after it is fully verified by the background chainstate.
     if (role == ChainstateRole::ASSUMEDVALID) {
-        return;
+        return true;
     }
 
     if (!m_ready) {
-        return;
+        return true;
     }
 
     const uint256& locator_tip_hash = locator.vHave.front();
@@ -410,7 +419,7 @@ void BaseIndex::ChainStateFlushed(ChainstateRole role, const CBlockLocator& loca
     if (!locator_tip_index) {
         FatalErrorf("%s: First block (hash=%s) in locator was not found",
                    __func__, locator_tip_hash.ToString());
-        return;
+        return true;
     }
 
     // Check if locator points to the last block that was connected, or ancestor
@@ -429,13 +438,10 @@ void BaseIndex::ChainStateFlushed(ChainstateRole role, const CBlockLocator& loca
     // committing index data in this case until after they are sent.
     const CBlockIndex* best_block_index = m_best_block_index.load();
     if (best_block_index->GetAncestor(locator_tip_index->nHeight) != locator_tip_index) {
-        return;
+        return true;
     }
 
-    // No need to handle errors in Commit. If it fails, the error will be already be logged. The
-    // best way to recover is to continue, as index cannot be corrupted by a missed commit to disk
-    // for an advanced index state.
-    Commit();
+    return false;
 }
 
 bool BaseIndex::BlockUntilSyncedToCurrentChain() const
