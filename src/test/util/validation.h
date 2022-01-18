@@ -7,8 +7,6 @@
 
 #include <validation.h>
 
-class CValidationInterface;
-
 struct TestChainstateManager : public ChainstateManager {
     /** Reset the ibd cache to its initial state */
     void ResetIbd();
@@ -16,6 +14,7 @@ struct TestChainstateManager : public ChainstateManager {
     void JumpOutOfIbd();
 };
 
+<<<<<<< HEAD
 class ValidationInterfaceTest
 {
 public:
@@ -26,4 +25,13 @@ public:
         const CBlockIndex* pindex);
 };
 
+||||||| parent of 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+class ValidationInterfaceTest
+{
+public:
+    static void BlockConnected(CValidationInterface& obj, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex);
+};
+
+=======
+>>>>>>> 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
 #endif // BITCOIN_TEST_UTIL_VALIDATION_H

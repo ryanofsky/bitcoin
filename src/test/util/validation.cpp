@@ -21,6 +21,7 @@ void TestChainstateManager::JumpOutOfIbd()
     m_cached_finished_ibd = true;
     Assert(!IsInitialBlockDownload());
 }
+<<<<<<< HEAD
 
 void ValidationInterfaceTest::BlockConnected(
         ChainstateRole role,
@@ -30,3 +31,11 @@ void ValidationInterfaceTest::BlockConnected(
 {
     obj.BlockConnected(role, block, pindex);
 }
+||||||| parent of 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+
+void ValidationInterfaceTest::BlockConnected(CValidationInterface& obj, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex)
+{
+    obj.BlockConnected(block, pindex);
+}
+=======
+>>>>>>> 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)

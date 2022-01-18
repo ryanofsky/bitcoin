@@ -153,8 +153,15 @@ protected:
      * has been received and connected to the headers tree, though not validated yet.
      */
     virtual void NewPoWValidBlock(const CBlockIndex *pindex, const std::shared_ptr<const CBlock>& block) {};
+<<<<<<< HEAD
     friend class ValidationSignals;
     friend class ValidationInterfaceTest;
+||||||| parent of 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+    friend class CMainSignals;
+    friend class ValidationInterfaceTest;
+=======
+    friend class CMainSignals;
+>>>>>>> 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
 };
 
 class ValidationSignalsImpl;
