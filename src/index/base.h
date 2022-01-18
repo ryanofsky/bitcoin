@@ -164,13 +164,21 @@ protected:
     const std::string m_name;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     void BlockConnected(const kernel::ChainstateRole& role, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex) override;
 ||||||| parent of 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
     void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex) override;
 =======
     void BlockConnected(ChainstateRole role, const interfaces::BlockInfo& block_info);
 >>>>>>> 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+||||||| parent of 2e90f6c5456 (indexes, refactor: Remove index validationinterface hooks)
+    void BlockConnected(ChainstateRole role, const interfaces::BlockInfo& block_info);
+=======
+    /// Return whether to ignore stale, out-of-sync block connected event
+    bool IgnoreBlockConnected(ChainstateRole role, const interfaces::BlockInfo& block);
+>>>>>>> 2e90f6c5456 (indexes, refactor: Remove index validationinterface hooks)
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     void ChainStateFlushed(const kernel::ChainstateRole& role, const CBlockLocator& locator) override;
 ||||||| parent of 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
@@ -178,6 +186,12 @@ protected:
 =======
     void ChainStateFlushed(ChainstateRole role, const CBlockLocator& locator);
 >>>>>>> 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+||||||| parent of 2e90f6c5456 (indexes, refactor: Remove index validationinterface hooks)
+    void ChainStateFlushed(ChainstateRole role, const CBlockLocator& locator);
+=======
+    /// Return whether to ignore stale, out-of-sync chain flushed event
+    bool IgnoreChainStateFlushed(ChainstateRole role, const CBlockLocator& locator);
+>>>>>>> 2e90f6c5456 (indexes, refactor: Remove index validationinterface hooks)
 
     /// Return custom notification options for index.
     [[nodiscard]] virtual interfaces::Chain::NotifyOptions CustomOptions() { return {}; }
