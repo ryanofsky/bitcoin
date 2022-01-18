@@ -6,6 +6,7 @@
 #include <common/args.h>
 #include <index/base.h>
 #include <interfaces/chain.h>
+#include <interfaces/handler.h>
 #include <kernel/chain.h>
 #include <logging.h>
 #include <node/abort.h>
@@ -35,6 +36,11 @@ void BaseIndex::FatalErrorf(const char* fmt, const Args&... args)
     node::AbortNode(m_chain->context()->exit_status, message);
 }
 
+const CBlockIndex& BaseIndex::BlockIndex(const uint256& hash)
+{
+   return WITH_LOCK(cs_main, return *Assert(m_chainstate->m_blockman.LookupBlockIndex(hash)));
+}
+
 CBlockLocator GetLocator(interfaces::Chain& chain, const uint256& block_hash)
 {
     CBlockLocator locator;
@@ -42,6 +48,25 @@ CBlockLocator GetLocator(interfaces::Chain& chain, const uint256& block_hash)
     assert(found);
     assert(!locator.IsNull());
     return locator;
+}
+
+class BaseIndexNotifications : public interfaces::Chain::Notifications
+{
+public:
+    BaseIndexNotifications(BaseIndex& index) : m_index(index) {}
+    void blockConnected(const interfaces::BlockInfo& block) override;
+    void chainStateFlushed(const CBlockLocator& locator) override;
+    BaseIndex& m_index;
+};
+
+void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block)
+{
+    m_index.BlockConnected(block);
+}
+
+void BaseIndexNotifications::chainStateFlushed(const CBlockLocator& locator)
+{
+    m_index.ChainStateFlushed(locator);
 }
 
 BaseIndex::DB::DB(const fs::path& path, size_t n_cache_size, bool f_memory, bool f_wipe, bool f_obfuscate) :
@@ -108,40 +133,30 @@ bool BaseIndex::Init()
     // m_chainstate member gives indexing code access to node internals. It is
     // removed in followup https://github.com/bitcoin/bitcoin/pull/24230
     m_chainstate = &m_chain->context()->chainman->ActiveChainstate();
-    // Register to validation interface before setting the 'm_synced' flag, so that
-    // callbacks are not missed once m_synced is true.
-    RegisterValidationInterface(this);
 
     CBlockLocator locator;
     if (!GetDB().ReadBestBlock(locator)) {
         locator.SetNull();
     }
 
-    LOCK(cs_main);
-    CChain& active_chain = m_chainstate->m_chain;
-    if (locator.IsNull()) {
-        SetBestBlockIndex(nullptr);
-    } else {
-        // Setting the best block to the locator's top block. If it is not part of the
-        // best chain, we will rewind to the fork point during index sync
-        const CBlockIndex* locator_index{m_chainstate->m_blockman.LookupBlockIndex(locator.vHave.at(0))};
-        if (!locator_index) {
-            return InitError(strprintf(Untranslated("%s: best block of the index not found. Please rebuild the index."), GetName()));
+    auto options = CustomOptions();
+    auto notifications = std::make_shared<BaseIndexNotifications>(*this);
+    auto start_sync = [&](const interfaces::BlockInfo& block) {
+        const auto block_key{block.height >= 0 ? std::make_optional(interfaces::BlockKey{block.hash, block.height}) : std::nullopt};
+        if (!locator.IsNull() && !block_key) {
+            return InitError(strprintf(Untranslated("%s: best block of the index not found. Please rebuild the index, or disable it until the node is synced."), GetName()));
         }
-        SetBestBlockIndex(locator_index);
-    }
 
-    // Child init
-    const CBlockIndex* start_block = m_best_block_index.load();
-    if (!CustomInit(start_block ? std::make_optional(interfaces::BlockKey{start_block->GetBlockHash(), start_block->nHeight}) : std::nullopt)) {
-        return false;
-    }
+        assert(!m_best_block_index && !m_synced);
+        SetBestBlockIndex(block_key ? &BlockIndex(block_key->hash) : nullptr);
 
-    // Note: this will latch to true immediately if the user starts up with an empty
-    // datadir and an index enabled. If this is the case, indexation will happen solely
-    // via `BlockConnected` signals until, possibly, the next restart.
-    m_synced = start_block == active_chain.Tip();
-    if (m_synced) {
+        // Call CustomInit and set m_ready. It is important to call CustomInit
+        // before setting m_ready to ensure that CustomInit is always called
+        // before CustomAppend. CustomAppend calls from the notification thread
+        // will start happening when m_ready is true.
+        if (!CustomInit(block_key)) {
+            return false;
+        }
         // To prevent race conditions, m_ready = true needs to be set from the
         // validationinterface thread and the m_ready = true callback needs to
         // be queued while cs_main is held.
@@ -154,9 +169,19 @@ bool BaseIndex::Init()
         // from being lost, it is important to keep cs_main locked while calling
         // CallFunctionInValidationInterfaceQueue, so the new notifications will
         // be queued after the m_ready = true callback.
-        CallFunctionInValidationInterfaceQueue([this] { m_ready = true; });
-    }
-    m_init = true;
+        m_synced = block.chain_tip;
+        if (m_synced) {
+            CallFunctionInValidationInterfaceQueue([this] { m_ready = true; });
+        }
+        return true;
+    };
+    auto handler = m_chain->attachChain(notifications, locator, options, start_sync);
+
+    // Handler will be null if start_sync lambda above returned false.
+    if (!handler) return false;
+
+    LOCK(m_mutex);
+    m_handler = std::move(handler);
     return true;
 }
 
@@ -292,12 +317,13 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
     return true;
 }
 
-void BaseIndex::BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex)
+void BaseIndex::BlockConnected(const interfaces::BlockInfo& block_info)
 {
     if (!m_ready) {
         return;
     }
 
+    const CBlockIndex* pindex = &BlockIndex(block_info.hash);
     const CBlockIndex* best_block_index = m_best_block_index.load();
     if (!best_block_index) {
         if (pindex->nHeight != 0) {
@@ -319,7 +345,6 @@ void BaseIndex::BlockConnected(const std::shared_ptr<const CBlock>& block, const
             return;
         }
     }
-    interfaces::BlockInfo block_info = kernel::MakeBlockInfo(pindex, block.get());
     if (CustomAppend(block_info)) {
         // Setting the best block index is intentionally the last step of this
         // function, so BlockUntilSyncedToCurrentChain callers waiting for the
@@ -403,7 +428,7 @@ void BaseIndex::Interrupt()
 
 bool BaseIndex::StartBackgroundSync()
 {
-    if (!m_init) throw std::logic_error("Error: Cannot start a non-initialized index");
+    if (WITH_LOCK(m_mutex, return !m_handler)) throw std::logic_error("Error: Cannot start a non-initialized index");
 
     m_thread_sync = std::thread(&util::TraceThread, GetName(), [this] { ThreadSync(); });
     return true;
@@ -411,7 +436,7 @@ bool BaseIndex::StartBackgroundSync()
 
 void BaseIndex::Stop()
 {
-    UnregisterValidationInterface(this);
+    WITH_LOCK(m_mutex, m_handler.reset());
 
     if (m_thread_sync.joinable()) {
         m_thread_sync.join();
