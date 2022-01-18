@@ -61,12 +61,37 @@ public:
 
 void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block)
 {
-    m_index.BlockConnected(block);
+    if (m_index.IgnoreBlockConnected(block)) return;
+
+    const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
+    const CBlockIndex* best_block_index = Assert(m_index.m_best_block_index.load());
+    if (best_block_index != pindex->pprev && !m_index.Rewind(best_block_index, pindex->pprev)) {
+        m_index.FatalErrorf("%s: Failed to rewind index %s to a previous chain tip",
+                   __func__, m_index.GetName());
+        return;
+    }
+
+    if (!m_index.CustomAppend(block)) {
+        m_index.FatalErrorf("%s: Failed to write block %s to index",
+                   __func__, pindex->GetBlockHash().ToString());
+        return;
+    }
+
+    // Setting the best block index is intentionally the last step of this
+    // function, so BlockUntilSyncedToCurrentChain callers waiting for the
+    // best block index to be updated can rely on the block being fully
+    // processed, and the index object being safe to delete.
+    m_index.SetBestBlockIndex(pindex);
 }
 
 void BaseIndexNotifications::chainStateFlushed(const CBlockLocator& locator)
 {
-    m_index.ChainStateFlushed(locator);
+    if (m_index.IgnoreChainStateFlushed(locator)) return;
+
+    // No need to handle errors in Commit. If it fails, the error will be already be logged. The
+    // best way to recover is to continue, as index cannot be corrupted by a missed commit to disk
+    // for an advanced index state.
+    m_index.Commit();
 }
 
 BaseIndex::DB::DB(const fs::path& path, size_t n_cache_size, bool f_memory, bool f_wipe, bool f_obfuscate) :
@@ -317,19 +342,19 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
     return true;
 }
 
-void BaseIndex::BlockConnected(const interfaces::BlockInfo& block_info)
+bool BaseIndex::IgnoreBlockConnected(const interfaces::BlockInfo& block)
 {
     if (!m_ready) {
-        return;
+        return true;
     }
 
-    const CBlockIndex* pindex = &BlockIndex(block_info.hash);
+    const CBlockIndex* pindex = &BlockIndex(block.hash);
     const CBlockIndex* best_block_index = m_best_block_index.load();
     if (!best_block_index) {
         if (pindex->nHeight != 0) {
             FatalErrorf("%s: First block connected is not the genesis block (height=%d)",
                        __func__, pindex->nHeight);
-            return;
+            return true;
         }
     } else {
         // To allow handling reorgs, this only checks that the new block
@@ -338,30 +363,14 @@ void BaseIndex::BlockConnected(const interfaces::BlockInfo& block_info)
         // reorg, Rewind call below will remove existing blocks from the index
         // before adding the new one.
         assert(best_block_index->GetAncestor(pindex->nHeight - 1) == pindex->pprev);
-
-        if (best_block_index != pindex->pprev && !Rewind(best_block_index, pindex->pprev)) {
-            FatalErrorf("%s: Failed to rewind index %s to a previous chain tip",
-                       __func__, GetName());
-            return;
-        }
     }
-    if (CustomAppend(block_info)) {
-        // Setting the best block index is intentionally the last step of this
-        // function, so BlockUntilSyncedToCurrentChain callers waiting for the
-        // best block index to be updated can rely on the block being fully
-        // processed, and the index object being safe to delete.
-        SetBestBlockIndex(pindex);
-    } else {
-        FatalErrorf("%s: Failed to write block %s to index",
-                   __func__, pindex->GetBlockHash().ToString());
-        return;
-    }
+    return false;
 }
 
-void BaseIndex::ChainStateFlushed(const CBlockLocator& locator)
+bool BaseIndex::IgnoreChainStateFlushed(const CBlockLocator& locator)
 {
     if (!m_ready) {
-        return;
+        return true;
     }
 
     const uint256& locator_tip_hash = locator.vHave.front();
@@ -374,7 +383,7 @@ void BaseIndex::ChainStateFlushed(const CBlockLocator& locator)
     if (!locator_tip_index) {
         FatalErrorf("%s: First block (hash=%s) in locator was not found",
                    __func__, locator_tip_hash.ToString());
-        return;
+        return true;
     }
 
     // Assert locator points to the last block that was connected, or ancestor
@@ -384,10 +393,7 @@ void BaseIndex::ChainStateFlushed(const CBlockLocator& locator)
     const CBlockIndex* best_block_index = m_best_block_index.load();
     assert(best_block_index->GetAncestor(locator_tip_index->nHeight) == locator_tip_index);
 
-    // No need to handle errors in Commit. If it fails, the error will be already be logged. The
-    // best way to recover is to continue, as index cannot be corrupted by a missed commit to disk
-    // for an advanced index state.
-    Commit();
+    return false;
 }
 
 bool BaseIndex::BlockUntilSyncedToCurrentChain() const
