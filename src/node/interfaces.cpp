@@ -729,6 +729,16 @@ public:
     {
         ::uiInterface.ShowProgress(title, progress, resume_possible);
     }
+    std::unique_ptr<Handler> attachChain(std::shared_ptr<Notifications> notifications, const CBlockLocator& locator, const NotifyOptions& options, const StartSyncFn& start_sync) override
+    {
+        LOCK(cs_main);
+        const Chainstate& active{chainman().ActiveChainstate()};
+        const CBlockIndex* start_block_index{locator.IsNull() ? nullptr : active.m_blockman.LookupBlockIndex(locator.vHave.at(0))};
+        interfaces::BlockInfo start_block{kernel::MakeBlockInfo(start_block_index)};
+        start_block.chain_tip = start_block_index == active.m_chain.Tip();
+        if (!start_sync(start_block)) return nullptr;
+        return std::make_unique<NotificationsHandlerImpl>(notifications);
+    }
     std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) override
     {
         return std::make_unique<NotificationsHandlerImpl>(std::move(notifications));

@@ -21,8 +21,3 @@ void TestChainState::JumpOutOfIbd()
     m_cached_finished_ibd = true;
     Assert(!IsInitialBlockDownload());
 }
-
-void ValidationInterfaceTest::BlockConnected(CValidationInterface& obj, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex)
-{
-    obj.BlockConnected(block, pindex);
-}
