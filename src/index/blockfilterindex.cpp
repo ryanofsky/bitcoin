@@ -112,6 +112,13 @@ BlockFilterIndex::BlockFilterIndex(std::unique_ptr<interfaces::Chain> chain, Blo
     m_filter_fileseq = std::make_unique<FlatFileSeq>(std::move(path), "fltr", FLTR_FILE_CHUNK_SIZE);
 }
 
+interfaces::Chain::NotifyOptions BlockFilterIndex::CustomOptions()
+{
+    interfaces::Chain::NotifyOptions options;
+    options.connect_undo_data = true;
+    return options;
+}
+
 bool BlockFilterIndex::CustomInit(const std::optional<interfaces::BlockKey>& block)
 {
     if (!m_db->Read(DB_FILTER_POS, m_next_filter_pos)) {
@@ -250,18 +257,12 @@ std::optional<uint256> BlockFilterIndex::ReadFilterHeader(int height, const uint
 
 bool BlockFilterIndex::CustomAppend(const interfaces::BlockInfo& block)
 {
-    CBlockUndo block_undo;
 
     if (block.height > 0) {
-        // pindex variable gives indexing code access to node internals. It
-        // will be removed in upcoming commit
-        const CBlockIndex* pindex = WITH_LOCK(cs_main, return m_chainstate->m_blockman.LookupBlockIndex(block.hash));
-        if (!m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *pindex)) {
-            return false;
-        }
+        assert(block.undo_data);
     }
 
-    BlockFilter filter(m_filter_type, *Assert(block.data), block_undo);
+    BlockFilter filter(m_filter_type, *Assert(block.data), block.undo_data ? *block.undo_data : CBlockUndo());
 
     const uint256& header = filter.ComputeHeader(m_last_header);
     bool res = Write(filter, block.height, header);
@@ -335,7 +336,7 @@ bool BlockFilterIndex::CustomRemove(const interfaces::BlockInfo& block)
     if (!m_db->WriteBatch(batch)) return false;
 
     // Update cached header
-    m_last_header = *Assert(ReadFilterHeader(new_tip.height, new_tip.hash));
+    m_last_header = *Assert(ReadFilterHeader(block.height, block.hash));
     return true;
 }
 
