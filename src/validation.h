@@ -1364,9 +1364,15 @@ bool DeploymentEnabled(const ChainstateManager& chainman, DEP dep)
 bool IsBIP30Repeat(const CBlockIndex& block_index);
 
 /** Identifies blocks which coinbase output was subsequently overwritten in the UTXO set (see BIP30) */
+<<<<<<< HEAD
 bool IsBIP30Unspendable(const uint256& block_hash, int block_height);
 
 // Returns the script flags which should be checked for a given block
 script_verify_flags GetBlockScriptFlags(const CBlockIndex& block_index, const ChainstateManager& chainman);
+||||||| parent of 9f3213e08aca (indexes, refactor: Stop requiring CBlockIndex type to call IsBIP30Unspendable)
+bool IsBIP30Unspendable(const CBlockIndex& block_index);
+=======
+bool IsBIP30Unspendable(const uint256& block_hash, int block_height);
+>>>>>>> 9f3213e08aca (indexes, refactor: Stop requiring CBlockIndex type to call IsBIP30Unspendable)
 
 #endif // BITCOIN_VALIDATION_H

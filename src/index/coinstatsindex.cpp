@@ -151,7 +151,15 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
             const bool is_coinbase{tx->IsCoinBase()};
 
             // Skip duplicate txid coinbase transactions (BIP30).
+<<<<<<< HEAD
             if (is_coinbase && IsBIP30Unspendable(block.hash, block.height)) {
+||||||| parent of 9f3213e08aca (indexes, refactor: Stop requiring CBlockIndex type to call IsBIP30Unspendable)
+            if (IsBIP30Unspendable(*pindex) && tx->IsCoinBase()) {
+                m_total_unspendable_amount += block_subsidy;
+=======
+            if (IsBIP30Unspendable(block.hash, block.height) && tx->IsCoinBase()) {
+                m_total_unspendable_amount += block_subsidy;
+>>>>>>> 9f3213e08aca (indexes, refactor: Stop requiring CBlockIndex type to call IsBIP30Unspendable)
                 m_total_unspendables_bip30 += block_subsidy;
                 continue;
             }
