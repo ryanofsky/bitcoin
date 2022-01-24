@@ -112,6 +112,7 @@ BlockFilterIndex::BlockFilterIndex(std::unique_ptr<interfaces::Chain> chain, Blo
     m_filter_fileseq = std::make_unique<FlatFileSeq>(std::move(path), "fltr", FLTR_FILE_CHUNK_SIZE);
 }
 
+<<<<<<< HEAD
 interfaces::Chain::NotifyOptions BlockFilterIndex::CustomOptions()
 {
     interfaces::Chain::NotifyOptions options;
@@ -120,6 +121,18 @@ interfaces::Chain::NotifyOptions BlockFilterIndex::CustomOptions()
 }
 
 bool BlockFilterIndex::CustomInit(const std::optional<interfaces::BlockRef>& block)
+||||||| parent of b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+bool BlockFilterIndex::CustomInit(const std::optional<interfaces::BlockKey>& block)
+=======
+interfaces::Chain::NotifyOptions BlockFilterIndex::CustomOptions()
+{
+    interfaces::Chain::NotifyOptions options;
+    options.connect_undo_data = true;
+    return options;
+}
+
+bool BlockFilterIndex::CustomInit(const std::optional<interfaces::BlockKey>& block)
+>>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
 {
     if (!m_db->Read(DB_FILTER_POS, m_next_filter_pos)) {
         // Check that the cause of the read failure is that the key does not exist. Any other errors
@@ -273,7 +286,31 @@ std::optional<uint256> BlockFilterIndex::ReadFilterHeader(int height, const uint
 
 bool BlockFilterIndex::CustomAppend(const interfaces::BlockInfo& block)
 {
+<<<<<<< HEAD
     BlockFilter filter(m_filter_type, *Assert(block.data), *Assert(block.undo_data));
+||||||| parent of b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+    CBlockUndo block_undo;
+
+    if (block.height > 0) {
+        // pindex variable gives indexing code access to node internals. It
+        // will be removed in upcoming commit
+        const CBlockIndex* pindex = WITH_LOCK(cs_main, return m_chainstate->m_blockman.LookupBlockIndex(block.hash));
+        if (!m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *pindex)) {
+            return false;
+        }
+    }
+
+    BlockFilter filter(m_filter_type, *Assert(block.data), block_undo);
+
+=======
+
+    if (block.height > 0) {
+        assert(block.undo_data);
+    }
+
+    BlockFilter filter(m_filter_type, *Assert(block.data), block.undo_data ? *block.undo_data : CBlockUndo());
+
+>>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
     const uint256& header = filter.ComputeHeader(m_last_header);
     bool res = Write(filter, block.height, header);
     if (res) m_last_header = header; // update last header
@@ -352,8 +389,16 @@ bool BlockFilterIndex::CustomRemove(const interfaces::BlockInfo& block)
     batch.Write(DB_FILTER_POS, m_next_filter_pos);
     if (!m_db->WriteBatch(batch)) return false;
 
+<<<<<<< HEAD
     // Update cached header to the previous block hash
     m_last_header = *Assert(ReadFilterHeader(block.height - 1, *Assert(block.prev_hash)));
+||||||| parent of b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+    // Update cached header
+    m_last_header = *Assert(ReadFilterHeader(new_tip.height, new_tip.hash));
+=======
+    // Update cached header
+    m_last_header = *Assert(ReadFilterHeader(block.height, block.hash));
+>>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
     return true;
 }
 

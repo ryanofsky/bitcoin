@@ -52,9 +52,17 @@ private:
     std::optional<uint256> ReadFilterHeader(int height, const uint256& expected_block_hash);
 
 protected:
+<<<<<<< HEAD
     interfaces::Chain::NotifyOptions CustomOptions() override;
 
     bool CustomInit(const std::optional<interfaces::BlockRef>& block) override;
+||||||| parent of b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+    bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
+=======
+    interfaces::Chain::NotifyOptions CustomOptions() override;
+
+    bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
+>>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
 
     bool CustomCommit(CDBBatch& batch) override;
 

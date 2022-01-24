@@ -137,6 +137,27 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
 
     // Ignore genesis block
     if (block.height > 0) {
+<<<<<<< HEAD
+||||||| parent of b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+        // pindex variable gives indexing code access to node internals. It
+        // will be removed in upcoming commit
+        const CBlockIndex* pindex = WITH_LOCK(cs_main, return m_chainstate->m_blockman.LookupBlockIndex(block.hash));
+        if (!m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *pindex)) {
+            return false;
+        }
+
+        std::pair<uint256, DBVal> read_out;
+        if (!m_db->Read(DBHeightKey(block.height - 1), read_out)) {
+            return false;
+        }
+
+=======
+        std::pair<uint256, DBVal> read_out;
+        if (!m_db->Read(DBHeightKey(block.height - 1), read_out)) {
+            return false;
+        }
+
+>>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
         uint256 expected_block_hash{*Assert(block.prev_hash)};
         if (m_current_block_hash != expected_block_hash) {
             LogError("previous block header belongs to unexpected block %s; expected %s",
@@ -146,6 +167,7 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
 
         // Add the new utxos created from the block
         assert(block.data);
+        assert(block.undo_data);
         for (size_t i = 0; i < block.data->vtx.size(); ++i) {
             const auto& tx{block.data->vtx.at(i)};
             const bool is_coinbase{tx->IsCoinBase()};
@@ -189,8 +211,16 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
             }
 
             // The coinbase tx has no undo data since no former output is spent
+<<<<<<< HEAD
             if (!is_coinbase) {
                 const auto& tx_undo{Assert(block.undo_data)->vtxundo.at(i - 1)};
+||||||| parent of b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+            if (!tx->IsCoinBase()) {
+                const auto& tx_undo{block_undo.vtxundo.at(i - 1)};
+=======
+            if (!tx->IsCoinBase()) {
+                const auto& tx_undo{block.undo_data->vtxundo.at(i - 1)};
+>>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
 
                 for (size_t j = 0; j < tx_undo.vprevout.size(); ++j) {
                     const Coin& coin{tx_undo.vprevout[j]};
@@ -444,6 +474,7 @@ bool CoinStatsIndex::ReverseBlock(const CBlock& block, const CBlockIndex* pindex
 interfaces::Chain::NotifyOptions CoinStatsIndex::CustomOptions()
 {
     interfaces::Chain::NotifyOptions options;
+    options.connect_undo_data = true;
     options.disconnect_data = true;
     options.disconnect_undo_data = true;
     return options;
