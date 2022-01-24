@@ -33,6 +33,7 @@ constexpr auto SYNC_LOCATOR_WRITE_INTERVAL{30s};
 template <typename... Args>
 void BaseIndex::FatalErrorf(const char* fmt, const Args&... args)
 {
+    Interrupt(); // Cancel the sync thread
     auto message = tfm::format(fmt, args...);
     node::AbortNode(m_chain->context()->exit_status, message);
 }
@@ -58,10 +59,15 @@ public:
     void blockConnected(const interfaces::BlockInfo& block) override;
     void chainStateFlushed(const CBlockLocator& locator) override;
     BaseIndex& m_index;
+    interfaces::Chain::NotifyOptions m_options = m_index.CustomOptions();
 };
 
-void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block)
+void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block_info)
 {
+    // Make a mutable copy of the BlockInfo argument so undo_data can be
+    // attached below. This is temporary and removed in upcoming commits.
+    interfaces::BlockInfo block{block_info};
+
     if (m_index.IgnoreBlockConnected(block)) return;
 
     const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
@@ -72,9 +78,27 @@ void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block)
         return;
     }
 
+    CBlockUndo block_undo;
+    if (m_options.connect_undo_data && !block.undo_data && pindex->nHeight > 0) {
+        if (!m_index.m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *pindex)) {
+            m_index.FatalErrorf("%s: Failed to read block %s undo data from disk",
+                       __func__, pindex->GetBlockHash().ToString());
+            return;
+        }
+        block.undo_data = &block_undo;
+    }
+
     if (!m_index.CustomAppend(block)) {
         m_index.FatalErrorf("%s: Failed to write block %s to index",
                    __func__, pindex->GetBlockHash().ToString());
+        return;
+    }
+
+    if (!m_index.m_synced) {
+        // Only update index best block between flushes if synced. Decision to let
+        // the best block pointer lag during sync seems a little arbitrary, but has
+        // been longstanding behavior since syncing was introduced in #13033, so
+        // preserving it in case anything depends on it.
         return;
     }
 
@@ -128,6 +152,7 @@ BaseIndex::~BaseIndex()
     //! handlers call pure virtual methods like GetName(), so if they are still
     //! being called at this point, they would segfault.
     LOCK(m_mutex);
+    assert(!m_notifications);
     assert(!m_handler);
 }
 
@@ -210,6 +235,7 @@ bool BaseIndex::Init()
     if (!handler) return false;
 
     LOCK(m_mutex);
+    m_notifications = std::move(notifications);
     m_handler = std::move(handler);
     return true;
 }
@@ -234,6 +260,8 @@ void BaseIndex::ThreadSync()
 {
     const CBlockIndex* pindex = m_best_block_index.load();
     if (!m_synced) {
+        auto notifications = WITH_LOCK(m_mutex, return m_notifications);
+
         std::chrono::steady_clock::time_point last_log_time{0s};
         std::chrono::steady_clock::time_point last_locator_write_time{0s};
         while (true) {
@@ -281,6 +309,7 @@ void BaseIndex::ThreadSync()
 
             CBlock block;
             interfaces::BlockInfo block_info = kernel::MakeBlockInfo(pindex);
+            block_info.chain_tip = false;
             if (!m_chainstate->m_blockman.ReadBlockFromDisk(block, *pindex)) {
                 FatalErrorf("%s: Failed to read block %s from disk",
                            __func__, pindex->GetBlockHash().ToString());
@@ -288,11 +317,7 @@ void BaseIndex::ThreadSync()
             } else {
                 block_info.data = &block;
             }
-            if (!CustomAppend(block_info)) {
-                FatalErrorf("%s: Failed to write block %s to index database",
-                           __func__, pindex->GetBlockHash().ToString());
-                return;
-            }
+            notifications->blockConnected(block_info);
         }
     }
 
@@ -367,8 +392,10 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
 
 bool BaseIndex::IgnoreBlockConnected(const interfaces::BlockInfo& block)
 {
+    // During initial sync, ignore validation interface notifications, only
+    // process notifications from sync thread.
     if (!m_ready) {
-        return true;
+        return block.chain_tip;
     }
 
     const CBlockIndex* pindex = &BlockIndex(block.hash);
@@ -452,6 +479,8 @@ bool BaseIndex::BlockUntilSyncedToCurrentChain() const
 void BaseIndex::Interrupt()
 {
     m_interrupt();
+    LOCK(m_mutex);
+    m_notifications.reset();
 }
 
 bool BaseIndex::StartBackgroundSync()
@@ -464,7 +493,12 @@ bool BaseIndex::StartBackgroundSync()
 
 void BaseIndex::Stop()
 {
-    WITH_LOCK(m_mutex, m_handler.reset());
+    {
+        m_interrupt();
+        LOCK(m_mutex);
+        m_notifications.reset();
+        m_handler.reset();
+    }
 
     if (m_thread_sync.joinable()) {
         m_thread_sync.join();
