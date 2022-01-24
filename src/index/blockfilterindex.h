@@ -45,6 +45,8 @@ private:
     bool AllowPrune() const override { return true; }
 
 protected:
+    interfaces::Chain::NotifyOptions CustomOptions() override;
+
     bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
 
     bool CustomCommit(CDBBatch& batch) override;
