@@ -261,7 +261,7 @@ static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
     return true;
 }
 
-bool CoinStatsIndex::CustomRewind(const interfaces::BlockKey& current_tip, const interfaces::BlockKey& new_tip)
+bool CoinStatsIndex::CustomRemove(const interfaces::BlockInfo& block)
 {
     CDBBatch batch(*m_db);
     std::unique_ptr<CDBIterator> db_it(m_db->NewIterator());
@@ -269,30 +269,13 @@ bool CoinStatsIndex::CustomRewind(const interfaces::BlockKey& current_tip, const
     // During a reorg, we need to copy all hash digests for blocks that are
     // getting disconnected from the height index to the hash index so we can
     // still find them when the height index entries are overwritten.
-    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, new_tip.height, current_tip.height)) {
+    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, block.height - 1, block.height)) {
         return false;
     }
 
     if (!m_db->WriteBatch(batch)) return false;
 
-    {
-        LOCK(cs_main);
-        const CBlockIndex* iter_tip{m_chainstate->m_blockman.LookupBlockIndex(current_tip.hash)};
-        const CBlockIndex* new_tip_index{m_chainstate->m_blockman.LookupBlockIndex(new_tip.hash)};
-
-        do {
-            CBlock block;
-
-            if (!m_chainstate->m_blockman.ReadBlockFromDisk(block, *iter_tip)) {
-                return error("%s: Failed to read block %s from disk",
-                             __func__, iter_tip->GetBlockHash().ToString());
-            }
-
-            ReverseBlock(block, iter_tip);
-
-            iter_tip = iter_tip->GetAncestor(iter_tip->nHeight - 1);
-        } while (new_tip_index != iter_tip);
-    }
+    ReverseBlock(block);
 
     return true;
 }
@@ -394,26 +377,29 @@ bool CoinStatsIndex::CustomCommit(CDBBatch& batch)
     return true;
 }
 
-// Reverse a single block as part of a reorg
-bool CoinStatsIndex::ReverseBlock(const CBlock& block, const CBlockIndex* pindex)
+interfaces::Chain::NotifyOptions CoinStatsIndex::CustomOptions()
 {
-    CBlockUndo block_undo;
+    interfaces::Chain::NotifyOptions options;
+    options.disconnect_data = true;
+    options.disconnect_undo_data = true;
+    return options;
+}
+
+// Reverse a single block as part of a reorg
+bool CoinStatsIndex::ReverseBlock(const interfaces::BlockInfo& block)
+{
     std::pair<uint256, DBVal> read_out;
 
-    const CAmount block_subsidy{GetBlockSubsidy(pindex->nHeight, Params().GetConsensus())};
+    const CAmount block_subsidy{GetBlockSubsidy(block.height, Params().GetConsensus())};
     m_total_subsidy -= block_subsidy;
 
     // Ignore genesis block
-    if (pindex->nHeight > 0) {
-        if (!m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *pindex)) {
+    if (block.height > 0) {
+        if (!m_db->Read(DBHeightKey(block.height - 1), read_out)) {
             return false;
         }
 
-        if (!m_db->Read(DBHeightKey(pindex->nHeight - 1), read_out)) {
-            return false;
-        }
-
-        uint256 expected_block_hash{pindex->pprev->GetBlockHash()};
+        uint256 expected_block_hash{*block.prev_hash};
         if (read_out.first != expected_block_hash) {
             LogPrintf("WARNING: previous block header belongs to unexpected block %s; expected %s\n",
                       read_out.first.ToString(), expected_block_hash.ToString());
@@ -426,13 +412,15 @@ bool CoinStatsIndex::ReverseBlock(const CBlock& block, const CBlockIndex* pindex
     }
 
     // Remove the new UTXOs that were created from the block
-    for (size_t i = 0; i < block.vtx.size(); ++i) {
-        const auto& tx{block.vtx.at(i)};
+    assert(block.data);
+    assert(block.undo_data);
+    for (size_t i = 0; i < block.data->vtx.size(); ++i) {
+        const auto& tx{block.data->vtx.at(i)};
 
         for (uint32_t j = 0; j < tx->vout.size(); ++j) {
             const CTxOut& out{tx->vout[j]};
             COutPoint outpoint{tx->GetHash(), j};
-            Coin coin{out, pindex->nHeight, tx->IsCoinBase()};
+            Coin coin{out, block.height, tx->IsCoinBase()};
 
             // Skip unspendable coins
             if (coin.out.scriptPubKey.IsUnspendable()) {
@@ -456,7 +444,7 @@ bool CoinStatsIndex::ReverseBlock(const CBlock& block, const CBlockIndex* pindex
 
         // The coinbase tx has no undo data since no former output is spent
         if (!tx->IsCoinBase()) {
-            const auto& tx_undo{block_undo.vtxundo.at(i - 1)};
+            const auto& tx_undo{block.undo_data->vtxundo.at(i - 1)};
 
             for (size_t j = 0; j < tx_undo.vprevout.size(); ++j) {
                 Coin coin{tx_undo.vprevout[j]};
