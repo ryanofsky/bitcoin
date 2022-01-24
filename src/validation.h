@@ -1211,6 +1211,6 @@ const AssumeutxoData* ExpectedAssumeutxo(const int height, const CChainParams& p
 bool IsBIP30Repeat(const CBlockIndex& block_index);
 
 /** Identifies blocks which coinbase output was subsequently overwritten in the UTXO set (see BIP30) */
-bool IsBIP30Unspendable(const CBlockIndex& block_index);
+bool IsBIP30Unspendable(const uint256& block_hash, int block_height);
 
 #endif // BITCOIN_VALIDATION_H
