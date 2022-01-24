@@ -15,8 +15,13 @@
 #include <node/database_args.h>
 #include <node/interface_ui.h>
 #include <tinyformat.h>
+<<<<<<< HEAD
 #include <undo.h>
 #include <util/string.h>
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+=======
+#include <undo.h>
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
 #include <util/thread.h>
 #include <util/translation.h>
 #include <validation.h>
@@ -412,6 +417,7 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
 {
     assert(current_tip->GetAncestor(new_tip->nHeight) == new_tip);
 
+<<<<<<< HEAD
     CBlock block;
     CBlockUndo block_undo;
 
@@ -449,6 +455,33 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
         // If commit fails, revert the best block index to avoid corruption.
         SetBestBlockIndex(current_tip);
         return false;
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+    if (!CustomRewind({current_tip->GetBlockHash(), current_tip->nHeight}, {new_tip->GetBlockHash(), new_tip->nHeight})) {
+        return false;
+=======
+    CBlock block;
+    CBlockUndo block_undo;
+
+    for (const CBlockIndex* iter_tip = current_tip; iter_tip != new_tip; iter_tip = iter_tip->pprev) {
+        interfaces::BlockInfo block_info = kernel::MakeBlockInfo(iter_tip);
+        if (CustomOptions().disconnect_data) {
+            if (!m_chainstate->m_blockman.ReadBlockFromDisk(block, *iter_tip)) {
+                LogError("%s: Failed to read block %s from disk",
+                             __func__, iter_tip->GetBlockHash().ToString());
+                return false;
+            }
+            block_info.data = &block;
+        }
+        if (CustomOptions().disconnect_undo_data && iter_tip->nHeight > 0) {
+            if (!m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *iter_tip)) {
+                return false;
+            }
+            block_info.undo_data = &block_undo;
+        }
+        if (!CustomRemove(block_info)) {
+            return false;
+        }
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
     }
 
 =======

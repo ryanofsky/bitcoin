@@ -265,16 +265,54 @@ bool CoinStatsIndex::CustomRemove(const interfaces::BlockInfo& block)
     CDBBatch batch(*m_db);
     std::unique_ptr<CDBIterator> db_it(m_db->NewIterator());
 
+<<<<<<< HEAD
     // During a reorg, copy the block's hash digest from the height index to the hash index,
     // ensuring it's still accessible after the height index entry is overwritten.
     if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, block.height)) {
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+    // During a reorg, we need to copy all hash digests for blocks that are
+    // getting disconnected from the height index to the hash index so we can
+    // still find them when the height index entries are overwritten.
+    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, new_tip.height, current_tip.height)) {
+=======
+    // During a reorg, we need to copy all hash digests for blocks that are
+    // getting disconnected from the height index to the hash index so we can
+    // still find them when the height index entries are overwritten.
+    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, block.height - 1, block.height)) {
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
         return false;
     }
 
     if (!m_db->WriteBatch(batch)) return false;
 
+<<<<<<< HEAD
     if (!RevertBlock(block)) {
         return false; // failure cause logged internally
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+    {
+        LOCK(cs_main);
+        const CBlockIndex* iter_tip{m_chainstate->m_blockman.LookupBlockIndex(current_tip.hash)};
+        const CBlockIndex* new_tip_index{m_chainstate->m_blockman.LookupBlockIndex(new_tip.hash)};
+
+        do {
+            CBlock block;
+
+            if (!m_chainstate->m_blockman.ReadBlockFromDisk(block, *iter_tip)) {
+                LogError("%s: Failed to read block %s from disk\n",
+                             __func__, iter_tip->GetBlockHash().ToString());
+                return false;
+            }
+
+            if (!ReverseBlock(block, iter_tip)) {
+                return false; // failure cause logged internally
+            }
+
+            iter_tip = iter_tip->GetAncestor(iter_tip->nHeight - 1);
+        } while (new_tip_index != iter_tip);
+=======
+    if (!ReverseBlock(block)) {
+        return false; // failure cause logged internally
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
     }
 
     return true;
@@ -379,6 +417,7 @@ bool CoinStatsIndex::CustomCommit(CDBBatch& batch)
     return true;
 }
 
+<<<<<<< HEAD
 interfaces::Chain::NotifyOptions CoinStatsIndex::CustomOptions()
 {
     interfaces::Chain::NotifyOptions options;
@@ -390,9 +429,34 @@ interfaces::Chain::NotifyOptions CoinStatsIndex::CustomOptions()
 
 // Revert a single block as part of a reorg
 bool CoinStatsIndex::RevertBlock(const interfaces::BlockInfo& block)
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+// Reverse a single block as part of a reorg
+bool CoinStatsIndex::ReverseBlock(const CBlock& block, const CBlockIndex* pindex)
+=======
+interfaces::Chain::NotifyOptions CoinStatsIndex::CustomOptions()
+{
+    interfaces::Chain::NotifyOptions options;
+    options.disconnect_data = true;
+    options.disconnect_undo_data = true;
+    return options;
+}
+
+// Reverse a single block as part of a reorg
+bool CoinStatsIndex::ReverseBlock(const interfaces::BlockInfo& block)
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
 {
     std::pair<uint256, DBVal> read_out;
 
+<<<<<<< HEAD
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+    const CAmount block_subsidy{GetBlockSubsidy(pindex->nHeight, Params().GetConsensus())};
+    m_total_subsidy -= block_subsidy;
+
+=======
+    const CAmount block_subsidy{GetBlockSubsidy(block.height, Params().GetConsensus())};
+    m_total_subsidy -= block_subsidy;
+
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
     // Ignore genesis block
     if (block.height > 0) {
         if (!m_db->Read(DBHeightKey(block.height - 1), read_out)) {
@@ -412,6 +476,7 @@ bool CoinStatsIndex::RevertBlock(const interfaces::BlockInfo& block)
         }
     }
 
+<<<<<<< HEAD
     // Roll back muhash by removing the new UTXOs that were created by the
     // block and reapplying the old UTXOs that were spent by the block
     assert(block.data);
@@ -423,11 +488,30 @@ bool CoinStatsIndex::RevertBlock(const interfaces::BlockInfo& block)
         if (is_coinbase && IsBIP30Unspendable(block.hash, block.height)) {
             continue;
         }
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+    // Remove the new UTXOs that were created from the block
+    for (size_t i = 0; i < block.vtx.size(); ++i) {
+        const auto& tx{block.vtx.at(i)};
+=======
+    // Remove the new UTXOs that were created from the block
+    assert(block.data);
+    assert(block.undo_data);
+    for (size_t i = 0; i < block.data->vtx.size(); ++i) {
+        const auto& tx{block.data->vtx.at(i)};
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
 
         for (uint32_t j = 0; j < tx->vout.size(); ++j) {
             const CTxOut& out{tx->vout[j]};
+<<<<<<< HEAD
             const COutPoint outpoint{tx->GetHash(), j};
             const Coin coin{out, block.height, is_coinbase};
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+            COutPoint outpoint{tx->GetHash(), j};
+            Coin coin{out, pindex->nHeight, tx->IsCoinBase()};
+=======
+            COutPoint outpoint{tx->GetHash(), j};
+            Coin coin{out, block.height, tx->IsCoinBase()};
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
 
             if (!coin.out.scriptPubKey.IsUnspendable()) {
                 RemoveCoinHash(m_muhash, outpoint, coin);
@@ -435,8 +519,16 @@ bool CoinStatsIndex::RevertBlock(const interfaces::BlockInfo& block)
         }
 
         // The coinbase tx has no undo data since no former output is spent
+<<<<<<< HEAD
         if (!is_coinbase) {
             const auto& tx_undo{block.undo_data->vtxundo.at(i - 1)};
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+        if (!tx->IsCoinBase()) {
+            const auto& tx_undo{block_undo.vtxundo.at(i - 1)};
+=======
+        if (!tx->IsCoinBase()) {
+            const auto& tx_undo{block.undo_data->vtxundo.at(i - 1)};
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
 
             for (size_t j = 0; j < tx_undo.vprevout.size(); ++j) {
                 const Coin& coin{tx_undo.vprevout[j]};

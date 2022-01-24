@@ -327,10 +327,22 @@ bool BlockFilterIndex::CustomRemove(const interfaces::BlockInfo& block)
     CDBBatch batch(*m_db);
     std::unique_ptr<CDBIterator> db_it(m_db->NewIterator());
 
+<<<<<<< HEAD
     // During a reorg, we need to copy block filter that is getting disconnected from the
     // height index to the hash index so we can still find it when the height index entry
     // is overwritten.
     if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, block.height)) {
+||||||| parent of 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+    // During a reorg, we need to copy all filters for blocks that are getting disconnected from the
+    // height index to the hash index so we can still find them when the height index entries are
+    // overwritten.
+    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, new_tip.height, current_tip.height)) {
+=======
+    // During a reorg, we need to copy all filters for blocks that are getting disconnected from the
+    // height index to the hash index so we can still find them when the height index entries are
+    // overwritten.
+    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, block.height - 1, block.height)) {
+>>>>>>> 707ff84981d7 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
         return false;
     }
 
