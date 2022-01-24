@@ -328,6 +328,10 @@ public:
     //! Options specifying which chain notifications are required.
     struct NotifyOptions
     {
+        //! Include block data with block disconnected notifications.
+        bool disconnect_data = false;
+        //! Include undo data with block disconnected notifications.
+        bool disconnect_undo_data = false;
     };
 
     //! Prepare callback passed to attachChain, allowing the caller to perform
