@@ -38,18 +38,26 @@ private:
     CAmount m_total_unspendables_scripts{0};
     CAmount m_total_unspendables_unclaimed_rewards{0};
 
+<<<<<<< HEAD
     [[nodiscard]] bool ReverseBlock(const CBlock& block, const CBlockIndex* pindex);
+||||||| parent of 498f767392d3 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
+    bool ReverseBlock(const CBlock& block, const CBlockIndex* pindex);
+=======
+    bool ReverseBlock(const interfaces::BlockInfo& block);
+>>>>>>> 498f767392d3 (indexes, refactor: Remove remaining CBlockIndex* uses in index Rewind methods)
 
     bool AllowPrune() const override { return true; }
 
 protected:
+    interfaces::Chain::NotifyOptions CustomOptions() override;
+
     bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
 
     bool CustomCommit(CDBBatch& batch) override;
 
     bool CustomAppend(const interfaces::BlockInfo& block) override;
 
-    bool CustomRewind(const interfaces::BlockKey& current_tip, const interfaces::BlockKey& new_tip) override;
+    bool CustomRemove(const interfaces::BlockInfo& block) override;
 
     BaseIndex::DB& GetDB() const override { return *m_db; }
 
