@@ -13,6 +13,7 @@
 
 #include <string>
 
+class BaseIndexNotifications;
 class CBlock;
 class CBlockIndex;
 class Chainstate;
@@ -116,6 +117,7 @@ private:
     /// threads (the sync thread and the init thread).
     Mutex m_mutex;
     friend class BaseIndexNotifications;
+    std::shared_ptr<BaseIndexNotifications> m_notifications GUARDED_BY(m_mutex);
     std::unique_ptr<interfaces::Handler> m_handler GUARDED_BY(m_mutex);
 
     /// Sync the index with the block index starting from the current best block.
@@ -123,7 +125,7 @@ private:
     /// interrupted with m_interrupt. Once the index gets in sync, the m_synced
     /// flag is set and the BlockConnected ValidationInterface callback takes
     /// over and the sync thread exits.
-    void ThreadSync();
+    void ThreadSync() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
     /// Write the current index state (eg. chain block locator and subclass-specific items) to disk.
     ///
@@ -141,7 +143,7 @@ private:
     virtual bool AllowPrune() const = 0;
 
     template <typename... Args>
-    void FatalErrorf(const char* fmt, const Args&... args);
+    void FatalErrorf(const char* fmt, const Args&... args) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
     /// Temporary helper function to convert block hashes to index pointers
     /// while index code is being migrated to use interfaces::Chain methods
@@ -165,8 +167,14 @@ protected:
     void BlockConnected(const interfaces::BlockInfo& block_info);
 =======
     /// Return whether to ignore stale, out-of-sync block connected event
+<<<<<<< HEAD
     bool IgnoreBlockConnected(const interfaces::BlockInfo& block);
 >>>>>>> 8d0cc07587d4 (indexes, refactor: Remove index validationinterface hooks)
+||||||| parent of f2a0551eb8ec (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+    bool IgnoreBlockConnected(const interfaces::BlockInfo& block);
+=======
+    bool IgnoreBlockConnected(const interfaces::BlockInfo& block) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+>>>>>>> f2a0551eb8ec (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
 
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -179,8 +187,14 @@ protected:
     void ChainStateFlushed(const CBlockLocator& locator);
 =======
     /// Return whether to ignore stale, out-of-sync chain flushed event
+<<<<<<< HEAD
     bool IgnoreChainStateFlushed(const CBlockLocator& locator);
 >>>>>>> 8d0cc07587d4 (indexes, refactor: Remove index validationinterface hooks)
+||||||| parent of f2a0551eb8ec (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+    bool IgnoreChainStateFlushed(const CBlockLocator& locator);
+=======
+    bool IgnoreChainStateFlushed(const CBlockLocator& locator) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+>>>>>>> f2a0551eb8ec (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
 
     /// Return custom notification options for index.
     [[nodiscard]] virtual interfaces::Chain::NotifyOptions CustomOptions() { return {}; }
@@ -218,7 +232,7 @@ public:
     /// not block and immediately returns false.
     bool BlockUntilSyncedToCurrentChain() const LOCKS_EXCLUDED(::cs_main);
 
-    void Interrupt();
+    void Interrupt() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
     /// Initializes the sync state and registers the instance to the
     /// validation interface so that it stays in sync with blockchain updates.
