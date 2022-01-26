@@ -69,6 +69,8 @@ public:
     void chainStateFlushed(ChainstateRole role, const CBlockLocator& locator) override;
     BaseIndex& m_index;
     interfaces::Chain::NotifyOptions m_options = m_index.CustomOptions();
+    std::chrono::steady_clock::time_point m_last_log_time{0s};
+    std::chrono::steady_clock::time_point m_last_locator_write_time{0s};
 };
 
 void BaseIndexNotifications::blockConnected(ChainstateRole role, const interfaces::BlockInfo& block_info)
@@ -97,13 +99,30 @@ void BaseIndexNotifications::blockConnected(ChainstateRole role, const interface
         block.undo_data = &block_undo;
     }
 
+    std::chrono::steady_clock::time_point current_time{0s};
+    if (!block.chain_tip) {
+        current_time = std::chrono::steady_clock::now();
+        if (m_last_log_time + SYNC_LOG_INTERVAL < current_time) {
+            LogPrintf("Syncing %s with block chain from height %d\n",
+                      m_index.GetName(), pindex->nHeight);
+            m_last_log_time = current_time;
+        }
+    }
+
     if (!m_index.CustomAppend(block)) {
         m_index.FatalErrorf("%s: Failed to write block %s to index",
                    __func__, pindex->GetBlockHash().ToString());
         return;
     }
 
-    if (!block.chain_tip) {
+    if (!block.chain_tip && (m_last_locator_write_time + SYNC_LOCATOR_WRITE_INTERVAL < current_time || m_index.m_interrupt)) {
+        auto locator = GetLocator(*m_index.m_chain, pindex->GetBlockHash());
+        m_last_locator_write_time = current_time;
+        // No need to handle errors in Commit. If it fails, the error will be already be
+        // logged. The best way to recover is to continue, as index cannot be corrupted by
+        // a missed commit to disk for an advanced index state.
+        m_index.Commit(locator);
+    } else if (!block.chain_tip) {
         // Only update index best block between flushes if fully synced.
         // Decision to let the best block pointer lag during sync seems a
         // little arbitrary, but has been behavior since syncing was introduced
@@ -362,18 +381,19 @@ void BaseIndex::Sync()
 =======
         auto notifications = WITH_LOCK(m_mutex, return m_notifications);
 
+<<<<<<< HEAD
         std::chrono::steady_clock::time_point last_log_time{0s};
         std::chrono::steady_clock::time_point last_locator_write_time{0s};
 >>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
+||||||| parent of 8c3957de621e (indexes, refactor: Move more new block logic out of ThreadSync to blockConnected)
+        std::chrono::steady_clock::time_point last_log_time{0s};
+        std::chrono::steady_clock::time_point last_locator_write_time{0s};
+=======
+>>>>>>> 8c3957de621e (indexes, refactor: Move more new block logic out of ThreadSync to blockConnected)
         while (true) {
             if (m_interrupt) {
                 LogInfo("%s: m_interrupt set; exiting ThreadSync", GetName());
 
-                SetBestBlockIndex(pindex);
-                // No need to handle errors in Commit. If it fails, the error will be already be
-                // logged. The best way to recover is to continue, as index cannot be corrupted by
-                // a missed commit to disk for an advanced index state.
-                Commit(GetLocator(*m_chain, pindex->GetBlockHash()));
                 return;
             }
 
@@ -434,6 +454,7 @@ void BaseIndex::Sync()
                 block_info.data = &block;
             }
             notifications->blockConnected(ChainstateRole::NORMAL, block_info);
+<<<<<<< HEAD
 >>>>>>> b3e2e1970e46 (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
 
             auto current_time{NodeClock::now()};
@@ -448,6 +469,23 @@ void BaseIndex::Sync()
                 // No need to handle errors in Commit. See rationale above.
                 Commit(GetLocator(*m_chain, pindex->GetBlockHash()));
             }
+||||||| parent of 8c3957de621e (indexes, refactor: Move more new block logic out of ThreadSync to blockConnected)
+
+            auto current_time{std::chrono::steady_clock::now()};
+            if (last_log_time + SYNC_LOG_INTERVAL < current_time) {
+                LogPrintf("Syncing %s with block chain from height %d\n",
+                          GetName(), pindex->nHeight);
+                last_log_time = current_time;
+            }
+
+            if (last_locator_write_time + SYNC_LOCATOR_WRITE_INTERVAL < current_time) {
+                SetBestBlockIndex(pindex);
+                last_locator_write_time = current_time;
+                // No need to handle errors in Commit. See rationale above.
+                Commit(GetLocator(*m_chain, pindex->GetBlockHash()));
+            }
+=======
+>>>>>>> 8c3957de621e (indexes, refactor: Move more new block logic out of ThreadSync to blockConnected)
         }
     }
 
