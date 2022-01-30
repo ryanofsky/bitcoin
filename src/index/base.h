@@ -100,6 +100,7 @@ private:
     ///   data is committed
     std::atomic<const CBlockIndex*> m_best_block_index{nullptr};
 
+<<<<<<< HEAD
     std::thread m_thread_sync;
     CThreadInterrupt m_interrupt;
 
@@ -113,6 +114,12 @@ private:
     void ThreadSync();
 
 =======
+||||||| parent of 8f3146d4bb41 (indexes, refactor: Move sync thread from index to node)
+    std::thread m_thread_sync;
+    CThreadInterrupt m_interrupt;
+
+=======
+>>>>>>> 8f3146d4bb41 (indexes, refactor: Move sync thread from index to node)
     /// Mutex to let m_notifications and m_handler be accessed from multiple
     /// threads (the sync thread and the init thread).
     Mutex m_mutex;
@@ -120,6 +127,7 @@ private:
     std::shared_ptr<BaseIndexNotifications> m_notifications GUARDED_BY(m_mutex);
     std::unique_ptr<interfaces::Handler> m_handler GUARDED_BY(m_mutex);
 
+<<<<<<< HEAD
     /// Sync the index with the block index starting from the current best block.
     /// Intended to be run in its own thread, m_thread_sync, and can be
     /// interrupted with m_interrupt. Once the index gets in sync, the m_synced
@@ -128,6 +136,16 @@ private:
     void ThreadSync() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
 >>>>>>> 268c2dd29744 (indexes, refactor: Remove index RegisterValidationInterface call)
+||||||| parent of 8f3146d4bb41 (indexes, refactor: Move sync thread from index to node)
+    /// Sync the index with the block index starting from the current best block.
+    /// Intended to be run in its own thread, m_thread_sync, and can be
+    /// interrupted with m_interrupt. Once the index gets in sync, the m_synced
+    /// flag is set and the BlockConnected ValidationInterface callback takes
+    /// over and the sync thread exits.
+    void ThreadSync() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+
+=======
+>>>>>>> 8f3146d4bb41 (indexes, refactor: Move sync thread from index to node)
     /// Write the current index state (eg. chain block locator and subclass-specific items) to disk.
     ///
     /// Recommendations for error handling:
