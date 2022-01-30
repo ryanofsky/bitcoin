@@ -141,6 +141,9 @@ public:
     //! pruned), and contains transactions.
     virtual bool haveBlockOnDisk(int height) = 0;
 
+    //! Get tip information.
+    virtual bool getTip(const FoundBlock& block={}) = 0;
+
     //! Get locator for the current chain tip.
     virtual CBlockLocator getTipLocator() = 0;
 
@@ -354,6 +357,9 @@ public:
 
     //! Register handler for notifications.
     virtual std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) = 0;
+
+    //! Wait for pending notifications.
+    virtual void waitForPendingNotifications() = 0;
 
     //! Wait for pending notifications to be processed unless block hash points to the current
     //! chain tip.

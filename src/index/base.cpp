@@ -23,6 +23,8 @@
 #include <string>
 #include <utility>
 
+using interfaces::FoundBlock;
+
 constexpr uint8_t DB_BEST_BLOCK{'B'};
 
 constexpr auto SYNC_LOG_INTERVAL{30s};
@@ -474,19 +476,21 @@ bool BaseIndex::BlockUntilSyncedToCurrentChain() const
         return false;
     }
 
-    {
+    if (const CBlockIndex* index = m_best_block_index.load()) {
+        interfaces::BlockKey best_block{index->GetBlockHash(), index->nHeight};
         // Skip the queue-draining stuff if we know we're caught up with
         // m_chain.Tip().
-        LOCK(cs_main);
-        const CBlockIndex* chain_tip = m_chainstate->m_chain.Tip();
-        const CBlockIndex* best_block_index = m_best_block_index.load();
-        if (best_block_index->GetAncestor(chain_tip->nHeight) == chain_tip) {
+        interfaces::BlockKey tip;
+        uint256 ancestor;
+        if (m_chain->getTip(FoundBlock().hash(tip.hash).height(tip.height)) &&
+            m_chain->findAncestorByHeight(best_block.hash, tip.height, FoundBlock().hash(ancestor)) &&
+            ancestor == tip.hash) {
             return true;
         }
     }
 
     LogPrintf("%s: %s is catching up on block notifications\n", __func__, GetName());
-    m_chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
+    m_chain->waitForPendingNotifications();
     return true;
 }
 
