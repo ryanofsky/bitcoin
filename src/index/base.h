@@ -178,8 +178,15 @@ protected:
     void SetBestBlockIndex(const CBlockIndex* block);
 
 public:
+<<<<<<< HEAD
     BaseIndex(std::unique_ptr<interfaces::Chain> chain, std::string name, std::string thread_name);
     /// Destructor interrupts sync thread if running and blocks until it exits.
+||||||| parent of 3f2af373660 (indexes, refactor: Stop incorrectly calling Interupt() and Stop() in BaseIndex destructor)
+    BaseIndex(std::unique_ptr<interfaces::Chain> chain, std::string name);
+    /// Destructor interrupts sync thread if running and blocks until it exits.
+=======
+    BaseIndex(std::unique_ptr<interfaces::Chain> chain, std::string name);
+>>>>>>> 3f2af373660 (indexes, refactor: Stop incorrectly calling Interupt() and Stop() in BaseIndex destructor)
     virtual ~BaseIndex();
 
     /// Get the name of the index for display in logs.
