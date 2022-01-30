@@ -100,9 +100,6 @@ private:
     ///   data is committed
     std::atomic<const CBlockIndex*> m_best_block_index{nullptr};
 
-    std::thread m_thread_sync;
-    CThreadInterrupt m_interrupt;
-
     /// Mutex to let m_notifications and m_handler be accessed from multiple
     /// threads (the sync thread and the init thread).
     Mutex m_mutex;

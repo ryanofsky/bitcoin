@@ -28,6 +28,7 @@
 #include <netaddress.h>
 #include <netbase.h>
 #include <node/blockstorage.h>
+#include <node/chain.h>
 #include <node/coin.h>
 #include <node/context.h>
 #include <node/interface_ui.h>
@@ -54,6 +55,7 @@
 #include <util/result.h>
 #include <util/signalinterrupt.h>
 #include <util/string.h>
+#include <util/thread.h>
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
@@ -446,8 +448,8 @@ bool FillBlock(const CBlockIndex* index, const FoundBlock& block, UniqueLock<Rec
 class NotificationsProxy : public CValidationInterface
 {
 public:
-    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications)
-        : m_notifications(std::move(notifications)) {}
+    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options)
+        : m_notifications(std::move(notifications)), m_options(options) {}
     virtual ~NotificationsProxy() = default;
     void TransactionAddedToMempool(const NewMempoolTransactionInfo& tx, uint64_t mempool_sequence) override
     {
@@ -473,26 +475,45 @@ public:
         m_notifications->chainStateFlushed(role, locator);
     }
     std::shared_ptr<Chain::Notifications> m_notifications;
+    Chain::NotifyOptions m_options;
 };
+
+using SyncFn = std::function<void(const CThreadInterrupt& interrupt)>;
 
 class NotificationsHandlerImpl : public Handler
 {
 public:
-    explicit NotificationsHandlerImpl(ValidationSignals& signals, std::shared_ptr<Chain::Notifications> notifications)
-        : m_signals{signals}, m_proxy{std::make_shared<NotificationsProxy>(std::move(notifications))}
+    explicit NotificationsHandlerImpl(ValidationSignals& signals, std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options, SyncFn sync_fn)
+        : m_signals{signals}, m_proxy{std::make_shared<NotificationsProxy>(std::move(notifications), options)}, m_sync_fn{std::move(sync_fn)}
     {
         m_signals.RegisterSharedValidationInterface(m_proxy);
     }
     ~NotificationsHandlerImpl() override { disconnect(); }
+    void start() override
+    {
+        if (m_sync_fn) {
+            assert(!m_sync_thread.joinable());
+            m_sync_thread = std::thread(&util::TraceThread, m_proxy->m_options.thread_name, [this, sync_fn = std::move(m_sync_fn)] { sync_fn(m_interrupt); });
+            m_sync_fn = nullptr;
+        }
+    }
+    void interrupt() override { m_interrupt(); }
     void disconnect() override
     {
+        m_interrupt();
         if (m_proxy) {
             m_signals.UnregisterSharedValidationInterface(m_proxy);
             m_proxy.reset();
         }
+        if (m_sync_thread.joinable()) {
+            m_sync_thread.join();
+        }
     }
     ValidationSignals& m_signals;
     std::shared_ptr<NotificationsProxy> m_proxy;
+    SyncFn m_sync_fn;
+    std::thread m_sync_thread;
+    CThreadInterrupt m_interrupt;
 };
 
 class RpcHandlerImpl : public Handler
@@ -786,11 +807,15 @@ public:
         interfaces::BlockInfo start_block{kernel::MakeBlockInfo(start_block_index)};
         start_block.chain_tip = start_block_index == chainstate.m_chain.Tip();
         if (!prepare_sync(start_block)) return nullptr;
-        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), notifications);
+        SyncFn sync_fn;
+        if (!start_block.chain_tip) sync_fn = [this, &chainstate, start_block_index, notifications] (const CThreadInterrupt& interrupt) {
+           SyncChain(chainman().m_blockman, chainstate.m_chain, start_block_index, notifications, interrupt);
+        };
+        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), notifications, options, std::move(sync_fn));
     }
     std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) override
     {
-        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), std::move(notifications));
+        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), std::move(notifications), Chain::NotifyOptions{}, nullptr);
     }
     void waitForNotificationsIfTipChanged(const uint256& old_tip) override
     {
