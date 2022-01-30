@@ -6,7 +6,12 @@
 #include <index/coinstatsindex.h>
 #include <interfaces/chain.h>
 #include <kernel/coinstats.h>
+<<<<<<< HEAD
 #include <kernel/types.h>
+||||||| parent of bc2017b973d (indexes, refactor: Move sync thread from index to node)
+=======
+#include <test/util/index.h>
+>>>>>>> bc2017b973d (indexes, refactor: Move sync thread from index to node)
 #include <test/util/setup_common.h>
 #include <test/util/validation.h>
 #include <validation.h>
@@ -35,7 +40,7 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
     // is started.
     BOOST_CHECK(!coin_stats_index.BlockUntilSyncedToCurrentChain());
 
-    coin_stats_index.Sync();
+    IndexTester{coin_stats_index}.Sync();
 
     // Check that CoinStatsIndex works for genesis block.
     const CBlockIndex* genesis_block_index;
@@ -85,7 +90,7 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_unclean_shutdown, TestChain100Setup)
     {
         CoinStatsIndex index{interfaces::MakeChain(m_node), 1 << 20};
         BOOST_REQUIRE(index.Init());
-        index.Sync();
+        IndexTester{index}.Sync();
         std::shared_ptr<const CBlock> new_block;
         CBlockIndex* new_block_index = nullptr;
         {
