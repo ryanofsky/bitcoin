@@ -77,6 +77,11 @@ void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block_i
     // attached below. This is temporary and removed in upcoming commits.
     interfaces::BlockInfo block{block_info};
 
+    if (!block.error.empty()) {
+        m_index.FatalErrorf("%s", block.error);
+        return;
+    }
+
     const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
     if (!block.data) {
         // Null block.data means block is the ending block at the end of a sync,
@@ -85,6 +90,11 @@ void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block_i
         if (block.chain_tip) {
             m_index.m_synced = true;
             CallFunctionInValidationInterfaceQueue([this] { m_index.m_ready = true; });
+            if (pindex) {
+                LogPrintf("%s is enabled at height %d\n", m_index.GetName(), pindex->nHeight);
+            } else {
+                LogPrintf("%s is enabled\n", m_index.GetName());
+            }
         }
         return;
     }
@@ -160,6 +170,11 @@ void BaseIndexNotifications::blockDisconnected(const interfaces::BlockInfo& bloc
     // Make a mutable copy of the BlockInfo argument so block data can be
     // attached below. This is temporary and removed in upcoming commits.
     interfaces::BlockInfo block{block_info};
+
+    if (!block.error.empty()) {
+        m_index.FatalErrorf("%s", block.error);
+        return;
+    }
 
     // During initial sync, ignore validation interface notifications, only
     // process notifications from sync thread.
@@ -380,6 +395,7 @@ void BaseIndex::ThreadSync()
                         interfaces::BlockInfo block_info = kernel::MakeBlockInfo(iter_tip);
                         block_info.chain_tip = false;
                         notifications->blockDisconnected(block_info);
+                        if (m_interrupt) break;
                     }
                 }
                 pindex = pindex_next;
@@ -389,20 +405,13 @@ void BaseIndex::ThreadSync()
             interfaces::BlockInfo block_info = kernel::MakeBlockInfo(pindex);
             block_info.chain_tip = false;
             if (!m_chainstate->m_blockman.ReadBlockFromDisk(block, *pindex)) {
-                FatalErrorf("%s: Failed to read block %s from disk",
+                block_info.error = strprintf("%s: Failed to read block %s from disk",
                            __func__, pindex->GetBlockHash().ToString());
-                return;
             } else {
                 block_info.data = &block;
             }
             notifications->blockConnected(block_info);
         }
-    }
-
-    if (pindex) {
-        LogPrintf("%s is enabled at height %d\n", GetName(), pindex->nHeight);
-    } else {
-        LogPrintf("%s is enabled\n", GetName());
     }
 }
 
