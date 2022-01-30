@@ -147,6 +147,27 @@ public:
     //! pruned), and contains transactions.
     virtual bool haveBlockOnDisk(int height) = 0;
 
+<<<<<<< HEAD
+||||||| parent of 0b0d5560dd46 (indexes, refactor: Remove SyncWithValidationInterfaceQueue call)
+    //! Get locator for the current chain tip.
+    virtual CBlockLocator getTipLocator() = 0;
+
+    //! Return a locator that refers to a block in the active chain.
+    //! If specified block is not in the active chain, return locator for the latest ancestor that is in the chain.
+    virtual CBlockLocator getActiveChainLocator(const uint256& block_hash) = 0;
+
+=======
+    //! Get tip information.
+    virtual bool getTip(const FoundBlock& block={}) = 0;
+
+    //! Get locator for the current chain tip.
+    virtual CBlockLocator getTipLocator() = 0;
+
+    //! Return a locator that refers to a block in the active chain.
+    //! If specified block is not in the active chain, return locator for the latest ancestor that is in the chain.
+    virtual CBlockLocator getActiveChainLocator(const uint256& block_hash) = 0;
+
+>>>>>>> 0b0d5560dd46 (indexes, refactor: Remove SyncWithValidationInterfaceQueue call)
     //! Return height of the highest block on chain in common with the locator,
     //! which will either be the original block used to create the locator,
     //! or one of its ancestors.
@@ -385,6 +406,9 @@ public:
 >>>>>>> 831745330668 (indexes, refactor: Remove index RegisterValidationInterface call)
     //! Register handler for notifications.
     virtual std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) = 0;
+
+    //! Wait for pending notifications.
+    virtual void waitForPendingNotifications() = 0;
 
     //! Wait for pending notifications to be processed unless block hash points to the current
     //! chain tip.

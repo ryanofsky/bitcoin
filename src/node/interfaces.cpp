@@ -580,6 +580,38 @@ public:
         const CBlockIndex* block{chainman().ActiveChain()[height]};
         return block && ((block->nStatus & BLOCK_HAVE_DATA) != 0) && block->nTx > 0;
     }
+<<<<<<< HEAD
+||||||| parent of 0b0d5560dd46 (indexes, refactor: Remove SyncWithValidationInterfaceQueue call)
+    CBlockLocator getTipLocator() override
+    {
+        LOCK(::cs_main);
+        return chainman().ActiveChain().GetLocator();
+    }
+    CBlockLocator getActiveChainLocator(const uint256& block_hash) override
+    {
+        LOCK(::cs_main);
+        const CBlockIndex* index = chainman().m_blockman.LookupBlockIndex(block_hash);
+        return GetLocator(index);
+    }
+=======
+    bool getTip(const FoundBlock& block) override
+    {
+        WAIT_LOCK(cs_main, lock);
+        const CChain& active = chainman().ActiveChain();
+        return FillBlock(active.Tip(), block, lock, active, chainman().m_blockman);
+    }
+    CBlockLocator getTipLocator() override
+    {
+        LOCK(::cs_main);
+        return chainman().ActiveChain().GetLocator();
+    }
+    CBlockLocator getActiveChainLocator(const uint256& block_hash) override
+    {
+        LOCK(::cs_main);
+        const CBlockIndex* index = chainman().m_blockman.LookupBlockIndex(block_hash);
+        return GetLocator(index);
+    }
+>>>>>>> 0b0d5560dd46 (indexes, refactor: Remove SyncWithValidationInterfaceQueue call)
     std::optional<int> findLocatorFork(const CBlockLocator& locator) override
     {
         LOCK(::cs_main);
@@ -815,6 +847,10 @@ public:
     std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) override
     {
         return std::make_unique<NotificationsHandlerImpl>(validation_signals(), std::move(notifications), Chain::NotifyOptions{}, nullptr);
+    }
+    void waitForPendingNotifications() override
+    {
+        validation_signals().SyncWithValidationInterfaceQueue();
     }
     void waitForNotificationsIfTipChanged(const uint256& old_tip) override
     {
