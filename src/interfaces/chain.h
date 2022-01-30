@@ -282,11 +282,6 @@ public:
         virtual void chainStateFlushed(const CBlockLocator& locator) {}
     };
 
-    // TODO: attachChain / StartSyncFn functions described below are not fully
-    // implemented yet. In particular there is no sync thread yet, so
-    // notifications begin from the current chain tip, not from the start_block
-    // passed to StartSyncFn.
-
     //! Options specifying which chain notifications are required.
     struct NotifyOptions
     {
@@ -296,6 +291,8 @@ public:
         bool disconnect_data = false;
         //! Include undo data with block disconnected notifications.
         bool disconnect_undo_data = false;
+        //! Name to use for attachChain sync thread.
+        std::string thread_name;
     };
 
     //! Start sync function callback passed to attachChain, allowing chain
