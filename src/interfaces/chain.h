@@ -94,6 +94,8 @@ struct BlockInfo {
     unsigned int chain_time_max{0};
     //! Block is from the tip of the chain (always true except when first calling attachChain and reading old blocks).
     bool chain_tip{true};
+    //! Error string. If non-empty it indicates some block data could not be read and may be missing.
+    std::string error;
 
     BlockInfo(const uint256& hash LIFETIMEBOUND) : hash(hash) {}
 };
