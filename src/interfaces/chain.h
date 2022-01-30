@@ -325,6 +325,7 @@ public:
     };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     //! Options specifying which chain notifications are required.
     struct NotifyOptions
     {
@@ -343,6 +344,14 @@ public:
     // notifications begin from the current chain tip, not from the start_block
     // passed to PrepareSyncFn.
 
+||||||| parent of 45f06134e136 (indexes, refactor: Move sync thread from index to node)
+    // TODO: attachChain / PrepareSyncFn functions described below are not fully
+    // implemented yet. In particular there is no sync thread yet, so
+    // notifications begin from the current chain tip, not from the start_block
+    // passed to PrepareSyncFn.
+
+=======
+>>>>>>> 45f06134e136 (indexes, refactor: Move sync thread from index to node)
     //! Options specifying which chain notifications are required.
     struct NotifyOptions
     {
@@ -350,6 +359,8 @@ public:
         bool connect_undo_data = false;
         //! Include undo data with block disconnected notifications.
         bool disconnect_undo_data = false;
+        //! Name to use for attachChain sync thread.
+        std::string thread_name;
     };
 
     //! Prepare callback passed to attachChain, allowing the caller to perform
