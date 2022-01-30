@@ -142,7 +142,7 @@ void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block_i
         return;
     }
 
-    if (!block.chain_tip && (m_last_locator_write_time + SYNC_LOCATOR_WRITE_INTERVAL < current_time || m_index.m_interrupt)) {
+    if (!block.chain_tip && (m_last_locator_write_time + SYNC_LOCATOR_WRITE_INTERVAL < current_time || WITH_LOCK(m_index.m_mutex, return !m_index.m_notifications.get()))) {
         auto locator = GetLocator(*m_index.m_chain, pindex->GetBlockHash());
         m_last_locator_write_time = current_time;
         // No need to handle errors in Commit. If it fails, the error will be already be
@@ -182,17 +182,6 @@ void BaseIndexNotifications::blockDisconnected(const interfaces::BlockInfo& bloc
     const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
     if (!m_rewind_start) m_rewind_start = pindex;
     if (m_rewind_error) return;
-
-    CBlock block_data;
-    if (!block.data) {
-        if (!m_index.m_chainstate->m_blockman.ReadBlockFromDisk(block_data, *pindex)) {
-            m_index.FatalErrorf("%s: Failed to read block %s from disk",
-                        __func__, pindex->GetBlockHash().ToString());
-            return;
-        } else {
-            block.data = &block_data;
-        }
-    }
 
     CBlockUndo block_undo;
     if (m_options.disconnect_undo_data && !block.undo_data && block.height > 0) {
@@ -364,6 +353,7 @@ bool BaseIndex::Init()
             return InitError(strprintf(Untranslated("%s: best block of the index not found. Please rebuild the index."), GetName()));
 =======
     auto options = CustomOptions();
+    options.thread_name = GetName();
     auto notifications = std::make_shared<BaseIndexNotifications>(*this);
     auto start_sync = [&](const interfaces::BlockInfo& block) {
         const auto block_key{block.height >= 0 ? std::make_optional(interfaces::BlockKey{block.hash, block.height}) : std::nullopt};
@@ -441,6 +431,7 @@ bool BaseIndex::Init()
     return true;
 }
 
+<<<<<<< HEAD
 static const CBlockIndex* NextSyncBlock(const CBlockIndex* pindex_prev, CChain& chain) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     AssertLockHeld(cs_main);
@@ -521,6 +512,73 @@ void BaseIndex::ThreadSync()
     }
 }
 
+||||||| parent of c60c73532069 (indexes, refactor: Move sync thread from index to node)
+static const CBlockIndex* NextSyncBlock(const CBlockIndex* pindex_prev, CChain& chain) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+{
+    AssertLockHeld(cs_main);
+
+    if (!pindex_prev) {
+        return chain.Genesis();
+    }
+
+    const CBlockIndex* pindex = chain.Next(pindex_prev);
+    if (pindex) {
+        return pindex;
+    }
+
+    return chain.Next(chain.FindFork(pindex_prev));
+}
+
+void BaseIndex::ThreadSync()
+{
+    const CBlockIndex* pindex = m_best_block_index.load();
+    if (!m_synced) {
+        auto notifications = WITH_LOCK(m_mutex, return m_notifications);
+
+        while (true) {
+            if (m_interrupt) {
+                return;
+            }
+
+            {
+                LOCK(cs_main);
+                const CBlockIndex* pindex_next = NextSyncBlock(pindex, m_chainstate->m_chain);
+                if (!pindex_next) {
+                    assert(pindex);
+                    notifications->blockConnected(kernel::MakeBlockInfo(pindex));
+                    notifications->chainStateFlushed(GetLocator(*m_chain, pindex->GetBlockHash()));
+                    break;
+                }
+                if (pindex_next->pprev != pindex) {
+                    const CBlockIndex* current_tip = pindex;
+                    const CBlockIndex* new_tip = pindex_next->pprev;
+                    for (const CBlockIndex* iter_tip = current_tip; iter_tip != new_tip; iter_tip = iter_tip->pprev) {
+                        CBlock block;
+                        interfaces::BlockInfo block_info = kernel::MakeBlockInfo(iter_tip);
+                        block_info.chain_tip = false;
+                        notifications->blockDisconnected(block_info);
+                        if (m_interrupt) break;
+                    }
+                }
+                pindex = pindex_next;
+            }
+
+            CBlock block;
+            interfaces::BlockInfo block_info = kernel::MakeBlockInfo(pindex);
+            block_info.chain_tip = false;
+            if (!m_chainstate->m_blockman.ReadBlockFromDisk(block, *pindex)) {
+                block_info.error = strprintf("%s: Failed to read block %s from disk",
+                           __func__, pindex->GetBlockHash().ToString());
+            } else {
+                block_info.data = &block;
+            }
+            notifications->blockConnected(block_info);
+        }
+    }
+}
+
+=======
+>>>>>>> c60c73532069 (indexes, refactor: Move sync thread from index to node)
 bool BaseIndex::Commit(const CBlockLocator& locator)
 {
     // Don't commit anything if we haven't indexed any block yet
@@ -793,21 +851,22 @@ bool BaseIndex::BlockUntilSyncedToCurrentChain() const
 
 void BaseIndex::Interrupt()
 {
-    m_interrupt();
     LOCK(m_mutex);
+    if (m_handler) m_handler->interrupt();
     m_notifications.reset();
 }
 
 bool BaseIndex::StartBackgroundSync()
 {
-    if (WITH_LOCK(m_mutex, return !m_handler)) throw std::logic_error("Error: Cannot start a non-initialized index");
-
-    m_thread_sync = std::thread(&util::TraceThread, GetName(), [this] { ThreadSync(); });
+    LOCK(m_mutex);
+    if (!m_handler) throw std::logic_error("Error: Cannot start a non-initialized index");
+    m_handler->start();
     return true;
 }
 
 void BaseIndex::Stop()
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     if (m_chain->context()->validation_signals) {
@@ -832,6 +891,26 @@ void BaseIndex::Stop()
     if (m_thread_sync.joinable()) {
         m_thread_sync.join();
     }
+||||||| parent of c60c73532069 (indexes, refactor: Move sync thread from index to node)
+    {
+        m_interrupt();
+        LOCK(m_mutex);
+        m_notifications.reset();
+        m_handler.reset();
+    }
+
+    if (m_thread_sync.joinable()) {
+        m_thread_sync.join();
+    }
+=======
+    Interrupt();
+    // Call handler destructor after releasing m_mutex. Locking the mutex is
+    // required to access m_handler, but the lock should not be held while
+    // destroying the handler, because the handler destructor waits for the last
+    // notification to be processed, so holding the lock would deadlock if that
+    // last notification also needs the lock.
+    auto handler = WITH_LOCK(m_mutex, return std::move(m_handler));
+>>>>>>> c60c73532069 (indexes, refactor: Move sync thread from index to node)
 }
 
 IndexSummary BaseIndex::GetSummary() const
