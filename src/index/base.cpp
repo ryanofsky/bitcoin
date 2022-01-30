@@ -86,6 +86,11 @@ void BaseIndexNotifications::blockConnected(ChainstateRole role, const interface
     // attached below. This is temporary and removed in upcoming commits.
     interfaces::BlockInfo block{block_info};
 
+    if (!block.error.empty()) {
+        m_index.FatalErrorf("%s", block.error);
+        return;
+    }
+
     const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
     if (!block.data) {
         // Null block.data means block is the ending block at the end of a sync,
@@ -94,6 +99,11 @@ void BaseIndexNotifications::blockConnected(ChainstateRole role, const interface
         if (block.chain_tip) {
             m_index.m_synced = true;
             m_index.m_chain->context()->validation_signals->CallFunctionInValidationInterfaceQueue([this] { m_index.m_ready = true; });
+            if (pindex) {
+                LogPrintf("%s is enabled at height %d\n", m_index.GetName(), pindex->nHeight);
+            } else {
+                LogPrintf("%s is enabled\n", m_index.GetName());
+            }
         }
         return;
     }
@@ -169,6 +179,11 @@ void BaseIndexNotifications::blockDisconnected(const interfaces::BlockInfo& bloc
     // Make a mutable copy of the BlockInfo argument so block data can be
     // attached below. This is temporary and removed in upcoming commits.
     interfaces::BlockInfo block{block_info};
+
+    if (!block.error.empty()) {
+        m_index.FatalErrorf("%s", block.error);
+        return;
+    }
 
     // During initial sync, ignore validation interface notifications, only
     // process notifications from sync thread.
@@ -520,6 +535,7 @@ void BaseIndex::Sync()
                     interfaces::BlockInfo block_info = kernel::MakeBlockInfo(iter_tip);
                     block_info.chain_tip = false;
                     notifications->blockDisconnected(block_info);
+                    if (m_interrupt) break;
                 }
 >>>>>>> 7c9d5d636b0b (indexes, refactor: Move Rewind logic out of Rewind to blockDisconnected and ThreadSync)
             }
@@ -553,9 +569,8 @@ void BaseIndex::Sync()
             interfaces::BlockInfo block_info = kernel::MakeBlockInfo(pindex);
             block_info.chain_tip = false;
             if (!m_chainstate->m_blockman.ReadBlockFromDisk(block, *pindex)) {
-                FatalErrorf("%s: Failed to read block %s from disk",
+                block_info.error = strprintf("%s: Failed to read block %s from disk",
                            __func__, pindex->GetBlockHash().ToString());
-                return;
             } else {
                 block_info.data = &block;
             }
@@ -594,12 +609,22 @@ void BaseIndex::Sync()
 >>>>>>> 8c3957de621e (indexes, refactor: Move more new block logic out of ThreadSync to blockConnected)
         }
     }
+<<<<<<< HEAD
 
     if (pindex) {
         LogInfo("%s is enabled at height %d", GetName(), pindex->nHeight);
     } else {
         LogInfo("%s is enabled", GetName());
     }
+||||||| parent of b7f5428a8eb3 (indexes, refactor: Move CustomInit and error handling code out of ThreadSync to notification handlers)
+
+    if (pindex) {
+        LogPrintf("%s is enabled at height %d\n", GetName(), pindex->nHeight);
+    } else {
+        LogPrintf("%s is enabled\n", GetName());
+    }
+=======
+>>>>>>> b7f5428a8eb3 (indexes, refactor: Move CustomInit and error handling code out of ThreadSync to notification handlers)
 }
 
 bool BaseIndex::Commit(const CBlockLocator& locator)
