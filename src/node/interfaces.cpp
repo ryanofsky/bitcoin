@@ -47,6 +47,7 @@
 #include <util/check.h>
 #include <util/result.h>
 #include <util/signalinterrupt.h>
+#include <util/thread.h>
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
@@ -425,11 +426,27 @@ bool FillBlock(const CBlockIndex* index, const FoundBlock& block, UniqueLock<Rec
     return true;
 }
 
+static const CBlockIndex* NextSyncBlock(const CBlockIndex* pindex_prev, const CChain& chain) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+{
+    AssertLockHeld(cs_main);
+
+    if (!pindex_prev) {
+        return chain.Genesis();
+    }
+
+    const CBlockIndex* pindex = chain.Next(pindex_prev);
+    if (pindex) {
+        return pindex;
+    }
+
+    return chain.Next(chain.FindFork(pindex_prev));
+}
+
 class NotificationsProxy : public CValidationInterface
 {
 public:
-    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications)
-        : m_notifications(std::move(notifications)) {}
+    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options)
+        : m_notifications(std::move(notifications)), m_options(options) {}
     virtual ~NotificationsProxy() = default;
     void TransactionAddedToMempool(const NewMempoolTransactionInfo& tx, uint64_t mempool_sequence) override
     {
@@ -455,26 +472,45 @@ public:
         m_notifications->chainStateFlushed(role, locator);
     }
     std::shared_ptr<Chain::Notifications> m_notifications;
+    Chain::NotifyOptions m_options;
 };
+
+using SyncFn = std::function<void(const CThreadInterrupt& interrupt)>;
 
 class NotificationsHandlerImpl : public Handler
 {
 public:
-    explicit NotificationsHandlerImpl(ValidationSignals& signals, std::shared_ptr<Chain::Notifications> notifications)
-        : m_signals{signals}, m_proxy{std::make_shared<NotificationsProxy>(std::move(notifications))}
+    explicit NotificationsHandlerImpl(ValidationSignals& signals, std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options, SyncFn sync_fn)
+        : m_signals{signals}, m_proxy{std::make_shared<NotificationsProxy>(std::move(notifications), options)}, m_sync_fn{std::move(sync_fn)}
     {
         m_signals.RegisterSharedValidationInterface(m_proxy);
     }
     ~NotificationsHandlerImpl() override { disconnect(); }
+    void start() override
+    {
+        if (m_sync_fn) {
+            assert(!m_sync_thread.joinable());
+            m_sync_thread = std::thread(&util::TraceThread, m_proxy->m_options.thread_name, [this, sync_fn = std::move(m_sync_fn)] { sync_fn(m_interrupt); });
+            m_sync_fn = nullptr;
+        }
+    }
+    void interrupt() override { m_interrupt(); }
     void disconnect() override
     {
+        m_interrupt();
         if (m_proxy) {
             m_signals.UnregisterSharedValidationInterface(m_proxy);
             m_proxy.reset();
         }
+        if (m_sync_thread.joinable()) {
+            m_sync_thread.join();
+        }
     }
     ValidationSignals& m_signals;
     std::shared_ptr<NotificationsProxy> m_proxy;
+    SyncFn m_sync_fn;
+    std::thread m_sync_thread;
+    CThreadInterrupt m_interrupt;
 };
 
 class RpcHandlerImpl : public Handler
@@ -768,11 +804,57 @@ public:
         interfaces::BlockInfo start_block{kernel::MakeBlockInfo(start_block_index)};
         start_block.chain_tip = start_block_index == chainstate.m_chain.Tip();
         if (!prepare_sync(start_block)) return nullptr;
-        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), notifications);
+
+        SyncFn sync_fn;
+        if (!start_block.chain_tip) sync_fn = [this, &chainstate, start_block_index, notifications] (const CThreadInterrupt& interrupt) {
+            const CBlockIndex* pindex = start_block_index;
+            while (!interrupt) {
+                {
+                    LOCK(cs_main);
+                    const CBlockIndex* pindex_next = NextSyncBlock(pindex, chainstate.m_chain);
+                    if (!pindex_next) {
+                        assert(pindex);
+                        notifications->blockConnected(ChainstateRole::NORMAL, kernel::MakeBlockInfo(pindex));
+                        notifications->chainStateFlushed(ChainstateRole::NORMAL, ::GetLocator(pindex));
+                        break;
+                    }
+                    if (pindex_next->pprev != pindex) {
+                        const CBlockIndex* current_tip = pindex;
+                        const CBlockIndex* new_tip = pindex_next->pprev;
+                        for (const CBlockIndex* iter_tip = current_tip; iter_tip != new_tip; iter_tip = iter_tip->pprev) {
+                            CBlock block;
+                            interfaces::BlockInfo block_info = kernel::MakeBlockInfo(iter_tip);
+                            block_info.chain_tip = false;
+                            if (!chainman().m_blockman.ReadBlockFromDisk(block, *iter_tip)) {
+                                block_info.error = strprintf("%s: Failed to read block %s from disk",
+                                        __func__, iter_tip->GetBlockHash().ToString());
+                            } else {
+                                block_info.data = &block;
+                            }
+                            notifications->blockDisconnected(block_info);
+                            if (interrupt) break;
+                        }
+                    }
+                    pindex = pindex_next;
+                }
+
+                CBlock block;
+                interfaces::BlockInfo block_info = kernel::MakeBlockInfo(pindex);
+                block_info.chain_tip = false;
+                if (!chainman().m_blockman.ReadBlockFromDisk(block, *pindex)) {
+                    block_info.error = strprintf("%s: Failed to read block %s from disk",
+                            __func__, pindex->GetBlockHash().ToString());
+                } else {
+                    block_info.data = &block;
+                }
+                notifications->blockConnected(ChainstateRole::NORMAL, block_info);
+            }
+        };
+        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), notifications, options, std::move(sync_fn));
     }
     std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) override
     {
-        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), std::move(notifications));
+        return std::make_unique<NotificationsHandlerImpl>(validation_signals(), std::move(notifications), Chain::NotifyOptions{}, nullptr);
     }
     void waitForNotificationsIfTipChanged(const uint256& old_tip) override
     {
