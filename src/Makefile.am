@@ -993,6 +993,13 @@ libbitcoinkernel_la_SOURCES = \
   util/strencodings.cpp \
   util/string.cpp \
   util/syserror.cpp \
+<<<<<<< HEAD
+||||||| parent of 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)
+  util/thread.cpp \
+=======
+  util/thread.cpp \
+  util/threadinterrupt.cpp \
+>>>>>>> 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)
   util/threadnames.cpp \
   util/time.cpp \
   util/tokenpipe.cpp \

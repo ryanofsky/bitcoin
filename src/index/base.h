@@ -74,17 +74,12 @@ protected:
 
 private:
     /// Whether the index is in sync with the main chain. The flag is flipped
-    /// from false to true once, after which point this starts processing
-    /// ValidationInterface notifications to stay in sync.
+    /// from false to true once.
     ///
     /// Note that this will latch to true *immediately* upon startup if
     /// `m_chainstate->m_chain` is empty, which will be the case upon startup
     /// with an empty datadir if, e.g., `-txindex=1` is specified.
     std::atomic<bool> m_synced{false};
-
-    /// Whether index is ready to start processing block-connected and
-    /// chainstate-flushed notifications after it has been synced.
-    std::atomic<bool> m_ready{false};
 
     /// The best block in the chain that the index is considered synced to, as
     /// reported by GetSummary. This field is not set in a consistent way and is
@@ -144,6 +139,7 @@ protected:
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex) override;
 ||||||| parent of 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex) override;
@@ -183,6 +179,15 @@ protected:
     bool IgnoreChainStateFlushed(const CBlockLocator& locator) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 >>>>>>> f2a0551eb8ec (indexes, refactor: Remove remaining CBlockIndex* uses in index CustomAppend methods)
 
+||||||| parent of 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)
+    /// Return whether to ignore stale, out-of-sync block connected event
+    bool IgnoreBlockConnected(const interfaces::BlockInfo& block) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+
+    /// Return whether to ignore stale, out-of-sync chain flushed event
+    bool IgnoreChainStateFlushed(const CBlockLocator& locator) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+
+=======
+>>>>>>> 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)
     /// Return custom notification options for index.
     [[nodiscard]] virtual interfaces::Chain::NotifyOptions CustomOptions() { return {}; }
 >>>>>>> 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
