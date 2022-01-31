@@ -9,79 +9,69 @@
 #include <node/chain.h>
 #include <sync.h>
 #include <uint256.h>
-#include <undo.h>
 #include <util/threadinterrupt.h>
 
 using interfaces::BlockInfo;
 using kernel::MakeBlockInfo;
 
 namespace node {
-static const CBlockIndex* NextSyncBlock(const CBlockIndex* pindex_prev, const CChain& chain) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+bool ReadBlockData(node::BlockManager& blockman, const CBlockIndex& block, CBlock* data, interfaces::BlockInfo& info)
 {
-    AssertLockHeld(cs_main);
-
-    if (!pindex_prev) {
-        return chain.Genesis();
+    if (data) {
+        if (blockman.ReadBlockFromDisk(*data, block)) {
+            info.data = data;
+        } else {
+            info.error = strprintf("%s: Failed to read block %s from disk", __func__, block.GetBlockHash().ToString());
+            return false;
+        }
     }
-
-    const CBlockIndex* pindex = chain.Next(pindex_prev);
-    if (pindex) {
-        return pindex;
-    }
-
-    return chain.Next(chain.FindFork(pindex_prev));
+    return true;
 }
 
-void SyncChain(BlockManager& blockman, const CChain& chain, const CBlockIndex* block, std::shared_ptr<interfaces::Chain::Notifications> notifications, const CThreadInterrupt& interrupt)
+bool SyncChain(BlockManager& blockman, const CChain& chain, const CBlockIndex* block, std::shared_ptr<interfaces::Chain::Notifications> notifications, const CThreadInterrupt& interrupt, std::function<void()> on_sync)
 {
-    const CBlockIndex* pindex = block;
-
     while (true) {
-        if (interrupt) {
-            LogPrintf("%s: interrupt set; exiting sync\n");
+        AssertLockNotHeld(::cs_main);
+        WAIT_LOCK(::cs_main, main_lock);
 
-            return;
-        }
-
-        {
-            LOCK(cs_main);
-            const CBlockIndex* pindex_next = NextSyncBlock(pindex, chain);
-            if (!pindex_next) {
-                assert(pindex);
-                notifications->blockConnected(ChainstateRole::NORMAL, kernel::MakeBlockInfo(pindex));
-                notifications->chainStateFlushed(ChainstateRole::NORMAL, ::GetLocator(pindex));
-                break;
-            }
-            if (pindex_next->pprev != pindex) {
-                const CBlockIndex* current_tip = pindex;
-                const CBlockIndex* new_tip = pindex_next->pprev;
-                for (const CBlockIndex* iter_tip = current_tip; iter_tip != new_tip; iter_tip = iter_tip->pprev) {
-                    CBlock block;
-                    interfaces::BlockInfo block_info = kernel::MakeBlockInfo(iter_tip);
-                    block_info.chain_tip = false;
-                    if (!blockman.ReadBlockFromDisk(block, *iter_tip)) {
-                        block_info.error = strprintf("%s: Failed to read block %s from disk",
-                                __func__, iter_tip->GetBlockHash().ToString());
-                    } else {
-                        block_info.data = &block;
-                    }
-                    notifications->blockDisconnected(block_info);
-                    if (interrupt) break;
-                }
-            }
-            pindex = pindex_next;
-        }
-
-        CBlock block;
-        interfaces::BlockInfo block_info = kernel::MakeBlockInfo(pindex);
-        block_info.chain_tip = false;
-        if (!blockman.ReadBlockFromDisk(block, *pindex)) {
-            block_info.error = strprintf("%s: Failed to read block %s from disk",
-                    __func__, pindex->GetBlockHash().ToString());
+        bool rewind = false;
+        if (!block) {
+            block = chain.Genesis();
+        } else if (chain.Contains(block)) {
+            block = chain.Next(block);
         } else {
-            block_info.data = &block;
+            rewind = true;
         }
-        notifications->blockConnected(ChainstateRole::NORMAL, block_info);
+
+        if (block) {
+            // Release cs_main while reading block data and sending notifications.
+            REVERSE_LOCK(main_lock);
+            BlockInfo block_info = MakeBlockInfo(block);
+            block_info.chain_tip = false;
+            CBlock data;
+            ReadBlockData(blockman, *block, &data, block_info);
+            if (rewind) {
+                notifications->blockDisconnected(block_info);
+                block = Assert(block->pprev);
+            } else {
+                notifications->blockConnected(ChainstateRole::NORMAL, block_info);
+            }
+        } else {
+            block = chain.Tip();
+        }
+
+        bool synced = block == chain.Tip();
+        if (synced || interrupt) {
+            if (synced && on_sync) on_sync();
+            if (block) {
+                CBlockLocator locator = ::GetLocator(block);
+                // Release cs_main while calling notification handlers.
+                REVERSE_LOCK(main_lock);
+                if (synced) notifications->blockConnected(ChainstateRole::NORMAL, MakeBlockInfo(block));
+                notifications->chainStateFlushed(ChainstateRole::NORMAL, locator);
+            }
+            return synced;
+        }
     }
 }
 } // namespace node
