@@ -16,13 +16,21 @@ class BlockManager;
 
 namespace node {
 //! Send blockConnected and blockDisconnected notifications needed to sync from
-//! a specified block to the chain tip.
+//! a specified block to the chain tip. This sync function locks the ::cs_main
+//! mutex intermittently, releasing it while sending notifications and reading
+//! block data, so it follows the tip if the tip changes, and follows any
+//! reorgs.
 //!
 //! @param chain - chain to sync to
 //! @param block - starting block to sync from
 //! @param notifications - object to send notifications to
 //! @param interrupt - flag to interrupt the sync
-void SyncChain(BlockManager& blockman, const CChain& chain, const CBlockIndex* block, std::shared_ptr<interfaces::Chain::Notifications> notifications, const CThreadInterrupt& interrupt);
+//! @param on_sync - optional callback invoked when reaching the chain tip
+//!                  while cs_main is still held, before sending a final
+//!                  blockConnected notification. This can be used to
+//!                  synchronously register for new notifications.
+//! @return true if synced, false if interrupted
+bool SyncChain(BlockManager& blockman, const CChain& chain, const CBlockIndex* block, std::shared_ptr<interfaces::Chain::Notifications> notifications, const CThreadInterrupt& interrupt, std::function<void()> on_sync);
 } // namespace node
 
 #endif // BITCOIN_NODE_CHAIN_H
