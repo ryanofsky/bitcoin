@@ -980,6 +980,7 @@ libbitcoinkernel_la_SOURCES = \
   util/string.cpp \
   util/syserror.cpp \
   util/thread.cpp \
+  util/threadinterrupt.cpp \
   util/threadnames.cpp \
   util/time.cpp \
   util/tokenpipe.cpp \
