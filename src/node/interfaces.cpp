@@ -43,6 +43,7 @@
 #include <sync.h>
 #include <txmempool.h>
 #include <uint256.h>
+#include <undo.h>
 #include <univalue.h>
 #include <util/check.h>
 <<<<<<< HEAD
@@ -434,8 +435,8 @@ bool FillBlock(const CBlockIndex* index, const FoundBlock& block, UniqueLock<Rec
 class NotificationsProxy : public CValidationInterface
 {
 public:
-    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options)
-        : m_notifications(std::move(notifications)), m_options(options) {}
+    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications, node::BlockManager& blockman, const Chain::NotifyOptions& options)
+        : m_notifications(std::move(notifications)), m_blockman(blockman), m_options(options) {}
     virtual ~NotificationsProxy() = default;
     void TransactionAddedToMempool(const NewMempoolTransactionInfo& tx, uint64_t mempool_sequence) override
     {
@@ -447,11 +448,23 @@ public:
     }
     void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
     {
+<<<<<<< HEAD
         m_notifications->blockConnected(role, kernel::MakeBlockInfo(index, block.get()));
+||||||| parent of c63b3efb9b77 (indexes, refactor: Remove UndoReadFromDisk calls from indexing code)
+        m_notifications->blockConnected(kernel::MakeBlockInfo(index, block.get()));
+=======
+        interfaces::BlockInfo block_info = kernel::MakeBlockInfo(index, block.get());
+        CBlockUndo undo_data;
+        kernel::ReadBlockData(m_blockman, *index, /*data=*/nullptr, m_options.connect_undo_data ? &undo_data : nullptr, block_info);
+        m_notifications->blockConnected(block_info);
+>>>>>>> c63b3efb9b77 (indexes, refactor: Remove UndoReadFromDisk calls from indexing code)
     }
     void BlockDisconnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
     {
-        m_notifications->blockDisconnected(kernel::MakeBlockInfo(index, block.get()));
+        interfaces::BlockInfo block_info = kernel::MakeBlockInfo(index, block.get());
+        CBlockUndo undo_data;
+        kernel::ReadBlockData(m_blockman, *index, /*data=*/nullptr, m_options.disconnect_undo_data ? &undo_data : nullptr, block_info);
+        m_notifications->blockDisconnected(block_info);
     }
     void UpdatedBlockTip(const CBlockIndex* index, const CBlockIndex* fork_index, bool is_ibd) override
     {
@@ -483,6 +496,7 @@ public:
     }
 >>>>>>> 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)
     std::shared_ptr<Chain::Notifications> m_notifications;
+    node::BlockManager& m_blockman;
     Chain::NotifyOptions m_options;
     Mutex m_mutex;
     //! State reflecting whether proxy is registered to receive notifications
@@ -505,6 +519,7 @@ class NotificationsHandlerImpl : public Handler
 public:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     explicit NotificationsHandlerImpl(ValidationSignals& signals, std::shared_ptr<Chain::Notifications> notifications)
         : m_signals{signals}, m_proxy{std::make_shared<NotificationsProxy>(std::move(notifications))}
 ||||||| parent of c60c73532069 (indexes, refactor: Move sync thread from index to node)
@@ -521,6 +536,13 @@ public:
     explicit NotificationsHandlerImpl(std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options)
         : m_proxy(std::make_shared<NotificationsProxy>(std::move(notifications), options))
 >>>>>>> 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)
+||||||| parent of c63b3efb9b77 (indexes, refactor: Remove UndoReadFromDisk calls from indexing code)
+    explicit NotificationsHandlerImpl(std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options)
+        : m_proxy(std::make_shared<NotificationsProxy>(std::move(notifications), options))
+=======
+    explicit NotificationsHandlerImpl(std::shared_ptr<Chain::Notifications> notifications, node::BlockManager& blockman, const Chain::NotifyOptions& options)
+        : m_proxy(std::make_shared<NotificationsProxy>(std::move(notifications), blockman, options))
+>>>>>>> c63b3efb9b77 (indexes, refactor: Remove UndoReadFromDisk calls from indexing code)
     {
 <<<<<<< HEAD
         m_signals.RegisterSharedValidationInterface(m_proxy);
@@ -875,7 +897,7 @@ public:
         const CBlockIndex* start_block_index{locator.IsNull() ? nullptr : active.m_blockman.LookupBlockIndex(locator.vHave.at(0))};
         start_block.emplace(kernel::MakeBlockInfo(start_block_index));
         start_block->chain_tip = start_block_index == active.m_chain.Tip();
-        handler = std::make_unique<NotificationsHandlerImpl>(notifications, options);
+        handler = std::make_unique<NotificationsHandlerImpl>(notifications, chainman().m_blockman, options);
         // Start a separate thread to avoid holding cs_main while start_sync is called,
         // and to read previous blocks if start_block is not the chain tip.
         assert(!handler->m_sync_thread.joinable());
@@ -913,6 +935,7 @@ public:
     {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         return std::make_unique<NotificationsHandlerImpl>(validation_signals(), std::move(notifications));
 ||||||| parent of c60c73532069 (indexes, refactor: Move sync thread from index to node)
         return std::make_unique<NotificationsHandlerImpl>(std::move(notifications));
@@ -923,6 +946,11 @@ public:
         return std::make_unique<NotificationsHandlerImpl>(std::move(notifications), Chain::NotifyOptions{}, nullptr);
 =======
         auto handler = std::make_unique<NotificationsHandlerImpl>(std::move(notifications), Chain::NotifyOptions{});
+||||||| parent of c63b3efb9b77 (indexes, refactor: Remove UndoReadFromDisk calls from indexing code)
+        auto handler = std::make_unique<NotificationsHandlerImpl>(std::move(notifications), Chain::NotifyOptions{});
+=======
+        auto handler = std::make_unique<NotificationsHandlerImpl>(std::move(notifications), chainman().m_blockman, Chain::NotifyOptions{});
+>>>>>>> c63b3efb9b77 (indexes, refactor: Remove UndoReadFromDisk calls from indexing code)
         NotificationsProxy::connect(handler->m_proxy);
         return handler;
 >>>>>>> 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)

@@ -31,6 +31,9 @@ interfaces::BlockInfo MakeBlockInfo(const CBlockIndex* block_index, const CBlock
 ||||||| parent of 1664a6357894 (indexes: Rewrite chain sync logic, remove racy init)
 =======
 
+//! Read block data and/or undo data from disk and update BlockInfo with pointers and errors.
+bool ReadBlockData(node::BlockManager& blockman, const CBlockIndex& block, CBlock* data, CBlockUndo* undo_data, interfaces::BlockInfo& info);
+
 //! Send blockConnected and blockDisconnected notifications needed to sync from
 //! a specified block to the chain tip. This sync function locks the ::cs_main
 //! mutex intermittently, releasing it while sending notifications and reading
