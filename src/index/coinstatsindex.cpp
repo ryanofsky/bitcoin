@@ -235,13 +235,63 @@ bool CoinStatsIndex::CustomRemove(const interfaces::BlockInfo& block)
     return true;
 }
 
+<<<<<<< HEAD
 std::optional<CCoinsStats> CoinStatsIndex::LookUpStats(const CBlockIndex& block_index) const
+||||||| parent of 2ee2bf43f90 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
+static bool LookUpOne(const CDBWrapper& db, const interfaces::BlockRef& block, DBVal& result)
 {
-    CCoinsStats stats{block_index.nHeight, block_index.GetBlockHash()};
+    // First check if the result is stored under the height index and the value
+    // there matches the block hash. This should be the case if the block is on
+    // the active chain.
+    std::pair<uint256, DBVal> read_out;
+    if (!db.Read(DBHeightKey(block.height), read_out)) {
+        return false;
+    }
+    if (read_out.first == block.hash) {
+        result = std::move(read_out.second);
+        return true;
+    }
+
+    // If value at the height index corresponds to an different block, the
+    // result will be stored in the hash index.
+    return db.Read(DBHashKey(block.hash), result);
+}
+
+std::optional<CCoinsStats> CoinStatsIndex::LookUpStats(const CBlockIndex& block_index) const
+=======
+static bool LookUpOne(const CDBWrapper& db, const interfaces::BlockRef& block, DBVal& result)
+{
+    // First check if the result is stored under the height index and the value
+    // there matches the block hash. This should be the case if the block is on
+    // the active chain.
+    std::pair<uint256, DBVal> read_out;
+    if (!db.Read(DBHeightKey(block.height), read_out)) {
+        return false;
+    }
+    if (read_out.first == block.hash) {
+        result = std::move(read_out.second);
+        return true;
+    }
+
+    // If value at the height index corresponds to an different block, the
+    // result will be stored in the hash index.
+    return db.Read(DBHashKey(block.hash), result);
+}
+
+std::optional<CCoinsStats> CoinStatsIndex::LookUpStats(const interfaces::BlockRef& block) const
+>>>>>>> 2ee2bf43f90 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
+{
+    CCoinsStats stats{block.height, block.hash};
     stats.index_used = true;
 
     DBVal entry;
+<<<<<<< HEAD
     if (!index_util::LookUpOne(*m_db, {block_index.GetBlockHash(), block_index.nHeight}, entry)) {
+||||||| parent of 2ee2bf43f90 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
+    if (!LookUpOne(*m_db, {block_index.GetBlockHash(), block_index.nHeight}, entry)) {
+=======
+    if (!LookUpOne(*m_db, block, entry)) {
+>>>>>>> 2ee2bf43f90 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
         return std::nullopt;
     }
 
