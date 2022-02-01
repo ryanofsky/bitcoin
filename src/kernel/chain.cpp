@@ -8,6 +8,7 @@
 #include <kernel/chain.h>
 #include <sync.h>
 #include <uint256.h>
+#include <undo.h>
 #include <util/threadinterrupt.h>
 #include <validation.h>
 
@@ -27,6 +28,27 @@ interfaces::BlockInfo MakeBlockInfo(const CBlockIndex* index, const CBlock* data
     }
     info.data = data;
     return info;
+}
+
+bool ReadBlockData(node::BlockManager& blockman, const CBlockIndex& block, CBlock* data, CBlockUndo* undo_data, interfaces::BlockInfo& info)
+{
+    if (data) {
+        if (blockman.ReadBlockFromDisk(*data, block)) {
+            info.data = data;
+        } else {
+            info.error = strprintf("%s: Failed to read block %s from disk", __func__, block.GetBlockHash().ToString());
+            return false;
+        }
+    }
+    if (undo_data && block.nHeight > 0) {
+        if (blockman.UndoReadFromDisk(*undo_data, block)) {
+            info.undo_data = undo_data;
+        } else {
+            info.error = strprintf("%s: Failed to read block %s undo data from disk", __func__, block.GetBlockHash().ToString());
+            return false;
+        }
+    }
+    return true;
 }
 
 bool SyncChain(node::BlockManager& blockman, const CChain& chain, const CBlockIndex* block, std::shared_ptr<interfaces::Chain::Notifications> notifications, const CThreadInterrupt& interrupt, std::function<void()> on_sync)
@@ -50,12 +72,8 @@ bool SyncChain(node::BlockManager& blockman, const CChain& chain, const CBlockIn
             interfaces::BlockInfo block_info = MakeBlockInfo(block);
             block_info.chain_tip = false;
             CBlock data;
-            if (!blockman.ReadBlockFromDisk(data, *block)) {
-                block_info.error = strprintf("%s: Failed to read block %s from disk",
-                                             __func__, block->GetBlockHash().ToString());
-            } else {
-                block_info.data = &data;
-            }
+            CBlockUndo undo_data;
+            ReadBlockData(blockman, *block, &data, &undo_data, block_info);
             if (rewind) {
                 notifications->blockDisconnected(block_info);
                 block = Assert(block->pprev);
