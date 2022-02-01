@@ -55,6 +55,7 @@
 #endif
 
 #include <any>
+#include <future>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -487,18 +488,12 @@ public:
     {
     }
     ~NotificationsHandlerImpl() override { disconnect(); }
-    void start() override
-    {
-        if (m_sync_fn) {
-            assert(!m_sync_thread.joinable());
-            m_sync_thread = std::thread(&util::TraceThread, m_proxy->m_options.thread_name, [this, sync_fn = std::move(m_sync_fn)] { sync_fn(m_proxy, m_interrupt); });
-            m_sync_fn = nullptr;
-        }
-    }
-    void interrupt() override { m_interrupt(); }
+    void start() override { m_start(); }
+    void interrupt() override { m_interrupt(); m_start(); }
     void disconnect() override
     {
         m_interrupt();
+        m_start();
         if (m_proxy) {
             NotificationsProxy::disconnect(m_proxy);
             m_proxy.reset();
@@ -508,8 +503,8 @@ public:
         }
     }
     std::shared_ptr<NotificationsProxy> m_proxy;
-    SyncFn m_sync_fn;
     std::thread m_sync_thread;
+    CThreadInterrupt m_start;
     CThreadInterrupt m_interrupt;
 };
 
@@ -784,6 +779,12 @@ public:
     }
     std::unique_ptr<Handler> attachChain(std::shared_ptr<Notifications> notifications, const CBlockLocator& locator, const NotifyOptions& options, const StartSyncFn& start_sync) override
     {
+        std::unique_ptr<NotificationsHandlerImpl> handler;
+        std::optional<interfaces::BlockInfo> start_block;
+        // std::promise to wait for the start_sync callback, so caller is
+        // notified about the starting block before this returns.
+        std::promise<bool> promise;
+        {
         // Lock cs_main while finding forks and determining which blocks to
         // rescan. Release cs_main while processing blocks and while calling
         // RegisterSharedValidationInterface in the notifications thread.
@@ -803,19 +804,41 @@ public:
         LOCK(cs_main);
         const Chainstate& active{chainman().ActiveChainstate()};
         const CBlockIndex* start_block_index{locator.IsNull() ? nullptr : active.m_blockman.LookupBlockIndex(locator.vHave.at(0))};
-        interfaces::BlockInfo start_block{kernel::MakeBlockInfo(start_block_index)};
-        start_block.chain_tip = start_block_index == active.m_chain.Tip();
-        if (!start_sync(start_block)) return nullptr;
-        auto handler = std::make_unique<NotificationsHandlerImpl>(notifications, options);
-        if (start_block.chain_tip) {
-            CallFunctionInValidationInterfaceQueue([proxy = handler->m_proxy] { NotificationsProxy::connect(proxy); });
-        } else {
-            handler->m_sync_fn = [this, &active, start_block_index, notifications] (std::shared_ptr<NotificationsProxy> proxy, const CThreadInterrupt& interrupt) {
-                kernel::SyncChain(chainman().m_blockman, active.m_chain, start_block_index, notifications, interrupt,
-                                  /*on_sync=*/[proxy] { CallFunctionInValidationInterfaceQueue([proxy] { NotificationsProxy::connect(proxy); }); });
-            };
+        start_block.emplace(kernel::MakeBlockInfo(start_block_index));
+        start_block->chain_tip = start_block_index == active.m_chain.Tip();
+        handler = std::make_unique<NotificationsHandlerImpl>(notifications, options);
+        // Start a separate thread to avoid holding cs_main while start_sync is called,
+        // and to read previous blocks if start_block is not the chain tip.
+        assert(!handler->m_sync_thread.joinable());
+        handler->m_sync_thread = std::thread(&util::TraceThread, handler->m_proxy->m_options.thread_name,
+            [this, &start_sync, &start_block, &promise, &active, start_block_index, notifications, handler = handler.get()] {
+            if (!start_sync(*start_block)) {
+                promise.set_value(false);
+                return;
+            }
+            const bool synced{start_block->chain_tip};
+            promise.set_value(true);
+            if (!synced) {
+                // If not synced, sleep until Handler start() method is called
+                // to start reading blocks. The sleep is necessary to support
+                // -reindex and -reindex-chainstate cases efficiently. In the
+                // -reindex case, it is most efficient for indexes to receive
+                // block connected notification as blocks are connected, so the
+                // attachChain method needs to be called before the ImportBlocks
+                // function runs. But in the reindex-chainstate case, since
+                // chainstate data is wiped but indexes are not wiped, it is
+                // most efficient for indexes to begin syncing after the
+                // ImportBlocks function finishes, so the following sleep waits
+                // for that to happen.
+                while (handler->m_start.sleep_for(std::chrono::hours(1)));
+            }
+            if (handler->m_interrupt) return;
+            kernel::SyncChain(chainman().m_blockman, active.m_chain, start_block_index, notifications, handler->m_interrupt,
+                              /*on_sync=*/[proxy = handler->m_proxy] { CallFunctionInValidationInterfaceQueue([proxy] { NotificationsProxy::connect(proxy); }); });
+        });
         }
-        return handler;
+        // Wait for start_sync result and return null if it fails.
+        return promise.get_future().get() ? std::move(handler) : nullptr;
     }
     std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) override
     {
