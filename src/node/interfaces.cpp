@@ -42,6 +42,7 @@
 #include <sync.h>
 #include <txmempool.h>
 #include <uint256.h>
+#include <undo.h>
 #include <univalue.h>
 #include <util/check.h>
 #include <util/thread.h>
@@ -422,8 +423,8 @@ bool FillBlock(const CBlockIndex* index, const FoundBlock& block, UniqueLock<Rec
 class NotificationsProxy : public CValidationInterface
 {
 public:
-    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options)
-        : m_notifications(std::move(notifications)), m_options(options) {}
+    explicit NotificationsProxy(std::shared_ptr<Chain::Notifications> notifications, node::BlockManager& blockman, const Chain::NotifyOptions& options)
+        : m_notifications(std::move(notifications)), m_blockman(blockman), m_options(options) {}
     virtual ~NotificationsProxy() = default;
     void TransactionAddedToMempool(const CTransactionRef& tx, uint64_t mempool_sequence) override
     {
@@ -435,11 +436,17 @@ public:
     }
     void BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
     {
-        m_notifications->blockConnected(kernel::MakeBlockInfo(index, block.get()));
+        interfaces::BlockInfo block_info = kernel::MakeBlockInfo(index, block.get());
+        CBlockUndo undo_data;
+        kernel::ReadBlockData(m_blockman, *index, /*data=*/nullptr, m_options.connect_undo_data ? &undo_data : nullptr, block_info);
+        m_notifications->blockConnected(block_info);
     }
     void BlockDisconnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* index) override
     {
-        m_notifications->blockDisconnected(kernel::MakeBlockInfo(index, block.get()));
+        interfaces::BlockInfo block_info = kernel::MakeBlockInfo(index, block.get());
+        CBlockUndo undo_data;
+        kernel::ReadBlockData(m_blockman, *index, /*data=*/nullptr, m_options.disconnect_undo_data ? &undo_data : nullptr, block_info);
+        m_notifications->blockDisconnected(block_info);
     }
     void UpdatedBlockTip(const CBlockIndex* index, const CBlockIndex* fork_index, bool is_ibd) override
     {
@@ -463,6 +470,7 @@ public:
         self->m_state = DISCONNECTED;
     }
     std::shared_ptr<Chain::Notifications> m_notifications;
+    node::BlockManager& m_blockman;
     Chain::NotifyOptions m_options;
     Mutex m_mutex;
     //! State reflecting whether proxy is registered to receive notifications
@@ -483,8 +491,8 @@ using SyncFn = std::function<void(std::shared_ptr<NotificationsProxy>, const CTh
 class NotificationsHandlerImpl : public Handler
 {
 public:
-    explicit NotificationsHandlerImpl(std::shared_ptr<Chain::Notifications> notifications, const Chain::NotifyOptions& options)
-        : m_proxy(std::make_shared<NotificationsProxy>(std::move(notifications), options))
+    explicit NotificationsHandlerImpl(std::shared_ptr<Chain::Notifications> notifications, node::BlockManager& blockman, const Chain::NotifyOptions& options)
+        : m_proxy(std::make_shared<NotificationsProxy>(std::move(notifications), blockman, options))
     {
     }
     ~NotificationsHandlerImpl() override { disconnect(); }
@@ -806,7 +814,7 @@ public:
         const CBlockIndex* start_block_index{locator.IsNull() ? nullptr : active.m_blockman.LookupBlockIndex(locator.vHave.at(0))};
         start_block.emplace(kernel::MakeBlockInfo(start_block_index));
         start_block->chain_tip = start_block_index == active.m_chain.Tip();
-        handler = std::make_unique<NotificationsHandlerImpl>(notifications, options);
+        handler = std::make_unique<NotificationsHandlerImpl>(notifications, chainman().m_blockman, options);
         // Start a separate thread to avoid holding cs_main while start_sync is called,
         // and to read previous blocks if start_block is not the chain tip.
         assert(!handler->m_sync_thread.joinable());
@@ -842,7 +850,7 @@ public:
     }
     std::unique_ptr<Handler> handleNotifications(std::shared_ptr<Notifications> notifications) override
     {
-        auto handler = std::make_unique<NotificationsHandlerImpl>(std::move(notifications), Chain::NotifyOptions{});
+        auto handler = std::make_unique<NotificationsHandlerImpl>(std::move(notifications), chainman().m_blockman, Chain::NotifyOptions{});
         NotificationsProxy::connect(handler->m_proxy);
         return handler;
     }
