@@ -15,7 +15,6 @@
 
 class BaseIndexNotifications;
 class CBlock;
-class CBlockIndex;
 class Chainstate;
 class ChainstateManager;
 namespace interfaces {
@@ -93,11 +92,11 @@ private:
     /// - When there is a reorg, m_best_block is not set as individual blocks
     ///   are removed from the index, only after all blocks are removed and the
     ///   data is committed
-    std::atomic<const CBlockIndex*> m_best_block_index{nullptr};
+    std::optional<interfaces::BlockKey> m_best_block GUARDED_BY(m_mutex);
 
     /// Mutex to let m_notifications and m_handler be accessed from multiple
     /// threads (the sync thread and the init thread).
-    Mutex m_mutex;
+    mutable Mutex m_mutex;
     friend class BaseIndexNotifications;
     std::shared_ptr<BaseIndexNotifications> m_notifications GUARDED_BY(m_mutex);
     std::unique_ptr<interfaces::Handler> m_handler GUARDED_BY(m_mutex);
@@ -152,7 +151,7 @@ protected:
     virtual DB& GetDB() const = 0;
 
     /// Update the internal best block index as well as the prune lock.
-    void SetBestBlockIndex(const CBlockIndex* block);
+    void SetBestBlock(const std::optional<interfaces::BlockKey>& block) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
 public:
     BaseIndex(std::unique_ptr<interfaces::Chain> chain, std::string name);
@@ -166,7 +165,7 @@ public:
     /// sync once and only needs to process blocks in the ValidationInterface
     /// queue. If the index is catching up from far behind, this method does
     /// not block and immediately returns false.
-    bool BlockUntilSyncedToCurrentChain() const LOCKS_EXCLUDED(::cs_main);
+    bool BlockUntilSyncedToCurrentChain() const LOCKS_EXCLUDED(::cs_main) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
     void Interrupt() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
@@ -188,7 +187,7 @@ public:
     void Stop() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
     /// Get a summary of the index and its state.
-    IndexSummary GetSummary() const;
+    IndexSummary GetSummary() const EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 };
 
 #endif // BITCOIN_INDEX_BASE_H
