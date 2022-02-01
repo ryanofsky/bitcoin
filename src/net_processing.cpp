@@ -3197,8 +3197,16 @@ void PeerManagerImpl::ProcessGetCFilters(CNode& node, Peer& peer, DataStream& vR
     }
 
     std::vector<BlockFilter> filters;
+<<<<<<< HEAD
     if (!filter_index->LookupFilterRange(start_height, stop_index, filters)) {
         LogDebug(BCLog::NET, "Failed to find block filter in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
+||||||| parent of 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
+    if (!filter_index->LookupFilterRange(start_height, stop_index, filters)) {
+        LogPrint(BCLog::NET, "Failed to find block filter in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
+=======
+    if (!filter_index->LookupFilterRange(start_height, {stop_index->GetBlockHash(), stop_index->nHeight}, filters)) {
+        LogPrint(BCLog::NET, "Failed to find block filter in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
+>>>>>>> 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
                      BlockFilterTypeName(filter_type), start_height, stop_hash.ToString());
         return;
     }
@@ -3229,16 +3237,32 @@ void PeerManagerImpl::ProcessGetCFHeaders(CNode& node, Peer& peer, DataStream& v
     if (start_height > 0) {
         const CBlockIndex* const prev_block =
             stop_index->GetAncestor(static_cast<int>(start_height - 1));
+<<<<<<< HEAD
         if (!filter_index->LookupFilterHeader(prev_block, prev_header)) {
             LogDebug(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
+||||||| parent of 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
+        if (!filter_index->LookupFilterHeader(prev_block, prev_header)) {
+            LogPrint(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
+=======
+        if (!filter_index->LookupFilterHeader({prev_block->GetBlockHash(), prev_block->nHeight}, prev_header)) {
+            LogPrint(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
+>>>>>>> 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
                          BlockFilterTypeName(filter_type), prev_block->GetBlockHash().ToString());
             return;
         }
     }
 
     std::vector<uint256> filter_hashes;
+<<<<<<< HEAD
     if (!filter_index->LookupFilterHashRange(start_height, stop_index, filter_hashes)) {
         LogDebug(BCLog::NET, "Failed to find block filter hashes in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
+||||||| parent of 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
+    if (!filter_index->LookupFilterHashRange(start_height, stop_index, filter_hashes)) {
+        LogPrint(BCLog::NET, "Failed to find block filter hashes in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
+=======
+    if (!filter_index->LookupFilterHashRange(start_height, {stop_index->GetBlockHash(), stop_index->nHeight}, filter_hashes)) {
+        LogPrint(BCLog::NET, "Failed to find block filter hashes in index: filter_type=%s, start_height=%d, stop_hash=%s\n",
+>>>>>>> 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
                      BlockFilterTypeName(filter_type), start_height, stop_hash.ToString());
         return;
     }
@@ -3275,8 +3299,16 @@ void PeerManagerImpl::ProcessGetCFCheckPt(CNode& node, Peer& peer, DataStream& v
         int height = (i + 1) * CFCHECKPT_INTERVAL;
         block_index = block_index->GetAncestor(height);
 
+<<<<<<< HEAD
         if (!filter_index->LookupFilterHeader(block_index, headers[i])) {
             LogDebug(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
+||||||| parent of 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
+        if (!filter_index->LookupFilterHeader(block_index, headers[i])) {
+            LogPrint(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
+=======
+        if (!filter_index->LookupFilterHeader({block_index->GetBlockHash(), block_index->nHeight}, headers[i])) {
+            LogPrint(BCLog::NET, "Failed to find block filter header in index: filter_type=%s, block_hash=%s\n",
+>>>>>>> 1a7ff2b17558 (indexes, refactor: Remove remaining CBlockIndex* pointers from indexing code)
                          BlockFilterTypeName(filter_type), block_index->GetBlockHash().ToString());
             return;
         }
