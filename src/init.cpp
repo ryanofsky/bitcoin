@@ -1555,7 +1555,23 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     // ********************************************************* Step 8: start indexers
 
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
+<<<<<<< HEAD
         g_txindex = std::make_unique<TxIndex>(interfaces::MakeChain(node), cache_sizes.tx_index, false, fReindex);
+||||||| parent of f74b34f2d4d3 (Remove direct index -> node dependency)
+        auto result{WITH_LOCK(cs_main, return CheckLegacyTxindex(*Assert(chainman.m_blockman.m_block_tree_db)))};
+        if (!result) {
+            return InitError(util::ErrorString(result));
+        }
+
+        g_txindex = std::make_unique<TxIndex>(interfaces::MakeChain(node), cache_sizes.tx_index, false, fReindex);
+=======
+        auto result{WITH_LOCK(cs_main, return CheckLegacyTxindex(*Assert(chainman.m_blockman.m_block_tree_db)))};
+        if (!result) {
+            return InitError(util::ErrorString(result));
+        }
+
+        g_txindex = std::make_unique<TxIndex>(interfaces::MakeChain(node), chainman.m_blockman, cache_sizes.tx_index, false, fReindex);
+>>>>>>> f74b34f2d4d3 (Remove direct index -> node dependency)
         node.indexes.emplace_back(g_txindex.get());
     }
 
