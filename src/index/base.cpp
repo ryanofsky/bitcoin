@@ -39,11 +39,6 @@ void BaseIndex::FatalErrorf(const char* fmt, const Args&... args)
     node::AbortNode(m_chain->context()->shutdown, m_chain->context()->exit_status, message);
 }
 
-const CBlockIndex& BaseIndex::BlockIndex(const uint256& hash)
-{
-   return WITH_LOCK(cs_main, return *Assert(m_chainstate->m_blockman.LookupBlockIndex(hash)));
-}
-
 CBlockLocator GetLocator(interfaces::Chain& chain, const uint256& block_hash)
 {
     CBlockLocator locator;
@@ -266,6 +261,7 @@ BaseIndex::~BaseIndex()
 // syncing after. So the most efficient thing should happen in both cases.
 bool BaseIndex::Init()
 {
+<<<<<<< HEAD
     AssertLockNotHeld(cs_main);
 
     // May need reset if index is being restarted.
@@ -306,6 +302,13 @@ bool BaseIndex::Init()
 
 =======
 >>>>>>> 1a79ce5d35e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+||||||| parent of e09e18601db9 (Remove direct index -> node dependency)
+    // m_chainstate member gives indexing code access to node internals. It is
+    // removed in followup https://github.com/bitcoin/bitcoin/pull/24230
+    m_chainstate = &m_chain->context()->chainman->ActiveChainstate();
+
+=======
+>>>>>>> e09e18601db9 (Remove direct index -> node dependency)
     CBlockLocator locator;
     if (!GetDB().ReadBestBlock(locator)) {
         locator.SetNull();
@@ -1001,12 +1004,12 @@ IndexSummary BaseIndex::GetSummary() const
 
 void BaseIndex::SetBestBlock(const std::optional<interfaces::BlockKey>& block)
 {
-    assert(!m_chainstate->m_blockman.IsPruneMode() || AllowPrune());
+    assert(!m_chain->pruningEnabled() || AllowPrune());
 
     if (block && AllowPrune()) {
         node::PruneLockInfo prune_lock;
         prune_lock.height_first = block->height;
-        WITH_LOCK(::cs_main, m_chainstate->m_blockman.UpdatePruneLock(GetName(), prune_lock));
+        m_chain->updatePruneLock(GetName(), prune_lock);
     }
 
     // Intentionally set m_best_block as the last step in this function,
