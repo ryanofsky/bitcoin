@@ -118,7 +118,6 @@ private:
 
 protected:
     std::unique_ptr<interfaces::Chain> m_chain;
-    Chainstate* m_chainstate{nullptr};
     const std::string m_name;
 
     /// Return custom notification options for index.

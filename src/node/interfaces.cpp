@@ -767,10 +767,19 @@ public:
         if (!m_node.mempool) return CFeeRate{DUST_RELAY_TX_FEE};
         return m_node.mempool->m_dust_relay_feerate;
     }
+    void updatePruneLock(const std::string& name, const PruneLockInfo& lock_info) override
+    {
+        LOCK(cs_main);
+        m_node.chainman->m_blockman.UpdatePruneLock(name, lock_info);
+    }
     bool havePruned() override
     {
         LOCK(::cs_main);
         return chainman().m_blockman.m_have_pruned;
+    }
+    bool pruningEnabled() override
+    {
+        return chainman().m_blockman.IsPruneMode();
     }
     bool isReadyToBroadcast() override { return !chainman().m_blockman.LoadingBlocks() && !isInitialBlockDownload(); }
     bool isInitialBlockDownload() override
