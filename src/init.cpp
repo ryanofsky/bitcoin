@@ -1581,7 +1581,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         auto catch_exceptions = [](auto&& f) {
             try {
                 return f();
-            } catch (const std::exception& e) {
+            } catch (const std::runtime_error& e) {
                 LogPrintf("%s\n", e.what());
                 return std::make_tuple(node::ChainstateLoadStatus::FAILURE, _("Error opening block database"));
             }
