@@ -154,18 +154,18 @@ BOOST_AUTO_TEST_CASE(parse_hex)
 
     // Basic test vector
     std::vector<unsigned char> expected(std::begin(HEX_PARSE_OUTPUT), std::end(HEX_PARSE_OUTPUT));
-    constexpr std::array<std::byte, 65> hex_literal_array{operator""_hex<util::detail::Hex(HEX_PARSE_INPUT)>()};
+    constexpr std::array<std::byte, 65> hex_literal_array{operator""_hex<util::_detail::Hex(HEX_PARSE_INPUT)>()};
     auto hex_literal_span{MakeUCharSpan(hex_literal_array)};
     BOOST_CHECK_EQUAL_COLLECTIONS(hex_literal_span.begin(), hex_literal_span.end(), expected.begin(), expected.end());
 
-    const std::vector<std::byte> hex_literal_vector{operator""_hex_v<util::detail::Hex(HEX_PARSE_INPUT)>()};
+    const std::vector<std::byte> hex_literal_vector{operator""_hex_v<util::_detail::Hex(HEX_PARSE_INPUT)>()};
     hex_literal_span = MakeUCharSpan(hex_literal_vector);
     BOOST_CHECK_EQUAL_COLLECTIONS(hex_literal_span.begin(), hex_literal_span.end(), expected.begin(), expected.end());
 
-    constexpr std::array<uint8_t, 65> hex_literal_array_uint8{operator""_hex_u8<util::detail::Hex(HEX_PARSE_INPUT)>()};
+    constexpr std::array<uint8_t, 65> hex_literal_array_uint8{operator""_hex_u8<util::_detail::Hex(HEX_PARSE_INPUT)>()};
     BOOST_CHECK_EQUAL_COLLECTIONS(hex_literal_array_uint8.begin(), hex_literal_array_uint8.end(), expected.begin(), expected.end());
 
-    result = operator""_hex_v_u8<util::detail::Hex(HEX_PARSE_INPUT)>();
+    result = operator""_hex_v_u8<util::_detail::Hex(HEX_PARSE_INPUT)>();
     BOOST_CHECK_EQUAL_COLLECTIONS(result.begin(), result.end(), expected.begin(), expected.end());
 
     result = ParseHex(HEX_PARSE_INPUT);

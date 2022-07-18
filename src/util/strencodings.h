@@ -425,17 +425,59 @@ struct Hex {
  *   time/runtime barrier.
  */
 inline namespace hex_literals {
+<<<<<<< HEAD
+||||||| parent of 828b76e88451 (refactor: Add util::Result failure values)
+namespace detail {
 
-template <util::detail::Hex str>
+template <size_t N>
+struct Hex {
+    std::array<std::byte, N / 2> bytes{};
+    consteval Hex(const char (&hex_str)[N])
+        // 2 hex digits required per byte + implicit null terminator
+        requires(N % 2 == 1)
+    {
+        if (hex_str[N - 1]) throw "null terminator required";
+        for (std::size_t i = 0; i < bytes.size(); ++i) {
+            bytes[i] = static_cast<std::byte>(
+                (ConstevalHexDigit(hex_str[2 * i]) << 4) |
+                 ConstevalHexDigit(hex_str[2 * i + 1]));
+        }
+    }
+};
+
+} // namespace detail
+=======
+namespace _detail {
+
+template <size_t N>
+struct Hex {
+    std::array<std::byte, N / 2> bytes{};
+    consteval Hex(const char (&hex_str)[N])
+        // 2 hex digits required per byte + implicit null terminator
+        requires(N % 2 == 1)
+    {
+        if (hex_str[N - 1]) throw "null terminator required";
+        for (std::size_t i = 0; i < bytes.size(); ++i) {
+            bytes[i] = static_cast<std::byte>(
+                (ConstevalHexDigit(hex_str[2 * i]) << 4) |
+                 ConstevalHexDigit(hex_str[2 * i + 1]));
+        }
+    }
+};
+
+} // namespace _detail
+>>>>>>> 828b76e88451 (refactor: Add util::Result failure values)
+
+template <util::_detail::Hex str>
 constexpr auto operator""_hex() { return str.bytes; }
 
-template <util::detail::Hex str>
+template <util::_detail::Hex str>
 constexpr auto operator""_hex_u8() { return std::bit_cast<std::array<uint8_t, str.bytes.size()>>(str.bytes); }
 
-template <util::detail::Hex str>
+template <util::_detail::Hex str>
 constexpr auto operator""_hex_v() { return std::vector<std::byte>{str.bytes.begin(), str.bytes.end()}; }
 
-template <util::detail::Hex str>
+template <util::_detail::Hex str>
 inline auto operator""_hex_v_u8() { return std::vector<uint8_t>{UCharCast(str.bytes.data()), UCharCast(str.bytes.data() + str.bytes.size())}; }
 
 } // inline namespace hex_literals
