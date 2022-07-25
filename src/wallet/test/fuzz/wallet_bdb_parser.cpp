@@ -49,7 +49,21 @@ FUZZ_TARGET(wallet_bdb_parser, .init = initialize_wallet_bdb_parser)
     }
     g_setup->m_args.ForceSetArg("-dumpfile", fs::PathToString(bdb_ro_dumpfile));
 
+<<<<<<< HEAD
     auto db{MakeBerkeleyRODatabase(wallet_path, options, status, error)};
+||||||| parent of 565aab397d58 (refactor: Use util::Result class in wallet/migrate)
+#ifdef USE_BDB_NON_MSVC
+    bool bdb_ro_err = false;
+    bool bdb_ro_strict_err = false;
+#endif
+    auto db{MakeBerkeleyRODatabase(wallet_path, options, status, error)};
+=======
+#ifdef USE_BDB_NON_MSVC
+    bool bdb_ro_err = false;
+    bool bdb_ro_strict_err = false;
+#endif
+    auto db{ResultExtract(MakeBerkeleyRODatabase(wallet_path, options), &status, &error)};
+>>>>>>> 565aab397d58 (refactor: Use util::Result class in wallet/migrate)
     if (db) {
         assert(DumpWallet(g_setup->m_args, *db, error));
     } else {
