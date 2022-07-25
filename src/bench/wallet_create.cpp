@@ -50,13 +50,13 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
     auto cleanup{[&] {
         if (!wallet) return;
         // Release wallet
-        RemoveWallet(context, wallet, /*load_on_start=*/std::nullopt);
+        Assert(RemoveWallet(context, wallet, /*load_on_start=*/std::nullopt));
         WaitForDeleteWallet(std::move(wallet));
         fs::remove(wallet_path / "wallet.dat");
         fs::remove(wallet_path);
     }};
     bench.setup(cleanup).run([&] {
-        wallet = CreateWallet(context, wallet_name, /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
+        wallet = ResultExtract(CreateWallet(context, wallet_name, /*load_on_start=*/std::nullopt, options), &status, &error_string, &warnings);
         assert(status == DatabaseStatus::SUCCESS);
         assert(wallet != nullptr);
     });
