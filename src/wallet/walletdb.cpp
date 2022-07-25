@@ -1469,7 +1469,31 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
     }
 
     if (format == DatabaseFormat::SQLITE) {
+<<<<<<< HEAD
         return MakeSQLiteDatabase(path, options, status, error);
+||||||| parent of 1789bb0f8e4a (refactor: Use util::Result class in wallet/sqlite)
+#ifdef USE_SQLITE
+        if constexpr (true) {
+            return MakeSQLiteDatabase(path, options, status, error);
+        } else
+#endif
+        {
+            error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support SQLite database format.", fs::PathToString(path)));
+            status = DatabaseStatus::FAILED_BAD_FORMAT;
+            return nullptr;
+        }
+=======
+#ifdef USE_SQLITE
+        if constexpr (true) {
+            return ResultExtract(MakeSQLiteDatabase(path, options), &status, &error);
+        } else
+#endif
+        {
+            error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support SQLite database format.", fs::PathToString(path)));
+            status = DatabaseStatus::FAILED_BAD_FORMAT;
+            return nullptr;
+        }
+>>>>>>> 1789bb0f8e4a (refactor: Use util::Result class in wallet/sqlite)
     }
 
     if (format == DatabaseFormat::BERKELEY_RO) {
