@@ -40,6 +40,7 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
         options.create_passphrase = random.rand256().ToString();
     }
 
+<<<<<<< HEAD
     DatabaseStatus status;
     bilingual_str error_string;
     std::vector<bilingual_str> warnings;
@@ -47,7 +48,17 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
     const auto wallet_path = test_setup->m_path_root / "test_wallet";
     const auto wallet_name = fs::PathToString(wallet_path);
 
+||||||| parent of ac0f23c62da (refactor: Use util::Result class in wallet/test)
+    DatabaseStatus status;
+    bilingual_str error_string;
+    std::vector<bilingual_str> warnings;
+
+    auto wallet_path = fs::PathToString(test_setup->m_path_root / "test_wallet");
+=======
+    auto wallet_path = fs::PathToString(test_setup->m_path_root / "test_wallet");
+>>>>>>> ac0f23c62da (refactor: Use util::Result class in wallet/test)
     bench.run([&] {
+<<<<<<< HEAD
 <<<<<<< HEAD
         auto wallet = CreateWallet(context, wallet_name, /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
 ||||||| parent of b5c51c10e85 (refactor: Use util::Result class in wallet/wallet)
@@ -57,12 +68,30 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
 >>>>>>> b5c51c10e85 (refactor: Use util::Result class in wallet/wallet)
         assert(status == DatabaseStatus::SUCCESS);
         assert(wallet != nullptr);
+||||||| parent of ac0f23c62da (refactor: Use util::Result class in wallet/test)
+        auto wallet{ResultExtract(CreateWallet(context, wallet_path, /*load_on_start=*/std::nullopt, options), &status, &error_string, &warnings)};
+        assert(status == DatabaseStatus::SUCCESS);
+        assert(wallet != nullptr);
+=======
+        auto wallet{CreateWallet(context, wallet_path, /*load_on_start=*/std::nullopt, options)};
+        assert(wallet);
+>>>>>>> ac0f23c62da (refactor: Use util::Result class in wallet/test)
 
         // Release wallet
+<<<<<<< HEAD
         Assert(RemoveWallet(context, wallet, /*load_on_start=*/ std::nullopt));
         WaitForDeleteWallet(std::move(wallet));
         fs::remove(wallet_path / "wallet.dat");
         fs::remove(wallet_path);
+||||||| parent of ac0f23c62da (refactor: Use util::Result class in wallet/test)
+        Assert(RemoveWallet(context, wallet, /*load_on_start=*/ std::nullopt));
+        WaitForDeleteWallet(std::move(wallet));
+        fs::remove_all(wallet_path);
+=======
+        Assert(RemoveWallet(context, wallet.value(), /*load_on_start=*/ std::nullopt));
+        WaitForDeleteWallet(std::move(wallet.value()));
+        fs::remove_all(wallet_path);
+>>>>>>> ac0f23c62da (refactor: Use util::Result class in wallet/test)
     });
 }
 
