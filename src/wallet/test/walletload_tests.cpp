@@ -49,8 +49,6 @@ public:
 
 BOOST_FIXTURE_TEST_CASE(wallet_load_descriptors, TestingSetup)
 {
-    bilingual_str _error;
-    std::vector<bilingual_str> _warnings;
     std::unique_ptr<WalletDatabase> database = CreateMockableWalletDatabase();
     {
         // Write unknown active descriptor
@@ -64,7 +62,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_descriptors, TestingSetup)
     {
         // Now try to load the wallet and verify the error.
         const std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", std::move(database)));
-        BOOST_CHECK_EQUAL(wallet->PopulateWalletFromDB(_error, _warnings), DBErrors::UNKNOWN_DESCRIPTOR);
+        BOOST_CHECK_EQUAL(wallet->PopulateWalletFromDB().error(), DBErrors::UNKNOWN_DESCRIPTOR);
     }
 
     // Test 2
@@ -82,6 +80,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_descriptors, TestingSetup)
     {
         // Now try to load the wallet and verify the result.
         const std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", std::move(database)));
+<<<<<<< HEAD
         BOOST_CHECK_EQUAL(wallet->PopulateWalletFromDB(_error, _warnings), DBErrors::LOAD_OK);
     }
 }
@@ -126,6 +125,13 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_descriptor_cache_invalid_xpub_size, TestingS
         ASSERT_DEBUG_LOG("descriptor last hardened cache xpub has invalid size");
         const std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", std::move(database)));
         BOOST_CHECK_EQUAL(wallet->PopulateWalletFromDB(error, warnings), DBErrors::CORRUPT);
+||||||| parent of d2ca7d8694c (refactor: Use util::Result class in wallet/wallet)
+        BOOST_CHECK_EQUAL(wallet->PopulateWalletFromDB(_error, _warnings), DBErrors::CORRUPT);
+        BOOST_CHECK(found); // The error must be logged
+=======
+        BOOST_CHECK_EQUAL(wallet->PopulateWalletFromDB().error(), DBErrors::CORRUPT);
+        BOOST_CHECK(found); // The error must be logged
+>>>>>>> d2ca7d8694c (refactor: Use util::Result class in wallet/wallet)
     }
 }
 
