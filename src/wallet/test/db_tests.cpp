@@ -64,6 +64,7 @@ static std::vector<std::unique_ptr<WalletDatabase>> TestDatabases(const fs::path
 {
     std::vector<std::unique_ptr<WalletDatabase>> dbs;
     DatabaseOptions options;
+<<<<<<< HEAD
     DatabaseStatus status;
     bilingual_str error;
 <<<<<<< HEAD
@@ -77,8 +78,13 @@ static std::vector<std::unique_ptr<WalletDatabase>> TestDatabases(const fs::path
 #endif
     dbs.emplace_back(MakeSQLiteDatabase(path_root / "sqlite", options, status, error));
 =======
+||||||| parent of 14837ff1af04 (refactor: Use util::Result class in wallet/bdb)
+    DatabaseStatus status;
+    bilingual_str error;
+=======
+>>>>>>> 14837ff1af04 (refactor: Use util::Result class in wallet/bdb)
 #ifdef USE_BDB
-    dbs.emplace_back(MakeBerkeleyDatabase(path_root / "bdb", options, status, error));
+    dbs.emplace_back(std::move(MakeBerkeleyDatabase(path_root / "bdb", options).value()));
     // Needs BDB to make the DB to read
     dbs.emplace_back(std::make_unique<BerkeleyRODatabase>(BDBDataFile(path_root / "bdb"), /*open=*/false));
 #endif

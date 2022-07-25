@@ -86,4 +86,80 @@ FUZZ_TARGET(wallet_bdb_parser, .init = initialize_wallet_bdb_parser)
             throw std::runtime_error(error.original);
         }
     }
+<<<<<<< HEAD
+||||||| parent of 14837ff1af04 (refactor: Use util::Result class in wallet/bdb)
+
+#ifdef USE_BDB_NON_MSVC
+    // Try opening with BDB
+    fs::path bdb_dumpfile{g_setup->m_args.GetDataDirNet() / "fuzzed_dumpfile_bdb.dump"};
+    if (fs::exists(bdb_dumpfile)) { // Writing into an existing dump file will throw an exception
+        remove(bdb_dumpfile);
+    }
+    g_setup->m_args.ForceSetArg("-dumpfile", fs::PathToString(bdb_dumpfile));
+
+    try {
+        auto db{MakeBerkeleyDatabase(wallet_path, options, status, error)};
+        if (bdb_ro_err && !db) {
+            return;
+        }
+        assert(db);
+        if (bdb_ro_strict_err) {
+            // BerkeleyRO will be stricter than BDB. Ignore when those specific errors are hit.
+            return;
+        }
+        assert(!bdb_ro_err);
+        assert(DumpWallet(g_setup->m_args, *db, error));
+    } catch (const std::runtime_error& e) {
+        if (bdb_ro_err) return;
+        throw e;
+    }
+
+    // Make sure the dumpfiles match
+    if (fs::exists(bdb_ro_dumpfile) && fs::exists(bdb_dumpfile)) {
+        std::ifstream bdb_ro_dump(bdb_ro_dumpfile, std::ios_base::binary | std::ios_base::in);
+        std::ifstream bdb_dump(bdb_dumpfile, std::ios_base::binary | std::ios_base::in);
+        assert(std::equal(
+            std::istreambuf_iterator<char>(bdb_ro_dump.rdbuf()),
+            std::istreambuf_iterator<char>(),
+            std::istreambuf_iterator<char>(bdb_dump.rdbuf())));
+    }
+#endif
+=======
+
+#ifdef USE_BDB_NON_MSVC
+    // Try opening with BDB
+    fs::path bdb_dumpfile{g_setup->m_args.GetDataDirNet() / "fuzzed_dumpfile_bdb.dump"};
+    if (fs::exists(bdb_dumpfile)) { // Writing into an existing dump file will throw an exception
+        remove(bdb_dumpfile);
+    }
+    g_setup->m_args.ForceSetArg("-dumpfile", fs::PathToString(bdb_dumpfile));
+
+    try {
+        auto db{ResultExtract(MakeBerkeleyDatabase(wallet_path, options), &status, &error)};
+        if (bdb_ro_err && !db) {
+            return;
+        }
+        assert(db);
+        if (bdb_ro_strict_err) {
+            // BerkeleyRO will be stricter than BDB. Ignore when those specific errors are hit.
+            return;
+        }
+        assert(!bdb_ro_err);
+        assert(DumpWallet(g_setup->m_args, *db, error));
+    } catch (const std::runtime_error& e) {
+        if (bdb_ro_err) return;
+        throw e;
+    }
+
+    // Make sure the dumpfiles match
+    if (fs::exists(bdb_ro_dumpfile) && fs::exists(bdb_dumpfile)) {
+        std::ifstream bdb_ro_dump(bdb_ro_dumpfile, std::ios_base::binary | std::ios_base::in);
+        std::ifstream bdb_dump(bdb_dumpfile, std::ios_base::binary | std::ios_base::in);
+        assert(std::equal(
+            std::istreambuf_iterator<char>(bdb_ro_dump.rdbuf()),
+            std::istreambuf_iterator<char>(),
+            std::istreambuf_iterator<char>(bdb_dump.rdbuf())));
+    }
+#endif
+>>>>>>> 14837ff1af04 (refactor: Use util::Result class in wallet/bdb)
 }

@@ -1392,8 +1392,32 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
         return MakeBerkeleyRODatabase(path, options, status, error);
     }
 
+<<<<<<< HEAD
     error = Untranslated(STR_INTERNAL_BUG("Could not determine wallet format"));
     status = DatabaseStatus::FAILED_BAD_FORMAT;
     return nullptr;
+||||||| parent of 14837ff1af04 (refactor: Use util::Result class in wallet/bdb)
+#ifdef USE_BDB
+    if constexpr (true) {
+        return MakeBerkeleyDatabase(path, options, status, error);
+    } else
+#endif
+    {
+        error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support Berkeley DB database format.", fs::PathToString(path)));
+        status = DatabaseStatus::FAILED_BAD_FORMAT;
+        return nullptr;
+    }
+=======
+#ifdef USE_BDB
+    if constexpr (true) {
+        return ResultExtract(MakeBerkeleyDatabase(path, options), &status, &error);
+    } else
+#endif
+    {
+        error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support Berkeley DB database format.", fs::PathToString(path)));
+        status = DatabaseStatus::FAILED_BAD_FORMAT;
+        return nullptr;
+    }
+>>>>>>> 14837ff1af04 (refactor: Use util::Result class in wallet/bdb)
 }
 } // namespace wallet
