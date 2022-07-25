@@ -74,6 +74,7 @@ std::shared_ptr<CWallet> TestCreateWallet(WalletContext& context)
 
 std::shared_ptr<CWallet> TestLoadWallet(std::unique_ptr<WalletDatabase> database, WalletContext& context)
 {
+<<<<<<< HEAD
     bilingual_str error;
     std::vector<bilingual_str> warnings;
 <<<<<<< HEAD
@@ -84,19 +85,37 @@ std::shared_ptr<CWallet> TestLoadWallet(std::unique_ptr<WalletDatabase> database
     auto wallet{ResultExtract(CWallet::Create(context, "", std::move(database), create_flags), nullptr, &error, &warnings)};
 >>>>>>> 1efcdbe42c4 (refactor: Use util::Result class in wallet/wallet)
     NotifyWalletLoaded(context, wallet);
+||||||| parent of ee403e83522 (refactor: Use util::Result class in wallet/test)
+    bilingual_str error;
+    std::vector<bilingual_str> warnings;
+    auto wallet{ResultExtract(CWallet::Create(context, "", std::move(database), create_flags), nullptr, &error, &warnings)};
+    NotifyWalletLoaded(context, wallet);
+=======
+    auto wallet{CWallet::Create(context, "", std::move(database), create_flags)};
+    NotifyWalletLoaded(context, wallet.value());
+>>>>>>> ee403e83522 (refactor: Use util::Result class in wallet/test)
     if (context.chain) {
         wallet->postInitProcess();
     }
-    return wallet;
+    return wallet.value();
 }
 
 std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
 {
     DatabaseOptions options;
+<<<<<<< HEAD
     options.require_existing = true;
     DatabaseStatus status;
     bilingual_str error;
+||||||| parent of ee403e83522 (refactor: Use util::Result class in wallet/test)
+    options.create_flags = WALLET_FLAG_DESCRIPTORS;
+    DatabaseStatus status;
+    bilingual_str error;
+=======
+    options.create_flags = WALLET_FLAG_DESCRIPTORS;
+>>>>>>> ee403e83522 (refactor: Use util::Result class in wallet/test)
     std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
 <<<<<<< HEAD
     auto database = MakeWalletDatabase("", options, status, error);
     return TestLoadWallet(std::move(database), context);
@@ -107,6 +126,13 @@ std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
     auto database{ResultExtract(MakeWalletDatabase("", options), &status, &error)};
     return TestLoadWallet(std::move(database), context, options.create_flags);
 >>>>>>> 1efcdbe42c4 (refactor: Use util::Result class in wallet/wallet)
+||||||| parent of ee403e83522 (refactor: Use util::Result class in wallet/test)
+    auto database{ResultExtract(MakeWalletDatabase("", options), &status, &error)};
+    return TestLoadWallet(std::move(database), context, options.create_flags);
+=======
+    auto database{MakeWalletDatabase("", options)};
+    return TestLoadWallet(std::move(database.value()), context, options.create_flags);
+>>>>>>> ee403e83522 (refactor: Use util::Result class in wallet/test)
 }
 
 void TestUnloadWallet(std::shared_ptr<CWallet>&& wallet)
