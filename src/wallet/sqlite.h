@@ -6,6 +6,7 @@
 #define BITCOIN_WALLET_SQLITE_H
 
 #include <sync.h>
+#include <util/result.h>
 #include <wallet/db.h>
 
 #include <semaphore>
@@ -139,7 +140,7 @@ public:
     // This ensures that only one batch is modifying the database at a time.
     std::binary_semaphore m_write_semaphore;
 
-    bool Verify(bilingual_str& error);
+    util::Result<void> Verify();
 
     /** Open the database if it is not already opened */
     void Open() override;
@@ -175,6 +176,7 @@ public:
     bool m_use_unsafe_sync;
 };
 
+<<<<<<< HEAD
 /** An in-memory SQLiteDatabase. Used as a temporary build artifact where no
  *  on-disk persistence is needed. */
 class InMemoryWalletDatabase : public SQLiteDatabase
@@ -185,6 +187,11 @@ public:
 };
 
 std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+||||||| parent of 0a2a1abac67 (refactor: Use util::Result class in wallet/sqlite)
+std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+=======
+util::ResultPtr<std::unique_ptr<SQLiteDatabase>, DatabaseStatus> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options);
+>>>>>>> 0a2a1abac67 (refactor: Use util::Result class in wallet/sqlite)
 
 std::unique_ptr<WalletDatabase> MakeInMemoryWalletDatabase();
 
