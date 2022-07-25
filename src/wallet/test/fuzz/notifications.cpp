@@ -91,6 +91,7 @@ struct FuzzedWallet {
     std::shared_ptr<CWallet> wallet;
     FuzzedWallet(const std::string& name, const std::string& seed_insecure)
     {
+<<<<<<< HEAD
         auto& chain{*Assert(g_setup->m_node.chain)};
         wallet = std::make_shared<CWallet>(&chain, name, CreateMockableWalletDatabase());
         {
@@ -100,10 +101,69 @@ struct FuzzedWallet {
             wallet->SetLastBlockProcessed(height, chain.getBlockHash(height));
         }
         wallet->m_keypool_size = 1; // Avoid timeout in TopUp()
+||||||| parent of 1b2a5f12b425 (refactor: Use util::Result class for wallet loading)
+        context.args = &args;
+        context.chain = g_setup->m_node.chain.get();
+
+        DatabaseOptions options;
+        options.require_create = true;
+        options.create_flags = WALLET_FLAG_DESCRIPTORS;
+        const std::optional<bool> load_on_start;
+        gArgs.ForceSetArg("-keypool", "0"); // Avoid timeout in TopUp()
+
+        DatabaseStatus status;
+        bilingual_str error;
+        std::vector<bilingual_str> warnings;
+        wallet = CreateWallet(context, name, load_on_start, options, status, error, warnings);
+        assert(wallet);
+        assert(error.empty());
+        assert(warnings.empty());
+=======
+        context.args = &args;
+        context.chain = g_setup->m_node.chain.get();
+
+        DatabaseOptions options;
+        options.require_create = true;
+        options.create_flags = WALLET_FLAG_DESCRIPTORS;
+        const std::optional<bool> load_on_start;
+        gArgs.ForceSetArg("-keypool", "0"); // Avoid timeout in TopUp()
+
+        auto created = CreateWallet(context, name, load_on_start, options);
+        assert(created && *created);
+        assert(created.GetErrors().empty());
+        assert(created.GetWarnings().empty());
+        wallet = *created;
+>>>>>>> 1b2a5f12b425 (refactor: Use util::Result class for wallet loading)
         assert(wallet->IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS));
         ImportDescriptors(*wallet, seed_insecure);
     }
+<<<<<<< HEAD
     CTxDestination GetDestination(FuzzedDataProvider& fuzzed_data_provider)
+||||||| parent of 1b2a5f12b425 (refactor: Use util::Result class for wallet loading)
+    ~FuzzedWallet()
+    {
+        const auto name{wallet->GetName()};
+        std::vector<bilingual_str> warnings;
+        std::optional<bool> load_on_start;
+        assert(RemoveWallet(context, wallet, load_on_start, warnings));
+        assert(warnings.empty());
+        UnloadWallet(std::move(wallet));
+        fs::remove_all(GetWalletDir() / fs::PathFromString(name));
+    }
+    CScript GetScriptPubKey(FuzzedDataProvider& fuzzed_data_provider)
+=======
+    ~FuzzedWallet()
+    {
+        const auto name{wallet->GetName()};
+        std::optional<bool> load_on_start;
+        auto removed = RemoveWallet(context, wallet, load_on_start);
+        assert(removed);
+        assert(removed.GetWarnings().empty());
+        UnloadWallet(std::move(wallet));
+        fs::remove_all(GetWalletDir() / fs::PathFromString(name));
+    }
+    CScript GetScriptPubKey(FuzzedDataProvider& fuzzed_data_provider)
+>>>>>>> 1b2a5f12b425 (refactor: Use util::Result class for wallet loading)
     {
         auto type{fuzzed_data_provider.PickValueInArray(OUTPUT_TYPES)};
         util::Result<CTxDestination> op_dest{util::Error{}};
