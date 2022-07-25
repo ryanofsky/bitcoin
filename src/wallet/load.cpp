@@ -58,12 +58,10 @@ bool VerifyWallets(WalletContext& context)
     // wallets directory, include it in the default list of wallets to load.
     if (!args.IsArgSet("wallet")) {
         DatabaseOptions options;
-        DatabaseStatus status;
         ReadDatabaseArgs(args, options);
-        bilingual_str error_string;
         options.require_existing = true;
         options.verify = false;
-        if (ResultExtract(MakeWalletDatabase("", options), &status, &error_string)) {
+        if (MakeWalletDatabase("", options)) {
             common::SettingsValue wallets(common::SettingsValue::VARR);
             wallets.push_back(""); // Default wallet name is ""
             // Pass write=false because no need to write file and probably
@@ -91,10 +89,10 @@ bool VerifyWallets(WalletContext& context)
         }
 
         DatabaseOptions options;
-        DatabaseStatus status;
         ReadDatabaseArgs(args, options);
         options.require_existing = true;
         options.verify = true;
+<<<<<<< HEAD
         bilingual_str error_string;
         if (!ResultExtract(MakeWalletDatabase(wallet_file, options), &status, &error_string)) {
             if (status == DatabaseStatus::FAILED_NOT_FOUND) {
@@ -103,8 +101,19 @@ bool VerifyWallets(WalletContext& context)
                 // Skipping legacy wallets as they will not be loaded.
                 // This will be properly communicated to the user during the loading process.
                 continue;
+||||||| parent of 960f5847c232 (refactor: Use util::Result class in wallet/load)
+        bilingual_str error_string;
+        if (!ResultExtract(MakeWalletDatabase(wallet_file, options), &status, &error_string)) {
+            if (status == DatabaseStatus::FAILED_NOT_FOUND) {
+                chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s", error_string.original)));
+=======
+        auto result{MakeWalletDatabase(wallet_file, options)};
+        if (!result) {
+            if (result.GetFailure() == DatabaseStatus::FAILED_NOT_FOUND) {
+                chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s", util::ErrorString(result).original)));
+>>>>>>> 960f5847c232 (refactor: Use util::Result class in wallet/load)
             } else {
-                chain.initError(error_string);
+                chain.initError(util::ErrorString(result));
                 return false;
             }
         }
@@ -129,10 +138,10 @@ bool LoadWallets(WalletContext& context)
                 continue;
             }
             DatabaseOptions options;
-            DatabaseStatus status;
             ReadDatabaseArgs(*context.args, options);
             options.require_existing = true;
             options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
+<<<<<<< HEAD
             bilingual_str error;
             std::vector<bilingual_str> warnings;
 <<<<<<< HEAD
@@ -151,19 +160,29 @@ bool LoadWallets(WalletContext& context)
 =======
             std::unique_ptr<WalletDatabase> database{ResultExtract(MakeWalletDatabase(name, options), &status, &error)};
             if (!database && status == DatabaseStatus::FAILED_NOT_FOUND) {
+||||||| parent of 960f5847c232 (refactor: Use util::Result class in wallet/load)
+            bilingual_str error;
+            std::vector<bilingual_str> warnings;
+            std::unique_ptr<WalletDatabase> database{ResultExtract(MakeWalletDatabase(name, options), &status, &error)};
+            if (!database && status == DatabaseStatus::FAILED_NOT_FOUND) {
+=======
+            util::Result<void> result;
+            auto database{MakeWalletDatabase(name, options) >> result};
+            if (!database && database.GetFailure() == DatabaseStatus::FAILED_NOT_FOUND) {
+>>>>>>> 960f5847c232 (refactor: Use util::Result class in wallet/load)
                 continue;
 >>>>>>> 37a1d5e0e3c6 (refactor: Use util::Result class in wallet/wallet)
             }
             chain.initMessage(_("Loading wallet…"));
-            std::shared_ptr<CWallet> pwallet{database ? ResultExtract(CWallet::Create(context, name, std::move(database), options.create_flags), nullptr, &error, &warnings) : nullptr};
-            if (!warnings.empty()) chain.initWarning(Join(warnings, Untranslated("\n")));
+            auto pwallet{database ? CWallet::Create(context, name, std::move(database.value()), options.create_flags) >> result : nullptr};
+            if (result.GetMessages() && !result.GetMessages()->warnings.empty()) chain.initWarning(Join(result.GetMessages()->warnings, Untranslated("\n")));
             if (!pwallet) {
-                chain.initError(error);
+                chain.initError(Join(result.GetMessages()->errors, Untranslated("\n")));
                 return false;
             }
 
-            NotifyWalletLoaded(context, pwallet);
-            AddWallet(context, pwallet);
+            NotifyWalletLoaded(context, pwallet.value());
+            AddWallet(context, pwallet.value());
         }
         return true;
     } catch (const std::runtime_error& e) {
@@ -187,8 +206,8 @@ void UnloadWallets(WalletContext& context)
     while (!wallets.empty()) {
         auto wallet = wallets.back();
         wallets.pop_back();
-        std::vector<bilingual_str> warnings;
-        ResultExtract(RemoveWallet(context, wallet, /* load_on_start= */ std::nullopt), nullptr, nullptr, &warnings);
+        // Note: Warnings returned from RemoveWallet are silently discarded.
+        RemoveWallet(context, wallet, /* load_on_start= */ std::nullopt);
         WaitForDeleteWallet(std::move(wallet));
     }
 }
