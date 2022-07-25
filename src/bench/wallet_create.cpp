@@ -48,12 +48,18 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
     const auto wallet_name = fs::PathToString(wallet_path);
 
     bench.run([&] {
+<<<<<<< HEAD
         auto wallet = CreateWallet(context, wallet_name, /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
+||||||| parent of b5c51c10e85 (refactor: Use util::Result class in wallet/wallet)
+        auto wallet = CreateWallet(context, wallet_path, /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
+=======
+        auto wallet{ResultExtract(CreateWallet(context, wallet_path, /*load_on_start=*/std::nullopt, options), &status, &error_string, &warnings)};
+>>>>>>> b5c51c10e85 (refactor: Use util::Result class in wallet/wallet)
         assert(status == DatabaseStatus::SUCCESS);
         assert(wallet != nullptr);
 
         // Release wallet
-        RemoveWallet(context, wallet, /*load_on_start=*/ std::nullopt);
+        Assert(RemoveWallet(context, wallet, /*load_on_start=*/ std::nullopt));
         WaitForDeleteWallet(std::move(wallet));
         fs::remove(wallet_path / "wallet.dat");
         fs::remove(wallet_path);
