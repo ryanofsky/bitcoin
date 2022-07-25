@@ -257,7 +257,7 @@ static RPCHelpMan loadwallet()
         }
     }
 
-    std::shared_ptr<CWallet> const wallet = LoadWallet(context, name, load_on_start, options, status, error, warnings);
+    std::shared_ptr<CWallet> const wallet{ResultExtract(LoadWallet(context, name, load_on_start, options), &status, &error, &warnings)};
 
     HandleWalletError(wallet, status, error);
 
@@ -428,7 +428,7 @@ static RPCHelpMan createwallet()
     options.create_passphrase = passphrase;
     bilingual_str error;
     std::optional<bool> load_on_start = request.params[6].isNull() ? std::nullopt : std::optional<bool>(request.params[6].get_bool());
-    const std::shared_ptr<CWallet> wallet = CreateWallet(context, request.params[0].get_str(), load_on_start, options, status, error, warnings);
+    const std::shared_ptr<CWallet> wallet{ResultExtract(CreateWallet(context, request.params[0].get_str(), load_on_start, options), &status, &error, &warnings)};
     if (!wallet) {
         RPCErrorCode code = status == DatabaseStatus::FAILED_ENCRYPT ? RPC_WALLET_ENCRYPTION_FAILED : RPC_WALLET_ERROR;
         throw JSONRPCError(code, error.original);
@@ -489,8 +489,16 @@ static RPCHelpMan unloadwallet()
         // Release the "main" shared pointer and prevent further notifications.
         // Note that any attempt to load the same wallet would fail until the wallet
         // is destroyed (see CheckUniqueFileid).
+<<<<<<< HEAD
         std::optional<bool> load_on_start{self.MaybeArg<bool>("load_on_startup")};
         if (!RemoveWallet(context, wallet, load_on_start, warnings)) {
+||||||| parent of 6d3a89fc8b57 (refactor: Use util::Result class in wallet/wallet)
+        std::optional<bool> load_on_start{self.MaybeArg<bool>(1)};
+        if (!RemoveWallet(context, wallet, load_on_start, warnings)) {
+=======
+        std::optional<bool> load_on_start{self.MaybeArg<bool>(1)};
+        if (!ResultExtract(RemoveWallet(context, wallet, load_on_start), nullptr, nullptr, &warnings)) {
+>>>>>>> 6d3a89fc8b57 (refactor: Use util::Result class in wallet/wallet)
             throw JSONRPCError(RPC_MISC_ERROR, "Requested wallet already unloaded");
         }
     }

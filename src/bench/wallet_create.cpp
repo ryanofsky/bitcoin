@@ -36,7 +36,13 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
 
     auto wallet_path = fs::PathToString(test_setup->m_path_root / "test_wallet");
     bench.run([&] {
+<<<<<<< HEAD
         auto wallet = CreateWallet(context, wallet_path, /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
+||||||| parent of 6d3a89fc8b57 (refactor: Use util::Result class in wallet/wallet)
+        auto wallet = CreateWallet(context, wallet_path.utf8string(), /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
+=======
+        auto wallet{ResultExtract(CreateWallet(context, wallet_path.utf8string(), /*load_on_start=*/std::nullopt, options), &status, &error_string, &warnings)};
+>>>>>>> 6d3a89fc8b57 (refactor: Use util::Result class in wallet/wallet)
         assert(status == DatabaseStatus::SUCCESS);
         assert(wallet != nullptr);
 
