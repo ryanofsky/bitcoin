@@ -33,9 +33,27 @@ static void WalletMigration(benchmark::Bench& bench)
     int NUM_WATCH_ONLY_ADDR = 20;
 
     // Setup legacy wallet
+<<<<<<< HEAD
     std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(test_setup->m_node.chain.get(), "", CreateMockableWalletDatabase());
     wallet->chainStateFlushed(ChainstateRole::NORMAL, CBlockLocator{});
     LegacyDataSPKM* legacy_spkm = wallet->GetOrCreateLegacyDataSPKM();
+||||||| parent of da907cbf01b6 (refactor: Use util::Result class in wallet/wallet)
+    DatabaseOptions options;
+    options.use_unsafe_sync = true;
+    options.verify = false;
+    DatabaseStatus status;
+    bilingual_str error;
+    auto database = MakeWalletDatabase(fs::PathToString(test_setup->m_path_root / "legacy"), options, status, error);
+    uint64_t create_flags = 0;
+    auto wallet = TestLoadWallet(std::move(database), context, create_flags);
+=======
+    DatabaseOptions options;
+    options.use_unsafe_sync = true;
+    options.verify = false;
+    auto database = MakeWalletDatabase(fs::PathToString(test_setup->m_path_root / "legacy"), options);
+    uint64_t create_flags = 0;
+    auto wallet = TestLoadWallet(std::move(database.value()), context, create_flags);
+>>>>>>> da907cbf01b6 (refactor: Use util::Result class in wallet/wallet)
 
     // Add watch-only addresses
     std::vector<CScript> scripts_watch_only;
