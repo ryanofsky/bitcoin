@@ -65,7 +65,7 @@ FUZZ_TARGET(wallet_bdb_parser, .init = initialize_wallet_bdb_parser)
     auto db{ResultExtract(MakeBerkeleyRODatabase(wallet_path, options), &status, &error)};
 >>>>>>> 565aab397d58 (refactor: Use util::Result class in wallet/migrate)
     if (db) {
-        assert(DumpWallet(g_setup->m_args, *db, error));
+        assert(DumpWallet(g_setup->m_args, *db));
     } else {
         if (error.original.starts_with("AutoFile::ignore: end of file") ||
             error.original.starts_with("AutoFile::read: end of file") ||
@@ -159,7 +159,7 @@ FUZZ_TARGET(wallet_bdb_parser, .init = initialize_wallet_bdb_parser)
             return;
         }
         assert(!bdb_ro_err);
-        assert(DumpWallet(g_setup->m_args, *db, error));
+        assert(DumpWallet(g_setup->m_args, *db));
     } catch (const std::runtime_error& e) {
         if (bdb_ro_err) return;
         throw e;
