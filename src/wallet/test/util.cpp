@@ -76,7 +76,13 @@ std::shared_ptr<CWallet> TestLoadWallet(std::unique_ptr<WalletDatabase> database
 {
     bilingual_str error;
     std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
     auto wallet = CWallet::LoadExisting(context, "", std::move(database), error, warnings);
+||||||| parent of 1efcdbe42c4 (refactor: Use util::Result class in wallet/wallet)
+    auto wallet = CWallet::Create(context, "", std::move(database), create_flags, error, warnings);
+=======
+    auto wallet{ResultExtract(CWallet::Create(context, "", std::move(database), create_flags), nullptr, &error, &warnings)};
+>>>>>>> 1efcdbe42c4 (refactor: Use util::Result class in wallet/wallet)
     NotifyWalletLoaded(context, wallet);
     if (context.chain) {
         wallet->postInitProcess();
@@ -91,8 +97,16 @@ std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
     DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
     auto database = MakeWalletDatabase("", options, status, error);
     return TestLoadWallet(std::move(database), context);
+||||||| parent of 1efcdbe42c4 (refactor: Use util::Result class in wallet/wallet)
+    auto database = MakeWalletDatabase("", options, status, error);
+    return TestLoadWallet(std::move(database), context, options.create_flags);
+=======
+    auto database{ResultExtract(MakeWalletDatabase("", options), &status, &error)};
+    return TestLoadWallet(std::move(database), context, options.create_flags);
+>>>>>>> 1efcdbe42c4 (refactor: Use util::Result class in wallet/wallet)
 }
 
 void TestUnloadWallet(std::shared_ptr<CWallet>&& wallet)
