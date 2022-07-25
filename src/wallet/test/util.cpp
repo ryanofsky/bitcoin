@@ -50,9 +50,17 @@ std::unique_ptr<CWallet> CreateSyncedWallet(interfaces::Chain& chain, CChain& cc
 
 std::shared_ptr<CWallet> TestCreateWallet(std::unique_ptr<WalletDatabase> database, WalletContext& context, uint64_t create_flags)
 {
+<<<<<<< HEAD
     bilingual_str _error;
     std::vector<bilingual_str> _warnings;
     auto wallet = CWallet::CreateNew(context, "", std::move(database), create_flags, /*born_encrypted=*/false, _error, _warnings);
+||||||| parent of 358ab05199e (refactor: Use util::Result class in wallet/wallet)
+    bilingual_str _error;
+    std::vector<bilingual_str> _warnings;
+    auto wallet = CWallet::CreateNew(context, "", std::move(database), create_flags, _error, _warnings);
+=======
+    auto wallet = Assert(CWallet::CreateNew(context, "", std::move(database), create_flags)).value();
+>>>>>>> 358ab05199e (refactor: Use util::Result class in wallet/wallet)
     NotifyWalletLoaded(context, wallet);
     if (context.chain) {
         wallet->postInitProcess();
@@ -65,10 +73,8 @@ std::shared_ptr<CWallet> TestCreateWallet(WalletContext& context)
     DatabaseOptions options;
     options.require_create = true;
     options.create_flags = WALLET_FLAG_DESCRIPTORS;
-    DatabaseStatus status;
-    bilingual_str error;
     std::vector<bilingual_str> warnings;
-    auto database = MakeWalletDatabase("", options, status, error);
+    auto database = std::move(Assert(MakeWalletDatabase("", options)).value());
     return TestCreateWallet(std::move(database), context, options.create_flags);
 }
 
@@ -77,7 +83,7 @@ std::shared_ptr<CWallet> TestLoadWallet(std::unique_ptr<WalletDatabase> database
 {
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    auto wallet = CWallet::LoadExisting(context, "", std::move(database), error, warnings);
+    auto wallet{ResultExtract(CWallet::LoadExisting(context, "", std::move(database)), nullptr, &error, &warnings)};
     NotifyWalletLoaded(context, wallet);
     if (context.chain) {
         wallet->postInitProcess();
@@ -92,7 +98,7 @@ std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
     DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    auto database = MakeWalletDatabase("", options, status, error);
+    auto database{ResultExtract(MakeWalletDatabase("", options), &status, &error)};
     return TestLoadWallet(std::move(database), context);
 }
 
