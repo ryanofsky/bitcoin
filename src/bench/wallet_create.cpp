@@ -30,12 +30,23 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
         options.create_passphrase = random.rand256().ToString();
     }
 
+<<<<<<< HEAD
     DatabaseStatus status;
     bilingual_str error_string;
     std::vector<bilingual_str> warnings;
 
     auto wallet_path = fs::PathToString(test_setup->m_path_root / "test_wallet");
+||||||| parent of 5aeaddda27f7 (refactor: Use util::Result class in wallet/test)
+    DatabaseStatus status;
+    bilingual_str error_string;
+    std::vector<bilingual_str> warnings;
+
+    fs::path wallet_path = test_setup->m_path_root / strprintf("test_wallet_%d", random.rand32()).c_str();
+=======
+    fs::path wallet_path = test_setup->m_path_root / strprintf("test_wallet_%d", random.rand32()).c_str();
+>>>>>>> 5aeaddda27f7 (refactor: Use util::Result class in wallet/test)
     bench.run([&] {
+<<<<<<< HEAD
 <<<<<<< HEAD
         auto wallet = CreateWallet(context, wallet_path, /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
 ||||||| parent of 6d3a89fc8b57 (refactor: Use util::Result class in wallet/wallet)
@@ -45,10 +56,26 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
 >>>>>>> 6d3a89fc8b57 (refactor: Use util::Result class in wallet/wallet)
         assert(status == DatabaseStatus::SUCCESS);
         assert(wallet != nullptr);
+||||||| parent of 5aeaddda27f7 (refactor: Use util::Result class in wallet/test)
+        auto wallet{ResultExtract(CreateWallet(context, wallet_path.utf8string(), /*load_on_start=*/std::nullopt, options), &status, &error_string, &warnings)};
+        assert(status == DatabaseStatus::SUCCESS);
+        assert(wallet != nullptr);
+=======
+        auto wallet{CreateWallet(context, wallet_path.utf8string(), /*load_on_start=*/std::nullopt, options)};
+        assert(wallet);
+>>>>>>> 5aeaddda27f7 (refactor: Use util::Result class in wallet/test)
 
+<<<<<<< HEAD
         // Release wallet
         RemoveWallet(context, wallet, /*load_on_start=*/ std::nullopt);
         UnloadWallet(std::move(wallet));
+||||||| parent of 5aeaddda27f7 (refactor: Use util::Result class in wallet/test)
+        // Cleanup
+        wallet.reset();
+=======
+        // Cleanup
+        wallet.value().reset();
+>>>>>>> 5aeaddda27f7 (refactor: Use util::Result class in wallet/test)
         fs::remove_all(wallet_path);
     });
 }
