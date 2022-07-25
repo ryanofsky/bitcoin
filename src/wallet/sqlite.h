@@ -131,7 +131,7 @@ public:
     // This ensures that only one batch is modifying the database at a time.
     CSemaphore m_write_semaphore;
 
-    bool Verify(bilingual_str& error);
+    util::Result<void> Verify();
 
     /** Open the database if it is not already opened */
     void Open() override;
@@ -177,7 +177,7 @@ public:
     bool m_use_unsafe_sync;
 };
 
-std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+util::ResultPtr<std::unique_ptr<SQLiteDatabase>, DatabaseError> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options);
 
 std::string SQLiteDatabaseVersion();
 } // namespace wallet
