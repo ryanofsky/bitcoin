@@ -126,13 +126,11 @@ static std::vector<std::unique_ptr<WalletDatabase>> TestDatabases(const fs::path
 {
     std::vector<std::unique_ptr<WalletDatabase>> dbs;
     DatabaseOptions options;
-    DatabaseStatus status;
-    bilingual_str error;
 #ifdef USE_BDB
-    dbs.emplace_back(MakeBerkeleyDatabase(path_root / "bdb", options, status, error));
+    dbs.emplace_back(std::move(*MakeBerkeleyDatabase(path_root / "bdb", options)));
 #endif
 #ifdef USE_SQLITE
-    dbs.emplace_back(MakeSQLiteDatabase(path_root / "sqlite", options, status, error));
+    dbs.emplace_back(std::move(*MakeSQLiteDatabase(path_root / "sqlite", options)));
 #endif
     dbs.emplace_back(CreateMockableWalletDatabase());
     return dbs;

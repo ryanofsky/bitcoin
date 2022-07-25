@@ -321,16 +321,16 @@ class WalletLoader : public ChainClient
 {
 public:
     //! Create new wallet.
-    virtual util::Result<std::unique_ptr<Wallet>> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, std::vector<bilingual_str>& warnings) = 0;
+    virtual util::Result<std::unique_ptr<Wallet>> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags) = 0;
 
     //! Load existing wallet.
-    virtual util::Result<std::unique_ptr<Wallet>> loadWallet(const std::string& name, std::vector<bilingual_str>& warnings) = 0;
+    virtual util::Result<std::unique_ptr<Wallet>> loadWallet(const std::string& name) = 0;
 
     //! Return default wallet directory.
     virtual std::string getWalletDir() = 0;
 
     //! Restore backup wallet
-    virtual util::Result<std::unique_ptr<Wallet>> restoreWallet(const fs::path& backup_file, const std::string& wallet_name, std::vector<bilingual_str>& warnings) = 0;
+    virtual util::Result<std::unique_ptr<Wallet>> restoreWallet(const fs::path& backup_file, const std::string& wallet_name) = 0;
 
     //! Return available wallets in wallet directory.
     virtual std::vector<std::string> listWalletDir() = 0;

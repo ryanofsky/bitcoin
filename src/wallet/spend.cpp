@@ -558,21 +558,14 @@ util::Result<SelectionResult> ChooseSelectionResult(const CAmount& nTargetValue,
 {
     // Vector of results. We will choose the best one based on waste.
     std::vector<SelectionResult> results;
-    std::vector<util::Result<SelectionResult>> errors;
-    auto append_error = [&] (util::Result<SelectionResult>&& result) {
-        // If any specific error message appears here, then something different from a simple "no selection found" happened.
-        // Let's save it, so it can be retrieved to the user if no other selection algorithm succeeded.
-        if (HasErrorMsg(result)) {
-            errors.emplace_back(std::move(result));
-        }
-    };
+    util::Result<void> errors;
 
     // Maximum allowed weight
     int max_inputs_weight = MAX_STANDARD_TX_WEIGHT - (coin_selection_params.tx_noinputs_size * WITNESS_SCALE_FACTOR);
 
     if (auto bnb_result{SelectCoinsBnB(groups.positive_group, nTargetValue, coin_selection_params.m_cost_of_change, max_inputs_weight)}) {
         results.push_back(*bnb_result);
-    } else append_error(std::move(bnb_result));
+    } else std::move(bnb_result) >> errors;
 
     // As Knapsack and SRD can create change, also deduce change weight.
     max_inputs_weight -= (coin_selection_params.change_output_size * WITNESS_SCALE_FACTOR);
@@ -581,17 +574,15 @@ util::Result<SelectionResult> ChooseSelectionResult(const CAmount& nTargetValue,
     if (auto knapsack_result{KnapsackSolver(groups.mixed_group, nTargetValue, coin_selection_params.m_min_change_target, coin_selection_params.rng_fast, max_inputs_weight)}) {
         knapsack_result->ComputeAndSetWaste(coin_selection_params.min_viable_change, coin_selection_params.m_cost_of_change, coin_selection_params.m_change_fee);
         results.push_back(*knapsack_result);
-    } else append_error(std::move(knapsack_result));
+    } else std::move(knapsack_result) >> errors;
 
     if (auto srd_result{SelectCoinsSRD(groups.positive_group, nTargetValue, coin_selection_params.m_change_fee, coin_selection_params.rng_fast, max_inputs_weight)}) {
         srd_result->ComputeAndSetWaste(coin_selection_params.min_viable_change, coin_selection_params.m_cost_of_change, coin_selection_params.m_change_fee);
         results.push_back(*srd_result);
-    } else append_error(std::move(srd_result));
+    } else std::move(srd_result) >> errors;
 
     if (results.empty()) {
-        // No solution found, retrieve the first explicit error (if any).
-        // future: add 'severity level' to errors so the worst one can be retrieved instead of the first one.
-        return errors.empty() ? util::Error() : std::move(errors.front());
+        return {util::Error{}, std::move(errors)};
     }
 
     // Choose the result with the least waste
@@ -713,7 +704,7 @@ util::Result<SelectionResult> AutomaticCoinSelection(const CWallet& wallet, Coin
             if (total_amount + total_unconf_long_chain > value_to_select) {
                 return util::Error{_("Unconfirmed UTXOs are available, but spending them creates a chain of transactions that will be rejected by the mempool")};
             }
-            return util::Result<SelectionResult>(util::Error()); // General "Insufficient Funds"
+            return util::Error{}; // General "Insufficient Funds"
         }
 
         // Walk-through the filters until the solution gets found.
@@ -739,7 +730,7 @@ util::Result<SelectionResult> AutomaticCoinSelection(const CWallet& wallet, Coin
 
 
         // General "Insufficient Funds"
-        return util::Result<SelectionResult>(util::Error());
+        return util::Error{};
     }
 }
 
