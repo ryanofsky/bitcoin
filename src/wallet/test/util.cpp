@@ -82,20 +82,19 @@ std::shared_ptr<CWallet> TestCreateWallet(WalletContext& context)
 
 std::shared_ptr<CWallet> TestLoadWallet(std::unique_ptr<WalletDatabase> database, WalletContext& context)
 {
-    bilingual_str error;
-    std::vector<bilingual_str> warnings;
-    auto wallet{ResultExtract(CWallet::LoadExisting(context, "", std::move(database)), nullptr, &error, &warnings)};
-    NotifyWalletLoaded(context, wallet);
+    auto wallet{CWallet::LoadExisting(context, "", std::move(database))};
+    NotifyWalletLoaded(context, wallet.value());
     if (context.chain) {
         wallet->postInitProcess();
     }
-    return wallet;
+    return wallet.value();
 }
 
 std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
 {
     DatabaseOptions options;
     options.require_existing = true;
+<<<<<<< HEAD
     DatabaseStatus status;
     bilingual_str error;
 <<<<<<< HEAD
@@ -104,10 +103,23 @@ std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
     std::vector<bilingual_str> warnings;
     auto database = MakeWalletDatabase("", options, status, error);
 =======
+||||||| parent of 0afedba86e7 (refactor: Use util::Result class in wallet/test)
+    DatabaseStatus status;
+    bilingual_str error;
+=======
+>>>>>>> 0afedba86e7 (refactor: Use util::Result class in wallet/test)
     std::vector<bilingual_str> warnings;
+<<<<<<< HEAD
     auto database{ResultExtract(MakeWalletDatabase("", options), &status, &error)};
 >>>>>>> 711b7b6b7ae (refactor: Use util::Result class in wallet/wallet)
     return TestLoadWallet(std::move(database), context);
+||||||| parent of 0afedba86e7 (refactor: Use util::Result class in wallet/test)
+    auto database{ResultExtract(MakeWalletDatabase("", options), &status, &error)};
+    return TestLoadWallet(std::move(database), context);
+=======
+    auto database{MakeWalletDatabase("", options)};
+    return TestLoadWallet(std::move(database.value()), context);
+>>>>>>> 0afedba86e7 (refactor: Use util::Result class in wallet/test)
 }
 
 void TestUnloadWallet(std::shared_ptr<CWallet>&& wallet)
