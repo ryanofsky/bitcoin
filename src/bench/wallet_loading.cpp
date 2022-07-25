@@ -46,13 +46,12 @@ static void WalletLoadingDescriptors(benchmark::Bench& bench)
     // Setup the wallet
     // Loading the wallet will also create it
     uint64_t create_flags = WALLET_FLAG_DESCRIPTORS;
-    DatabaseStatus status;
     DatabaseOptions options;
     options.require_format = DatabaseFormat::SQLITE;
     options.require_create = true;
-    bilingual_str error;
-    auto database = MakeWalletDatabase("", options, status, error);
-    auto wallet = TestCreateWallet(std::move(database), context, create_flags);
+    auto database = MakeWalletDatabase("", options);
+    assert(database);
+    auto wallet = TestCreateWallet(std::move(database.value()), context, create_flags);
 
     // Generate a bunch of transactions and addresses to put into the wallet
     for (int i = 0; i < 1000; ++i) {
@@ -65,10 +64,11 @@ static void WalletLoadingDescriptors(benchmark::Bench& bench)
     bench.epochs(5)
         .setup([&] {
             TestUnloadWallet(std::move(wallet));
-            database = MakeWalletDatabase("", options, status, error);
+            database.update(MakeWalletDatabase("", options));
+            assert(database);
         })
         .run([&] {
-            wallet = TestLoadWallet(std::move(database), context);
+            wallet = TestLoadWallet(std::move(database.value()), context);
         });
 
     // Cleanup
