@@ -47,11 +47,31 @@ static void WalletCreate(benchmark::Bench& bench, bool encrypted)
     const auto wallet_path = test_setup->m_path_root / "test_wallet";
     const auto wallet_name = fs::PathToString(wallet_path);
 
+<<<<<<< HEAD
     std::shared_ptr<CWallet> wallet;
     auto cleanup{[&] {
         if (!wallet) return;
+||||||| parent of 707e53e715a (refactor: Use util::Result class in wallet/wallet)
+    bench.run([&] {
+        auto wallet = CreateWallet(context, wallet_name, /*load_on_start=*/std::nullopt, options, status, error_string, warnings);
+        assert(status == DatabaseStatus::SUCCESS);
+        assert(wallet != nullptr);
+
+=======
+    bench.run([&] {
+        auto wallet{ResultExtract(CreateWallet(context, wallet_name, /*load_on_start=*/std::nullopt, options), &status, &error_string, &warnings)};
+        assert(status == DatabaseStatus::SUCCESS);
+        assert(wallet != nullptr);
+
+>>>>>>> 707e53e715a (refactor: Use util::Result class in wallet/wallet)
         // Release wallet
+<<<<<<< HEAD
         RemoveWallet(context, wallet, /*load_on_start=*/std::nullopt);
+||||||| parent of 707e53e715a (refactor: Use util::Result class in wallet/wallet)
+        RemoveWallet(context, wallet, /*load_on_start=*/ std::nullopt);
+=======
+        Assert(RemoveWallet(context, wallet, /*load_on_start=*/ std::nullopt));
+>>>>>>> 707e53e715a (refactor: Use util::Result class in wallet/wallet)
         WaitForDeleteWallet(std::move(wallet));
         fs::remove(wallet_path / "wallet.dat");
         fs::remove(wallet_path);
