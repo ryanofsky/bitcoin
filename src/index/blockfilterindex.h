@@ -30,11 +30,12 @@ private:
     BlockFilterType m_filter_type;
     std::unique_ptr<BaseIndex::DB> m_db;
 
-    FlatFilePos m_next_filter_pos;
-    std::unique_ptr<FlatFileSeq> m_filter_fileseq;
+    mutable Mutex m_filter_mutex;
+    FlatFilePos m_next_filter_pos GUARDED_BY(m_filter_mutex);
+    std::unique_ptr<FlatFileSeq> m_filter_fileseq GUARDED_BY(m_filter_mutex);
 
-    bool ReadFilterFromDisk(const FlatFilePos& pos, const uint256& hash, BlockFilter& filter) const;
-    size_t WriteFilterToDisk(FlatFilePos& pos, const BlockFilter& filter);
+    bool ReadFilterFromDisk(const FlatFilePos& pos, const uint256& hash, BlockFilter& filter) const EXCLUSIVE_LOCKS_REQUIRED(m_filter_mutex);
+    size_t WriteFilterToDisk(FlatFilePos& pos, const BlockFilter& filter) EXCLUSIVE_LOCKS_REQUIRED(m_filter_mutex);
 
     Mutex m_cs_headers_cache;
     /** cache of block hash to filter header, to avoid disk access when responding to getcfcheckpt. */
@@ -45,13 +46,13 @@ private:
 protected:
     interfaces::Chain::NotifyOptions CustomOptions() override;
 
-    bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
+    bool CustomInit(const std::optional<interfaces::BlockKey>& block) override EXCLUSIVE_LOCKS_REQUIRED(!m_filter_mutex);
 
-    bool CustomCommit(CDBBatch& batch) override;
+    bool CustomCommit(CDBBatch& batch) override EXCLUSIVE_LOCKS_REQUIRED(!m_filter_mutex);
 
-    bool CustomAppend(const interfaces::BlockInfo& block) override;
+    bool CustomAppend(const interfaces::BlockInfo& block) override EXCLUSIVE_LOCKS_REQUIRED(!m_filter_mutex);
 
-    bool CustomRemove(const interfaces::BlockInfo& block) override;
+    bool CustomRemove(const interfaces::BlockInfo& block) override EXCLUSIVE_LOCKS_REQUIRED(!m_filter_mutex);
 
     BaseIndex::DB& GetDB() const LIFETIMEBOUND override { return *m_db; }
 
@@ -63,14 +64,14 @@ public:
     BlockFilterType GetFilterType() const { return m_filter_type; }
 
     /** Get a single filter by block. */
-    bool LookupFilter(const CBlockIndex* block_index, BlockFilter& filter_out) const;
+    bool LookupFilter(const CBlockIndex* block_index, BlockFilter& filter_out) const EXCLUSIVE_LOCKS_REQUIRED(!m_filter_mutex);
 
     /** Get a single filter header by block. */
     bool LookupFilterHeader(const CBlockIndex* block_index, uint256& header_out) EXCLUSIVE_LOCKS_REQUIRED(!m_cs_headers_cache);
 
     /** Get a range of filters between two heights on a chain. */
     bool LookupFilterRange(int start_height, const CBlockIndex* stop_index,
-                           std::vector<BlockFilter>& filters_out) const;
+                           std::vector<BlockFilter>& filters_out) const EXCLUSIVE_LOCKS_REQUIRED(!m_filter_mutex);
 
     /** Get a range of filter hashes between two heights on a chain. */
     bool LookupFilterHashRange(int start_height, const CBlockIndex* stop_index,
