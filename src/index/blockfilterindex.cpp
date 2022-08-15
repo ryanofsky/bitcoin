@@ -98,6 +98,7 @@ interfaces::Chain::NotifyOptions BlockFilterIndex::CustomOptions()
 
 bool BlockFilterIndex::CustomInit(const std::optional<interfaces::BlockRef>& block)
 {
+    LOCK(m_filter_mutex);
     if (!m_db->Read(DB_FILTER_POS, m_next_filter_pos)) {
         // Check that the cause of the read failure is that the key does not exist. Any other errors
         // indicate database corruption or a disk failure, and starting the index would cause
@@ -127,6 +128,7 @@ bool BlockFilterIndex::CustomInit(const std::optional<interfaces::BlockRef>& blo
 
 bool BlockFilterIndex::CustomCommit(CDBBatch& batch)
 {
+    LOCK(m_filter_mutex);
     const FlatFilePos& pos = m_next_filter_pos;
 
     // Flush current filter file to disk.
@@ -259,6 +261,7 @@ bool BlockFilterIndex::CustomAppend(const interfaces::BlockInfo& block)
 
 bool BlockFilterIndex::Write(const BlockFilter& filter, uint32_t block_height, const uint256& filter_header)
 {
+    LOCK(m_filter_mutex);
     size_t bytes_written = WriteFilterToDisk(m_next_filter_pos, filter);
     if (bytes_written == 0) return false;
 
@@ -289,8 +292,16 @@ bool BlockFilterIndex::CustomRemove(const interfaces::BlockInfo& block)
     // The latest filter position gets written in Commit by the call to the BaseIndex::Rewind.
     // But since this creates new references to the filter, the position should get updated here
     // atomically as well in case Commit fails.
+<<<<<<< HEAD
     batch.Write(DB_FILTER_POS, m_next_filter_pos);
     m_db->WriteBatch(batch);
+||||||| parent of 9f731b62fc6 (indexes: Add blockfilterindex mutex)
+    batch.Write(DB_FILTER_POS, m_next_filter_pos);
+    if (!m_db->WriteBatch(batch)) return false;
+=======
+    batch.Write(DB_FILTER_POS, WITH_LOCK(m_filter_mutex, return m_next_filter_pos));
+    if (!m_db->WriteBatch(batch)) return false;
+>>>>>>> 9f731b62fc6 (indexes: Add blockfilterindex mutex)
 
     // Update cached header to the previous block hash
     m_last_header = *Assert(ReadFilterHeader(block.height - 1, *Assert(block.prev_hash)));
@@ -363,6 +374,7 @@ bool BlockFilterIndex::LookupFilter(const CBlockIndex* block_index, BlockFilter&
         return false;
     }
 
+    LOCK(m_filter_mutex);
     return ReadFilterFromDisk(entry.pos, entry.hash, filter_out);
 }
 
@@ -406,6 +418,7 @@ bool BlockFilterIndex::LookupFilterRange(int start_height, const CBlockIndex* st
 
     filters_out.resize(entries.size());
     auto filter_pos_it = filters_out.begin();
+    LOCK(m_filter_mutex);
     for (const auto& entry : entries) {
         if (!ReadFilterFromDisk(entry.pos, entry.hash, *filter_pos_it)) {
             return false;
