@@ -47,6 +47,13 @@ public:
     Result(T obj) : m_variant{std::in_place_index_t<1>{}, std::move(obj)} {}
     Result(Error error) : m_variant{std::in_place_index_t<0>{}, std::move(error.message)} {}
 
+#ifdef LIBMULTIPROCESS_IPC
+    // Temporary workaround: default constructor shouldn't exist, but is
+    // temporarily needed for compatibility with libmultiprocess which doesn't
+    // currently support returning values that aren't default constructible.
+    Result() : Result{Error{Untranslated("Uninitialized result.")}} {}
+#endif
+
     //! std::optional methods, so functions returning optional<T> can change to
     //! return Result<T> with minimal changes to existing code, and vice versa.
     bool has_value() const noexcept { return m_variant.index() == 1; }
