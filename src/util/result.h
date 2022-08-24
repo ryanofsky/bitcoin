@@ -43,7 +43,13 @@ private:
     friend bilingual_str ErrorString(const Result<FT>& result);
 
 public:
-    Result() : m_variant{std::in_place_index_t<1>{}, std::monostate{}} {}  // constructor for void
+#ifdef LIBMULTIPROCESS_IPC
+    // Temporary workaround: default constructor shouldn't exist, but is
+    // temporarily needed for compatibility with libmultiprocess which doesn't
+    // currently support returning values that aren't default constructible.
+    Result() : Result{Error{Untranslated("Uninitialized result.")}} {}
+#endif
+
     Result(T obj) : m_variant{std::in_place_index_t<1>{}, std::move(obj)} {}
     Result(Error error) : m_variant{std::in_place_index_t<0>{}, std::move(error.message)} {}
 
