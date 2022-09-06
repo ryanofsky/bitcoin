@@ -277,8 +277,37 @@ public:
 };
 } // namespace detail
 
+<<<<<<< HEAD
 template <typename T, typename F>
 class Result : public detail::ResultBase<T, F>
+||||||| parent of 2e1cc4f55f37 (Add util::ResultPtr class)
+template <typename T>
+bilingual_str ErrorString(const Result<T>& result)
+=======
+//! Wrapper around util::Result that is less awkward to use with pointer types.
+//!
+//! It overloads pointer and bool operators so it isn't necessary to dereference
+//! the result object twice to access the result value, so it possible to call
+//! methods with `result->Method()` rather than `(*result)->Method()` and check
+//! whether the pointer is null with `if (result)` rather than `if (result &&
+//! *result)`.
+//!
+//! The `ResultPtr` class just adds syntax sugar to `Result` class. It is still
+//! possible to access the result pointer directly using `ResultPtr` `value()`
+//! and `has_value()` methods.
+template <class T>
+class ResultPtr : public Result<T>
+{
+public:
+    using Result<T>::Result;
+    explicit operator bool() const noexcept { return this->has_value() && this->value(); }
+    auto* operator->() const { assert(this->value()); return &*this->value(); }
+    auto& operator*() const { assert(this->value()); return *this->value(); }
+};
+
+template <typename T>
+bilingual_str ErrorString(const Result<T>& result)
+>>>>>>> 2e1cc4f55f37 (Add util::ResultPtr class)
 {
 protected:
     using Base = detail::ResultBase<T, F>;

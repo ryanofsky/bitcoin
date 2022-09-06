@@ -7,7 +7,13 @@
 #include <util/result.h>
 #include <util/translation.h>
 
+<<<<<<< HEAD
 #include <algorithm>
+||||||| parent of 2e1cc4f55f37 (Add util::ResultPtr class)
+=======
+#include <optional>
+
+>>>>>>> 2e1cc4f55f37 (Add util::ResultPtr class)
 #include <boost/test/unit_test.hpp>
 #include <memory>
 #include <ostream>
@@ -244,6 +250,7 @@ BOOST_AUTO_TEST_CASE(check_value_or)
     BOOST_CHECK_EQUAL(StrFn(Untranslated("A"), false).value_or(Untranslated("B")), Untranslated("B"));
 }
 
+<<<<<<< HEAD
 BOOST_AUTO_TEST_CASE(check_message_accessors)
 {
     util::Result<void> result{util::Error{Untranslated("Error.")}, util::Warning{Untranslated("Warning.")}};
@@ -268,4 +275,35 @@ BOOST_AUTO_TEST_CASE(derived_to_base)
     BOOST_CHECK_EQUAL(*Assert(*Assert(DerivedToBaseFn(std::make_unique<Derived>(5)))), 5);
 }
 
+||||||| parent of 2e1cc4f55f37 (Add util::ResultPtr class)
+=======
+util::ResultPtr<std::unique_ptr<std::pair<int, int>>> PtrFn(std::optional<std::pair<int, int>> i, bool success)
+{
+    if (success) return i ? std::make_unique<std::pair<int, int>>(*i) : nullptr;
+    return util::Error{strprintf(Untranslated("PtrFn(%s) error."), i ? strprintf("%i, %i", i->first, i->second) : "nullopt")};
+}
+
+BOOST_AUTO_TEST_CASE(check_ptr)
+{
+    auto r = PtrFn(std::pair{1, 2}, true);
+    ExpectResult(r, true, {});
+    BOOST_CHECK(r);
+    BOOST_CHECK_EQUAL(r->first, 1);
+    BOOST_CHECK_EQUAL(r->second, 2);
+    BOOST_CHECK(*r == std::pair(1,2));
+
+    r = PtrFn(std::nullopt, true);
+    ExpectResult(r, true, {});
+    BOOST_CHECK(!r);
+
+    r = PtrFn(std::pair{1, 2}, false);
+    ExpectResult(r, false, Untranslated("PtrFn(1, 2) error."));
+    BOOST_CHECK(!r);
+
+    r = PtrFn(std::nullopt, false);
+    ExpectResult(r, false, Untranslated("PtrFn(nullopt) error."));
+    BOOST_CHECK(!r);
+}
+
+>>>>>>> 2e1cc4f55f37 (Add util::ResultPtr class)
 BOOST_AUTO_TEST_SUITE_END()
