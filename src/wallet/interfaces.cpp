@@ -591,7 +591,7 @@ public:
     void setMockTime(int64_t time) override { return SetMockTime(time); }
 
     //! WalletLoader methods
-    util::Result<std::unique_ptr<Wallet>> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, std::vector<bilingual_str>& warnings) override
+    util::ResultPtr<std::unique_ptr<Wallet>> createWallet(const std::string& name, const SecureString& passphrase, uint64_t wallet_creation_flags, std::vector<bilingual_str>& warnings) override
     {
         DatabaseOptions options;
         DatabaseStatus status;
@@ -600,37 +600,73 @@ public:
         options.create_flags = wallet_creation_flags;
         options.create_passphrase = passphrase;
         bilingual_str error;
+<<<<<<< HEAD
         std::unique_ptr<Wallet> wallet{MakeWallet(m_context, CreateWallet(m_context, name, /*load_on_start=*/true, options, status, error, warnings))};
         if (wallet) {
             return wallet;
         } else {
             return util::Error{error};
         }
+||||||| parent of 123788cf6dd7 (Use ResultPtr<unique_ptr> instead of Result<unique_ptr>)
+        std::unique_ptr<Wallet> wallet{MakeWallet(m_context, CreateWallet(m_context, name, /*load_on_start=*/true, options, status, error, warnings))};
+        if (wallet) {
+            return {std::move(wallet)};
+        } else {
+            return util::Error{error};
+        }
+=======
+        util::ResultPtr<std::unique_ptr<Wallet>> wallet{MakeWallet(m_context, CreateWallet(m_context, name, /*load_on_start=*/true, options, status, error, warnings))};
+        return wallet ? std::move(wallet) : util::Error{error};
+>>>>>>> 123788cf6dd7 (Use ResultPtr<unique_ptr> instead of Result<unique_ptr>)
     }
-    util::Result<std::unique_ptr<Wallet>> loadWallet(const std::string& name, std::vector<bilingual_str>& warnings) override
+    util::ResultPtr<std::unique_ptr<Wallet>> loadWallet(const std::string& name, std::vector<bilingual_str>& warnings) override
     {
         DatabaseOptions options;
         DatabaseStatus status;
         ReadDatabaseArgs(*m_context.args, options);
         options.require_existing = true;
         bilingual_str error;
+<<<<<<< HEAD
         std::unique_ptr<Wallet> wallet{MakeWallet(m_context, LoadWallet(m_context, name, /*load_on_start=*/true, options, status, error, warnings))};
         if (wallet) {
             return wallet;
         } else {
             return util::Error{error};
         }
+||||||| parent of 123788cf6dd7 (Use ResultPtr<unique_ptr> instead of Result<unique_ptr>)
+        std::unique_ptr<Wallet> wallet{MakeWallet(m_context, LoadWallet(m_context, name, /*load_on_start=*/true, options, status, error, warnings))};
+        if (wallet) {
+            return {std::move(wallet)};
+        } else {
+            return util::Error{error};
+        }
+=======
+        util::ResultPtr<std::unique_ptr<Wallet>> wallet{MakeWallet(m_context, LoadWallet(m_context, name, /*load_on_start=*/true, options, status, error, warnings))};
+        return wallet ? std::move(wallet) : util::Error{error};
+>>>>>>> 123788cf6dd7 (Use ResultPtr<unique_ptr> instead of Result<unique_ptr>)
     }
-    util::Result<std::unique_ptr<Wallet>> restoreWallet(const fs::path& backup_file, const std::string& wallet_name, std::vector<bilingual_str>& warnings) override
+    util::ResultPtr<std::unique_ptr<Wallet>> restoreWallet(const fs::path& backup_file, const std::string& wallet_name, std::vector<bilingual_str>& warnings) override
     {
         DatabaseStatus status;
         bilingual_str error;
+<<<<<<< HEAD
         std::unique_ptr<Wallet> wallet{MakeWallet(m_context, RestoreWallet(m_context, backup_file, wallet_name, /*load_on_start=*/true, status, error, warnings))};
         if (wallet) {
             return wallet;
         } else {
             return util::Error{error};
         }
+||||||| parent of 123788cf6dd7 (Use ResultPtr<unique_ptr> instead of Result<unique_ptr>)
+        std::unique_ptr<Wallet> wallet{MakeWallet(m_context, RestoreWallet(m_context, backup_file, wallet_name, /*load_on_start=*/true, status, error, warnings))};
+        if (wallet) {
+            return {std::move(wallet)};
+        } else {
+            return util::Error{error};
+        }
+=======
+        util::ResultPtr<std::unique_ptr<Wallet>> wallet{MakeWallet(m_context, RestoreWallet(m_context, backup_file, wallet_name, /*load_on_start=*/true, status, error, warnings))};
+        return wallet ? std::move(wallet) : util::Error{error};
+>>>>>>> 123788cf6dd7 (Use ResultPtr<unique_ptr> instead of Result<unique_ptr>)
     }
     util::Result<WalletMigrationResult> migrateWallet(const std::string& name, const SecureString& passphrase) override
     {
