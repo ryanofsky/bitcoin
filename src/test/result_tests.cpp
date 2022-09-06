@@ -4,6 +4,8 @@
 
 #include <util/result.h>
 
+#include <optional>
+
 #include <boost/test/unit_test.hpp>
 
 inline bool operator==(const bilingual_str& a, const bilingual_str& b)
@@ -91,6 +93,34 @@ BOOST_AUTO_TEST_CASE(check_value_or)
     BOOST_CHECK_EQUAL(NoCopyFn(10, false).value_or(20), 20);
     BOOST_CHECK_EQUAL(StrFn(Untranslated("A"), true).value_or(Untranslated("B")), Untranslated("A"));
     BOOST_CHECK_EQUAL(StrFn(Untranslated("A"), false).value_or(Untranslated("B")), Untranslated("B"));
+}
+
+util::ResultPtr<std::unique_ptr<std::pair<int, int>>> PtrFn(std::optional<std::pair<int, int>> i, bool success)
+{
+    if (success) return i ? std::make_unique<std::pair<int, int>>(*i) : nullptr;
+    return util::Error{strprintf(Untranslated("PtrFn(%s) error."), i ? strprintf("%i, %i", i->first, i->second) : "nullopt")};
+}
+
+BOOST_AUTO_TEST_CASE(check_ptr)
+{
+    auto r = PtrFn(std::pair{1, 2}, true);
+    ExpectResult(r, true, {});
+    BOOST_CHECK(r);
+    BOOST_CHECK_EQUAL(r->first, 1);
+    BOOST_CHECK_EQUAL(r->second, 2);
+    BOOST_CHECK(*r == std::pair(1,2));
+
+    r = PtrFn(std::nullopt, true);
+    ExpectResult(r, true, {});
+    BOOST_CHECK(!r);
+
+    r = PtrFn(std::pair{1, 2}, false);
+    ExpectResult(r, false, Untranslated("PtrFn(1, 2) error."));
+    BOOST_CHECK(!r);
+
+    r = PtrFn(std::nullopt, false);
+    ExpectResult(r, false, Untranslated("PtrFn(nullopt) error."));
+    BOOST_CHECK(!r);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
