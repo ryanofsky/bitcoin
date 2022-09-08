@@ -88,9 +88,24 @@ static RPCHelpMan mockscheduler()
         throw std::runtime_error("delta_time must be between 1 and 3600 seconds (1 hr)");
     }
 
+<<<<<<< HEAD
     const NodeContext& node_context{EnsureAnyNodeContext(request.context)};
     CHECK_NONFATAL(node_context.scheduler)->MockForward(std::chrono::seconds{delta_seconds});
     SyncWithValidationInterfaceQueue();
+||||||| parent of 291875605dbd (node: Add schedulerMockForward method so mockscheduler RPC can work across processes)
+    auto node_context = CHECK_NONFATAL(util::AnyPtr<NodeContext>(request.context));
+    // protect against null pointer dereference
+    CHECK_NONFATAL(node_context->scheduler);
+    node_context->scheduler->MockForward(std::chrono::seconds(delta_seconds));
+=======
+    auto node_context = CHECK_NONFATAL(util::AnyPtr<NodeContext>(request.context));
+    // protect against null pointer dereference
+    CHECK_NONFATAL(node_context->scheduler);
+    node_context->scheduler->MockForward(std::chrono::seconds(delta_seconds));
+    for (const auto& chain_client : node_context->chain_clients) {
+        chain_client->schedulerMockForward(std::chrono::seconds(delta_seconds));
+    }
+>>>>>>> 291875605dbd (node: Add schedulerMockForward method so mockscheduler RPC can work across processes)
 
     return UniValue::VNULL;
 },
