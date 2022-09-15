@@ -682,11 +682,11 @@ util::Result<SelectionResult> ChooseSelectionResult(interfaces::Chain& chain, co
     // Vector of results. We will choose the best one based on waste.
     std::vector<SelectionResult> results;
     std::vector<util::Result<SelectionResult>> errors;
-    auto append_error = [&] (const util::Result<SelectionResult>& result) {
+    auto append_error = [&] (util::Result<SelectionResult>&& result) {
         // If any specific error message appears here, then something different from a simple "no selection found" happened.
         // Let's save it, so it can be retrieved to the user if no other selection algorithm succeeded.
         if (HasErrorMsg(result)) {
-            errors.emplace_back(result);
+            errors.emplace_back(std::move(result));
         }
     };
 
@@ -695,7 +695,7 @@ util::Result<SelectionResult> ChooseSelectionResult(interfaces::Chain& chain, co
 
     if (auto bnb_result{SelectCoinsBnB(groups.positive_group, nTargetValue, coin_selection_params.m_cost_of_change, max_inputs_weight)}) {
         results.push_back(*bnb_result);
-    } else append_error(bnb_result);
+    } else append_error(std::move(bnb_result));
 
     // As Knapsack and SRD can create change, also deduce change weight.
     max_inputs_weight -= (coin_selection_params.change_output_size * WITNESS_SCALE_FACTOR);
@@ -703,16 +703,16 @@ util::Result<SelectionResult> ChooseSelectionResult(interfaces::Chain& chain, co
     // The knapsack solver has some legacy behavior where it will spend dust outputs. We retain this behavior, so don't filter for positive only here.
     if (auto knapsack_result{KnapsackSolver(groups.mixed_group, nTargetValue, coin_selection_params.m_min_change_target, coin_selection_params.rng_fast, max_inputs_weight)}) {
         results.push_back(*knapsack_result);
-    } else append_error(knapsack_result);
+    } else append_error(std::move(knapsack_result));
 
     if (auto srd_result{SelectCoinsSRD(groups.positive_group, nTargetValue, coin_selection_params.m_change_fee, coin_selection_params.rng_fast, max_inputs_weight)}) {
         results.push_back(*srd_result);
-    } else append_error(srd_result);
+    } else append_error(std::move(srd_result));
 
     if (results.empty()) {
         // No solution found, retrieve the first explicit error (if any).
         // future: add 'severity level' to errors so the worst one can be retrieved instead of the first one.
-        return errors.empty() ? util::Error() : errors.front();
+        return errors.empty() ? util::Error() : std::move(errors.front());
     }
 
     // If the chosen input set has unconfirmed inputs, check for synergies from overlapping ancestry

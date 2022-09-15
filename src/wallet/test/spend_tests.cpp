@@ -103,7 +103,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_duplicated_preset_inputs_test, TestChain100Setup)
 
     // Second case, don't use 'subtract_fee_from_outputs'.
     recipients[0].fSubtractFeeFromAmount = false;
-    res_tx = CreateTransaction(*wallet, recipients, /*change_pos*/-1, coin_control);
+    res_tx.Set(CreateTransaction(*wallet, recipients, /*change_pos*/-1, coin_control));
     BOOST_CHECK(!res_tx.has_value());
 }
 
