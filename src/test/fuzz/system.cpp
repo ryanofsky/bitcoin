@@ -44,9 +44,19 @@ FUZZ_TARGET(system, .init = initialize_system)
                 args_manager.SelectConfigNetwork(fuzzed_data_provider.ConsumeRandomLengthString(16));
             },
             [&] {
+<<<<<<< HEAD
                 auto str_arg = fuzzed_data_provider.ConsumeRandomLengthString(16);
                 auto str_value = fuzzed_data_provider.ConsumeRandomLengthString(16);
                 args_manager.SoftSetArg(str_arg, str_value);
+||||||| parent of bd22be02117a (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
+                args_manager.SoftSetArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeRandomLengthString(16));
+=======
+                // Avoid Can't call SoftSetArg on arg registered with flags 0x8d8d8d00 (requires 0x2, disallows 0x10)
+                try {
+                    args_manager.SoftSetArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeRandomLengthString(16));
+                } catch (const std::logic_error&) {
+                }
+>>>>>>> bd22be02117a (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
             },
             [&] {
                 auto str_arg = fuzzed_data_provider.ConsumeRandomLengthString(16);
@@ -54,9 +64,19 @@ FUZZ_TARGET(system, .init = initialize_system)
                 args_manager.ForceSetArg(str_arg, str_value);
             },
             [&] {
+<<<<<<< HEAD
                 auto str_arg = fuzzed_data_provider.ConsumeRandomLengthString(16);
                 auto f_value = fuzzed_data_provider.ConsumeBool();
                 args_manager.SoftSetBoolArg(str_arg, f_value);
+||||||| parent of bd22be02117a (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
+                args_manager.SoftSetBoolArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeBool());
+=======
+                // Avoid Can't call SoftSetBoolArg on arg registered with flags 0x8d8d8d00 (requires 0x2, disallows 0x10)
+                try {
+                    args_manager.SoftSetBoolArg(fuzzed_data_provider.ConsumeRandomLengthString(16), fuzzed_data_provider.ConsumeBool());
+                } catch (const std::logic_error&) {
+                }
+>>>>>>> bd22be02117a (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
             },
             [&] {
                 const OptionsCategory options_category = fuzzed_data_provider.PickValueInArray<OptionsCategory>({OptionsCategory::OPTIONS, OptionsCategory::CONNECTION, OptionsCategory::WALLET, OptionsCategory::WALLET_DEBUG_TEST, OptionsCategory::ZMQ, OptionsCategory::DEBUG_TEST, OptionsCategory::CHAINPARAMS, OptionsCategory::NODE_RELAY, OptionsCategory::BLOCK_CREATION, OptionsCategory::RPC, OptionsCategory::GUI, OptionsCategory::COMMANDS, OptionsCategory::REGISTER_COMMANDS, OptionsCategory::CLI_COMMANDS, OptionsCategory::IPC, OptionsCategory::HIDDEN});
@@ -122,11 +142,23 @@ FUZZ_TARGET(system, .init = initialize_system)
     const int64_t i64 = fuzzed_data_provider.ConsumeIntegral<int64_t>();
     const bool b = fuzzed_data_provider.ConsumeBool();
 
-    (void)args_manager.GetIntArg(s1, i64);
-    (void)args_manager.GetArg(s1, s2);
+    try {
+        (void)args_manager.GetIntArg(s1, i64);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetArg(s1, s2);
+    } catch (const std::logic_error&) {
+    }
     (void)args_manager.GetArgFlags(s1);
-    (void)args_manager.GetArgs(s1);
-    (void)args_manager.GetBoolArg(s1, b);
+    try {
+        (void)args_manager.GetArgs(s1);
+    } catch (const std::logic_error&) {
+    }
+    try {
+        (void)args_manager.GetBoolArg(s1, b);
+    } catch (const std::logic_error&) {
+    }
     try {
         (void)args_manager.GetChainTypeString();
     } catch (const std::runtime_error&) {
