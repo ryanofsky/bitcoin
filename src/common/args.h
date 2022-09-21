@@ -85,13 +85,8 @@ struct SectionInfo {
 };
 
 std::string SettingToString(const common::SettingsValue&, const std::string&);
-std::optional<std::string> SettingToString(const common::SettingsValue&);
-
 int64_t SettingToInt(const common::SettingsValue&, int64_t);
-std::optional<int64_t> SettingToInt(const common::SettingsValue&);
-
 bool SettingToBool(const common::SettingsValue&, bool);
-std::optional<bool> SettingToBool(const common::SettingsValue&);
 
 class ArgsManager
 {
@@ -141,6 +136,8 @@ protected:
     mutable fs::path m_cached_blocks_path GUARDED_BY(cs_args);
     mutable fs::path m_cached_datadir_path GUARDED_BY(cs_args);
     mutable fs::path m_cached_network_datadir_path GUARDED_BY(cs_args);
+
+    bool CheckArgFlags(const std::string& name, uint32_t require, uint32_t forbid, const char* context) const;
 
     [[nodiscard]] bool ReadConfigStream(std::istream& stream, const std::string& filepath, std::string& error, bool ignore_invalid_keys = false);
 
