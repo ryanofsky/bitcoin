@@ -84,6 +84,7 @@ struct SectionInfo {
     int m_line;
 };
 
+<<<<<<< HEAD
 std::string SettingToString(const common::SettingsValue&, const std::string&);
 std::optional<std::string> SettingToString(const common::SettingsValue&);
 
@@ -92,6 +93,20 @@ std::optional<int64_t> SettingToInt(const common::SettingsValue&);
 
 bool SettingToBool(const common::SettingsValue&, bool);
 std::optional<bool> SettingToBool(const common::SettingsValue&);
+||||||| parent of e2b9de219b9e (Update ArgManager GetArg helper methods to work better with ALLOW flags)
+std::string SettingToString(const util::SettingsValue&, const std::string&);
+std::optional<std::string> SettingToString(const util::SettingsValue&);
+
+int64_t SettingToInt(const util::SettingsValue&, int64_t);
+std::optional<int64_t> SettingToInt(const util::SettingsValue&);
+
+bool SettingToBool(const util::SettingsValue&, bool);
+std::optional<bool> SettingToBool(const util::SettingsValue&);
+=======
+std::string SettingToString(const util::SettingsValue&, const std::string&);
+int64_t SettingToInt(const util::SettingsValue&, int64_t);
+bool SettingToBool(const util::SettingsValue&, bool);
+>>>>>>> e2b9de219b9e (Update ArgManager GetArg helper methods to work better with ALLOW flags)
 
 class ArgsManager
 {
@@ -141,6 +156,8 @@ protected:
     mutable fs::path m_cached_blocks_path GUARDED_BY(cs_args);
     mutable fs::path m_cached_datadir_path GUARDED_BY(cs_args);
     mutable fs::path m_cached_network_datadir_path GUARDED_BY(cs_args);
+
+    bool CheckArgFlags(const std::string& name, uint32_t require, uint32_t forbid, const char* context) const;
 
     [[nodiscard]] bool ReadConfigStream(std::istream& stream, const std::string& filepath, std::string& error, bool ignore_invalid_keys = false);
 
