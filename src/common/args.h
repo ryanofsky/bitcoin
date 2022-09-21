@@ -91,12 +91,27 @@ struct SectionInfo {
     int m_line;
 };
 
+<<<<<<< HEAD
 std::optional<std::string> SettingToString(const common::SettingsValue&);
 
+||||||| parent of d42d26dba58 (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
+std::string SettingToString(const common::SettingsValue&, const std::string&);
+std::optional<std::string> SettingToString(const common::SettingsValue&);
+
+=======
+std::string SettingToString(const common::SettingsValue&, const std::string&);
+>>>>>>> d42d26dba58 (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
 template <std::integral Int>
 std::optional<Int> SettingTo(const common::SettingsValue&);
 
+<<<<<<< HEAD
 std::optional<bool> SettingToBool(const common::SettingsValue&);
+||||||| parent of d42d26dba58 (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
+bool SettingToBool(const common::SettingsValue&, bool);
+std::optional<bool> SettingToBool(const common::SettingsValue&);
+=======
+bool SettingToBool(const common::SettingsValue&, bool);
+>>>>>>> d42d26dba58 (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
 
 class ArgsManager
 {
@@ -569,6 +584,9 @@ private:
     common::SettingsValue GetSetting_(const std::string& arg) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
     std::optional<unsigned int> GetArgFlags_(const std::string& name) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
     fs::path GetPathArg_(std::string arg, const fs::path& default_value = {}) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
+
+    bool CheckArgFlags(const std::string& name, uint32_t require, uint32_t forbid, const char* context) const EXCLUSIVE_LOCKS_REQUIRED(!cs_args);
+
 
     /**
      * Get data directory path
