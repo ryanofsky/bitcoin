@@ -88,8 +88,6 @@ struct SectionInfo {
 };
 
 std::string SettingToString(const common::SettingsValue&, const std::string&);
-std::optional<std::string> SettingToString(const common::SettingsValue&);
-
 template <std::integral Int>
 Int SettingTo(const common::SettingsValue&, Int);
 
@@ -97,7 +95,6 @@ template <std::integral Int>
 std::optional<Int> SettingTo(const common::SettingsValue&);
 
 bool SettingToBool(const common::SettingsValue&, bool);
-std::optional<bool> SettingToBool(const common::SettingsValue&);
 
 class ArgsManager
 {
@@ -585,11 +582,17 @@ public:
     void LogArgs() const EXCLUSIVE_LOCKS_REQUIRED(!cs_args);
 
 private:
+<<<<<<< HEAD
     // Internal helpers, for use by callers that already hold `cs_args`.
     common::SettingsValue GetSetting_(const std::string& arg) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
     std::optional<unsigned int> GetArgFlags_(const std::string& name) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
     fs::path GetPathArg_(std::string arg, const fs::path& default_value = {}) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
 
+||||||| parent of 7d0ecf4d640 (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
+=======
+    bool CheckArgFlags(const std::string& name, uint32_t require, uint32_t forbid, const char* context) const;
+
+>>>>>>> 7d0ecf4d640 (common: Update ArgManager GetArg helper methods to work better with ALLOW flags)
     /**
      * Get data directory path
      *
