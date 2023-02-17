@@ -417,6 +417,7 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
         return ParseProxyString(SettingToString(setting(), "")).is_set;
     case ProxyIP:
     case ProxyIPTor: {
+        // If ProxyUse option is false, retrive proxy-prev setting, otherwise retrieve proxy setting.
         ProxySetting proxy = ParseProxyString(SettingToString(setting(), ""));
         if (proxy.is_set) {
             return proxy.ip;
@@ -428,6 +429,7 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
     }
     case ProxyPort:
     case ProxyPortTor: {
+        // If ProxyUse option is false, retrive proxy-prev setting, otherwise retrieve proxy setting.
         ProxySetting proxy = ParseProxyString(SettingToString(setting(), ""));
         if (proxy.is_set) {
             return proxy.port;
@@ -461,6 +463,7 @@ QVariant OptionsModel::getOption(OptionID option, const std::string& suffix) con
     case Prune:
         return PruneEnabled(setting());
     case PruneSize:
+        // If Prune option is disabled, retrive prune-prev setting, otherwise retrieve prune setting.
         return PruneEnabled(setting()) ? PruneSizeGB(setting()) :
                suffix.empty()          ? getOption(option, "-prev") :
                                          DEFAULT_PRUNE_TARGET_GB;
@@ -538,14 +541,17 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
     // default proxy
     case ProxyUse:
         if (changed()) {
+            // If ProxyUse option is changing to false, store proxy settings value in proxy-prev.
             if (suffix.empty() && !value.toBool()) setOption(option, true, "-prev");
             update(ProxyString(value.toBool(), getOption(ProxyIP).toString(), getOption(ProxyPort).toString()));
+            // If ProxyUse option is changing to true, store proxy-prev settings value in proxy.
             if (suffix.empty() && value.toBool()) UpdateRwSetting(node(), option, "-prev", {});
             if (suffix.empty()) setRestartRequired(true);
         }
         break;
     case ProxyIP:
         if (changed()) {
+            // If ProxyUse option is false, update proxy-prev setting, otherwise update proxy setting.
             if (suffix.empty() && !getOption(ProxyUse).toBool()) {
                 setOption(option, value, "-prev");
             } else {
@@ -556,6 +562,7 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
         break;
     case ProxyPort:
         if (changed()) {
+            // If ProxyUse option is false, update proxy-prev setting, otherwise update proxy setting.
             if (suffix.empty() && !getOption(ProxyUse).toBool()) {
                 setOption(option, value, "-prev");
             } else {
@@ -568,14 +575,17 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
     // separate Tor proxy
     case ProxyUseTor:
         if (changed()) {
+            // If ProxyUseTor option is changing to false, store onion settings value in onion-prev.
             if (suffix.empty() && !value.toBool()) setOption(option, true, "-prev");
             update(ProxyString(value.toBool(), getOption(ProxyIPTor).toString(), getOption(ProxyPortTor).toString()));
+            // If ProxyUseTor option is changing to true, store onion-prev settings value in onion.
             if (suffix.empty() && value.toBool()) UpdateRwSetting(node(), option, "-prev", {});
             if (suffix.empty()) setRestartRequired(true);
         }
         break;
     case ProxyIPTor:
         if (changed()) {
+            // If ProxyUseTor option is false, update onion-prev setting, otherwise update onion setting.
             if (suffix.empty() && !getOption(ProxyUseTor).toBool()) {
                 setOption(option, value, "-prev");
             } else {
@@ -586,6 +596,7 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value, const std::
         break;
     case ProxyPortTor:
         if (changed()) {
+            // If ProxyUseTor option is false, update onion-prev setting, otherwise update onion setting.
             if (suffix.empty() && !getOption(ProxyUseTor).toBool()) {
                 setOption(option, value, "-prev");
             } else {
