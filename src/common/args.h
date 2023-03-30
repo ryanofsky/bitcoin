@@ -134,6 +134,7 @@ protected:
     mutable RecursiveMutex cs_args;
     common::Settings m_settings GUARDED_BY(cs_args);
     std::vector<std::string> m_command GUARDED_BY(cs_args);
+    std::optional<fs::path> m_datadir GUARDED_BY(cs_args);
     std::string m_network GUARDED_BY(cs_args);
     std::set<std::string> m_network_only_args GUARDED_BY(cs_args);
     std::map<OptionsCategory, std::map<std::string, Arg>> m_available_args GUARDED_BY(cs_args);
@@ -183,8 +184,14 @@ protected:
      * Return config file path (read-only)
      */
     fs::path GetConfigFilePath() const;
+<<<<<<< HEAD:src/common/args.h
     void SetConfigFilePath(fs::path);
     [[nodiscard]] bool ReadConfigFiles(std::string& error, bool ignore_invalid_keys = false);
+||||||| parent of b091d9b07620 (init: Allow bitcoin default datadir to point at an external datadir):src/util/system.h
+    [[nodiscard]] bool ReadConfigFiles(std::string& error, bool ignore_invalid_keys = false);
+=======
+    [[nodiscard]] bool ReadConfigFiles(std::string& error, bool ignore_invalid_keys = false, fs::path* config_file = nullptr, fs::path* initial_datadir = nullptr);
+>>>>>>> b091d9b07620 (init: Allow bitcoin default datadir to point at an external datadir):src/util/system.h
 
     /**
      * Log warnings for options in m_section_only_args when

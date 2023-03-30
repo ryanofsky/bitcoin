@@ -318,16 +318,7 @@ fs::path ArgsManager::GetDataDir(bool net_specific) const
     // Used cached path if available
     if (!path.empty()) return path;
 
-    const fs::path datadir{GetPathArg("-datadir")};
-    if (!datadir.empty()) {
-        path = fs::absolute(datadir);
-        if (!fs::is_directory(path)) {
-            path = "";
-            return path;
-        }
-    } else {
-        path = GetDefaultDataDir();
-    }
+    path = *Assert(m_datadir);
 
     if (net_specific && !BaseParams().DataDir().empty()) {
         path /= fs::PathFromString(BaseParams().DataDir());
@@ -779,11 +770,282 @@ fs::path ArgsManager::GetConfigFilePath() const
     return *Assert(m_config_path);
 }
 
+<<<<<<< HEAD:src/common/args.cpp
 void ArgsManager::SetConfigFilePath(fs::path path)
+||||||| parent of b091d9b07620 (init: Allow bitcoin default datadir to point at an external datadir):src/util/system.cpp
+bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
+=======
+static bool GetExplicitDataDir(const ArgsManager& args, fs::path& datadir, std::string& error)
+>>>>>>> b091d9b07620 (init: Allow bitcoin default datadir to point at an external datadir):src/util/system.cpp
 {
+<<<<<<< HEAD:src/common/args.cpp
     LOCK(cs_args);
     assert(!m_config_path);
     m_config_path = path;
+||||||| parent of b091d9b07620 (init: Allow bitcoin default datadir to point at an external datadir):src/util/system.cpp
+    {
+        LOCK(cs_args);
+        m_settings.ro_config.clear();
+        m_config_sections.clear();
+        m_config_path = AbsPathForConfigVal(*this, GetPathArg("-conf", BITCOIN_CONF_FILENAME), /*net_specific=*/false);
+    }
+
+    const auto conf_path{GetConfigFilePath()};
+    std::ifstream stream{conf_path};
+
+    // not ok to have a config file specified that cannot be opened
+    if (IsArgSet("-conf") && !stream.good()) {
+        error = strprintf("specified config file \"%s\" could not be opened.", fs::PathToString(conf_path));
+        return false;
+    }
+    // ok to not have a config file
+    if (stream.good()) {
+        if (!ReadConfigStream(stream, fs::PathToString(conf_path), error, ignore_invalid_keys)) {
+            return false;
+        }
+        // `-includeconf` cannot be included in the command line arguments except
+        // as `-noincludeconf` (which indicates that no included conf file should be used).
+        bool use_conf_file{true};
+        {
+            LOCK(cs_args);
+            if (auto* includes = util::FindKey(m_settings.command_line_options, "includeconf")) {
+                // ParseParameters() fails if a non-negated -includeconf is passed on the command-line
+                assert(util::SettingsSpan(*includes).last_negated());
+                use_conf_file = false;
+            }
+        }
+        if (use_conf_file) {
+            std::string chain_id = GetChainName();
+            std::vector<std::string> conf_file_names;
+
+            auto add_includes = [&](const std::string& network, size_t skip = 0) {
+                size_t num_values = 0;
+                LOCK(cs_args);
+                if (auto* section = util::FindKey(m_settings.ro_config, network)) {
+                    if (auto* values = util::FindKey(*section, "includeconf")) {
+                        for (size_t i = std::max(skip, util::SettingsSpan(*values).negated()); i < values->size(); ++i) {
+                            conf_file_names.push_back((*values)[i].get_str());
+                        }
+                        num_values = values->size();
+                    }
+                }
+                return num_values;
+            };
+
+            // We haven't set m_network yet (that happens in SelectParams()), so manually check
+            // for network.includeconf args.
+            const size_t chain_includes = add_includes(chain_id);
+            const size_t default_includes = add_includes({});
+
+            for (const std::string& conf_file_name : conf_file_names) {
+                std::ifstream conf_file_stream{AbsPathForConfigVal(*this, fs::PathFromString(conf_file_name), /*net_specific=*/false)};
+                if (conf_file_stream.good()) {
+                    if (!ReadConfigStream(conf_file_stream, conf_file_name, error, ignore_invalid_keys)) {
+                        return false;
+                    }
+                    LogPrintf("Included configuration file %s\n", conf_file_name);
+                } else {
+                    error = "Failed to include configuration file " + conf_file_name;
+                    return false;
+                }
+            }
+
+            // Warn about recursive -includeconf
+            conf_file_names.clear();
+            add_includes(chain_id, /* skip= */ chain_includes);
+            add_includes({}, /* skip= */ default_includes);
+            std::string chain_id_final = GetChainName();
+            if (chain_id_final != chain_id) {
+                // Also warn about recursive includeconf for the chain that was specified in one of the includeconfs
+                add_includes(chain_id_final);
+            }
+            for (const std::string& conf_file_name : conf_file_names) {
+                tfm::format(std::cerr, "warning: -includeconf cannot be used from included files; ignoring -includeconf=%s\n", conf_file_name);
+            }
+        }
+    }
+
+    // If datadir is changed in .conf file:
+    ClearPathCache();
+    if (!CheckDataDirOption(*this)) {
+        error = strprintf("specified data directory \"%s\" does not exist.", GetArg("-datadir", ""));
+        return false;
+    }
+    return true;
+=======
+    fs::path datadir_arg = args.GetPathArg("-datadir");
+    if (!CheckDataDirOption(args)) {
+        error = strprintf("specified data directory %s does not exist.", fs::quoted(fs::PathToString(datadir_arg)));
+        return false;
+    }
+
+    // Keep default datadir if -datadir is not specified, otherwise call
+    // fs::absolute to treat relative datadir arguments and datadir= lines in
+    // configuration files as being relative to the current working directory.
+    // Probably it would make more sense to treat relative datadir lines in
+    // configuration files as relative to the configuration file, not the
+    // working directory, but current behavior is being kept for compatibility.
+    if (!datadir_arg.empty()) datadir = fs::absolute(std::move(datadir_arg));
+    return true;
+}
+
+static bool GetDefaultDataDir(fs::path& datadir, std::string& error)
+{
+    // Keep explicit datadir if it was specified.
+    if (!datadir.empty()) return true;
+
+    datadir = GetDefaultDataDir();
+    std::error_code ec;
+    std::filesystem::file_status status = fs::status(datadir);
+    if (ec) {
+        error = strprintf("Could not access %s: %s\n", fs::quoted(fs::PathToString(datadir)), ec.message());
+        return false;
+    }
+
+    // Allow a text file that points to another directory to be placed at
+    // the default datadir location. It can be useful to point the default
+    // datadir at an external location so bitcoin tools can be started
+    // without -datadir arguments while the external location is still used
+    // for storage. The most straightforward way of pointing the default
+    // datadir at another location is with a symlink, but a text file is
+    // allowed here to work on file systems that don't support symlinks.
+    if (status.type() == fs::file_type::regular) {
+        std::ifstream file;
+        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        std::string line;
+        try {
+            file.open(datadir);
+            std::getline(file, line);
+        } catch (std::system_error& e) {
+            error = strprintf("Could not read %s: %s", fs::quoted(fs::PathToString(datadir)), ec.message());
+            return false;
+        }
+        fs::path path = fs::PathFromString(line);
+        if (!path.is_absolute() || fs::is_directory(path, ec)) {
+            error = "Invalid datadir path %s in file %s", fs::quoted(line), fs::quoted(fs::PathToString(datadir));
+            if (ec) error = strprintf("%s: %s", error, ec.message());
+            return false;
+        }
+        datadir = std::move(path);
+    }
+    assert (datadir.is_absolute());
+    return true;
+}
+
+bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys, fs::path* config_file, fs::path* initial_datadir)
+{
+    // Save initial datadir value in case -conf path or any -includeconf paths
+    // are relative paths, and need to be evaluated relative to the
+    // datadir. The final datadir can change while parsing the config file if
+    // it contains a datadir= line. Avoid calling GetDefaultDataDir() yet if not
+    // needed because it accesses the default datadir filesystem path, which
+    // might be slow or off-limits due to permissions.
+    fs::path datadir_path;
+    if (!GetExplicitDataDir(*this, datadir_path, error)) return false;
+
+    // Determine config file path relative to the initial datadir.
+    fs::path conf_path{GetPathArg("-conf", BITCOIN_CONF_FILENAME)};
+    if (!conf_path.is_absolute()) {
+        if (!GetDefaultDataDir(datadir_path, error)) return false;
+        conf_path = datadir_path / std::move(conf_path);
+    }
+
+    {
+        LOCK(cs_args);
+        m_settings.ro_config.clear();
+        m_config_sections.clear();
+        m_config_path = conf_path;
+    }
+
+    if (config_file) *config_file = conf_path;
+    if (initial_datadir) *initial_datadir = datadir_path;
+
+    std::ifstream stream{conf_path};
+
+    // not ok to have a config file specified that cannot be opened
+    if (IsArgSet("-conf") && !stream.good()) {
+        error = strprintf("specified config file \"%s\" could not be opened.", fs::PathToString(conf_path));
+        return false;
+    }
+    // ok to not have a config file
+    if (stream.good()) {
+        if (!ReadConfigStream(stream, fs::PathToString(conf_path), error, ignore_invalid_keys)) {
+            return false;
+        }
+        // `-includeconf` cannot be included in the command line arguments except
+        // as `-noincludeconf` (which indicates that no included conf file should be used).
+        bool use_conf_file{true};
+        {
+            LOCK(cs_args);
+            if (auto* includes = util::FindKey(m_settings.command_line_options, "includeconf")) {
+                // ParseParameters() fails if a non-negated -includeconf is passed on the command-line
+                assert(util::SettingsSpan(*includes).last_negated());
+                use_conf_file = false;
+            }
+        }
+        if (use_conf_file) {
+            std::string chain_id = GetChainName();
+            std::vector<std::string> conf_file_names;
+
+            auto add_includes = [&](const std::string& network, size_t skip = 0) {
+                size_t num_values = 0;
+                LOCK(cs_args);
+                if (auto* section = util::FindKey(m_settings.ro_config, network)) {
+                    if (auto* values = util::FindKey(*section, "includeconf")) {
+                        for (size_t i = std::max(skip, util::SettingsSpan(*values).negated()); i < values->size(); ++i) {
+                            conf_file_names.push_back((*values)[i].get_str());
+                        }
+                        num_values = values->size();
+                    }
+                }
+                return num_values;
+            };
+
+            // We haven't set m_network yet (that happens in SelectParams()), so manually check
+            // for network.includeconf args.
+            const size_t chain_includes = add_includes(chain_id);
+            const size_t default_includes = add_includes({});
+
+            for (const std::string& conf_file_name : conf_file_names) {
+                fs::path include_path = fs::PathFromString(conf_file_name);
+                if (!include_path.is_absolute()) {
+                    if (!GetDefaultDataDir(datadir_path, error)) return false;
+                    include_path = datadir_path / std::move(include_path);
+                }
+                std::ifstream conf_file_stream{include_path};
+                if (conf_file_stream.good()) {
+                    if (!ReadConfigStream(conf_file_stream, conf_file_name, error, ignore_invalid_keys)) {
+                        return false;
+                    }
+                    LogPrintf("Included configuration file %s\n", conf_file_name);
+                } else {
+                    error = "Failed to include configuration file " + conf_file_name;
+                    return false;
+                }
+            }
+
+            // Warn about recursive -includeconf
+            conf_file_names.clear();
+            add_includes(chain_id, /* skip= */ chain_includes);
+            add_includes({}, /* skip= */ default_includes);
+            std::string chain_id_final = GetChainName();
+            if (chain_id_final != chain_id) {
+                // Also warn about recursive includeconf for the chain that was specified in one of the includeconfs
+                add_includes(chain_id_final);
+            }
+            for (const std::string& conf_file_name : conf_file_names) {
+                tfm::format(std::cerr, "warning: -includeconf cannot be used from included files; ignoring -includeconf=%s\n", conf_file_name);
+            }
+        }
+    }
+
+    // Update datadir if case .conf file set a new datadir location.
+    if (!GetExplicitDataDir(*this, datadir_path, error) || !GetDefaultDataDir(datadir_path, error)) return false;
+
+    WITH_LOCK(cs_args, m_datadir = std::move(datadir_path));
+
+    return true;
+>>>>>>> b091d9b07620 (init: Allow bitcoin default datadir to point at an external datadir):src/util/system.cpp
 }
 
 ChainType ArgsManager::GetChainType() const
