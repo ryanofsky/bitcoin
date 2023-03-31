@@ -156,6 +156,24 @@ protected:
     mutable fs::path m_cached_datadir_path GUARDED_BY(cs_args);
     mutable fs::path m_cached_network_datadir_path GUARDED_BY(cs_args);
 
+    /**
+     * Get base datadir directory from -datadir options or from the default
+     * application data path from the OS. This function should only be called
+     * during initialization. After initializaiton, \ref GetDataDirNet function
+     * is more efficient and should be used instead.
+     *
+     * This can return different datadir paths before and after the bitcoin.conf
+     * file is parsed. The initial data directory returned before is used to
+     * locate the bitcoin.conf configuration file. If the configuration file
+     * contains a datadir= line, the final datadir may be different.
+     *
+     * This will return either a full, absolute path or nullopt and error
+     * message. The default datadir argument is optional, and just avoids
+     * repeating work when the function is called a second time after parsing
+     * the configuration.
+     */
+    std::optional<fs::path> GetBaseDataDir(std::string& error, const fs::path& default_datadir = {}) const;
+
     [[nodiscard]] bool ReadConfigStream(std::istream& stream, const std::string& filepath, std::string& error, bool ignore_invalid_keys = false);
 
     /**

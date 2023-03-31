@@ -205,6 +205,13 @@ static bool GetInitialDataDir(fs::path& datadir, std::string& error, bool* abort
     return true;
 }
 
+std::optional<fs::path> ArgsManager::GetBaseDataDir(std::string& error, const fs::path& default_datadir) const
+{
+    fs::path datadir = default_datadir;
+    if (!GetExplicitDataDir(*this, datadir, error) || (datadir.empty() && !GetInitialDataDir(datadir, error, nullptr))) return {};
+    return datadir;
+}
+
 bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys, InitialDataDirFn initial_datadir_fn,
                                   fs::path* config_file, fs::path* initial_datadir, bool* aborted)
 {
