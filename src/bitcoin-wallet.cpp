@@ -59,6 +59,10 @@ static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[
         tfm::format(std::cerr, "Error parsing command line arguments: %s\n", error_message);
         return EXIT_FAILURE;
     }
+    if (!args.ReadConfigFiles(error_message, true)) {
+        tfm::format(std::cerr, "Error parsing command line arguments: %s\n", error_message);
+        return EXIT_FAILURE;
+    }
     const bool missing_args{argc < 2};
     if (missing_args || HelpRequested(args) || args.IsArgSet("-version")) {
         std::string strUsage = strprintf("%s bitcoin-wallet version", PACKAGE_NAME) + " " + FormatFullVersion() + "\n";

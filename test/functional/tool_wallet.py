@@ -38,7 +38,7 @@ class ToolWalletTest(BitcoinTestFramework):
         self.skip_if_no_wallet_tool()
 
     def bitcoin_wallet_process(self, *args):
-        default_args = ['-datadir={}'.format(self.nodes[0].datadir_path), '-chain=%s' % self.chain]
+        default_args = ['-datadir={}'.format(self.nodes[0].datadir_path)]
         if not self.options.descriptors and 'create' in args:
             default_args.append('-legacy')
         if "dump" in args and self.options.bdbro:
