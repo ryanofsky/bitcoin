@@ -144,12 +144,32 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
         arguments = Cat(arguments, G_TEST_COMMAND_LINE_ARGUMENTS());
     }
     util::ThreadRename("test");
+<<<<<<< HEAD
+||||||| parent of ae5fc323b244 (bitcoin-wallet: make bitcoin-wallet tool load config file)
+    fs::create_directories(m_path_root);
+    m_args.ForceSetArg("-datadir", fs::PathToString(m_path_root));
+    gArgs.ForceSetArg("-datadir", fs::PathToString(m_path_root));
+=======
+    fs::create_directories(m_path_root);
+    m_args.ForceSetArg("-datadir", fs::PathToString(m_path_root));
+    std::string error;
+    if (!m_args.ReadConfigFiles(error)) throw std::runtime_error(error);
+    gArgs.ForceSetArg("-datadir", fs::PathToString(m_path_root));
+>>>>>>> ae5fc323b244 (bitcoin-wallet: make bitcoin-wallet tool load config file)
     gArgs.ClearPathCache();
     {
         SetupServerArgs(*m_node.args);
+<<<<<<< HEAD
         SetupCommonTestArgs(*m_node.args);
         std::string error;
         if (!m_node.args->ParseParameters(arguments.size(), arguments.data(), error)) {
+||||||| parent of ae5fc323b244 (bitcoin-wallet: make bitcoin-wallet tool load config file)
+        std::string error;
+        if (!m_node.args->ParseParameters(arguments.size(), arguments.data(), error)) {
+=======
+        if (!m_node.args->ParseParameters(arguments.size(), arguments.data(), error) ||
+            !m_node.args->ReadConfigFiles(error)) {
+>>>>>>> ae5fc323b244 (bitcoin-wallet: make bitcoin-wallet tool load config file)
             m_node.args->ClearArgs();
             throw std::runtime_error{error};
         }

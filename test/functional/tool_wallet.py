@@ -30,7 +30,19 @@ class ToolWalletTest(BitcoinTestFramework):
         self.skip_if_no_wallet_tool()
 
     def bitcoin_wallet_process(self, *args):
+<<<<<<< HEAD
         default_args = ['-datadir={}'.format(self.nodes[0].datadir_path), '-chain=%s' % self.chain]
+||||||| parent of ae5fc323b244 (bitcoin-wallet: make bitcoin-wallet tool load config file)
+        binary = self.config["environment"]["BUILDDIR"] + '/src/bitcoin-wallet' + self.config["environment"]["EXEEXT"]
+        default_args = ['-datadir={}'.format(self.nodes[0].datadir), '-chain=%s' % self.chain]
+        if not self.options.descriptors and 'create' in args:
+            default_args.append('-legacy')
+=======
+        binary = self.config["environment"]["BUILDDIR"] + '/src/bitcoin-wallet' + self.config["environment"]["EXEEXT"]
+        default_args = ['-datadir={}'.format(self.nodes[0].datadir)]
+        if not self.options.descriptors and 'create' in args:
+            default_args.append('-legacy')
+>>>>>>> ae5fc323b244 (bitcoin-wallet: make bitcoin-wallet tool load config file)
 
         return subprocess.Popen(self.get_binaries().wallet_argv() + default_args + list(args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
