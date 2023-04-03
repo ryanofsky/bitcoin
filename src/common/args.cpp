@@ -764,6 +764,210 @@ bool CheckDataDirOption(const ArgsManager& args)
     return datadir.empty() || fs::is_directory(fs::absolute(datadir));
 }
 
+<<<<<<< HEAD:src/common/args.cpp
+||||||| parent of 5855150efae7 (Make GUI and CLI tools use the same datadir):src/util/system.cpp
+static bool GetConfigOptions(std::istream& stream, const std::string& filepath, std::string& error, std::vector<std::pair<std::string, std::string>>& options, std::list<SectionInfo>& sections)
+{
+    std::string str, prefix;
+    std::string::size_type pos;
+    int linenr = 1;
+    while (std::getline(stream, str)) {
+        bool used_hash = false;
+        if ((pos = str.find('#')) != std::string::npos) {
+            str = str.substr(0, pos);
+            used_hash = true;
+        }
+        const static std::string pattern = " \t\r\n";
+        str = TrimString(str, pattern);
+        if (!str.empty()) {
+            if (*str.begin() == '[' && *str.rbegin() == ']') {
+                const std::string section = str.substr(1, str.size() - 2);
+                sections.emplace_back(SectionInfo{section, filepath, linenr});
+                prefix = section + '.';
+            } else if (*str.begin() == '-') {
+                error = strprintf("parse error on line %i: %s, options in configuration file must be specified without leading -", linenr, str);
+                return false;
+            } else if ((pos = str.find('=')) != std::string::npos) {
+                std::string name = prefix + TrimString(std::string_view{str}.substr(0, pos), pattern);
+                std::string_view value = TrimStringView(std::string_view{str}.substr(pos + 1), pattern);
+                if (used_hash && name.find("rpcpassword") != std::string::npos) {
+                    error = strprintf("parse error on line %i, using # in rpcpassword can be ambiguous and should be avoided", linenr);
+                    return false;
+                }
+                options.emplace_back(name, value);
+                if ((pos = name.rfind('.')) != std::string::npos && prefix.length() <= pos) {
+                    sections.emplace_back(SectionInfo{name.substr(0, pos), filepath, linenr});
+                }
+            } else {
+                error = strprintf("parse error on line %i: %s", linenr, str);
+                if (str.size() >= 2 && str.substr(0, 2) == "no") {
+                    error += strprintf(", if you intended to specify a negated option, use %s=1 instead", str);
+                }
+                return false;
+            }
+        }
+        ++linenr;
+    }
+    return true;
+}
+
+bool IsConfSupported(KeyInfo& key, std::string& error) {
+    if (key.name == "conf") {
+        error = "conf cannot be set in the configuration file; use includeconf= if you want to include additional config files";
+        return false;
+    }
+    if (key.name == "reindex") {
+        // reindex can be set in a config file but it is strongly discouraged as this will cause the node to reindex on
+        // every restart. Allow the config but throw a warning
+        LogPrintf("Warning: reindex=1 is set in the configuration file, which will significantly slow down startup. Consider removing or commenting out this option for better performance, unless there is currently a condition which makes rebuilding the indexes necessary\n");
+        return true;
+    }
+    return true;
+}
+
+bool ArgsManager::ReadConfigStream(std::istream& stream, const std::string& filepath, std::string& error, bool ignore_invalid_keys)
+{
+    LOCK(cs_args);
+    std::vector<std::pair<std::string, std::string>> options;
+    if (!GetConfigOptions(stream, filepath, error, options, m_config_sections)) {
+        return false;
+    }
+    for (const std::pair<std::string, std::string>& option : options) {
+        KeyInfo key = InterpretKey(option.first);
+        std::optional<unsigned int> flags = GetArgFlags('-' + key.name);
+        if (!IsConfSupported(key, error)) return false;
+        if (flags) {
+            std::optional<util::SettingsValue> value = InterpretValue(key, &option.second, *flags, error);
+            if (!value) {
+                return false;
+            }
+            m_settings.ro_config[key.section][key.name].push_back(*value);
+        } else {
+            if (ignore_invalid_keys) {
+                LogPrintf("Ignoring unknown configuration value %s\n", option.first);
+            } else {
+                error = strprintf("Invalid configuration value %s", option.first);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+=======
+bool CreateDataDir(const fs::path& datadir, std::string& error)
+{
+    std::error_code ec;
+    fs::file_status status{fs::status(datadir, ec)};
+    if (!ec && status.type() == fs::file_type::directory && !fs::is_empty(datadir, ec)) return true;
+    // When creating a *new* datadir, also create a "wallets" subdirectory,
+    // whether or not the wallet is enabled now, so if the wallet is enabled
+    // in the future, it will use the "wallets" subdirectory for creating
+    // and listing wallets, rather than the top-level directory where
+    // wallets could be mixed up with other files. For backwards
+    // compatibility, wallet code will use the "wallets" subdirectory only
+    // if it already exists, but never create it itself. There is discussion
+    // in https://github.com/bitcoin/bitcoin/issues/16220 about ways to
+    // change wallet code so it would no longer be necessary to create
+    // "wallets" subdirectories here.
+    std::filesystem::create_directories(fs::path{datadir / "wallets"}, ec);
+    if (!ec) return true;
+    error = strprintf("Failed to create data directory %s", fs::quoted(fs::PathToString(datadir)));
+    if (ec) error = strprintf("%s: %s", error, ec.message());
+    return false;
+}
+
+static bool GetConfigOptions(std::istream& stream, const std::string& filepath, std::string& error,
+                             std::vector<std::pair<std::string, std::string>>& options,
+                             std::list<SectionInfo>& sections)
+{
+    std::string str, prefix;
+    std::string::size_type pos;
+    int linenr = 1;
+    while (std::getline(stream, str)) {
+        bool used_hash = false;
+        if ((pos = str.find('#')) != std::string::npos) {
+            str = str.substr(0, pos);
+            used_hash = true;
+        }
+        const static std::string pattern = " \t\r\n";
+        str = TrimString(str, pattern);
+        if (!str.empty()) {
+            if (*str.begin() == '[' && *str.rbegin() == ']') {
+                const std::string section = str.substr(1, str.size() - 2);
+                sections.emplace_back(SectionInfo{section, filepath, linenr});
+                prefix = section + '.';
+            } else if (*str.begin() == '-') {
+                error = strprintf("parse error on line %i: %s, options in configuration file must be specified without leading -", linenr, str);
+                return false;
+            } else if ((pos = str.find('=')) != std::string::npos) {
+                std::string name = prefix + TrimString(std::string_view{str}.substr(0, pos), pattern);
+                std::string_view value = TrimStringView(std::string_view{str}.substr(pos + 1), pattern);
+                if (used_hash && name.find("rpcpassword") != std::string::npos) {
+                    error = strprintf("parse error on line %i, using # in rpcpassword can be ambiguous and should be avoided", linenr);
+                    return false;
+                }
+                options.emplace_back(name, value);
+                if ((pos = name.rfind('.')) != std::string::npos && prefix.length() <= pos) {
+                    sections.emplace_back(SectionInfo{name.substr(0, pos), filepath, linenr});
+                }
+            } else {
+                error = strprintf("parse error on line %i: %s", linenr, str);
+                if (str.size() >= 2 && str.substr(0, 2) == "no") {
+                    error += strprintf(", if you intended to specify a negated option, use %s=1 instead", str);
+                }
+                return false;
+            }
+        }
+        ++linenr;
+    }
+    return true;
+}
+
+bool IsConfSupported(KeyInfo& key, std::string& error) {
+    if (key.name == "conf") {
+        error = "conf cannot be set in the configuration file; use includeconf= if you want to include additional config files";
+        return false;
+    }
+    if (key.name == "reindex") {
+        // reindex can be set in a config file but it is strongly discouraged as this will cause the node to reindex on
+        // every restart. Allow the config but throw a warning
+        LogPrintf("Warning: reindex=1 is set in the configuration file, which will significantly slow down startup. Consider removing or commenting out this option for better performance, unless there is currently a condition which makes rebuilding the indexes necessary\n");
+        return true;
+    }
+    return true;
+}
+
+bool ArgsManager::ReadConfigStream(std::istream& stream, const std::string& filepath, std::string& error, bool ignore_invalid_keys)
+{
+    LOCK(cs_args);
+    std::vector<std::pair<std::string, std::string>> options;
+    if (!GetConfigOptions(stream, filepath, error, options, m_config_sections)) {
+        return false;
+    }
+    for (const std::pair<std::string, std::string>& option : options) {
+        KeyInfo key = InterpretKey(option.first);
+        std::optional<unsigned int> flags = GetArgFlags('-' + key.name);
+        if (!IsConfSupported(key, error)) return false;
+        if (flags) {
+            std::optional<util::SettingsValue> value = InterpretValue(key, &option.second, *flags, error);
+            if (!value) {
+                return false;
+            }
+            m_settings.ro_config[key.section][key.name].push_back(*value);
+        } else {
+            if (ignore_invalid_keys) {
+                LogPrintf("Ignoring unknown configuration value %s\n", option.first);
+            } else {
+                error = strprintf("Invalid configuration value %s", option.first);
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+>>>>>>> 5855150efae7 (Make GUI and CLI tools use the same datadir):src/util/system.cpp
 fs::path ArgsManager::GetConfigFilePath() const
 {
     LOCK(cs_args);
@@ -879,22 +1083,23 @@ static bool GetExplicitDataDir(const ArgsManager& args, fs::path& datadir, std::
         return false;
     }
 
-    // Keep default datadir if -datadir is not specified, otherwise call
-    // fs::absolute to treat relative datadir arguments and datadir= lines in
-    // configuration files as being relative to the current working directory.
-    // Probably it would make more sense to treat relative datadir lines in
-    // configuration files as relative to the configuration file, not the
-    // working directory, but current behavior is being kept for compatibility.
+    // Return unmodified datadir path if -datadir argument value or config file
+    // value is not specified. If any value is specified, return it as the
+    // datadir path. Call fs::absolute to treat relative datadir arguments and
+    // datadir= lines in configuration files as being relative to the current
+    // working directory. Probably it would make more sense to treat relative
+    // datadir lines in configuration files as relative to the configuration
+    // file, not the working directory, but current behavior is being kept for
+    // compatibility.
     if (!datadir_arg.empty()) datadir = fs::absolute(std::move(datadir_arg));
     return true;
 }
 
-static bool GetDefaultDataDir(fs::path& datadir, std::string& error)
+static bool GetInitialDataDir(fs::path& datadir, std::string& error, bool* aborted)
 {
-    // Keep explicit datadir if it was specified.
-    if (!datadir.empty()) return true;
-
+    assert(datadir.empty());
     datadir = GetDefaultDataDir();
+
     std::error_code ec;
     std::filesystem::file_status status = fs::status(datadir);
     if (ec) {
@@ -932,21 +1137,24 @@ static bool GetDefaultDataDir(fs::path& datadir, std::string& error)
     return true;
 }
 
-bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys, fs::path* config_file, fs::path* initial_datadir)
+bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys, InitialDataDirFn initial_datadir_fn,
+                                  fs::path* config_file, fs::path* initial_datadir, bool* aborted)
 {
     // Save initial datadir value in case -conf path or any -includeconf paths
     // are relative paths, and need to be evaluated relative to the
     // datadir. The final datadir can change while parsing the config file if
-    // it contains a datadir= line. Avoid calling GetDefaultDataDir() yet if not
+    // it contains a datadir= line. Avoid calling initial_datadir_fn() yet if not
     // needed because it accesses the default datadir filesystem path, which
     // might be slow or off-limits due to permissions.
     fs::path datadir_path;
     if (!GetExplicitDataDir(*this, datadir_path, error)) return false;
 
     // Determine config file path relative to the initial datadir.
+    if (!initial_datadir_fn) initial_datadir_fn = GetInitialDataDir;
     fs::path conf_path{GetPathArg("-conf", BITCOIN_CONF_FILENAME)};
     if (!conf_path.is_absolute()) {
-        if (!GetDefaultDataDir(datadir_path, error)) return false;
+        if (datadir_path.empty() && !initial_datadir_fn(datadir_path, error, aborted)) return false;
+        assert(datadir_path.is_absolute());
         conf_path = datadir_path / std::move(conf_path);
     }
 
@@ -1009,7 +1217,8 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys, 
             for (const std::string& conf_file_name : conf_file_names) {
                 fs::path include_path = fs::PathFromString(conf_file_name);
                 if (!include_path.is_absolute()) {
-                    if (!GetDefaultDataDir(datadir_path, error)) return false;
+                    if (datadir_path.empty() && !initial_datadir_fn(datadir_path, error, aborted)) return false;
+                    assert(datadir_path.is_absolute());
                     include_path = datadir_path / std::move(include_path);
                 }
                 std::ifstream conf_file_stream{include_path};
@@ -1040,7 +1249,9 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys, 
     }
 
     // Update datadir if case .conf file set a new datadir location.
-    if (!GetExplicitDataDir(*this, datadir_path, error) || !GetDefaultDataDir(datadir_path, error)) return false;
+    if (!GetExplicitDataDir(*this, datadir_path, error) ||
+        (datadir_path.empty() && !initial_datadir_fn(datadir_path, error, aborted)))
+        return false;
 
     WITH_LOCK(cs_args, m_datadir = std::move(datadir_path));
 
