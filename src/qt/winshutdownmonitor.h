@@ -13,14 +13,22 @@
 
 #include <QAbstractNativeEventFilter>
 
+namespace interfaces {
+class Node;
+} // namespaces interfaces
+
 class WinShutdownMonitor : public QAbstractNativeEventFilter
 {
 public:
+    WinShutdownMonitor(interfaces::Node& node) : m_node(node) {}
+
     /** Implements QAbstractNativeEventFilter interface for processing Windows messages */
     bool nativeEventFilter(const QByteArray &eventType, void *pMessage, long *pnResult) override;
 
     /** Register the reason for blocking shutdown on Windows to allow clean client exit */
     static void registerShutdownBlockReason(const QString& strReason, const HWND& mainWinId);
+
+    interfaces::Node& m_node;
 };
 #endif
 

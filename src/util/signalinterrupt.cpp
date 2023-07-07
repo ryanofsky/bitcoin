@@ -15,14 +15,17 @@
 
 namespace util {
 
-SignalInterrupt::SignalInterrupt() : m_flag{false}
+bool SignalInterrupt::open()
 {
 #ifndef WIN32
-    std::optional<TokenPipe> pipe = TokenPipe::Make();
-    if (!pipe) throw std::ios_base::failure("Could not create TokenPipe");
-    m_pipe_r = pipe->TakeReadEnd();
-    m_pipe_w = pipe->TakeWriteEnd();
+    if (!m_pipe_r.IsOpen() || !m_pipe_w.IsOpen()) {
+        std::optional<TokenPipe> pipe = TokenPipe::Make();
+        if (!pipe) return false;
+        m_pipe_r = pipe->TakeReadEnd();
+        m_pipe_w = pipe->TakeWriteEnd();
+    }
 #endif
+    return true;
 }
 
 SignalInterrupt::operator bool() const
@@ -30,16 +33,18 @@ SignalInterrupt::operator bool() const
     return m_flag;
 }
 
-void SignalInterrupt::reset()
+bool SignalInterrupt::reset()
 {
     // Cancel existing interrupt by waiting for it, this will reset condition flags and remove
     // the token from the pipe.
-    if (*this) wait();
+    if (*this && !wait()) return false;
     m_flag = false;
+    return true;
 }
 
-void SignalInterrupt::operator()()
+bool SignalInterrupt::operator()()
 {
+    if (!open()) return false;
 #ifdef WIN32
     std::unique_lock<std::mutex> lk(m_mutex);
     m_flag = true;
@@ -52,23 +57,26 @@ void SignalInterrupt::operator()()
         // Write an arbitrary byte to the write end of the pipe.
         int res = m_pipe_w.TokenWrite('x');
         if (res != 0) {
-            throw std::ios_base::failure("Could not write interrupt token");
+            return false;
         }
     }
 #endif
+    return true;
 }
 
-void SignalInterrupt::wait()
+bool SignalInterrupt::wait()
 {
+    if (!open()) return false;
 #ifdef WIN32
     std::unique_lock<std::mutex> lk(m_mutex);
     m_cv.wait(lk, [this] { return m_flag.load(); });
 #else
     int res = m_pipe_r.TokenRead();
     if (res != 'x') {
-        throw std::ios_base::failure("Did not read expected interrupt token");
+        return false;
     }
 #endif
+    return true;
 }
 
 } // namespace util

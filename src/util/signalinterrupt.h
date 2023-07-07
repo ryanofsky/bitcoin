@@ -28,14 +28,14 @@ namespace util {
 class SignalInterrupt
 {
 public:
-    SignalInterrupt();
     explicit operator bool() const;
-    void operator()();
-    void reset();
-    void wait();
+    [[nodiscard]] bool operator()();
+    [[nodiscard]] bool reset();
+    [[nodiscard]] bool wait();
 
 private:
-    std::atomic<bool> m_flag;
+    [[nodiscard]] bool open();
+    std::atomic<bool> m_flag{false};
 
 #ifndef WIN32
     // On UNIX-like operating systems use the self-pipe trick.
