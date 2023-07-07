@@ -28,6 +28,7 @@ struct NodeContext;
 
 /** Interrupt threads */
 void Interrupt(node::NodeContext& node);
+bool ShutdownRequested(node::NodeContext& node);
 void Shutdown(node::NodeContext& node);
 //!Initialize the logging infrastructure
 void InitLogging(const ArgsManager& args);
