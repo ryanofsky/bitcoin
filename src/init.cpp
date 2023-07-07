@@ -175,6 +175,11 @@ static fs::path GetPidFile(const ArgsManager& args)
     }
 }
 
+void InitContext(NodeContext& node)
+{
+    node.args = &gArgs;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // Shutdown
