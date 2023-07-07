@@ -311,7 +311,7 @@ public Q_SLOTS:
     /** Simply calls showNormalIfMinimized(true) */
     void toggleHidden();
 
-    /** called by a timer to check if ShutdownRequested() has been set **/
+    /** called by a timer to check if kernel::Context::interrupt has been set **/
     void detectShutdown();
 
     /** Show progress dialog e.g. for verifychain */

@@ -20,7 +20,6 @@
 #include <node/context.h>
 #include <node/interface_ui.h>
 #include <noui.h>
-#include <shutdown.h>
 #include <util/check.h>
 #include <util/exception.h>
 #include <util/strencodings.h>
@@ -273,7 +272,7 @@ MAIN_FUNCTION
 
     // Start application
     if (AppInit(node)) {
-        WaitForShutdown();
+        node.kernel->interrupt.wait();
     } else {
         node.exit_status = EXIT_FAILURE;
     }

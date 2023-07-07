@@ -38,13 +38,13 @@
 #include <primitives/transaction.h>
 #include <rpc/protocol.h>
 #include <rpc/server.h>
-#include <shutdown.h>
 #include <support/allocators/secure.h>
 #include <sync.h>
 #include <txmempool.h>
 #include <uint256.h>
 #include <univalue.h>
 #include <util/check.h>
+#include <util/signalinterrupt.h>
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
@@ -119,14 +119,14 @@ public:
     }
     void startShutdown() override
     {
-        StartShutdown();
+        m_context->kernel->interrupt();
         // Stop RPC for clean shutdown if any of waitfor* commands is executed.
         if (args().GetBoolArg("-server", false)) {
             InterruptRPC();
             StopRPC();
         }
     }
-    bool shutdownRequested() override { return ShutdownRequested(); }
+    bool shutdownRequested() override { return bool{m_context->kernel->interrupt}; }
     bool isSettingIgnored(const std::string& name) override
     {
         bool ignored = false;
@@ -723,7 +723,7 @@ public:
     {
         return chainman().IsInitialBlockDownload();
     }
-    bool shutdownRequested() override { return ShutdownRequested(); }
+    bool shutdownRequested() override { return bool{m_node.kernel->interrupt}; }
     void initMessage(const std::string& message) override { ::uiInterface.InitMessage(message); }
     void initWarning(const bilingual_str& message) override { InitWarning(message); }
     void initError(const bilingual_str& message) override { InitError(message); }

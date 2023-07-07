@@ -266,8 +266,15 @@ BITCOIN_CORE_H = \
   script/sigcache.h \
   script/sign.h \
   script/signingprovider.h \
+<<<<<<< HEAD
   script/solver.h \
   shutdown.h \
+||||||| parent of 0dce0042687d (Get rid of shutdown.cpp/shutdown.h, use SignalInterrupt directly)
+  script/standard.h \
+  shutdown.h \
+=======
+  script/standard.h \
+>>>>>>> 0dce0042687d (Get rid of shutdown.cpp/shutdown.h, use SignalInterrupt directly)
   signet.h \
   streams.h \
   support/allocators/pool.h \
@@ -452,7 +459,6 @@ libbitcoin_node_a_SOURCES = \
   rpc/signmessage.cpp \
   rpc/txoutproof.cpp \
   script/sigcache.cpp \
-  shutdown.cpp \
   signet.cpp \
   timedata.cpp \
   torcontrol.cpp \
@@ -962,7 +968,14 @@ libbitcoinkernel_la_SOURCES = \
   script/script.cpp \
   script/script_error.cpp \
   script/sigcache.cpp \
+<<<<<<< HEAD
   script/solver.cpp \
+||||||| parent of 0dce0042687d (Get rid of shutdown.cpp/shutdown.h, use SignalInterrupt directly)
+  script/standard.cpp \
+  shutdown.cpp \
+=======
+  script/standard.cpp \
+>>>>>>> 0dce0042687d (Get rid of shutdown.cpp/shutdown.h, use SignalInterrupt directly)
   signet.cpp \
   streams.cpp \
   support/cleanse.cpp \

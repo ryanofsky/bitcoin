@@ -5,8 +5,10 @@
 #include <qt/winshutdownmonitor.h>
 
 #if defined(Q_OS_WIN)
-#include <shutdown.h>
 
+#include <kernel/context.h>
+#include <util/check.h>
+#include <util/signalinterrupt.h>
 #include <windows.h>
 
 #include <QDebug>
@@ -25,7 +27,7 @@ bool WinShutdownMonitor::nativeEventFilter(const QByteArray &eventType, void *pM
            {
                // Initiate a client shutdown after receiving a WM_QUERYENDSESSION and block
                // Windows session end until we have finished client shutdown.
-               StartShutdown();
+               Assert(kernel::g_context)->interrupt();
                *pnResult = FALSE;
                return true;
            }
