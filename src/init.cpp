@@ -65,7 +65,6 @@
 #include <rpc/util.h>
 #include <scheduler.h>
 #include <script/sigcache.h>
-#include <shutdown.h>
 #include <sync.h>
 #include <timedata.h>
 #include <torcontrol.h>
@@ -175,6 +174,17 @@ static fs::path GetPidFile(const ArgsManager& args)
     }
 }
 
+static std::optional<util::SignalInterrupt> g_shutdown;
+
+void InitContext(NodeContext& node)
+{
+    assert(!g_shutdown);
+    g_shutdown.emplace();
+
+    node.args = &gArgs;
+    node.shutdown = &*g_shutdown;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // Shutdown
@@ -186,11 +196,9 @@ static fs::path GetPidFile(const ArgsManager& args)
 // The network-processing threads are all part of a thread group
 // created by AppInit() or the Qt main() function.
 //
-// A clean exit happens when StartShutdown() or the SIGTERM
-// signal handler sets ShutdownRequested(), which makes main thread's
-// WaitForShutdown() interrupts the thread group.
-// And then, WaitForShutdown() makes all other on-going threads
-// in the thread group join the main thread.
+// A clean exit happens when the SignalInterrupt object is triggered, which
+// makes main thread's SignalInterrupt::wait() call return, and join all other
+// ongoing threads in the thread group to the main thread.
 // Shutdown() is then called to clean up database connections, and stop other
 // threads that should only be stopped after the main network-processing
 // threads have exited.
@@ -199,6 +207,11 @@ static fs::path GetPidFile(const ArgsManager& args)
 // ShutdownRequested() getting set, and then does the normal Qt
 // shutdown thing.
 //
+
+bool ShutdownRequested(node::NodeContext& node)
+{
+    return bool{*(Assert(node.shutdown))};
+}
 
 #if HAVE_SYSTEM
 static void ShutdownNotify(const ArgsManager& args)
@@ -367,7 +380,9 @@ void Shutdown(NodeContext& node)
 #ifndef WIN32
 static void HandleSIGTERM(int)
 {
-    StartShutdown();
+    // Return value is intentionally ignored because there is not a better way
+    // of handling this failure in a signal handler.
+    (void)(*Assert(g_shutdown))();
 }
 
 static void HandleSIGHUP(int)
@@ -377,7 +392,10 @@ static void HandleSIGHUP(int)
 #else
 static BOOL WINAPI consoleCtrlHandler(DWORD dwCtrlType)
 {
-    StartShutdown();
+    if (!(*Assert(g_shutdown))()) {
+        LogPrintf("Error: failed to send shutdown signal on Ctrl-C\n");
+        return false;
+    }
     Sleep(INFINITE);
     return true;
 }
@@ -669,7 +687,7 @@ static bool AppInitServers(NodeContext& node)
     const ArgsManager& args = *Assert(node.args);
     RPCServer::OnStarted(&OnRPCStarted);
     RPCServer::OnStopped(&OnRPCStopped);
-    if (!InitHTTPServer())
+    if (!InitHTTPServer(*Assert(node.shutdown)))
         return false;
     StartRPC();
     node.rpc_interruption_point = RpcInterruptionPoint;
@@ -1415,7 +1433,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     // ********************************************************* Step 7: load block chain
 
-    node.notifications = std::make_unique<KernelNotifications>(node.exit_status);
+    node.notifications = std::make_unique<KernelNotifications>(*Assert(node.shutdown), node.exit_status);
     ReadNotificationArgs(args, *node.notifications);
     fReindex = args.GetBoolArg("-reindex", false);
     bool fReindexChainState = args.GetBoolArg("-reindex-chainstate", false);
@@ -1467,10 +1485,10 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     }
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", cache_sizes.coins * (1.0 / 1024 / 1024), mempool_opts.max_size_bytes * (1.0 / 1024 / 1024));
 
-    for (bool fLoaded = false; !fLoaded && !ShutdownRequested();) {
+    for (bool fLoaded = false; !fLoaded && !ShutdownRequested(node);) {
         node.mempool = std::make_unique<CTxMemPool>(mempool_opts);
 
-        node.chainman = std::make_unique<ChainstateManager>(node.kernel->interrupt, chainman_opts, blockman_opts);
+        node.chainman = std::make_unique<ChainstateManager>(*Assert(node.shutdown), chainman_opts, blockman_opts);
         ChainstateManager& chainman = *node.chainman;
 
         node::ChainstateLoadOptions options;
@@ -1481,7 +1499,6 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         options.check_blocks = args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS);
         options.check_level = args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL);
         options.require_full_verification = args.IsArgSet("-checkblocks") || args.IsArgSet("-checklevel");
-        options.check_interrupt = ShutdownRequested;
         options.coins_error_cb = [] {
             uiInterface.ThreadSafeMessageBox(
                 _("Error reading from database, shutting down."),
@@ -1516,7 +1533,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
             return InitError(error);
         }
 
-        if (!fLoaded && !ShutdownRequested()) {
+        if (!fLoaded && !ShutdownRequested(node)) {
             // first suggest a reindex
             if (!options.reindex) {
                 bool fRet = uiInterface.ThreadSafeQuestion(
@@ -1525,7 +1542,9 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
                     "", CClientUIInterface::MSG_ERROR | CClientUIInterface::BTN_ABORT);
                 if (fRet) {
                     fReindex = true;
-                    AbortShutdown();
+                    if (!Assert(node.shutdown)->reset()) {
+                        LogPrintf("Internal error: failed to reset shutdown signal.\n");
+                    }
                 } else {
                     LogPrintf("Aborted block database rebuild. Exiting.\n");
                     return false;
@@ -1539,7 +1558,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     // As LoadBlockIndex can take several minutes, it's possible the user
     // requested to kill the GUI during the last operation. If so, exit.
     // As the program has not fully started yet, Shutdown() is possibly overkill.
-    if (ShutdownRequested()) {
+    if (ShutdownRequested(node)) {
         LogPrintf("Shutdown requested. Exiting.\n");
         return false;
     }
@@ -1665,7 +1684,9 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         ImportBlocks(chainman, vImportFiles);
         if (args.GetBoolArg("-stopafterblockimport", DEFAULT_STOPAFTERBLOCKIMPORT)) {
             LogPrintf("Stopping after block import\n");
-            StartShutdown();
+            if (!(*Assert(node.shutdown))()) {
+                LogPrintf("Error: failed to send shutdown signal after finishing block import\n");
+            }
             return;
         }
 
@@ -1685,16 +1706,16 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     // Wait for genesis block to be processed
     {
         WAIT_LOCK(g_genesis_wait_mutex, lock);
-        // We previously could hang here if StartShutdown() is called prior to
+        // We previously could hang here if shutdown was requested prior to
         // ImportBlocks getting started, so instead we just wait on a timer to
         // check ShutdownRequested() regularly.
-        while (!fHaveGenesis && !ShutdownRequested()) {
+        while (!fHaveGenesis && !ShutdownRequested(node)) {
             g_genesis_wait_cv.wait_for(lock, std::chrono::milliseconds(500));
         }
         block_notify_genesis_wait_connection.disconnect();
     }
 
-    if (ShutdownRequested()) {
+    if (ShutdownRequested(node)) {
         return false;
     }
 
