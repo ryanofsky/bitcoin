@@ -49,6 +49,7 @@
 #include <txdb.h>
 #include <txmempool.h>
 #include <util/chaintype.h>
+#include <util/check.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/thread.h>
@@ -169,7 +170,7 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
 
     m_cache_sizes = CalculateCacheSizes(m_args);
 
-    m_node.notifications = std::make_unique<KernelNotifications>(m_node.exit_status);
+    m_node.notifications = std::make_unique<KernelNotifications>(*Assert(m_node.shutdown), m_node.exit_status);
 
     const ChainstateManager::Options chainman_opts{
         .chainparams = chainparams,
