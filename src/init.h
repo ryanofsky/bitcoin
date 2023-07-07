@@ -26,6 +26,9 @@ namespace node {
 struct NodeContext;
 } // namespace node
 
+bool ShutdownRequested(node::NodeContext& node);
+bool RequestShutdown(node::NodeContext& node);
+
 /** Interrupt threads */
 void Interrupt(node::NodeContext& node);
 void Shutdown(node::NodeContext& node);
