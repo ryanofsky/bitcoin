@@ -10,6 +10,7 @@
 #include <flatfile.h>
 #include <hash.h>
 #include <kernel/chainparams.h>
+#include <kernel/context.h>
 #include <logging.h>
 #include <pow.h>
 #include <reverse_iterator.h>
