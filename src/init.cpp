@@ -182,6 +182,7 @@ static fs::path GetPidFile(const ArgsManager& args)
     }
 }
 
+<<<<<<< HEAD
 static void RemovePidFile(const ArgsManager& args)
 {
     if (!g_generated_pid) return;
@@ -193,6 +194,14 @@ static void RemovePidFile(const ArgsManager& args)
 }
 
 
+||||||| parent of aac81601694d (refactor: Add InitContext function to initialize NodeContext with global pointers)
+=======
+void InitContext(NodeContext& node)
+{
+    node.args = &gArgs;
+}
+
+>>>>>>> aac81601694d (refactor: Add InitContext function to initialize NodeContext with global pointers)
 //////////////////////////////////////////////////////////////////////////////
 //
 // Shutdown
