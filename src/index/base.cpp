@@ -70,9 +70,20 @@ void BaseIndexNotifications::blockConnected(const interfaces::BlockInfo& block_i
     // attached below. This is temporary and removed in upcoming commits.
     interfaces::BlockInfo block{block_info};
 
+    const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
+    if (!block.data) {
+        // Null block.data means block is the ending block at the end of a sync,
+        // so just update the best block and m_synced.
+        m_index.SetBestBlockIndex(pindex);
+        if (block.chain_tip) {
+            m_index.m_synced = true;
+            CallFunctionInValidationInterfaceQueue([this] { m_index.m_ready = true; });
+        }
+        return;
+    }
+
     if (m_index.IgnoreBlockConnected(block)) return;
 
-    const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
     const CBlockIndex* best_block_index = m_index.m_best_block_index.load();
     if (block.chain_tip && best_block_index && best_block_index != pindex->pprev && !m_index.Rewind(best_block_index, pindex->pprev)) {
         m_index.FatalErrorf("%s: Failed to rewind index %s to a previous chain tip",
@@ -290,11 +301,9 @@ void BaseIndex::ThreadSync()
                 LOCK(cs_main);
                 const CBlockIndex* pindex_next = NextSyncBlock(pindex, m_chainstate->m_chain);
                 if (!pindex_next) {
-                    SetBestBlockIndex(pindex);
-                    m_synced = true;
-                    CallFunctionInValidationInterfaceQueue([this] { m_ready = true; });
-                    // No need to handle errors in Commit. See rationale above.
-                    Commit(GetLocator(*m_chain, pindex->GetBlockHash()));
+                    assert(pindex);
+                    notifications->blockConnected(kernel::MakeBlockInfo(pindex));
+                    notifications->chainStateFlushed(GetLocator(*m_chain, pindex->GetBlockHash()));
                     break;
                 }
                 if (pindex_next->pprev != pindex && !Rewind(pindex, pindex_next->pprev)) {
