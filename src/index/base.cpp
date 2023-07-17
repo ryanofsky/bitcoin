@@ -108,8 +108,12 @@ bool BaseIndex::Init()
     // m_chainstate member gives indexing code access to node internals. It is
     // removed in followup https://github.com/bitcoin/bitcoin/pull/24230
     m_chainstate = &m_chain->context()->chainman->ActiveChainstate();
-    // Register to validation interface before setting the 'm_synced' flag, so that
-    // callbacks are not missed once m_synced is true.
+
+    // Register to receive validation interface notifications. These
+    // notifications will be ignored until m_ready is set to true, so there is
+    // no harm in registering too early. Registering any time before cs_main is
+    // released at the end of this function would be early enough to avoid
+    // missing notifications.
     RegisterValidationInterface(this);
 
     CBlockLocator locator;
@@ -141,6 +145,21 @@ bool BaseIndex::Init()
     // datadir and an index enabled. If this is the case, indexation will happen solely
     // via `BlockConnected` signals until, possibly, the next restart.
     m_synced = start_block == active_chain.Tip();
+    if (m_synced) {
+        // To prevent race conditions, m_ready = true needs to be set from the
+        // validationinterface thread and the m_ready = true callback needs to
+        // be queued while cs_main is held.
+        //
+        // To prevent older, stale notifications currently in the validation
+        // queue from being processed by the index, it is important to delay
+        // setting m_ready = true until they are removed from the queue.
+        //
+        // To prevent new notifications that may be happening in the background
+        // right now from being lost, it is important to keep cs_main locked
+        // while calling CallFunctionInValidationInterfaceQueue, so the new
+        // notifications will be queued after the m_ready = true callback.
+        CallFunctionInValidationInterfaceQueue([this] { m_ready = true; });
+    }
     m_init = true;
     return true;
 }
@@ -183,6 +202,7 @@ void BaseIndex::ThreadSync()
                 if (!pindex_next) {
                     SetBestBlockIndex(pindex);
                     m_synced = true;
+                    CallFunctionInValidationInterfaceQueue([this] { m_ready = true; });
                     // No need to handle errors in Commit. See rationale above.
                     Commit();
                     break;
@@ -278,7 +298,7 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
 
 void BaseIndex::BlockConnected(const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex)
 {
-    if (!m_synced) {
+    if (!m_ready) {
         return;
     }
 
@@ -290,50 +310,13 @@ void BaseIndex::BlockConnected(const std::shared_ptr<const CBlock>& block, const
             return;
         }
     } else {
-        // Ensure block connects to an ancestor of the current best block. This should be the case
-        // most of the time, but may not be immediately after the sync thread catches up and sets
-        // m_synced. Consider the case where there is a reorg and the blocks on the stale branch are
-        // in the ValidationInterface queue backlog even after the sync thread has caught up to the
-        // new chain tip. In this unlikely event, log a warning and let the queue clear.
-        //
         // To allow handling reorgs, this only checks that the new block
         // connects to ancestor of the current best block, instead of checking
         // that it connects to directly to the current block. If there is a
         // reorg, Rewind call below will remove existing blocks from the index
         // before adding the new one.
-        //
-        // The other case where the new block will connect to an ancestor of the
-        // current block rather than the current block is when the m_synced flag
-        // is set to true too early. For example if the index is synced to
-        // height 100, and -reindex-chainstate option is used, there may be
-        // BlockConnected notifications for blocks 97, 98, 99, and 100 sitting
-        // in the notifications queue when m_synced gets set to true. When this
-        // happens, the Rewind call below will remove these blocks from the
-        // index before they are attached again.
-        //
-        // To summarize, there are 4 cases:
-        //
-        //   1. Normal case where new block connects directly to current block.
-        //      New block is just appended below.
-        //
-        //   2. Reorg case where new block connects to ancestor of current
-        //      block. The index is rewound and then the new block is appended.
-        //
-        //   3. Race condition case where m_synced is set to true too early and
-        //      the new block is stale and is an ancestor of the current block.
-        //      Index is rewound, and the stale block is reattached again.
-        //
-        //   4. Race condition case where m_synced is set to true too early and
-        //      there has been a reorg, and the new block is from the stale
-        //      branch of the reorg. In this case the ancestor check here fails,
-        //      and logs a warning, and returns early ignoring the stale block.
-        if (best_block_index->GetAncestor(pindex->nHeight - 1) != pindex->pprev) {
-            LogPrintf("%s: WARNING: Block %s does not connect to an ancestor of "
-                      "known best chain (tip=%s); not updating index\n",
-                      __func__, pindex->GetBlockHash().ToString(),
-                      best_block_index->GetBlockHash().ToString());
-            return;
-        }
+        assert(best_block_index->GetAncestor(pindex->nHeight - 1) == pindex->pprev);
+
         if (best_block_index != pindex->pprev && !Rewind(best_block_index, pindex->pprev)) {
             FatalErrorf("%s: Failed to rewind index %s to a previous chain tip",
                        __func__, GetName());
@@ -356,7 +339,7 @@ void BaseIndex::BlockConnected(const std::shared_ptr<const CBlock>& block, const
 
 void BaseIndex::ChainStateFlushed(const CBlockLocator& locator)
 {
-    if (!m_synced) {
+    if (!m_ready) {
         return;
     }
 
@@ -373,19 +356,12 @@ void BaseIndex::ChainStateFlushed(const CBlockLocator& locator)
         return;
     }
 
-    // This checks that ChainStateFlushed callbacks are received after BlockConnected. The check may fail
-    // immediately after the sync thread catches up and sets m_synced. Consider the case where
-    // there is a reorg and the blocks on the stale branch are in the ValidationInterface queue
-    // backlog even after the sync thread has caught up to the new chain tip. In this unlikely
-    // event, log a warning and let the queue clear.
+    // Assert locator points to the last block that was connected, or ancestor
+    // of it. (It may point to ancestor block if the last block was invalidated,
+    // or if a reorg started and there was a BlockDisconnected notification
+    // between the last BlockConnected notification and ChainstateFlushed.)
     const CBlockIndex* best_block_index = m_best_block_index.load();
-    if (best_block_index->GetAncestor(locator_tip_index->nHeight) != locator_tip_index) {
-        LogPrintf("%s: WARNING: Locator contains block (hash=%s) not on known best "
-                  "chain (tip=%s); not writing index locator\n",
-                  __func__, locator_tip_hash.ToString(),
-                  best_block_index->GetBlockHash().ToString());
-        return;
-    }
+    assert(best_block_index->GetAncestor(locator_tip_index->nHeight) == locator_tip_index);
 
     // No need to handle errors in Commit. If it fails, the error will be already be logged. The
     // best way to recover is to continue, as index cannot be corrupted by a missed commit to disk
