@@ -126,11 +126,18 @@ private:
     /// getting corrupted.
     bool Commit(const CBlockLocator& locator);
 
+<<<<<<< HEAD
     /// Loop over disconnected blocks and call CustomRemove.
     bool Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip);
 
     bool ProcessBlock(const CBlockIndex* pindex, const CBlock* block_data = nullptr);
 
+||||||| parent of 7c9d5d636b0b (indexes, refactor: Move Rewind logic out of Rewind to blockDisconnected and ThreadSync)
+    /// Loop over disconnected blocks and call CustomRemove.
+    bool Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip);
+
+=======
+>>>>>>> 7c9d5d636b0b (indexes, refactor: Move Rewind logic out of Rewind to blockDisconnected and ThreadSync)
     virtual bool AllowPrune() const = 0;
 
     template <typename... Args>
