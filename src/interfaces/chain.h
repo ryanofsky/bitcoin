@@ -330,8 +330,6 @@ public:
     {
         //! Include undo data with block connected notifications.
         bool connect_undo_data = false;
-        //! Include block data with block disconnected notifications.
-        bool disconnect_data = false;
         //! Include undo data with block disconnected notifications.
         bool disconnect_undo_data = false;
     };
