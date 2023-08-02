@@ -383,7 +383,6 @@ interfaces::Chain::NotifyOptions CoinStatsIndex::CustomOptions()
 {
     interfaces::Chain::NotifyOptions options;
     options.connect_undo_data = true;
-    options.disconnect_data = true;
     options.disconnect_undo_data = true;
     return options;
 }
