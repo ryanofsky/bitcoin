@@ -3893,6 +3893,7 @@ bool CWallet::ApplyMigrationData(MigrationData& data, bilingual_str& error)
                 LOCK(data.watchonly_wallet->cs_wallet);
                 if (data.watchonly_wallet->IsMine(*wtx->tx) || data.watchonly_wallet->IsFromMe(*wtx->tx)) {
                     // Add to watchonly wallet
+                    wtx->updateState(data.watchonly_wallet->chain());
                     if (!data.watchonly_wallet->AddToWallet(wtx->tx, wtx->m_state)) {
                         error = _("Error: Could not add watchonly tx to watchonly wallet");
                         return false;
