@@ -109,6 +109,17 @@ static inline int TxStateSerializedIndex(const TxState& state)
     }, state);
 }
 
+//! Return TxState as a string for logging or debugging.
+static inline std::string TxStateString(const TxState& state)
+{
+     return std::visit(util::Overloaded{
+        [](const TxStateInactive& inactive) { return strprintf("Inactive (abandoned=%i)", inactive.abandoned); },
+        [](const TxStateInMempool& in_mempool) { return strprintf("InMempool"); },
+        [](const TxStateConfirmed& confirmed) { return strprintf("Confirmed (block=%s, index=%i)", confirmed.confirmed_block_hash.ToString(), confirmed.position_in_block); },
+        [](const TxStateConflicted& conflicted) { return strprintf("Conflicted (block=%s)", conflicted.conflicting_block_hash.ToString()); },
+        [](const TxStateUnrecognized& confirmed) { return strprintf("Unrecognized (block=%s, index=%i)", confirmed.block_hash.ToString(), confirmed.index); },
+     }, state);
+}
 
 /**
  * Cachable amount subdivided into watchonly and spendable parts.
