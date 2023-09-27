@@ -3892,6 +3892,15 @@ bool CWallet::ApplyMigrationData(MigrationData& data, bilingual_str& error)
             if (data.watchonly_wallet) {
                 LOCK(data.watchonly_wallet->cs_wallet);
                 if (data.watchonly_wallet->IsMine(*wtx->tx) || data.watchonly_wallet->IsFromMe(*wtx->tx)) {
+                    // Need to update WalletTx state before moving the
+                    // transaction from the main wallet to the watchonly wallet,
+                    // because the main wallet is an offline wallet created with
+                    // a dummy context, and doesn't know heights of confirmed
+                    // and conflicted blocks (values are set to -1). Calling
+                    // updateState will look up missing height values so the
+                    // watchonly wallet can function correctly after the
+                    // migration with needing to be reloaded.
+                    wtx->updateState(data.watchonly_wallet->chain());
                     // Add to watchonly wallet
                     if (!data.watchonly_wallet->AddToWallet(wtx->tx, wtx->m_state)) {
                         error = _("Error: Could not add watchonly tx to watchonly wallet");
