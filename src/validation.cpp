@@ -1658,6 +1658,7 @@ Chainstate::Chainstate(
     ChainstateManager& chainman,
     std::optional<uint256> from_snapshot_blockhash)
     : m_mempool(mempool),
+      m_validated(!from_snapshot_blockhash),
       m_blockman(blockman),
       m_chainman(chainman),
       m_from_snapshot_blockhash(from_snapshot_blockhash) {}
@@ -2960,7 +2961,7 @@ bool Chainstate::ConnectTip(BlockValidationState& state, CBlockIndex* pindexNew,
     if (this != &m_chainman.ActiveChainstate()) {
         // This call may set `m_disabled`, which is referenced immediately afterwards in
         // ActivateBestChain, so that we stop connecting blocks past the snapshot base.
-        m_chainman.MaybeCompleteSnapshotValidation();
+        m_chainman.MaybeCompleteSnapshotValidation(this);
     }
 
     connectTrace.BlockConnected(pindexNew, std::move(pthisBlock));
@@ -5537,7 +5538,7 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
 
 // Currently, this function holds cs_main for its duration, which could be for
 // multiple minutes due to the ComputeUTXOStats call. This hold is necessary
-// because we need to avoid advancing the background validation chainstate
+// because we need to avoid advancing the validated chainstate
 // farther than the snapshot base block - and this function is also invoked
 // from within ConnectTip, i.e. from within ActivateBestChain, so cs_main is
 // held anyway.
@@ -5549,23 +5550,21 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
 //      through IsUsable() checks, or
 //
 //  (ii) giving each chainstate its own lock instead of using cs_main for everything.
-SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
+SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(Chainstate* validated_chainstate, Chainstate* snapshot_chainstate)
 {
     AssertLockHeld(cs_main);
-    if (m_ibd_chainstate.get() == &this->ActiveChainstate() ||
-            !this->IsUsable(m_snapshot_chainstate.get()) ||
-            !this->IsUsable(m_ibd_chainstate.get()) ||
-            !m_ibd_chainstate->m_chain.Tip()) {
-       // Nothing to do - this function only applies to the background
-       // validation chainstate.
+    if (validated_chainstate == &this->ActiveChainstate() ||
+            snapshot_chainstate.m_disabled ||
+            validated_chainstate.m_disabled ||
+            !validated_chainstate->m_chain.Tip()) {
+       // Nothing to do, the provided chainstate can't be used to validate snapshots.
        return SnapshotCompletionResult::SKIPPED;
     }
     const int snapshot_tip_height = this->ActiveHeight();
     const int snapshot_base_height = *Assert(this->GetSnapshotBaseHeight());
-    const CBlockIndex& index_new = *Assert(m_ibd_chainstate->m_chain.Tip());
+    const CBlockIndex& index_new = *Assert(validated_chainstate->m_chain.Tip());
 
     if (index_new.nHeight < snapshot_base_height) {
-        // Background IBD not complete yet.
         return SnapshotCompletionResult::SKIPPED;
     }
 
@@ -5591,12 +5590,12 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
         LogPrintf("[snapshot] !!! %s\n", user_error.original);
         LogPrintf("[snapshot] deleting snapshot, reverting to validated chain, and stopping node\n");
 
-        m_active_chainstate = m_ibd_chainstate.get();
-        m_snapshot_chainstate->m_disabled = true;
-        assert(!this->IsUsable(m_snapshot_chainstate.get()));
-        assert(this->IsUsable(m_ibd_chainstate.get()));
+        m_active_chainstate = validated_chainstate;
+        snapshot_chainstate->m_disabled = true;
+        assert(snapshot_chainstate.m_disabled);
+        assert(!validated_chainstate.m_disabled);
 
-        auto rename_result = m_snapshot_chainstate->InvalidateCoinsDBOnDisk();
+        auto rename_result = snapshot_chainstate->InvalidateCoinsDBOnDisk();
         if (!rename_result) {
             user_error = strprintf(Untranslated("%s\n%s"), user_error, util::ErrorString(rename_result));
         }
@@ -5614,15 +5613,15 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
 
     assert(index_new.nHeight == snapshot_base_height);
 
-    int curr_height = m_ibd_chainstate->m_chain.Height();
+    int curr_height = validated_chainstate->m_chain.Height();
 
     assert(snapshot_base_height == curr_height);
     assert(snapshot_base_height == index_new.nHeight);
-    assert(this->IsUsable(m_snapshot_chainstate.get()));
+    assert(!snapshot_chainstate->m_disabled);
     assert(this->GetAll().size() == 2);
 
-    CCoinsViewDB& ibd_coins_db = m_ibd_chainstate->CoinsDB();
-    m_ibd_chainstate->ForceFlushStateToDisk();
+    CCoinsViewDB& validated_coins_db = validated_chainstate->CoinsDB();
+    validated_chainstate->ForceFlushStateToDisk();
 
     const auto& maybe_au_data = m_options.chainparams.AssumeutxoForHeight(curr_height);
     if (!maybe_au_data) {
@@ -5633,13 +5632,13 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
     }
 
     const AssumeutxoData& au_data = *maybe_au_data;
-    std::optional<CCoinsStats> maybe_ibd_stats;
+    std::optional<CCoinsStats> maybe_validated_stats;
     LogPrintf("[snapshot] computing UTXO stats for background chainstate to validate "
         "snapshot - this could take a few minutes\n");
     try {
-        maybe_ibd_stats = ComputeUTXOStats(
+        maybe_validated_stats = ComputeUTXOStats(
             CoinStatsHashType::HASH_SERIALIZED,
-            &ibd_coins_db,
+            &validated_coins_db,
             m_blockman,
             [&interrupt = m_interrupt] { SnapshotUTXOHashBreakpoint(interrupt); });
     } catch (StopHashingException const&) {
@@ -5647,7 +5646,7 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
     }
 
     // XXX note that this function is slow and will hold cs_main for potentially minutes.
-    if (!maybe_ibd_stats) {
+    if (!maybe_validated_stats) {
         LogPrintf("[snapshot] failed to generate stats for validation coins db\n");
         // While this isn't a problem with the snapshot per se, this condition
         // prevents us from validating the snapshot, so we should shut down and let the
@@ -5655,17 +5654,17 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
         handle_invalid_snapshot();
         return SnapshotCompletionResult::STATS_FAILED;
     }
-    const auto& ibd_stats = *maybe_ibd_stats;
+    const auto& validated_stats = *maybe_validated_stats;
 
-    // Compare the background validation chainstate's UTXO set hash against the hard-coded
+    // Compare the validated chainstate's UTXO set hash against the hard-coded
     // assumeutxo hash we expect.
     //
     // TODO: For belt-and-suspenders, we could cache the UTXO set
     // hash for the snapshot when it's loaded in its chainstate's leveldb. We could then
     // reference that here for an additional check.
-    if (AssumeutxoHash{ibd_stats.hashSerialized} != au_data.hash_serialized) {
+    if (AssumeutxoHash{validated_stats.hashSerialized} != au_data.hash_serialized) {
         LogPrintf("[snapshot] hash mismatch: actual=%s, expected=%s\n",
-            ibd_stats.hashSerialized.ToString(),
+            validated_stats.hashSerialized.ToString(),
             au_data.hash_serialized.ToString());
         handle_invalid_snapshot();
         return SnapshotCompletionResult::HASH_MISMATCH;
@@ -5674,23 +5673,10 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
     LogPrintf("[snapshot] snapshot beginning at %s has been fully validated\n",
         snapshot_blockhash.ToString());
 
-    m_ibd_chainstate->m_disabled = true;
+    validated_chainstate->m_disabled = true;
     this->MaybeRebalanceCaches();
 
     return SnapshotCompletionResult::SUCCESS;
-}
-
-Chainstate& ChainstateManager::ActiveChainstate() const
-{
-    LOCK(::cs_main);
-    assert(m_active_chainstate);
-    return *m_active_chainstate;
-}
-
-bool ChainstateManager::IsSnapshotActive() const
-{
-    LOCK(::cs_main);
-    return m_snapshot_chainstate && m_active_chainstate == m_snapshot_chainstate.get();
 }
 
 void ChainstateManager::MaybeRebalanceCaches()
@@ -5808,11 +5794,9 @@ bool IsBIP30Unspendable(const CBlockIndex& block_index)
            (block_index.nHeight==91812 && block_index.GetBlockHash() == uint256S("0x00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f"));
 }
 
-static fs::path GetSnapshotCoinsDBPath(Chainstate& cs) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
+static fs::path GetCoinsDBPath(Chainstate& cs) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
     AssertLockHeld(::cs_main);
-    // Should never be called on a non-snapshot chainstate.
-    assert(cs.m_from_snapshot_blockhash);
     auto storage_path_maybe = cs.CoinsDB().StoragePath();
     // Should never be called with a non-existent storage path.
     assert(storage_path_maybe);
@@ -5821,7 +5805,9 @@ static fs::path GetSnapshotCoinsDBPath(Chainstate& cs) EXCLUSIVE_LOCKS_REQUIRED(
 
 util::Result<void> Chainstate::InvalidateCoinsDBOnDisk()
 {
-    fs::path snapshot_datadir = GetSnapshotCoinsDBPath(*this);
+    // Should never be called on a non-snapshot chainstate.
+    assert(m_from_snapshot_blockhash);
+    fs::path snapshot_datadir = GetCoinsDBPath(*this);
 
     // Coins views no longer usable.
     m_coins_views.reset();
@@ -5852,20 +5838,16 @@ util::Result<void> Chainstate::InvalidateCoinsDBOnDisk()
     return {};
 }
 
-bool ChainstateManager::DeleteSnapshotChainstate()
+bool ChainstateManager::DeleteChainstate(Chainstate& chainstate)
 {
     AssertLockHeld(::cs_main);
-    Assert(m_snapshot_chainstate);
-    Assert(m_ibd_chainstate);
-
-    fs::path snapshot_datadir = GetSnapshotCoinsDBPath(*m_snapshot_chainstate);
+    fs::path snapshot_datadir = GetCoinsDBPath(chainstate);
     if (!DeleteCoinsDBFromDisk(snapshot_datadir, /*is_snapshot=*/ true)) {
         LogPrintf("Deletion of %s failed. Please remove it manually to continue reindexing.\n",
                   fs::PathToString(snapshot_datadir));
         return false;
     }
-    m_active_chainstate = m_ibd_chainstate.get();
-    m_snapshot_chainstate.reset();
+    m_chainstates.erase(std::remove(m_chainstates.begin(), m_chainstates.end(), &chainstate), m_chainstates.end());
     return true;
 }
 

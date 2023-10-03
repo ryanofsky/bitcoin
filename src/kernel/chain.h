@@ -19,19 +19,14 @@ interfaces::BlockInfo MakeBlockInfo(const CBlockIndex* block_index, const CBlock
 
 } // namespace kernel
 
-//! This enum describes the various roles a specific Chainstate instance can take.
-//! Other parts of the system sometimes need to vary in behavior depending on the
-//! existence of a background validation chainstate, e.g. when building indexes.
-enum class ChainstateRole {
-    // Single chainstate in use, "normal" IBD mode.
-    NORMAL,
+struct ChainstateRole {
+    //! Whether this is an event from the most-work (active) chainstate.
+    bool most_work;
 
-    // Doing IBD-style validation in the background. Implies use of an assumed-valid
-    // chainstate.
-    BACKGROUND,
-
-    // Active assumed-valid chainstate. Implies use of a background IBD chainstate.
-    ASSUMEDVALID,
+    //! Whether this is an event from chainstate that's been fully validated
+    //! starting from the genesis block. False if is from an assumeutxo snapshot
+    //! chainstate that has not been validated yet.
+    bool validated;
 };
 
 std::ostream& operator<<(std::ostream& os, const ChainstateRole& role);
