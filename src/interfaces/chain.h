@@ -8,7 +8,12 @@
 #include <blockfilter.h>
 #include <common/settings.h>
 #include <primitives/transaction.h> // For CTransactionRef
+<<<<<<< HEAD
 #include <util/result.h>
+||||||| parent of 70484b7178ab (refactor: Replace ChainstateManager IBD and snapshot chainstates with flat list of chainstates)
+=======
+#include <validationinterface.h>
+>>>>>>> 70484b7178ab (refactor: Replace ChainstateManager IBD and snapshot chainstates with flat list of chainstates)
 
 #include <functional>
 #include <memory>
@@ -28,7 +33,6 @@ class Coin;
 class uint256;
 enum class MemPoolRemovalReason;
 enum class RBFTransactionState;
-enum class ChainstateRole;
 struct bilingual_str;
 struct CBlockLocator;
 struct FeeCalculation;

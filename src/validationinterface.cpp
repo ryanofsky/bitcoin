@@ -8,8 +8,13 @@
 #include <attributes.h>
 #include <chain.h>
 #include <consensus/validation.h>
+<<<<<<< HEAD
 #include <kernel/chain.h>
 #include <kernel/mempool_entry.h>
+||||||| parent of 70484b7178ab (refactor: Replace ChainstateManager IBD and snapshot chainstates with flat list of chainstates)
+#include <kernel/chain.h>
+=======
+>>>>>>> 70484b7178ab (refactor: Replace ChainstateManager IBD and snapshot chainstates with flat list of chainstates)
 #include <logging.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
