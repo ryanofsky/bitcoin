@@ -812,7 +812,8 @@ public:
     }
     bool hasAssumedValidChain() override
     {
-        return chainman().IsSnapshotActive();
+        LOCK(::cs_main);
+        return chainman().MostWorkChainstate().SnapshotBase();
     }
 
     NodeContext* context() override { return &m_node; }
