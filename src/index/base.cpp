@@ -261,13 +261,11 @@ bool BaseIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_ti
 
 void BaseIndex::BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& block, const CBlockIndex* pindex)
 {
-    // Ignore events from the assumed-valid chain; we will process its blocks
-    // (sequentially) after it is fully verified by the background chainstate. This
-    // is to avoid any out-of-order indexing.
+    // Ignore events from unvalidated chains to avoid out-of-order indexing.
     //
     // TODO at some point we could parameterize whether a particular index can be
     // built out of order, but for now just do the conservative simple thing.
-    if (role == ChainstateRole::ASSUMEDVALID) {
+    if (!role.validated) {
         return;
     }
 
@@ -318,9 +316,8 @@ void BaseIndex::BlockConnected(ChainstateRole role, const std::shared_ptr<const 
 
 void BaseIndex::ChainStateFlushed(ChainstateRole role, const CBlockLocator& locator)
 {
-    // Ignore events from the assumed-valid chain; we will process its blocks
-    // (sequentially) after it is fully verified by the background chainstate.
-    if (role == ChainstateRole::ASSUMEDVALID) {
+    // Ignore events from unvalidated chains to avoid out-of-order indexing.
+    if (!role.validated) {
         return;
     }
 
