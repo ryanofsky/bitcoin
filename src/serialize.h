@@ -1125,6 +1125,7 @@ public:
     bool eof() const { return m_substream.eof(); }
     bool empty() const { return m_substream.empty(); }
     size_t size() const { return m_substream.size(); }
+    bool empty() const { return m_substream.empty(); }
     template<typename P>
     const auto& GetParams() const
     {
