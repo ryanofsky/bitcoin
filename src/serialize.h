@@ -1130,10 +1130,15 @@ template <typename SubStream, typename Params>
 class ParamsStream
 {
     const Params& m_params;
-    SubStream& m_substream; // private to avoid leaking version/type into serialization code that shouldn't see it
+    SubStream m_substream; // private to avoid leaking version/type into serialization code that shouldn't see it
 
 public:
-    ParamsStream(SubStream& substream LIFETIMEBOUND, const Params& params LIFETIMEBOUND) : m_params{params}, m_substream{substream} {}
+    ParamsStream(SubStream substream LIFETIMEBOUND, const Params& params LIFETIMEBOUND) : m_params{params}, m_substream{substream} {}
+
+    template<typename NestedSubstream, typename Params1, typename Params2, typename... NestedParams>
+    ParamsStream(NestedSubstream& s LIFETIMEBOUND, const Params1& params1 LIFETIMEBOUND, const Params2& params2 LIFETIMEBOUND, const NestedParams&... params LIFETIMEBOUND)
+        : ParamsStream{::ParamsStream{s, params2, params...}, params1} {}
+
     template <typename U> ParamsStream& operator<<(const U& obj) { ::Serialize(*this, obj); return *this; }
     template <typename U> ParamsStream& operator>>(U&& obj) { ::Unserialize(*this, obj); return *this; }
     void write(Span<const std::byte> src) { m_substream.write(src); }
@@ -1153,6 +1158,24 @@ public:
     int GetVersion() = delete; // Deprecated with Params usage
     int GetType() = delete;    // Deprecated with Params usage
 };
+
+/**
+ * Template deduction guide for a single params argument that's slightly
+ * different from the default generated deduction guide because it stores a
+ * reference to the substream inside ParamsStream instead of a copy. (Storing a
+ * copy instead of a reference is still possible by specifying template
+ * arguments explicitly and bypassing this deduction guide.)
+ */
+template<typename Substream, typename Params>
+ParamsStream(Substream&, const Params&) -> ParamsStream<Substream&, Params>;
+
+/**
+ * Template deduction guide for multiple params arguments that creates a nested
+ * ParamStream.
+ */
+template<typename Substream, typename Params1, typename Params2, typename... Params>
+ParamsStream(Substream& s LIFETIMEBOUND, const Params1& params1 LIFETIMEBOUND, const Params2& params2 LIFETIMEBOUND, const Params&... params LIFETIMEBOUND) ->
+    ParamsStream<decltype(ParamsStream{s, params2, params...}), Params1>;
 
 /** Wrapper that serializes objects with the specified parameters. */
 template <typename Params, typename T>

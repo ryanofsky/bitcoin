@@ -344,6 +344,58 @@ public:
     }
 };
 
+struct OtherParam {
+    uint8_t param;
+    SER_PARAMS_OPFUNC
+};
+
+class Other
+{
+public:
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        const uint8_t param = s.template GetParams<OtherParam>().param;
+        s << param;
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        const uint8_t param = s.template GetParams<OtherParam>().param;
+        uint8_t value;
+        s >> value;
+        BOOST_CHECK_EQUAL(value, param);
+    }
+};
+
+//! Test creating a stream with multiple parameters and making sure
+//! serialization code requiring different parameters can retrieve them. Also
+//! test that earlier parameters take precedence if the same parameter type is
+//! specified twice. (Choice of whether earlier or later values take precedence
+//! or multiple values of the same type are allowed was arbitrary, and just
+//! decided based on what would require smallest amount of ugly C++ template
+//! code. Intent of the test is to just ensure there is no unexpected behavior.)
+BOOST_AUTO_TEST_CASE(with_params_multi)
+{
+    const OtherParam other_param_used{.param = 0x07};
+    const OtherParam other_param_ignored{.param = 0x09};
+    DataStream stream;
+    ParamsStream pstream{stream, RAW, other_param_used, other_param_ignored};
+
+    Base b1{0x08};
+    Other ou1;
+    Other oi1;
+    pstream << b1 << ou1 << other_param_ignored(oi1);
+    BOOST_CHECK_EQUAL(stream.str(), "\x08\x07\x09");
+
+    Base b2;
+    Other ou2;
+    Other oi2;
+    pstream >> b2 >> ou2 >> other_param_ignored(oi1);
+    BOOST_CHECK_EQUAL(b2.m_base_data, 0x08);
+}
+
 BOOST_AUTO_TEST_CASE(with_params_base)
 {
     Base b{0x0F};
