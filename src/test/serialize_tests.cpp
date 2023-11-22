@@ -289,7 +289,7 @@ public:
     template <typename Stream>
     void Serialize(Stream& s) const
     {
-        if (s.GetParams().m_base_format == BaseFormat::RAW) {
+        if (s.template GetParams<BaseFormat>().m_base_format == BaseFormat::RAW) {
             s << m_base_data;
         } else {
             s << Span{HexStr(Span{&m_base_data, 1})};
@@ -299,7 +299,7 @@ public:
     template <typename Stream>
     void Unserialize(Stream& s)
     {
-        if (s.GetParams().m_base_format == BaseFormat::RAW) {
+        if (s.template GetParams<BaseFormat>().m_base_format == BaseFormat::RAW) {
             s >> m_base_data;
         } else {
             std::string hex{"aa"};
@@ -327,8 +327,9 @@ class Derived : public Base
 public:
     std::string m_derived_data;
 
-    SERIALIZE_METHODS_PARAMS(Derived, obj, DerivedAndBaseFormat, fmt)
+    SERIALIZE_METHODS(Derived, obj)
     {
+        auto& fmt = SER_PARAMS(DerivedAndBaseFormat);
         READWRITE(fmt.m_base_format(AsBase<Base>(obj)));
 
         if (ser_action.ForRead()) {
@@ -342,6 +343,48 @@ public:
         }
     }
 };
+
+struct OtherParam {
+    uint8_t param;
+    SER_PARAMS_OPFUNC
+};
+
+class Other
+{
+public:
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        const uint8_t param = s.template GetParams<OtherParam>().param;
+        s << param;
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        const uint8_t param = s.template GetParams<OtherParam>().param;
+        uint8_t value;
+        s >> value;
+        BOOST_CHECK_EQUAL(value, param);
+    }
+};
+
+BOOST_AUTO_TEST_CASE(with_params_multi)
+{
+    const OtherParam other_param{.param = 0x07};
+    DataStream stream;
+    ParamsStream pstream{stream, RAW, other_param};
+
+    Base b1{0x08};
+    Other o1;
+    pstream << b1 << o1;
+    BOOST_CHECK_EQUAL(stream.str(), "\x08\x07");
+
+    Base b2;
+    Other o2;
+    pstream >> b2 >> o2;
+    BOOST_CHECK_EQUAL(b2.m_base_data, 0x08);
+}
 
 BOOST_AUTO_TEST_CASE(with_params_base)
 {
