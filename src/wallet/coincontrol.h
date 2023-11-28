@@ -115,6 +115,9 @@ public:
     std::optional<uint32_t> m_locktime;
     //! Version
     std::optional<uint32_t> m_version;
+    // Note: If you add fields to this struct, you should also update the
+    // CoinControl struct in ipc/capnp/wallet.capnp and IPC serialization code
+    // in src/ipc/capnp/wallet.cpp.
 
     CCoinControl();
 
