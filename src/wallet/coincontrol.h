@@ -111,10 +111,17 @@ public:
     int m_max_depth = DEFAULT_MAX_DEPTH;
     //! SigningProvider that has pubkeys and scripts to do spend size estimation for external inputs
     FlatSigningProvider m_external_provider;
+<<<<<<< HEAD
     //! Locktime
     std::optional<uint32_t> m_locktime;
     //! Version
     std::optional<uint32_t> m_version;
+||||||| parent of 32aaf0b0d7b2 (Add capnp wrapper for Wallet interface)
+=======
+    // Note: If you add fields to this struct, you should also update the
+    // CoinControl struct in ipc/capnp/wallet.capnp and IPC serialization code
+    // in src/ipc/capnp/wallet.cpp.
+>>>>>>> 32aaf0b0d7b2 (Add capnp wrapper for Wallet interface)
 
     CCoinControl();
 
