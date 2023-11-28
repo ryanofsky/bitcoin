@@ -1130,6 +1130,7 @@ public:
 
     template <typename U> ParamsStream& operator<<(const U& obj) { ::Serialize(*this, obj); return *this; }
     template <typename U> ParamsStream& operator>>(U&& obj) { ::Unserialize(*this, obj); return *this; }
+<<<<<<< HEAD
     void write(Span<const std::byte> src) { GetStream().write(src); }
     void read(Span<std::byte> dst) { GetStream().read(dst); }
     void ignore(size_t num) { GetStream().ignore(num); }
@@ -1138,6 +1139,22 @@ public:
 
     //! Get reference to stream parameters.
     template <typename P>
+||||||| parent of b5fd425e075a (Add capnp wrapper for Wallet interface)
+    void write(Span<const std::byte> src) { m_substream.write(src); }
+    void read(Span<std::byte> dst) { m_substream.read(dst); }
+    void ignore(size_t num) { m_substream.ignore(num); }
+    bool eof() const { return m_substream.eof(); }
+    size_t size() const { return m_substream.size(); }
+    template<typename P>
+=======
+    void write(Span<const std::byte> src) { m_substream.write(src); }
+    void read(Span<std::byte> dst) { m_substream.read(dst); }
+    void ignore(size_t num) { m_substream.ignore(num); }
+    bool eof() const { return m_substream.eof(); }
+    bool empty() const { return m_substream.empty(); }
+    size_t size() const { return m_substream.size(); }
+    template<typename P>
+>>>>>>> b5fd425e075a (Add capnp wrapper for Wallet interface)
     const auto& GetParams() const
     {
         if constexpr (std::is_convertible_v<Params, P>) {
