@@ -10,6 +10,7 @@
 #include <ipc/capnp/common.capnp.proxy-types.h>
 #include <ipc/capnp/handler.capnp.proxy-types.h>
 #include <interfaces/chain.h>
+#include <ipc/capnp/wallet.capnp.proxy.h>
 #include <kernel/types.h>
 #include <mp/type-interface.h>
 #include <primitives/block.h>
@@ -27,6 +28,36 @@ struct mp::ProxyServerMethodTraits<ipc::capnp::messages::UnstableChain, ipc::cap
     static ::capnp::Void invoke(Context& context);
 };
 
+<<<<<<< HEAD
+||||||| parent of bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
+//! Specialization of start method needed to provide CScheduler& reference
+//! argument.
+template <>
+struct mp::ProxyServerMethodTraits<ipc::capnp::messages::ChainClient::StartParams>
+{
+    using ChainContext = ServerContext<ipc::capnp::messages::ChainClient,
+                                       ipc::capnp::messages::ChainClient::StartParams,
+                                       ipc::capnp::messages::ChainClient::StartResults>;
+    static void invoke(ChainContext& context);
+};
+
+=======
+//! Specialization of start method needed to provide CScheduler& reference
+//! argument.
+template <>
+struct mp::ProxyServerMethodTraits<ipc::capnp::messages::ChainClient::StartParams>
+{
+    using ChainContext = ServerContext<ipc::capnp::messages::ChainClient,
+                                       ipc::capnp::messages::ChainClient::StartParams,
+                                       ipc::capnp::messages::ChainClient::StartResults>;
+    static void invoke(ChainContext& context);
+    using WalletLoaderContext = ServerContext<ipc::capnp::messages::WalletLoader,
+                                        ipc::capnp::messages::ChainClient::StartParams,
+                                        ipc::capnp::messages::ChainClient::StartResults>;
+    static void invoke(WalletLoaderContext& context);
+};
+
+>>>>>>> bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
 namespace mp {
 //! Serve interfaces::Chain objects sent as stable Chain capabilities with
 //! ProxyServer<UnstableChain> servers, and read received Chain capabilities

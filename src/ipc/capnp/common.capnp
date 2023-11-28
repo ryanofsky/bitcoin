@@ -17,6 +17,7 @@ struct BlockRef $Proxy.wrap("interfaces::BlockRef") {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of cab1fa30632 (multiprocess: Add capnp serialization code for bitcoin types)
 struct FeeCalculation $Proxy.wrap("FeeCalculation") {
     est @0 :EstimationResult;
@@ -45,6 +46,17 @@ struct EstimatorBucket $Proxy.wrap("EstimatorBucket")
 }
 
 =======
+||||||| parent of bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
+=======
+struct PSBTFillOptions $Proxy.wrap("common::PSBTFillOptions") {
+    sign @0 :Bool = true;
+    sighashType @1 :Int32 $Proxy.name("sighash_type");
+    hasSighashType @2 :Bool;
+    finalize @3 :Bool = true;
+    bip32Derivs @4 :Bool $Proxy.name("bip32_derivs");
+}
+
+>>>>>>> bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
 struct FeeCalculation $Proxy.wrap("FeeCalculation") {
     est @0 :EstimationResult;
     reason @1 :Int32;
@@ -102,6 +114,14 @@ struct ResultVoid(Value) {
 struct Expected(Value, Error) {
     union {
         value @0 :Value;
+        error @1 :Error;
+    }
+}
+
+# Wrapper for util::Expected<void, Error>
+struct ExpectedVoid(Error) {
+    union {
+        value @0 :Void;
         error @1 :Error;
     }
 }

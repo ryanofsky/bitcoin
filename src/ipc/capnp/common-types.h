@@ -7,6 +7,7 @@
 
 #include <chainparams.h>
 #include <clientversion.h>
+#include <common/types.h>
 #include <consensus/validation.h>
 #include <interfaces/types.h>
 <<<<<<< HEAD
@@ -43,10 +44,16 @@
 #include <mp/type-number.h>
 #include <mp/type-optional.h>
 #include <mp/type-pointer.h>
+#include <mp/type-set.h>
 #include <mp/type-string.h>
 #include <mp/type-struct.h>
 #include <mp/type-threadmap.h>
+<<<<<<< HEAD
 #include <mp/type-unordered-set.h>
+||||||| parent of bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
+=======
+#include <mp/type-tuple.h>
+>>>>>>> bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
 #include <mp/type-vector.h>
 #include <mp/type-void.h>
 #include <stdexcept>
@@ -311,6 +318,34 @@ decltype(auto) CustomReadField(TypeList<util::Expected<T, E>>, Priority<1>, Invo
     }
 }
 
+//! Overload CustomBuildField and CustomReadField to serialize
+//! util::Expected<void, E> return values as common.capnp ExpectedVoid union
+//! structs
+template <typename E, typename Value, typename Output>
+void CustomBuildField(TypeList<util::Expected<void, E>>, Priority<1>, InvokeContext& invoke_context, Value&& expected, Output&& output)
+{
+    auto result = output.init();
+    if (expected) {
+        result.setValue();
+    } else {
+        BuildField(TypeList<E>(), invoke_context, Make<ValueField>(result.initError()), expected.error());
+    }
+}
+
+template <typename E, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<util::Expected<void, E>>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
+{
+    auto result = input.get();
+    if (result.hasError()) {
+        return ReadField(TypeList<E>(), invoke_context, Make<ValueField>(result.getError()),
+            ReadDestEmplace(TypeList<E>(), [&](auto&&... args) -> const util::Expected<void, E>& {
+                return read_dest.construct(util::Unexpected{std::forward<decltype(args)>(args)...});
+            }));
+    } else {
+        return static_cast<const util::Expected<void, E>&>(read_dest.construct());
+    }
+}
+
 //! Overload CustomBuildField and CustomReadField to serialize util::Result
 //! return values as common.capnp Result and ResultVoid structs
 template <typename LocalType, typename Value, typename Output>
@@ -352,6 +387,86 @@ decltype(auto) CustomReadField(TypeList<util::Result<LocalType>>, Priority<1>, I
         }
     }
 }
+<<<<<<< HEAD
+||||||| parent of bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
+
+// libmultiprocess only provides read/build functions for std::set, not
+// std::unordered_set, so copy and paste those functions here.
+// TODO: Move these to libmultiprocess and dedup std::set, std::unordered_set,
+// and std::vector implementations.
+template <typename LocalType, typename Hash, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>,
+                               InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        auto data = input.get();
+        value.clear();
+        for (auto item : data) {
+            ReadField(TypeList<LocalType>(), invoke_context, Make<ValueField>(item),
+                      ReadDestEmplace(
+                          TypeList<const LocalType>(), [&](auto&&... args) -> auto& {
+                              return *value.emplace(std::forward<decltype(args)>(args)...).first;
+                          }));
+        }
+    });
+}
+
+template <typename LocalType, typename Hash, typename Value, typename Output>
+void CustomBuildField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    auto list = output.init(value.size());
+    size_t i = 0;
+    for (const auto& elem : value) {
+        BuildField(TypeList<LocalType>(), invoke_context, ListOutput<typename decltype(list)::Builds>(list, i), elem);
+        ++i;
+    }
+}
+=======
+
+// libmultiprocess only provides read/build functions for std::set, not
+// std::unordered_set, so copy and paste those functions here.
+// TODO: Move these to libmultiprocess and dedup std::set, std::unordered_set,
+// and std::vector implementations.
+template <typename LocalType, typename Hash, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>,
+                               InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.update([&](auto& value) {
+        auto data = input.get();
+        value.clear();
+        for (auto item : data) {
+            ReadField(TypeList<LocalType>(), invoke_context, Make<ValueField>(item),
+                      ReadDestEmplace(
+                          TypeList<const LocalType>(), [&](auto&&... args) -> auto& {
+                              return *value.emplace(std::forward<decltype(args)>(args)...).first;
+                          }));
+        }
+    });
+}
+
+template <typename LocalType, typename Hash, typename Value, typename Output>
+void CustomBuildField(TypeList<std::unordered_set<LocalType, Hash>>, Priority<1>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    auto list = output.init(value.size());
+    size_t i = 0;
+    for (const auto& elem : value) {
+        BuildField(TypeList<LocalType>(), invoke_context, ListOutput<typename decltype(list)::Builds>(list, i), elem);
+        ++i;
+    }
+}
+
+// FIXME: Extend mp/type-data.h to cover this case where c++ constructor accepts
+// span argument instead of begin/end arguments.
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<PKHash>, Priority<2>, InvokeContext& invoke_context, Value&& value, Output&& output)
+{
+    auto data = std::span{value};
+    auto result = output.init(data.size());
+    memcpy(result.begin(), data.data(), data.size());
+}
+>>>>>>> bc20d8a1e70 (multiprocess: Add capnp wrapper for Wallet interface)
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_COMMON_TYPES_H
