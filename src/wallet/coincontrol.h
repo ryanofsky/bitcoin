@@ -115,8 +115,15 @@ public:
     std::optional<uint32_t> m_locktime;
     //! Version
     std::optional<uint32_t> m_version;
+<<<<<<< HEAD
     //! Caps weight of resulting tx
     std::optional<int> m_max_tx_weight{std::nullopt};
+||||||| parent of ec5717b2a417 (multiprocess: Add capnp wrapper for Wallet interface)
+=======
+    // Note: If you add fields to this struct, you should also update the
+    // CoinControl struct in ipc/capnp/wallet.capnp and IPC serialization code
+    // in src/ipc/capnp/wallet.cpp.
+>>>>>>> ec5717b2a417 (multiprocess: Add capnp wrapper for Wallet interface)
 
     CCoinControl();
 
