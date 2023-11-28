@@ -1127,7 +1127,14 @@ public:
     void write(std::span<const std::byte> src) { GetStream().write(src); }
     void read(std::span<std::byte> dst) { GetStream().read(dst); }
     void ignore(size_t num) { GetStream().ignore(num); }
+<<<<<<< HEAD
     bool empty() const { return GetStream().empty(); }
+||||||| parent of 0e436699c59 (multiprocess: Add capnp wrapper for Wallet interface)
+    bool eof() const { return GetStream().eof(); }
+=======
+    bool eof() const { return GetStream().eof(); }
+    bool empty() const { return GetStream().empty(); }
+>>>>>>> 0e436699c59 (multiprocess: Add capnp wrapper for Wallet interface)
     size_t size() const { return GetStream().size(); }
 
     //! Get reference to stream parameters.
