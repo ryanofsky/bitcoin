@@ -9,7 +9,14 @@
 #include <ipc/capnp/common.capnp.proxy-types.h>
 #include <ipc/capnp/handler.capnp.proxy-types.h>
 #include <interfaces/chain.h>
+<<<<<<< HEAD
 #include <policy/fees/block_policy_estimator.h>
+||||||| parent of bf521c09a714 (multiprocess: Add capnp wrapper for Wallet interface)
+#include <policy/fees.h>
+=======
+#include <ipc/capnp/wallet.capnp.proxy.h>
+#include <policy/fees.h>
+>>>>>>> bf521c09a714 (multiprocess: Add capnp wrapper for Wallet interface)
 #include <rpc/server.h>
 
 //! Specialization of handleRpc needed because it takes a CRPCCommand& reference
@@ -33,6 +40,10 @@ struct mp::ProxyServerMethodTraits<ipc::capnp::messages::ChainClient::StartParam
                                        ipc::capnp::messages::ChainClient::StartParams,
                                        ipc::capnp::messages::ChainClient::StartResults>;
     static void invoke(ChainContext& context);
+    using WalletLoaderContext = ServerContext<ipc::capnp::messages::WalletLoader,
+                                        ipc::capnp::messages::ChainClient::StartParams,
+                                        ipc::capnp::messages::ChainClient::StartResults>;
+    static void invoke(WalletLoaderContext& context);
 };
 
 namespace mp {
