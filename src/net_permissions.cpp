@@ -2,10 +2,10 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <common/messages.h>
 #include <common/system.h>
 #include <net_permissions.h>
 #include <netbase.h>
-#include <util/error.h>
 #include <util/translation.h>
 
 const std::vector<std::string> NET_PERMISSIONS_DOC{
@@ -90,7 +90,7 @@ bool NetWhitebindPermissions::TryParse(const std::string& str, NetWhitebindPermi
     const std::string strBind = str.substr(offset);
     const std::optional<CService> addrBind{Lookup(strBind, 0, false)};
     if (!addrBind.has_value()) {
-        error = ResolveErrMsg("whitebind", strBind);
+        error = common::ResolveErrMsg("whitebind", strBind);
         return false;
     }
     if (addrBind.value().GetPort() == 0) {
