@@ -265,7 +265,7 @@ public:
 
         mapValueCopy["fromaccount"] = "";
         if (nOrderPos != -1) {
-            mapValueCopy["n"] = ToString(nOrderPos);
+            mapValueCopy["n"] = util::ToString(nOrderPos);
         }
         if (nTimeSmart) {
             mapValueCopy["timesmart"] = strprintf("%u", nTimeSmart);

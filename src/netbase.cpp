@@ -21,6 +21,8 @@
 #include <limits>
 #include <memory>
 
+using util::ContainsNoNUL;
+
 // Settings
 static GlobalMutex g_proxyinfo_mutex;
 static Proxy proxyInfo[NET_MAX] GUARDED_BY(g_proxyinfo_mutex);
