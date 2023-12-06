@@ -25,10 +25,16 @@
 #include <limits>
 #include <memory>
 
+<<<<<<< HEAD
 #if HAVE_SOCKADDR_UN
 #include <sys/un.h>
 #endif
 
+||||||| parent of b743d29863a7 (util: Move util/string.h functions to util namespace)
+=======
+using util::ContainsNoNUL;
+
+>>>>>>> b743d29863a7 (util: Move util/string.h functions to util namespace)
 // Settings
 static GlobalMutex g_proxyinfo_mutex;
 static Proxy proxyInfo[NET_MAX] GUARDED_BY(g_proxyinfo_mutex);
