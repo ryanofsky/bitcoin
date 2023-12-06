@@ -175,7 +175,7 @@ const std::set<BlockFilterType>& AllBlockFilterTypes()
 
 const std::string& ListBlockFilterTypes()
 {
-    static std::string type_list{Join(g_filter_types, ", ", [](const auto& entry) { return entry.second; })};
+    static std::string type_list{util::Join(g_filter_types, ", ", [](const auto& entry) { return entry.second; })};
 
     return type_list;
 }

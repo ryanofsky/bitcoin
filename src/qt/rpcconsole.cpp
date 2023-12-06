@@ -515,7 +515,7 @@ RPCConsole::RPCConsole(interfaces::Node& node, const PlatformStyle *_platformSty
         /*: Explanatory text for a short-lived outbound peer connection that is used
             to request addresses from a peer. */
         tr("Outbound Address Fetch: short-lived, for soliciting addresses")};
-    const QString connection_types_list{"<ul><li>" + Join(CONNECTION_TYPE_DOC, QString("</li><li>")) + "</li></ul>"};
+    const QString connection_types_list{"<ul><li>" + util::Join(CONNECTION_TYPE_DOC, QString("</li><li>")) + "</li></ul>"};
     ui->peerConnectionTypeLabel->setToolTip(ui->peerConnectionTypeLabel->toolTip().arg(connection_types_list));
     const std::vector<QString> TRANSPORT_TYPE_DOC{
         //: Explanatory text for "detecting" transport type.
@@ -524,7 +524,7 @@ RPCConsole::RPCConsole(interfaces::Node& node, const PlatformStyle *_platformSty
         tr("v1: unencrypted, plaintext transport protocol"),
         //: Explanatory text for v2 transport type.
         tr("v2: BIP324 encrypted transport protocol")};
-    const QString transport_types_list{"<ul><li>" + Join(TRANSPORT_TYPE_DOC, QString("</li><li>")) + "</li></ul>"};
+    const QString transport_types_list{"<ul><li>" + util::Join(TRANSPORT_TYPE_DOC, QString("</li><li>")) + "</li></ul>"};
     ui->peerTransportTypeLabel->setToolTip(ui->peerTransportTypeLabel->toolTip().arg(transport_types_list));
     const QString hb_list{"<ul><li>\""
         + ts.to + "\" – " + tr("we selected the peer for high bandwidth relay") + "</li><li>\""

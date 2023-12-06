@@ -71,7 +71,7 @@ unsigned int ParseScriptFlags(std::string strFlags)
 {
     if (strFlags.empty() || strFlags == "NONE") return 0;
     unsigned int flags = 0;
-    std::vector<std::string> words = SplitString(strFlags, ',');
+    std::vector<std::string> words = util::SplitString(strFlags, ',');
 
     for (const std::string& word : words)
     {
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(tx_valid)
                 // Removing random combinations of flags
                 flags = TrimFlags(~(verify_flags | (unsigned int)InsecureRandBits(mapFlagNames.size())));
                 if (!CheckTxScripts(tx, mapprevOutScriptPubKeys, mapprevOutValues, flags, txdata, strTest, /*expect_valid=*/true)) {
-                    BOOST_ERROR("Tx unexpectedly failed with random flags " << ToString(flags) << ": " << strTest);
+                    BOOST_ERROR("Tx unexpectedly failed with random flags " << util::ToString(flags) << ": " << strTest);
                 }
             }
 

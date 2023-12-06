@@ -552,7 +552,7 @@ RPCHelpMan importwallet()
             if (line.empty() || line[0] == '#')
                 continue;
 
-            std::vector<std::string> vstr = SplitString(line, ' ');
+            std::vector<std::string> vstr = util::SplitString(line, ' ');
             if (vstr.size() < 2)
                 continue;
             CKey key = DecodeSecret(vstr[0]);

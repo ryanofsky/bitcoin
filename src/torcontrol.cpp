@@ -43,7 +43,7 @@
 #include <event2/util.h>
 
 /** Default control ip and port */
-const std::string DEFAULT_TOR_CONTROL = "127.0.0.1:" + ToString(DEFAULT_TOR_CONTROL_PORT);
+const std::string DEFAULT_TOR_CONTROL = "127.0.0.1:" + util::ToString(DEFAULT_TOR_CONTROL_PORT);
 /** Tor cookie size (from control-spec.txt) */
 static const int TOR_COOKIE_SIZE = 32;
 /** Size of client/server nonce for SAFECOOKIE */
@@ -354,7 +354,7 @@ void TorController::get_socks_cb(TorControlConnection& _conn, const TorControlRe
         for (const auto& line : reply.lines) {
             if (0 == line.compare(0, 20, "net/listeners/socks=")) {
                 const std::string port_list_str = line.substr(20);
-                std::vector<std::string> port_list = SplitString(port_list_str, ' ');
+                std::vector<std::string> port_list = util::SplitString(port_list_str, ' ');
 
                 for (auto& portstr : port_list) {
                     if (portstr.empty()) continue;
@@ -550,7 +550,7 @@ void TorController::protocolinfo_cb(TorControlConnection& _conn, const TorContro
                 std::map<std::string,std::string> m = ParseTorReplyMapping(l.second);
                 std::map<std::string,std::string>::iterator i;
                 if ((i = m.find("METHODS")) != m.end()) {
-                    std::vector<std::string> m_vec = SplitString(i->second, ',');
+                    std::vector<std::string> m_vec = util::SplitString(i->second, ',');
                     methods = std::set<std::string>(m_vec.begin(), m_vec.end());
                 }
                 if ((i = m.find("COOKIEFILE")) != m.end())
@@ -575,7 +575,7 @@ void TorController::protocolinfo_cb(TorControlConnection& _conn, const TorContro
         if (!torpassword.empty()) {
             if (methods.count("HASHEDPASSWORD")) {
                 LogPrint(BCLog::TOR, "Using HASHEDPASSWORD authentication\n");
-                ReplaceAll(torpassword, "\"", "\\\"");
+                util::ReplaceAll(torpassword, "\"", "\\\"");
                 _conn.Command("AUTHENTICATE \"" + torpassword + "\"", std::bind(&TorController::auth_cb, this, std::placeholders::_1, std::placeholders::_2));
             } else {
                 LogPrintf("tor: Password provided with -torpassword, but HASHEDPASSWORD authentication is not available\n");

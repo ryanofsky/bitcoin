@@ -341,7 +341,7 @@ static constexpr std::array<BCLog::Level, 3> LogLevelsList()
 std::string BCLog::Logger::LogLevelsString() const
 {
     const auto& levels = LogLevelsList();
-    return Join(std::vector<BCLog::Level>{levels.begin(), levels.end()}, ", ", [this](BCLog::Level level) { return LogLevelToStr(level); });
+    return util::Join(std::vector<BCLog::Level>{levels.begin(), levels.end()}, ", ", [this](BCLog::Level level) { return LogLevelToStr(level); });
 }
 
 std::string BCLog::Logger::LogTimestampStr(const std::string& str)
@@ -418,7 +418,7 @@ void BCLog::Logger::LogPrintStr(const std::string& str, const std::string& loggi
     }
 
     if (m_log_sourcelocations && m_started_new_line) {
-        str_prefixed.insert(0, "[" + RemovePrefix(source_file, "./") + ":" + ToString(source_line) + "] [" + logging_function + "] ");
+        str_prefixed.insert(0, "[" + util::RemovePrefix(source_file, "./") + ":" + util::ToString(source_line) + "] [" + logging_function + "] ");
     }
 
     if (m_log_threadnames && m_started_new_line) {

@@ -51,7 +51,7 @@ static std::vector<double> parseAsymptote(const std::string& str) {
 
 static uint8_t parsePriorityLevel(const std::string& str) {
     uint8_t levels{0};
-    for (const auto& level: SplitString(str, ',')) {
+    for (const auto& level: util::SplitString(str, ',')) {
         levels |= benchmark::StringToPriority(level);
     }
     return levels;

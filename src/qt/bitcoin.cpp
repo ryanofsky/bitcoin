@@ -181,7 +181,7 @@ static bool ErrorSettingsRead(const bilingual_str& error, const std::vector<std:
     /*: Explanatory text shown on startup when the settings file cannot be read.
       Prompts user to make a choice between resetting or aborting. */
     messagebox.setInformativeText(QObject::tr("Do you want to reset settings to default values, or to abort without making changes?"));
-    messagebox.setDetailedText(QString::fromStdString(MakeUnorderedList(details)));
+    messagebox.setDetailedText(QString::fromStdString(util::MakeUnorderedList(details)));
     messagebox.setTextFormat(Qt::PlainText);
     messagebox.setDefaultButton(QMessageBox::Reset);
     switch (messagebox.exec()) {
@@ -201,7 +201,7 @@ static void ErrorSettingsWrite(const bilingual_str& error, const std::vector<std
         Prompts user to check that we have the ability to write to the file.
         Explains that the user has the option of running without a settings file.*/
     messagebox.setInformativeText(QObject::tr("A fatal error occurred. Check that settings file is writable, or try running with -nosettings."));
-    messagebox.setDetailedText(QString::fromStdString(MakeUnorderedList(details)));
+    messagebox.setDetailedText(QString::fromStdString(util::MakeUnorderedList(details)));
     messagebox.setTextFormat(Qt::PlainText);
     messagebox.setDefaultButton(QMessageBox::Ok);
     messagebox.exec();

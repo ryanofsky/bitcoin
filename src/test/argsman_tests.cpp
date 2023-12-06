@@ -783,7 +783,7 @@ struct ArgsMergeTestingSetup : public BasicTestingSetup {
             if (action == SECTION_SET || action == SECTION_NEGATE) prefix = section + ".";
             if (action == SET || action == SECTION_SET) {
                 for (int i = 0; i < 2; ++i) {
-                    values.push_back(prefix + name + "=" + value_prefix + ToString(++suffix));
+                    values.push_back(prefix + name + "=" + value_prefix + util::ToString(++suffix));
                 }
             }
             if (action == NEGATE || action == SECTION_NEGATE) {

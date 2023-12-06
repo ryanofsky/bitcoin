@@ -34,6 +34,10 @@
 #include <optional>
 #include <stdexcept>
 #include <vector>
+
+using util::Join;
+using util::ToString;
+
 enum class ChainType;
 
 namespace {

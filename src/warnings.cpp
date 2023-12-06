@@ -53,7 +53,7 @@ bilingual_str GetWarnings(bool verbose)
     }
 
     if (verbose) {
-        return Join(warnings_verbose, Untranslated("<hr />"));
+        return util::Join(warnings_verbose, Untranslated("<hr />"));
     }
 
     return warnings_concise;

@@ -33,7 +33,7 @@ const int64_t nStartupTime = GetTime();
 std::string ShellEscape(const std::string& arg)
 {
     std::string escaped = arg;
-    ReplaceAll(escaped, "'", "'\"'\"'");
+    util::ReplaceAll(escaped, "'", "'\"'\"'");
     return "'" + escaped + "'";
 }
 #endif

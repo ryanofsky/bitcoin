@@ -84,6 +84,8 @@
 struct KeyOriginInfo;
 
 using interfaces::FoundBlock;
+using util::ReplaceAll;
+using util::ToString;
 
 namespace wallet {
 

@@ -35,6 +35,12 @@
 #include <string>
 #include <vector>
 
+using util::ContainsNoNUL;
+using util::Join;
+using util::RemovePrefix;
+using util::SplitString;
+using util::TrimString;
+
 enum class FeeEstimateMode;
 
 FUZZ_TARGET(string)

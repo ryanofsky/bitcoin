@@ -56,7 +56,7 @@ std::string ListPriorities()
     using item_t = std::pair<std::string, uint8_t>;
     auto sort_by_priority = [](item_t a, item_t b){ return a.second < b.second; };
     std::set<item_t, decltype(sort_by_priority)> sorted_priorities(map_label_priority.begin(), map_label_priority.end(), sort_by_priority);
-    return Join(sorted_priorities, ',', [](const auto& entry){ return entry.first; });
+    return util::Join(sorted_priorities, ',', [](const auto& entry){ return entry.first; });
 }
 
 uint8_t StringToPriority(const std::string& str)

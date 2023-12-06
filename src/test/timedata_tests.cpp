@@ -48,7 +48,7 @@ static void MultiAddTimeData(int n, int64_t offset)
     static int cnt = 0;
     for (int i = 0; i < n; ++i) {
         CNetAddr addr;
-        addr.SetInternal(ToString(++cnt));
+        addr.SetInternal(util::ToString(++cnt));
         AddTimeData(addr, offset);
     }
 }

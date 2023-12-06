@@ -128,7 +128,7 @@ MAIN_FUNCTION
         return EXIT_FAILURE;
     }
     if (command->args.size() != 0) {
-        tfm::format(std::cerr, "Error: Additional arguments provided (%s). Methods do not take arguments. Please refer to `-help`.\n", Join(command->args, ", "));
+        tfm::format(std::cerr, "Error: Additional arguments provided (%s). Methods do not take arguments. Please refer to `-help`.\n", util::Join(command->args, ", "));
         return EXIT_FAILURE;
     }
 

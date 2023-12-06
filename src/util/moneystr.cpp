@@ -41,10 +41,10 @@ std::string FormatMoney(const CAmount n)
 
 std::optional<CAmount> ParseMoney(const std::string& money_string)
 {
-    if (!ContainsNoNUL(money_string)) {
+    if (!util::ContainsNoNUL(money_string)) {
         return std::nullopt;
     }
-    const std::string str = TrimString(money_string);
+    const std::string str = util::TrimString(money_string);
     if (str.empty()) {
         return std::nullopt;
     }

@@ -135,6 +135,10 @@ using node::ShouldPersistMempool;
 using node::ImportBlocks;
 using node::VerifyLoadedChainstate;
 
+using util::Join;
+using util::ReplaceAll;
+using util::ToString;
+
 static constexpr bool DEFAULT_PROXYRANDOMIZE{true};
 static constexpr bool DEFAULT_REST_ENABLE{false};
 static constexpr bool DEFAULT_I2P_ACCEPT_INCOMING{true};

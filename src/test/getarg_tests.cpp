@@ -22,7 +22,7 @@ void ResetArgs(ArgsManager& local_args, const std::string& strArg)
 {
     std::vector<std::string> vecArg;
     if (strArg.size()) {
-        vecArg = SplitString(strArg, ' ');
+        vecArg = util::SplitString(strArg, ' ');
     }
 
     // Insert dummy executable name:

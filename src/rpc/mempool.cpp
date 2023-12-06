@@ -27,10 +27,10 @@
 #include <utility>
 
 using kernel::DumpMempool;
-
 using node::DEFAULT_MAX_RAW_TX_FEE_RATE;
 using node::MempoolPath;
 using node::NodeContext;
+using util::ToString;
 
 static RPCHelpMan sendrawtransaction()
 {

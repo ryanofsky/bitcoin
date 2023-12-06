@@ -130,7 +130,7 @@ unsigned int ParseScriptFlags(const std::string& str)
     if (str.empty()) return 0;
 
     unsigned int flags = 0;
-    std::vector<std::string> words = SplitString(str, ',');
+    std::vector<std::string> words = util::SplitString(str, ',');
 
     for (const std::string& word : words) {
         auto it = FLAG_NAMES.find(word);

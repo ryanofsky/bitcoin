@@ -31,8 +31,8 @@ static CBlockIndex* CreateBlockIndexWithNbits(uint32_t nbits)
 static void RejectDifficultyMismatch(double difficulty, double expected_difficulty) {
      BOOST_CHECK_MESSAGE(
         DoubleEquals(difficulty, expected_difficulty, 0.00001),
-        "Difficulty was " + ToString(difficulty)
-            + " but was expected to be " + ToString(expected_difficulty));
+        "Difficulty was " + util::ToString(difficulty)
+            + " but was expected to be " + util::ToString(expected_difficulty));
 }
 
 /* Given a BlockIndex with the provided nbits,

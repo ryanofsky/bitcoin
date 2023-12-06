@@ -46,7 +46,7 @@ const std::vector<std::pair<std::string, FeeEstimateMode>>& FeeModeMap()
 
 std::string FeeModes(const std::string& delimiter)
 {
-    return Join(FeeModeMap(), delimiter, [&](const std::pair<std::string, FeeEstimateMode>& i) { return i.first; });
+    return util::Join(FeeModeMap(), delimiter, [&](const std::pair<std::string, FeeEstimateMode>& i) { return i.first; });
 }
 
 std::string InvalidEstimateModeErrorMessage()

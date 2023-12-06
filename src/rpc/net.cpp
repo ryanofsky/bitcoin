@@ -37,6 +37,8 @@
 #include <univalue.h>
 
 using node::NodeContext;
+using util::Join;
+using util::TrimString;
 
 const std::vector<std::string> CONNECTION_TYPE_DOC{
         "outbound-full-relay (default automatic connections)",
@@ -127,7 +129,7 @@ static RPCHelpMan getpeerinfo()
                     {RPCResult::Type::STR, "addr", "(host:port) The IP address and port of the peer"},
                     {RPCResult::Type::STR, "addrbind", /*optional=*/true, "(ip:port) Bind address of the connection to the peer"},
                     {RPCResult::Type::STR, "addrlocal", /*optional=*/true, "(ip:port) Local address as reported by the peer"},
-                    {RPCResult::Type::STR, "network", "Network (" + Join(GetNetworkNames(/*append_unroutable=*/true), ", ") + ")"},
+                    {RPCResult::Type::STR, "network", "Network (" + util::Join(GetNetworkNames(/*append_unroutable=*/true), ", ") + ")"},
                     {RPCResult::Type::NUM, "mapped_as", /*optional=*/true, "The AS in the BGP route to the peer used for diversifying\n"
                                                         "peer selection (only available if the asmap config flag is set)"},
                     {RPCResult::Type::STR_HEX, "services", "The services offered"},

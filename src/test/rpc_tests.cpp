@@ -62,7 +62,7 @@ UniValue RPCTestingSetup::TransformParams(const UniValue& params, std::vector<st
 
 UniValue RPCTestingSetup::CallRPC(std::string args)
 {
-    std::vector<std::string> vArgs{SplitString(args, ' ')};
+    std::vector<std::string> vArgs{util::SplitString(args, ' ')};
     std::string strMethod = vArgs[0];
     vArgs.erase(vArgs.begin());
     JSONRPCRequest request;

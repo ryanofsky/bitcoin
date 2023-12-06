@@ -62,7 +62,7 @@ CScript ParseScript(const std::string& s)
 {
     CScript result;
 
-    std::vector<std::string> words = SplitString(s, " \t\n");
+    std::vector<std::string> words = util::SplitString(s, " \t\n");
 
     for (const std::string& w : words) {
         if (w.empty()) {

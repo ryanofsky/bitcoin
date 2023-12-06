@@ -420,7 +420,7 @@ static inline JSONRPCRequest transformNamedArguments(const JSONRPCRequest& in, c
     const std::string* initial_param = nullptr;
     UniValue options{UniValue::VOBJ};
     for (const auto& [argNamePattern, named_only]: argNames) {
-        std::vector<std::string> vargNames = SplitString(argNamePattern, '|');
+        std::vector<std::string> vargNames = util::SplitString(argNamePattern, '|');
         auto fr = argsIn.end();
         for (const std::string & argName : vargNames) {
             fr = argsIn.find(argName);
