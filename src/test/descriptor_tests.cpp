@@ -400,10 +400,9 @@ void CheckInferDescriptor(const std::string& script_hex, const std::string& expe
         provider.pubkeys.emplace(origin_pubkey.GetID(), origin_pubkey);
 
         if (!origin_str.empty()) {
-            using namespace spanparsing;
             KeyOriginInfo info;
             Span<const char> origin_sp{origin_str};
-            std::vector<Span<const char>> origin_split = Split(origin_sp, "/");
+            std::vector<Span<const char>> origin_split = util::Split(origin_sp, "/");
             std::string fpr_str(origin_split[0].begin(), origin_split[0].end());
             auto fpr_bytes = ParseHex(fpr_str);
             std::copy(fpr_bytes.begin(), fpr_bytes.end(), info.fingerprint);

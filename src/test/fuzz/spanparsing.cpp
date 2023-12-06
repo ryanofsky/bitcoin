@@ -5,6 +5,7 @@
 #include <test/fuzz/FuzzedDataProvider.h>
 #include <test/fuzz/fuzz.h>
 #include <util/spanparsing.h>
+#include <util/string.h>
 
 FUZZ_TARGET(spanparsing)
 {
@@ -25,6 +26,6 @@ FUZZ_TARGET(spanparsing)
 
     if (!query.empty()) {
         mut_span = const_span;
-        (void)spanparsing::Split(mut_span, query.front());
+        (void)util::Split(mut_span, query.front());
     }
 }

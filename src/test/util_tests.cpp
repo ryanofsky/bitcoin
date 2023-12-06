@@ -50,6 +50,7 @@ using util::Join;
 using util::RemovePrefix;
 using util::RemovePrefixView;
 using util::ReplaceAll;
+using util::Split;
 using util::SplitString;
 using util::TrimString;
 using util::TrimStringView;
