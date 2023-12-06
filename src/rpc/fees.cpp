@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <common/messages.h>
 #include <core_io.h>
 #include <node/context.h>
 #include <policy/feerate.h>
@@ -14,7 +15,6 @@
 #include <rpc/util.h>
 #include <txmempool.h>
 #include <univalue.h>
-#include <util/fees.h>
 #include <validationinterface.h>
 
 #include <algorithm>
@@ -22,6 +22,21 @@
 #include <cmath>
 #include <string>
 
+<<<<<<< HEAD
+||||||| parent of f8942cce112e (util: move fees.h and error.h to common/messages.h)
+namespace node {
+struct NodeContext;
+}
+
+=======
+namespace node {
+struct NodeContext;
+}
+
+using common::FeeModeFromString;
+using common::FeeModes;
+using common::InvalidEstimateModeErrorMessage;
+>>>>>>> f8942cce112e (util: move fees.h and error.h to common/messages.h)
 using node::NodeContext;
 
 static RPCHelpMan estimatesmartfee()
