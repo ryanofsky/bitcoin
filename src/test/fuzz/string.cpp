@@ -5,6 +5,7 @@
 #include <blockfilter.h>
 #include <clientversion.h>
 #include <common/args.h>
+#include <common/messages.h>
 #include <common/settings.h>
 #include <common/system.h>
 #include <common/url.h>
@@ -21,8 +22,6 @@
 #include <test/fuzz/FuzzedDataProvider.h>
 #include <test/fuzz/fuzz.h>
 #include <test/fuzz/util.h>
-#include <util/error.h>
-#include <util/fees.h>
 #include <util/strencodings.h>
 #include <util/string.h>
 #include <util/translation.h>
@@ -35,6 +34,10 @@
 #include <string>
 #include <vector>
 
+using common::AmountErrMsg;
+using common::AmountHighWarn;
+using common::FeeModeFromString;
+using common::ResolveErrMsg;
 using util::ContainsNoNUL;
 using util::Join;
 using util::RemovePrefix;

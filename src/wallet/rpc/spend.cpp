@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <common/messages.h>
 #include <consensus/validation.h>
 #include <core_io.h>
 #include <key_io.h>
@@ -10,7 +11,6 @@
 #include <rpc/rawtransaction_util.h>
 #include <rpc/util.h>
 #include <script/script.h>
-#include <util/fees.h>
 #include <util/rbf.h>
 #include <util/translation.h>
 #include <util/vector.h>
@@ -23,6 +23,11 @@
 
 #include <univalue.h>
 
+using common::FeeModeFromString;
+using common::FeeModes;
+using common::InvalidEstimateModeErrorMessage;
+using common::StringForFeeReason;
+using common::TransactionErrorString;
 using node::TransactionError;
 
 namespace wallet {

@@ -6,13 +6,13 @@
 #define BITCOIN_WALLET_SCRIPTPUBKEYMAN_H
 
 #include <addresstype.h>
+#include <common/messages.h>
 #include <logging.h>
 #include <node/types.h>
 #include <psbt.h>
 #include <script/descriptor.h>
 #include <script/script.h>
 #include <script/signingprovider.h>
-#include <util/error.h>
 #include <util/message.h>
 #include <util/result.h>
 #include <util/time.h>

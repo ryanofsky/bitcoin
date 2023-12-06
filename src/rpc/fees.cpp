@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <common/messages.h>
 #include <core_io.h>
 #include <policy/feerate.h>
 #include <policy/fees.h>
@@ -13,7 +14,6 @@
 #include <rpc/util.h>
 #include <txmempool.h>
 #include <univalue.h>
-#include <util/fees.h>
 #include <validationinterface.h>
 
 #include <algorithm>
@@ -25,6 +25,9 @@ namespace node {
 struct NodeContext;
 }
 
+using common::FeeModeFromString;
+using common::FeeModes;
+using common::InvalidEstimateModeErrorMessage;
 using node::NodeContext;
 
 static RPCHelpMan estimatesmartfee()
