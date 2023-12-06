@@ -20,6 +20,7 @@
 #include <iostream>
 #include <string>
 
+using common::TransactionErrorString;
 using node::AnalyzePSBT;
 using node::DEFAULT_MAX_RAW_TX_FEE_RATE;
 using node::PSBTAnalysis;
