@@ -60,6 +60,7 @@ using kernel::CoinStatsHashType;
 using node::BlockManager;
 using node::NodeContext;
 using node::SnapshotMetadata;
+using util::MakeUnorderedList;
 
 struct CUpdatedBlock
 {
