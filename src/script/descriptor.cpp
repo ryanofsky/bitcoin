@@ -8,6 +8,7 @@
 #include <key_io.h>
 #include <pubkey.h>
 #include <script/miniscript.h>
+#include <script/parsing.h>
 #include <script/script.h>
 #include <script/signingprovider.h>
 #include <script/solver.h>
@@ -17,7 +18,6 @@
 #include <span.h>
 #include <util/bip32.h>
 #include <util/check.h>
-#include <util/spanparsing.h>
 #include <util/strencodings.h>
 #include <util/vector.h>
 
@@ -1537,7 +1537,7 @@ struct KeyParser {
 /** Parse a script in a particular context. */
 std::unique_ptr<DescriptorImpl> ParseScript(uint32_t& key_exp_index, Span<const char>& sp, ParseScriptContext ctx, FlatSigningProvider& out, std::string& error)
 {
-    using namespace spanparsing;
+    using namespace script;
 
     auto expr = Expr(sp);
     if (Func("pk", expr)) {
