@@ -5,6 +5,7 @@
 #include <common/system.h>
 #include <consensus/validation.h>
 #include <interfaces/chain.h>
+#include <node/types.h>
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <util/moneystr.h>
@@ -16,6 +17,8 @@
 #include <wallet/receive.h>
 #include <wallet/spend.h>
 #include <wallet/wallet.h>
+
+using node::TransactionError;
 
 namespace wallet {
 //! Check whether transaction has descendant in wallet or mempool, or has been

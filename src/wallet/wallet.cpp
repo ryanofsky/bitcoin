@@ -28,6 +28,7 @@
 #include <key.h>
 #include <key_io.h>
 #include <logging.h>
+#include <node/types.h>
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <primitives/block.h>
@@ -87,6 +88,7 @@ using common::AmountErrMsg;
 using common::AmountHighWarn;
 using common::ResolveErrMsg;
 using interfaces::FoundBlock;
+using node::TransactionError;
 
 namespace wallet {
 

@@ -13,6 +13,7 @@
 #ifndef BITCOIN_NODE_TYPES_H
 #define BITCOIN_NODE_TYPES_H
 
+namespace node {
 enum class TransactionError {
     OK, //!< No error
     MISSING_INPUTS,
@@ -29,5 +30,6 @@ enum class TransactionError {
     EXTERNAL_SIGNER_FAILED,
     INVALID_PACKAGE,
 };
+} // namespace node
 
 #endif // BITCOIN_NODE_TYPES_H
