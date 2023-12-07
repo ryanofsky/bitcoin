@@ -6,6 +6,7 @@
 #include <common/messages.h>
 
 #include <policy/fees.h>
+#include <node/types.h>
 #include <tinyformat.h>
 #include <util/strencodings.h>
 #include <util/string.h>
@@ -16,6 +17,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+using node::TransactionError;
 
 namespace common {
 std::string StringForFeeReason(FeeReason reason)
