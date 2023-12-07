@@ -8,6 +8,7 @@
 #include <consensus/amount.h>
 #include <script/interpreter.h>
 #include <key_io.h>
+#include <node/types.h>
 #include <outputtype.h>
 #include <rpc/util.h>
 #include <script/descriptor.h>
@@ -23,6 +24,7 @@
 #include <string_view>
 #include <tuple>
 
+using node::TransactionError;
 using util::Join;
 using util::SplitString;
 using util::ToString;

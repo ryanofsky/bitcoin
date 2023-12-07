@@ -5,6 +5,7 @@
 #include <consensus/validation.h>
 #include <core_io.h>
 #include <key_io.h>
+#include <node/types.h>
 #include <policy/policy.h>
 #include <rpc/rawtransaction_util.h>
 #include <rpc/util.h>
@@ -22,6 +23,7 @@
 
 #include <univalue.h>
 
+using node::TransactionError;
 
 namespace wallet {
 static void ParseRecipients(const UniValue& address_amounts, const UniValue& subtract_fee_outputs, std::vector<CRecipient>& recipients)

@@ -4,11 +4,14 @@
 
 #include <util/error.h>
 
+#include <node/types.h>
 #include <tinyformat.h>
 #include <util/translation.h>
 
 #include <cassert>
 #include <string>
+
+using node::TransactionError;
 
 bilingual_str TransactionErrorString(const TransactionError err)
 {

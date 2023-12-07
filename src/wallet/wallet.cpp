@@ -27,6 +27,7 @@
 #include <key.h>
 #include <key_io.h>
 #include <logging.h>
+#include <node/types.h>
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <primitives/block.h>
@@ -84,6 +85,7 @@
 struct KeyOriginInfo;
 
 using interfaces::FoundBlock;
+using node::TransactionError;
 using util::ReplaceAll;
 using util::ToString;
 

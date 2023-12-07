@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <merkleblock.h>
+#include <node/types.h>
 #include <policy/fees.h>
 #include <rpc/util.h>
 #include <test/fuzz/FuzzedDataProvider.h>
@@ -15,6 +16,8 @@
 #include <cstdint>
 #include <optional>
 #include <vector>
+
+using node::TransactionError;
 
 namespace {
 constexpr TransactionError ALL_TRANSACTION_ERROR[] = {

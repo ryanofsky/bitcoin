@@ -15,12 +15,14 @@
  * translating errors passed across wallet/node/rpc/gui code boundaries.
  */
 
-#include <node/types.h>
 #include <string>
 
 struct bilingual_str;
+namespace node {
+enum class TransactionError;
+} // namespace node
 
-bilingual_str TransactionErrorString(const TransactionError error);
+bilingual_str TransactionErrorString(const node::TransactionError error);
 
 bilingual_str ResolveErrMsg(const std::string& optname, const std::string& strBind);
 
