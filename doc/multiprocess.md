@@ -17,12 +17,26 @@ The multiprocess feature requires [Cap'n Proto](https://capnproto.org/) and [lib
 ```
 cd <BITCOIN_SOURCE_DIRECTORY>
 make -C depends NO_QT=1 MULTIPROCESS=1
+<<<<<<< HEAD
 # Set host platform to output of gcc -dumpmachine or clang -dumpmachine or check the depends/ directory for the generated subdirectory name
 HOST_PLATFORM="x86_64-pc-linux-gnu"
 cmake -B build --toolchain=depends/$HOST_PLATFORM/toolchain.cmake
 cmake --build build
 build/src/bitcoin-node -regtest -printtoconsole -debug=ipc
 BITCOIND=$(pwd)/build/src/bitcoin-node build/test/functional/test_runner.py
+||||||| parent of a82f438a2677 (doc: multiprocess documentation improvements)
+CONFIG_SITE=$PWD/depends/x86_64-pc-linux-gnu/share/config.site ./configure
+make
+src/bitcoin-node -regtest -printtoconsole -debug=ipc
+BITCOIND=bitcoin-node test/functional/test_runner.py
+=======
+# Set host platform to output of gcc -dumpmachine or clang -dumpmachine or check the depends/ directory for the generated subdirectory name
+HOST_PLATFORM="x86_64-pc-linux-gnu"
+CONFIG_SITE="$PWD/depends/$HOST_PLATFORM/share/config.site" ./configure
+make
+src/bitcoin-node -regtest -printtoconsole -debug=ipc
+BITCOIND=bitcoin-node test/functional/test_runner.py
+>>>>>>> a82f438a2677 (doc: multiprocess documentation improvements)
 ```
 
 The `cmake` build will pick up settings and library locations from the depends directory, so there is no need to pass `-DWITH_MULTIPROCESS=ON` as a separate flag when using the depends system (it's controlled by the `MULTIPROCESS=1` option).
