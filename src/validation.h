@@ -521,6 +521,7 @@ protected:
     const CBlockIndex* m_cached_snapshot_base GUARDED_BY(::cs_main) {nullptr};
 
 public:
+    const BCLog::Source& m_log;
     //! Reference to a BlockManager instance which itself is shared across all
     //! Chainstate instances.
     node::BlockManager& m_blockman;
@@ -957,6 +958,7 @@ public:
      */
     RecursiveMutex& GetMutex() const LOCK_RETURNED(::cs_main) { return ::cs_main; }
 
+    const BCLog::Source m_log;
     const util::SignalInterrupt& m_interrupt;
     const Options m_options;
     std::thread m_thread_load;

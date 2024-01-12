@@ -299,6 +299,7 @@ struct TxMempoolInfo
 class CTxMemPool
 {
 protected:
+    const BCLog::Source m_log;
     const int m_check_ratio; //!< Value n means that 1 times in n we check.
     std::atomic<unsigned int> nTransactionsUpdated{0}; //!< Used by getblocktemplate to trigger CreateNewBlock() invocation
 
@@ -733,6 +734,8 @@ public:
     uint64_t GetSequence() const EXCLUSIVE_LOCKS_REQUIRED(cs) {
         return m_sequence_number;
     }
+
+    const BCLog::Source& log() { return m_log; }
 
 private:
     /** UpdateForDescendants is used by UpdateTransactionsFromBlock to update
