@@ -17,6 +17,36 @@ import sys
 
 FUNCTION_NAMES_AND_NUMBER_OF_LEADING_ARGUMENTS = [
     'tfm::format,1',  # Assuming tfm::::format(std::ostream&, ...
+<<<<<<< HEAD
+||||||| parent of 9e598591dc3b (logging: Improve new LogDebug/Trace/Info/Warning/Error Macros)
+    'LogConnectFailure,1',
+    'LogError,0',
+    'LogWarning,0',
+    'LogInfo,0',
+    'LogDebug,1',
+    'LogTrace,1',
+    'LogPrint,1',
+    'LogPrintf,0',
+    'LogPrintfCategory,1',
+    'LogPrintLevel,2',
+    'printf,0',
+    'snprintf,2',
+    'sprintf,1',
+=======
+    'LogConnectFailure,1',
+    'LogError,0|1',
+    'LogWarning,0|1',
+    'LogInfo,0|1',
+    'LogDebug,0|1',
+    'LogTrace,0|1',
+    'LogPrint,1',
+    'LogPrintf,0',
+    'LogPrintfCategory,1',
+    'LogPrintLevel,2',
+    'printf,0',
+    'snprintf,2',
+    'sprintf,1',
+>>>>>>> 9e598591dc3b (logging: Improve new LogDebug/Trace/Info/Warning/Error Macros)
     'strprintf,0',
 ]
 RUN_LINT_FILE = 'test/lint/run-lint-format-strings.py'
