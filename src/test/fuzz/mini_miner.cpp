@@ -18,11 +18,11 @@
 
 namespace {
 
-const TestingSetup* g_setup;
+TestingSetup* g_setup;
 std::deque<COutPoint> g_available_coins;
 void initialize_miner()
 {
-    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    static const auto testing_setup = MakeNoLogFileContext<TestingSetup>();
     g_setup = testing_setup.get();
     for (uint32_t i = 0; i < uint32_t{100}; ++i) {
         g_available_coins.emplace_back(Txid::FromUint256(uint256::ZERO), i);
@@ -33,7 +33,7 @@ void initialize_miner()
 FUZZ_TARGET(mini_miner, .init = initialize_miner)
 {
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
-    CTxMemPool pool{CTxMemPool::Options{}};
+    CTxMemPool pool{g_setup->m_logger, CTxMemPool::Options{}};
     std::vector<COutPoint> outpoints;
     std::deque<COutPoint> available_coins = g_available_coins;
     LOCK2(::cs_main, pool.cs);
@@ -109,7 +109,7 @@ FUZZ_TARGET(mini_miner, .init = initialize_miner)
 FUZZ_TARGET(mini_miner_selection, .init = initialize_miner)
 {
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
-    CTxMemPool pool{CTxMemPool::Options{}};
+    CTxMemPool pool{g_setup->m_logger, CTxMemPool::Options{}};
     // Make a copy to preserve determinism.
     std::deque<COutPoint> available_coins = g_available_coins;
     std::vector<CTransactionRef> transactions;

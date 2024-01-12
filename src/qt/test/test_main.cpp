@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
         setenv("QT_QPA_PLATFORM", "minimal", 0 /* overwrite */);
     #endif
 
-    BitcoinApplication app;
+    BitcoinApplication app{*Assert(init->logger())};
     app.setApplicationName("Bitcoin-Qt-test");
     app.createNode(*init);
 
@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
     AppTests app_tests(app);
     num_test_failures += QTest::qExec(&app_tests);
 
-    OptionTests options_tests(app.node());
+    OptionTests options_tests(*Assert(init->logger()), app.node());
     num_test_failures += QTest::qExec(&options_tests);
 
     URITests test1;

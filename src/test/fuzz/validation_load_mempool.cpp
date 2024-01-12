@@ -25,12 +25,12 @@ using kernel::LoadMempool;
 using node::MempoolPath;
 
 namespace {
-const TestingSetup* g_setup;
+TestingSetup* g_setup;
 } // namespace
 
 void initialize_validation_load_mempool()
 {
-    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    static const auto testing_setup = MakeNoLogFileContext<TestingSetup>();
     g_setup = testing_setup.get();
 }
 
@@ -40,7 +40,7 @@ FUZZ_TARGET(validation_load_mempool, .init = initialize_validation_load_mempool)
     SetMockTime(ConsumeTime(fuzzed_data_provider));
     FuzzedFileProvider fuzzed_file_provider{fuzzed_data_provider};
 
-    CTxMemPool pool{MemPoolOptionsForTest(g_setup->m_node)};
+    CTxMemPool pool{g_setup->m_logger, MemPoolOptionsForTest(g_setup->m_node)};
 
     auto& chainstate{static_cast<DummyChainState&>(g_setup->m_node.chainman->ActiveChainstate())};
     chainstate.SetMempool(&pool);

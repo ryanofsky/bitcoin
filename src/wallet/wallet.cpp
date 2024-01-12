@@ -264,7 +264,8 @@ namespace {
 std::shared_ptr<CWallet> LoadWalletInternal(WalletContext& context, const std::string& name, std::optional<bool> load_on_start, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
     try {
-        std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
+        BCLog::Logger& logger{*Assert(context.logger)};
+        std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, logger, status, error);
         if (!database) {
             error = Untranslated("Wallet file verification failed.") + Untranslated(" ") + error;
             return nullptr;
@@ -407,7 +408,8 @@ std::shared_ptr<CWallet> CreateWallet(WalletContext& context, const std::string&
     }
 
     // Wallet::Verify will check if we're trying to create a wallet with a duplicate name.
-    std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
+    BCLog::Logger& logger{*Assert(context.logger)};
+    std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, logger, status, error);
     if (!database) {
         error = Untranslated("Wallet file verification failed.") + Untranslated(" ") + error;
         status = DatabaseStatus::FAILED_VERIFY;
@@ -2826,7 +2828,7 @@ bool CWallet::EraseAddressReceiveRequest(WalletBatch& batch, const CTxDestinatio
     return true;
 }
 
-std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error_string)
+std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, const DatabaseOptions& options, BCLog::Logger& logger, DatabaseStatus& status, bilingual_str& error_string)
 {
     // Do some checking on wallet path. It should be either a:
     //
@@ -2847,7 +2849,7 @@ std::unique_ptr<WalletDatabase> MakeWalletDatabase(const std::string& name, cons
         status = DatabaseStatus::FAILED_BAD_PATH;
         return nullptr;
     }
-    return MakeDatabase(wallet_path, options, status, error_string);
+    return MakeDatabase(wallet_path, options, logger, status, error_string);
 }
 
 std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::string& name, std::unique_ptr<WalletDatabase> database, uint64_t wallet_creation_flags, bilingual_str& error, std::vector<bilingual_str>& warnings)
@@ -2859,7 +2861,7 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
     const auto start{SteadyClock::now()};
     // TODO: Can't use std::make_shared because we need a custom deleter but
     // should be possible to use std::allocate_shared.
-    std::shared_ptr<CWallet> walletInstance(new CWallet(chain, name, std::move(database)), ReleaseWallet);
+    std::shared_ptr<CWallet> walletInstance(new CWallet(*Assert(context.logger), chain, name, std::move(database)), ReleaseWallet);
     walletInstance->m_keypool_size = std::max(args.GetIntArg("-keypool", DEFAULT_KEYPOOL_SIZE), int64_t{1});
     walletInstance->m_notify_tx_changed_script = args.GetArg("-walletnotify", "");
 
@@ -3835,7 +3837,7 @@ bool CWallet::MigrateToSQLite(bilingual_str& error)
     opts.require_create = true;
     opts.require_format = DatabaseFormat::SQLITE;
     DatabaseStatus db_status;
-    std::unique_ptr<WalletDatabase> new_db = MakeDatabase(wallet_path, opts, db_status, error);
+    std::unique_ptr<WalletDatabase> new_db = MakeDatabase(wallet_path, opts, m_log.logger, db_status, error);
     assert(new_db); // This is to prevent doing anything further with this wallet. The original file was deleted, but a backup exists.
     m_database.reset();
     m_database = std::move(new_db);
@@ -4087,6 +4089,7 @@ bool DoMigration(CWallet& wallet, WalletContext& context, bilingual_str& error, 
         options.require_format = DatabaseFormat::SQLITE;
 
         WalletContext empty_context;
+        empty_context.logger = context.logger;
         empty_context.args = context.args;
 
         // Make the wallets
@@ -4103,7 +4106,7 @@ bool DoMigration(CWallet& wallet, WalletContext& context, bilingual_str& error, 
             DatabaseStatus status;
             std::vector<bilingual_str> warnings;
             std::string wallet_name = wallet.GetName() + "_watchonly";
-            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(wallet_name, options, status, error);
+            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(wallet_name, options, *Assert(context.logger), status, error);
             if (!database) {
                 error = strprintf(_("Wallet file creation failed: %s"), error);
                 return false;
@@ -4140,7 +4143,7 @@ bool DoMigration(CWallet& wallet, WalletContext& context, bilingual_str& error, 
             DatabaseStatus status;
             std::vector<bilingual_str> warnings;
             std::string wallet_name = wallet.GetName() + "_solvables";
-            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(wallet_name, options, status, error);
+            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(wallet_name, options, wallet.m_log.logger, status, error);
             if (!database) {
                 error = strprintf(_("Wallet file creation failed: %s"), error);
                 return false;
@@ -4201,7 +4204,7 @@ util::Result<MigrationResult> MigrateLegacyToDescriptor(const std::string& walle
     DatabaseOptions options;
     options.require_existing = true;
     DatabaseStatus status;
-    std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(wallet_name, options, status, error);
+    std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(wallet_name, options, *Assert(context.logger), status, error);
     if (!database) {
         return util::Error{Untranslated("Wallet file verification failed.") + Untranslated(" ") + error};
     }

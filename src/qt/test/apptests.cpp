@@ -85,7 +85,7 @@ void AppTests::appTests()
     m_app.exec();
 
     // Reset global state to avoid interfering with later tests.
-    LogInstance().DisconnectTestLogger();
+    m_app.logger().DisconnectTestLogger();
 }
 
 //! Entry point for BitcoinGUI tests.

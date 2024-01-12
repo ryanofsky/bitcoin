@@ -76,6 +76,7 @@ static void FillAddrMan(AddrMan& addrman)
 
 static void AddrManAdd(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     CreateAddresses();
 
     bench.run([&] {
@@ -86,6 +87,7 @@ static void AddrManAdd(benchmark::Bench& bench)
 
 static void AddrManSelect(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     AddrMan addrman{EMPTY_NETGROUPMAN, /*deterministic=*/false, ADDRMAN_CONSISTENCY_CHECK_RATIO};
 
     FillAddrMan(addrman);
@@ -101,6 +103,7 @@ static void AddrManSelect(benchmark::Bench& bench)
 // several buckets before identifying the correct bucket
 static void AddrManSelectFromAlmostEmpty(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     AddrMan addrman{EMPTY_NETGROUPMAN, /*deterministic=*/false, ADDRMAN_CONSISTENCY_CHECK_RATIO};
 
     // Add one address to the new table
@@ -114,6 +117,7 @@ static void AddrManSelectFromAlmostEmpty(benchmark::Bench& bench)
 
 static void AddrManSelectByNetwork(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     AddrMan addrman{EMPTY_NETGROUPMAN, /*deterministic=*/false, ADDRMAN_CONSISTENCY_CHECK_RATIO};
 
     // add single I2P address to new table
@@ -133,6 +137,7 @@ static void AddrManSelectByNetwork(benchmark::Bench& bench)
 
 static void AddrManGetAddr(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     AddrMan addrman{EMPTY_NETGROUPMAN, /*deterministic=*/false, ADDRMAN_CONSISTENCY_CHECK_RATIO};
 
     FillAddrMan(addrman);
@@ -145,6 +150,7 @@ static void AddrManGetAddr(benchmark::Bench& bench)
 
 static void AddrManAddThenGood(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     auto markSomeAsGood = [](AddrMan& addrman) {
         for (size_t source_i = 0; source_i < NUM_SOURCES; ++source_i) {
             for (size_t addr_i = 0; addr_i < NUM_ADDRESSES_PER_SOURCE; ++addr_i) {

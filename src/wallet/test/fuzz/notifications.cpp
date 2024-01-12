@@ -46,11 +46,11 @@
 
 namespace wallet {
 namespace {
-const TestingSetup* g_setup;
+TestingSetup* g_setup;
 
 void initialize_setup()
 {
-    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    static const auto testing_setup = MakeNoLogFileContext<TestingSetup>();
     g_setup = testing_setup.get();
 }
 
@@ -95,7 +95,7 @@ struct FuzzedWallet {
     FuzzedWallet(const std::string& name, const std::string& seed_insecure)
     {
         auto& chain{*Assert(g_setup->m_node.chain)};
-        wallet = std::make_shared<CWallet>(&chain, name, CreateMockableWalletDatabase());
+        wallet = std::make_shared<CWallet>(g_setup->m_logger, &chain, name, CreateMockableWalletDatabase(g_setup->m_logger));
         {
             LOCK(wallet->cs_wallet);
             wallet->SetWalletFlag(WALLET_FLAG_DESCRIPTORS);

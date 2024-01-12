@@ -16,7 +16,8 @@
 static void Logging(benchmark::Bench& bench, const std::vector<const char*>& extra_args, const std::function<void()>& log)
 {
     // Reset any enabled logging categories from a previous benchmark run.
-    LogInstance().DisableCategory(BCLog::LogFlags::ALL);
+    GlobalLogger logger;
+    logger.DisableCategory(BCLog::LogFlags::ALL);
 
     TestingSetup test_setup{
         ChainType::REGTEST,

@@ -30,6 +30,7 @@ static void microTask(CScheduler& s, std::mutex& mutex, int& counter, int delta,
 
 BOOST_AUTO_TEST_CASE(manythreads)
 {
+    GlobalLogger logger;
     // Stress test: hundreds of microsecond-scheduled tasks,
     // serviced by 10 threads.
     //
@@ -108,6 +109,7 @@ BOOST_AUTO_TEST_CASE(manythreads)
 
 BOOST_AUTO_TEST_CASE(wait_until_past)
 {
+    GlobalLogger logger;
     std::condition_variable condvar;
     Mutex mtx;
     WAIT_LOCK(mtx, lock);
@@ -126,6 +128,7 @@ BOOST_AUTO_TEST_CASE(wait_until_past)
 
 BOOST_AUTO_TEST_CASE(singlethreadedscheduler_ordered)
 {
+    GlobalLogger logger;
     CScheduler scheduler;
 
     // each queue should be well ordered with respect to itself but not other queues
@@ -173,6 +176,7 @@ BOOST_AUTO_TEST_CASE(singlethreadedscheduler_ordered)
 
 BOOST_AUTO_TEST_CASE(mockforward)
 {
+    GlobalLogger logger;
     CScheduler scheduler;
 
     int counter{0};

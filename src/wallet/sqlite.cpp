@@ -109,8 +109,8 @@ static void SetPragma(sqlite3* db, const std::string& key, const std::string& va
 Mutex SQLiteDatabase::g_sqlite_mutex;
 int SQLiteDatabase::g_sqlite_count = 0;
 
-SQLiteDatabase::SQLiteDatabase(const fs::path& dir_path, const fs::path& file_path, const DatabaseOptions& options, bool mock)
-    : WalletDatabase(), m_mock(mock), m_dir_path(fs::PathToString(dir_path)), m_file_path(fs::PathToString(file_path)), m_use_unsafe_sync(options.use_unsafe_sync)
+SQLiteDatabase::SQLiteDatabase(const fs::path& dir_path, const fs::path& file_path, const DatabaseOptions& options, BCLog::Logger& logger, bool mock)
+    : WalletDatabase(logger), m_mock(mock), m_dir_path(fs::PathToString(dir_path)), m_file_path(fs::PathToString(file_path)), m_use_unsafe_sync(options.use_unsafe_sync)
 {
     {
         LOCK(g_sqlite_mutex);
@@ -262,7 +262,7 @@ void SQLiteDatabase::Open()
             throw std::runtime_error(strprintf("SQLiteDatabase: Failed to enable extended result codes: %s\n", sqlite3_errstr(ret)));
         }
         // Trace SQL statements if tracing is enabled with -debug=walletdb -loglevel=walletdb:trace
-        if (LogAcceptCategory(BCLog::WALLETDB, BCLog::Level::Trace)) {
+        if (m_log.logger.WillLogCategoryLevel(m_log.category, BCLog::Level::Trace)) {
            ret = sqlite3_trace_v2(m_db, SQLITE_TRACE_STMT, TraceSqlCallback, this);
            if (ret != SQLITE_OK) {
                LogPrintf("Failed to enable SQL tracing for %s\n", Filename());
@@ -634,11 +634,11 @@ bool SQLiteBatch::TxnAbort()
     return res == SQLITE_OK;
 }
 
-std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
+std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, BCLog::Logger& logger, DatabaseStatus& status, bilingual_str& error)
 {
     try {
         fs::path data_file = SQLiteDataFile(path);
-        auto db = std::make_unique<SQLiteDatabase>(data_file.parent_path(), data_file, options);
+        auto db = std::make_unique<SQLiteDatabase>(data_file.parent_path(), data_file, options, logger);
         if (options.verify && !db->Verify(error)) {
             status = DatabaseStatus::FAILED_VERIFY;
             return nullptr;

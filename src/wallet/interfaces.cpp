@@ -431,7 +431,7 @@ public:
         // Fetch selected coins total amount
         if (coin_control.HasSelected()) {
             FastRandomContext rng{};
-            CoinSelectionParams params(rng);
+            CoinSelectionParams params{*Assert(m_context.logger), rng,};
             // Note: for now, swallow any error.
             if (auto res = FetchSelectedInputs(*m_wallet, coin_control, params)) {
                 total_amount += res->total_amount;
@@ -565,9 +565,10 @@ public:
 class WalletLoaderImpl : public WalletLoader
 {
 public:
-    WalletLoaderImpl(Chain& chain, ArgsManager& args)
+    WalletLoaderImpl(Chain& chain, BCLog::Logger& logger, ArgsManager& args)
     {
         m_context.chain = &chain;
+        m_context.logger = &logger;
         m_context.args = &args;
     }
     ~WalletLoaderImpl() override { UnloadWallets(m_context); }
@@ -687,8 +688,8 @@ public:
 namespace interfaces {
 std::unique_ptr<Wallet> MakeWallet(wallet::WalletContext& context, const std::shared_ptr<wallet::CWallet>& wallet) { return wallet ? std::make_unique<wallet::WalletImpl>(context, wallet) : nullptr; }
 
-std::unique_ptr<WalletLoader> MakeWalletLoader(Chain& chain, ArgsManager& args)
+std::unique_ptr<WalletLoader> MakeWalletLoader(Chain& chain, BCLog::Logger& logger, ArgsManager& args)
 {
-    return std::make_unique<wallet::WalletLoaderImpl>(chain, args);
+    return std::make_unique<wallet::WalletLoaderImpl>(chain, logger, args);
 }
 } // namespace interfaces

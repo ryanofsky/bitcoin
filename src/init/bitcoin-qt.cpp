@@ -27,9 +27,10 @@ public:
     std::unique_ptr<interfaces::Chain> makeChain() override { return interfaces::MakeChain(m_node); }
     std::unique_ptr<interfaces::WalletLoader> makeWalletLoader(interfaces::Chain& chain) override
     {
-        return MakeWalletLoader(chain, *Assert(m_node.args));
+        return MakeWalletLoader(chain, *Assert(m_node.logger), *Assert(m_node.args));
     }
     std::unique_ptr<interfaces::Echo> makeEcho() override { return interfaces::MakeEcho(); }
+    BCLog::Logger* logger() override { return m_node.logger; }
     node::NodeContext m_node;
 };
 } // namespace

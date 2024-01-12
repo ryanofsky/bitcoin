@@ -81,6 +81,7 @@ BOOST_AUTO_TEST_SUITE(sync_tests)
 
 BOOST_AUTO_TEST_CASE(potential_deadlock_detected)
 {
+    GlobalLogger logger;
     #ifdef DEBUG_LOCKORDER
     bool prev = g_debug_lockorder_abort;
     g_debug_lockorder_abort = false;
@@ -107,17 +108,20 @@ BOOST_AUTO_TEST_CASE(potential_deadlock_detected)
 #ifdef DEBUG_LOCKORDER
 BOOST_AUTO_TEST_CASE(double_lock_mutex)
 {
+    GlobalLogger logger;
     TestDoubleLock<Mutex>(/*should_throw=*/true);
 }
 
 BOOST_AUTO_TEST_CASE(double_lock_recursive_mutex)
 {
+    GlobalLogger logger;
     TestDoubleLock<RecursiveMutex>(/*should_throw=*/false);
 }
 #endif /* DEBUG_LOCKORDER */
 
 BOOST_AUTO_TEST_CASE(inconsistent_lock_order_detected)
 {
+    GlobalLogger logger;
 #ifdef DEBUG_LOCKORDER
     bool prev = g_debug_lockorder_abort;
     g_debug_lockorder_abort = false;

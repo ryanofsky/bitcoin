@@ -22,7 +22,7 @@ using node::NodeContext;
 
 namespace {
 
-const TestingSetup* g_setup;
+TestingSetup* g_setup;
 std::vector<COutPoint> g_outpoints_coinbase_init_mature;
 
 struct MockedTxPool : public CTxMemPool {
@@ -36,7 +36,7 @@ struct MockedTxPool : public CTxMemPool {
 
 void initialize_tx_pool()
 {
-    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    static const auto testing_setup = MakeNoLogFileContext<TestingSetup>();
     g_setup = testing_setup.get();
 
     for (int i = 0; i < 2 * COINBASE_MATURITY; ++i) {
@@ -125,7 +125,7 @@ CTxMemPool MakeMempool(FuzzedDataProvider& fuzzed_data_provider, const NodeConte
     mempool_opts.require_standard = fuzzed_data_provider.ConsumeBool();
 
     // ...and construct a CTxMemPool from it
-    return CTxMemPool{mempool_opts};
+    return CTxMemPool{g_setup->m_logger, mempool_opts};
 }
 
 FUZZ_TARGET(tx_package_eval, .init = initialize_tx_pool)

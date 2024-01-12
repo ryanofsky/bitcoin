@@ -95,6 +95,7 @@ static void Reorg(const ReorgTxns& reorg)
  * chain. */
 static void AddAndRemoveDisconnectedBlockTransactionsAll(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     const auto chains{CreateBlocks(/*num_not_shared=*/1)};
     assert(chains.num_shared == BLOCK_VTX_COUNT - 1);
 
@@ -106,6 +107,7 @@ static void AddAndRemoveDisconnectedBlockTransactionsAll(benchmark::Bench& bench
 /** Add transactions from DisconnectedBlockTransactions, remove 90% of them, and then pop from the front until empty. */
 static void AddAndRemoveDisconnectedBlockTransactions90(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     const auto chains{CreateBlocks(/*num_not_shared=*/BLOCK_VTX_COUNT_10PERCENT)};
     assert(chains.num_shared == BLOCK_VTX_COUNT - BLOCK_VTX_COUNT_10PERCENT);
 
@@ -117,6 +119,7 @@ static void AddAndRemoveDisconnectedBlockTransactions90(benchmark::Bench& bench)
 /** Add transactions from DisconnectedBlockTransactions, remove 10% of them, and then pop from the front until empty. */
 static void AddAndRemoveDisconnectedBlockTransactions10(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     const auto chains{CreateBlocks(/*num_not_shared=*/BLOCK_VTX_COUNT - BLOCK_VTX_COUNT_10PERCENT)};
     assert(chains.num_shared == BLOCK_VTX_COUNT_10PERCENT);
 

@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(blockmanager_find_block_pos)
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = notifications,
     };
-    BlockManager blockman{*Assert(m_node.shutdown), blockman_opts};
+    BlockManager blockman{*Assert(m_node.logger), *Assert(m_node.shutdown), blockman_opts};
     // simulate adding a genesis block normally
     BOOST_CHECK_EQUAL(blockman.SaveBlockToDisk(params->GenesisBlock(), 0, nullptr).nPos, BLOCK_SERIALIZATION_HEADER_SIZE);
     // simulate what happens during reindex
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(blockmanager_flush_block_file)
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = notifications,
     };
-    BlockManager blockman{*Assert(m_node.shutdown), blockman_opts};
+    BlockManager blockman{*Assert(m_node.logger), *Assert(m_node.shutdown), blockman_opts};
 
     // Test blocks with no transactions, not even a coinbase
     CBlock block1;
@@ -171,12 +171,12 @@ BOOST_AUTO_TEST_CASE(blockmanager_flush_block_file)
     CBlock read_block;
     BOOST_CHECK_EQUAL(read_block.nVersion, 0);
     {
-        ASSERT_DEBUG_LOG("ReadBlockFromDisk: Errors in block header");
+        ASSERT_DEBUG_LOG(m_logger, "ReadBlockFromDisk: Errors in block header");
         BOOST_CHECK(!blockman.ReadBlockFromDisk(read_block, pos1));
         BOOST_CHECK_EQUAL(read_block.nVersion, 1);
     }
     {
-        ASSERT_DEBUG_LOG("ReadBlockFromDisk: Errors in block header");
+        ASSERT_DEBUG_LOG(m_logger, "ReadBlockFromDisk: Errors in block header");
         BOOST_CHECK(!blockman.ReadBlockFromDisk(read_block, pos2));
         BOOST_CHECK_EQUAL(read_block.nVersion, 2);
     }

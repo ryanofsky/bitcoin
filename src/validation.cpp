@@ -1678,8 +1678,8 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     return nSubsidy;
 }
 
-CoinsViews::CoinsViews(DBParams db_params, CoinsViewOptions options)
-    : m_dbview{std::move(db_params), std::move(options)},
+CoinsViews::CoinsViews(BCLog::Logger& logger, DBParams db_params, CoinsViewOptions options)
+    : m_dbview{logger, std::move(db_params), std::move(options)},
       m_catcherview(&m_dbview) {}
 
 void CoinsViews::InitCache()
@@ -1696,6 +1696,7 @@ Chainstate::Chainstate(
     : m_mempool(mempool),
       m_blockman(blockman),
       m_chainman(chainman),
+      m_log{m_chainman.m_log},
       m_from_snapshot_blockhash(from_snapshot_blockhash) {}
 
 const CBlockIndex* Chainstate::SnapshotBase()
@@ -1716,6 +1717,7 @@ void Chainstate::InitCoinsDB(
     }
 
     m_coins_views = std::make_unique<CoinsViews>(
+        m_log.logger,
         DBParams{
             .path = m_chainman.m_options.datadir / leveldb_name,
             .cache_bytes = cache_size_bytes,
@@ -5783,11 +5785,12 @@ static ChainstateManager::Options&& Flatten(ChainstateManager::Options&& opts)
     return std::move(opts);
 }
 
-ChainstateManager::ChainstateManager(const util::SignalInterrupt& interrupt, Options options, node::BlockManager::Options blockman_options)
+ChainstateManager::ChainstateManager(BCLog::Logger& logger, const util::SignalInterrupt& interrupt, Options options, node::BlockManager::Options blockman_options)
     : m_script_check_queue{/*batch_size=*/128, options.worker_threads_num},
       m_interrupt{interrupt},
       m_options{Flatten(std::move(options))},
-      m_blockman{interrupt, std::move(blockman_options)}
+      m_blockman{logger, interrupt, std::move(blockman_options)},
+      m_log{logger, BCLog::VALIDATION}
 {
 }
 

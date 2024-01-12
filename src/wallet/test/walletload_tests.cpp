@@ -38,7 +38,7 @@ public:
 
 BOOST_FIXTURE_TEST_CASE(wallet_load_descriptors, TestingSetup)
 {
-    std::unique_ptr<WalletDatabase> database = CreateMockableWalletDatabase();
+    std::unique_ptr<WalletDatabase> database = CreateMockableWalletDatabase(m_logger);
     {
         // Write unknown active descriptor
         WalletBatch batch(*database, false);
@@ -50,18 +50,18 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_descriptors, TestingSetup)
 
     {
         // Now try to load the wallet and verify the error.
-        const std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", std::move(database)));
+        const std::shared_ptr<CWallet> wallet(new CWallet(m_logger, m_node.chain.get(), "", std::move(database)));
         BOOST_CHECK_EQUAL(wallet->LoadWallet(), DBErrors::UNKNOWN_DESCRIPTOR);
     }
 
     // Test 2
     // Now write a valid descriptor with an invalid ID.
     // As the software produces another ID for the descriptor, the loading process must be aborted.
-    database = CreateMockableWalletDatabase();
+    database = CreateMockableWalletDatabase(m_logger);
 
     // Verify the error
     bool found = false;
-    DebugLogHelper logHelper("The descriptor ID calculated by the wallet differs from the one in DB", [&](const std::string* s) {
+    DebugLogHelper logHelper(m_logger, "The descriptor ID calculated by the wallet differs from the one in DB", [&](const std::string* s) {
         found = true;
         return false;
     });
@@ -76,7 +76,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_descriptors, TestingSetup)
 
     {
         // Now try to load the wallet and verify the error.
-        const std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", std::move(database)));
+        const std::shared_ptr<CWallet> wallet(new CWallet(m_logger, m_node.chain.get(), "", std::move(database)));
         BOOST_CHECK_EQUAL(wallet->LoadWallet(), DBErrors::CORRUPT);
         BOOST_CHECK(found); // The error must be logged
     }
@@ -119,7 +119,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_ckey, TestingSetup)
     {
         // Context setup.
         // Create and encrypt legacy wallet
-        std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", CreateMockableWalletDatabase()));
+        std::shared_ptr<CWallet> wallet(new CWallet(m_logger, m_node.chain.get(), "", CreateMockableWalletDatabase(m_logger)));
         LOCK(wallet->cs_wallet);
         auto legacy_spkm = wallet->GetOrCreateLegacyScriptPubKeyMan();
         BOOST_CHECK(legacy_spkm->SetupGeneration(true));
@@ -150,7 +150,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_ckey, TestingSetup)
         // the records every time that 'CWallet::Unlock' gets called, which is not good.
 
         // Load the wallet and check that is encrypted
-        std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", CreateMockableWalletDatabase(records)));
+        std::shared_ptr<CWallet> wallet(new CWallet(m_logger, m_node.chain.get(), "", CreateMockableWalletDatabase(m_logger, records)));
         BOOST_CHECK_EQUAL(wallet->LoadWallet(), DBErrors::LOAD_OK);
         BOOST_CHECK(wallet->IsCrypted());
         BOOST_CHECK(HasAnyRecordOfType(wallet->GetDatabase(), DBKeys::CRYPTED_KEY));
@@ -170,7 +170,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_ckey, TestingSetup)
         records[ckey_record_key].resize(ckey_record_value.size() - 32);
 
         // Load the wallet and check that is encrypted
-        std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", CreateMockableWalletDatabase(records)));
+        std::shared_ptr<CWallet> wallet(new CWallet(m_logger, m_node.chain.get(), "", CreateMockableWalletDatabase(m_logger, records)));
         BOOST_CHECK_EQUAL(wallet->LoadWallet(), DBErrors::LOAD_OK);
         BOOST_CHECK(wallet->IsCrypted());
         BOOST_CHECK(HasAnyRecordOfType(wallet->GetDatabase(), DBKeys::CRYPTED_KEY));
@@ -192,7 +192,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_ckey, TestingSetup)
         // Fill in the checksum space with 0s
         records[ckey_record_key].resize(ckey_record_value.size());
 
-        std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", CreateMockableWalletDatabase(records)));
+        std::shared_ptr<CWallet> wallet(new CWallet(m_logger, m_node.chain.get(), "", CreateMockableWalletDatabase(m_logger, records)));
         BOOST_CHECK_EQUAL(wallet->LoadWallet(), DBErrors::CORRUPT);
     }
 
@@ -204,7 +204,7 @@ BOOST_FIXTURE_TEST_CASE(wallet_load_ckey, TestingSetup)
         SerializeData key = MakeSerializeData(DBKeys::CRYPTED_KEY, invalid_key);
         records[key] = ckey_record_value;
 
-        std::shared_ptr<CWallet> wallet(new CWallet(m_node.chain.get(), "", CreateMockableWalletDatabase(records)));
+        std::shared_ptr<CWallet> wallet(new CWallet(m_logger, m_node.chain.get(), "", CreateMockableWalletDatabase(m_logger, records)));
         BOOST_CHECK_EQUAL(wallet->LoadWallet(), DBErrors::CORRUPT);
     }
 }

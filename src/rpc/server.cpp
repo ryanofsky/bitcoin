@@ -245,7 +245,8 @@ static RPCHelpMan getrpcinfo()
     UniValue result(UniValue::VOBJ);
     result.pushKV("active_commands", active_commands);
 
-    const std::string path = LogInstance().m_file_path.utf8string();
+    BCLog::Logger& logger{*Assert(EnsureAnyNodeContext(request.context).logger)};
+    const std::string path = logger.m_file_path.utf8string();
     UniValue log_path(UniValue::VSTR, path);
     result.pushKV("logpath", log_path);
 

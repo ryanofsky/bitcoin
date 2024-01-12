@@ -25,6 +25,9 @@ class CTxMemPool;
 class ChainstateManager;
 class NetGroupManager;
 class PeerManager;
+namespace BCLog {
+class Logger;
+} // namespace BCLog
 namespace interfaces {
 class Chain;
 class ChainClient;
@@ -52,6 +55,13 @@ struct NodeContext {
     interfaces::Init* init{nullptr};
     //! Interrupt object used to track whether node shutdown was requested.
     util::SignalInterrupt* shutdown{nullptr};
+    //! Logger object. Once allocated, the logging object is intentionally
+    //! leaked and never deleted, in case a destructor in a global object, or
+    //! other late-running code tries to access this logger. This leaking was
+    //! introduced in ee3374234c60aba2cc4c5cd5cac1c0aefc2d817c, and could be
+    //! avoided in the future by ensuring there are no more late-running log
+    //! prints and changing this to use std::unique_ptr.
+    BCLog::Logger* logger{nullptr};
     std::unique_ptr<AddrMan> addrman;
     std::unique_ptr<CConnman> connman;
     std::unique_ptr<CTxMemPool> mempool;

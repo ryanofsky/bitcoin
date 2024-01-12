@@ -18,7 +18,8 @@ static int nextLockTime = 0;
 
 static std::shared_ptr<CWallet> NewWallet(const node::NodeContext& m_node)
 {
-    std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(m_node.chain.get(), "", CreateMockableWalletDatabase());
+    BCLog::Logger& logger{*Assert(m_node.logger)};
+    std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(logger, m_node.chain.get(), "", CreateMockableWalletDatabase(logger));
     wallet->LoadWallet();
     LOCK(wallet->cs_wallet);
     wallet->SetWalletFlag(WALLET_FLAG_DESCRIPTORS);
@@ -59,9 +60,10 @@ static void addCoin(CoinsResult& coins,
                    fee_rate});
 }
 
- CoinSelectionParams makeSelectionParams(FastRandomContext& rand, bool avoid_partial_spends)
+CoinSelectionParams makeSelectionParams(BCLog::Logger& logger, FastRandomContext& rand, bool avoid_partial_spends)
 {
     return CoinSelectionParams{
+            logger,
             rand,
             /*change_output_size=*/ 0,
             /*change_spend_size=*/ 0,
@@ -77,9 +79,12 @@ static void addCoin(CoinsResult& coins,
 class GroupVerifier
 {
 public:
+    BCLog::Logger& logger;
     std::shared_ptr<CWallet> wallet{nullptr};
     CoinsResult coins_pool;
     FastRandomContext rand;
+
+    GroupVerifier(BCLog::Logger& logger) : logger(logger) {}
 
     void GroupVerify(const OutputType type,
                      const CoinEligibilityFilter& filter,
@@ -87,7 +92,7 @@ public:
                      bool positive_only,
                      int expected_size)
     {
-        OutputGroupTypeMap groups = GroupOutputs(*wallet, coins_pool, makeSelectionParams(rand, avoid_partial_spends), {{filter}})[filter];
+        OutputGroupTypeMap groups = GroupOutputs(*wallet, coins_pool, makeSelectionParams(logger, rand, avoid_partial_spends), {{filter}})[filter];
         std::vector<OutputGroup>& groups_out = positive_only ? groups.groups_by_type[type].positive_group :
                                                groups.groups_by_type[type].mixed_group;
         BOOST_CHECK_EQUAL(groups_out.size(), expected_size);
@@ -109,7 +114,7 @@ public:
 BOOST_AUTO_TEST_CASE(outputs_grouping_tests)
 {
     const auto& wallet = NewWallet(m_node);
-    GroupVerifier group_verifier;
+    GroupVerifier group_verifier{m_logger};
     group_verifier.wallet = wallet;
 
     const CoinEligibilityFilter& BASIC_FILTER{1, 6, 0};

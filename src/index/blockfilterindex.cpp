@@ -97,9 +97,9 @@ struct DBHashKey {
 
 static std::map<BlockFilterType, BlockFilterIndex> g_filter_indexes;
 
-BlockFilterIndex::BlockFilterIndex(std::unique_ptr<interfaces::Chain> chain, BlockFilterType filter_type,
+BlockFilterIndex::BlockFilterIndex(BCLog::Logger& logger, std::unique_ptr<interfaces::Chain> chain, BlockFilterType filter_type,
                                    size_t n_cache_size, bool f_memory, bool f_wipe)
-    : BaseIndex(std::move(chain), BlockFilterTypeName(filter_type) + " block filter index")
+    : BaseIndex(logger, std::move(chain), BlockFilterTypeName(filter_type) + " block filter index")
     , m_filter_type(filter_type)
 {
     const std::string& filter_name = BlockFilterTypeName(filter_type);
@@ -108,7 +108,7 @@ BlockFilterIndex::BlockFilterIndex(std::unique_ptr<interfaces::Chain> chain, Blo
     fs::path path = gArgs.GetDataDirNet() / "indexes" / "blockfilter" / fs::u8path(filter_name);
     fs::create_directories(path);
 
-    m_db = std::make_unique<BaseIndex::DB>(path / "db", n_cache_size, f_memory, f_wipe);
+    m_db = std::make_unique<BaseIndex::DB>(logger, path / "db", n_cache_size, f_memory, f_wipe);
     m_filter_fileseq = std::make_unique<FlatFileSeq>(std::move(path), "fltr", FLTR_FILE_CHUNK_SIZE);
 }
 
@@ -469,12 +469,12 @@ void ForEachBlockFilterIndex(std::function<void (BlockFilterIndex&)> fn)
     for (auto& entry : g_filter_indexes) fn(entry.second);
 }
 
-bool InitBlockFilterIndex(std::function<std::unique_ptr<interfaces::Chain>()> make_chain, BlockFilterType filter_type,
+bool InitBlockFilterIndex(std::function<std::unique_ptr<interfaces::Chain>()> make_chain, BCLog::Logger& logger, BlockFilterType filter_type,
                           size_t n_cache_size, bool f_memory, bool f_wipe)
 {
     auto result = g_filter_indexes.emplace(std::piecewise_construct,
                                            std::forward_as_tuple(filter_type),
-                                           std::forward_as_tuple(make_chain(), filter_type,
+                                           std::forward_as_tuple(logger, make_chain(), filter_type,
                                                                  n_cache_size, f_memory, f_wipe));
     return result.second;
 }

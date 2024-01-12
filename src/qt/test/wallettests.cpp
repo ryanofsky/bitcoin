@@ -191,7 +191,7 @@ void SyncUpWallet(const std::shared_ptr<CWallet>& wallet, interfaces::Node& node
 
 std::shared_ptr<CWallet> SetupLegacyWatchOnlyWallet(interfaces::Node& node, TestChain100Setup& test)
 {
-    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), "", CreateMockableWalletDatabase());
+    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(test.m_logger, node.context()->chain.get(), "", CreateMockableWalletDatabase(test.m_logger));
     wallet->LoadWallet();
     {
         LOCK(wallet->cs_wallet);
@@ -209,7 +209,7 @@ std::shared_ptr<CWallet> SetupLegacyWatchOnlyWallet(interfaces::Node& node, Test
 
 std::shared_ptr<CWallet> SetupDescriptorsWallet(interfaces::Node& node, TestChain100Setup& test)
 {
-    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(node.context()->chain.get(), "", CreateMockableWalletDatabase());
+    std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(test.m_logger, node.context()->chain.get(), "", CreateMockableWalletDatabase(test.m_logger));
     wallet->LoadWallet();
     LOCK(wallet->cs_wallet);
     wallet->SetWalletFlag(WALLET_FLAG_DESCRIPTORS);
@@ -450,7 +450,7 @@ void TestGUI(interfaces::Node& node)
     for (int i = 0; i < 5; ++i) {
         test.CreateAndProcessBlock({}, GetScriptForRawPubKey(test.coinbaseKey.GetPubKey()));
     }
-    auto wallet_loader = interfaces::MakeWalletLoader(*test.m_node.chain, *Assert(test.m_node.args));
+    auto wallet_loader = interfaces::MakeWalletLoader(*test.m_node.chain, *Assert(test.m_node.logger), *Assert(test.m_node.args));
     test.m_node.wallet_loader = wallet_loader.get();
     node.setContext(&test.m_node);
 

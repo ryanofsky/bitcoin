@@ -17,9 +17,9 @@
 #include <memory>
 
 namespace wallet {
-std::unique_ptr<CWallet> CreateSyncedWallet(interfaces::Chain& chain, CChain& cchain, const CKey& key)
+std::unique_ptr<CWallet> CreateSyncedWallet(BCLog::Logger& logger, interfaces::Chain& chain, CChain& cchain, const CKey& key)
 {
-    auto wallet = std::make_unique<CWallet>(&chain, "", CreateMockableWalletDatabase());
+    auto wallet = std::make_unique<CWallet>(logger, &chain, "", CreateMockableWalletDatabase(logger));
     {
         LOCK2(wallet->cs_wallet, ::cs_main);
         wallet->SetLastBlockProcessed(cchain.Height(), cchain.Tip()->GetBlockHash());
@@ -65,7 +65,7 @@ std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
     DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    auto database = MakeWalletDatabase("", options, status, error);
+    auto database = MakeWalletDatabase("", options, *Assert(context.logger), status, error);
     return TestLoadWallet(std::move(database), context, options.create_flags);
 }
 
@@ -78,7 +78,7 @@ void TestUnloadWallet(std::shared_ptr<CWallet>&& wallet)
 
 std::unique_ptr<WalletDatabase> DuplicateMockDatabase(WalletDatabase& database)
 {
-    return std::make_unique<MockableDatabase>(dynamic_cast<MockableDatabase&>(database).m_records);
+    return std::make_unique<MockableDatabase>(database.m_log.logger, dynamic_cast<MockableDatabase&>(database).m_records);
 }
 
 std::string getnewaddress(CWallet& w)
@@ -186,9 +186,9 @@ bool MockableBatch::ErasePrefix(Span<const std::byte> prefix)
     return true;
 }
 
-std::unique_ptr<WalletDatabase> CreateMockableWalletDatabase(MockableData records)
+std::unique_ptr<WalletDatabase> CreateMockableWalletDatabase(BCLog::Logger& logger, MockableData records)
 {
-    return std::make_unique<MockableDatabase>(records);
+    return std::make_unique<MockableDatabase>(logger, records);
 }
 
 MockableDatabase& GetMockableDatabase(CWallet& wallet)

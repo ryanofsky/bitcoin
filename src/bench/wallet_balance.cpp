@@ -18,14 +18,14 @@
 namespace wallet {
 static void WalletBalance(benchmark::Bench& bench, const bool set_dirty, const bool add_mine)
 {
-    const auto test_setup = MakeNoLogFileContext<const TestingSetup>();
+    const auto test_setup = MakeNoLogFileContext<TestingSetup>();
 
     const auto& ADDRESS_WATCHONLY = ADDRESS_BCRT1_UNSPENDABLE;
 
     // Set clock to genesis block, so the descriptors/keys creation time don't interfere with the blocks scanning process.
     // The reason is 'generatetoaddress', which creates a chain with deterministic timestamps in the past.
     SetMockTime(test_setup->m_node.chainman->GetParams().GenesisBlock().nTime);
-    CWallet wallet{test_setup->m_node.chain.get(), "", CreateMockableWalletDatabase()};
+    CWallet wallet{test_setup->m_logger, test_setup->m_node.chain.get(), "", CreateMockableWalletDatabase(test_setup->m_logger)};
     {
         LOCK(wallet.cs_wallet);
         wallet.SetWalletFlag(WALLET_FLAG_DESCRIPTORS);

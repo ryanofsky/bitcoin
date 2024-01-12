@@ -47,6 +47,7 @@ static constexpr CAmount CENT{1000000};
  * This just configures logging, data dir and chain parameters.
  */
 struct BasicTestingSetup {
+    GlobalLogger m_logger;
     util::SignalInterrupt m_interrupt;
     node::NodeContext m_node; // keep as first member to be destructed last
 
@@ -212,7 +213,7 @@ struct TestChain100Setup : public TestingSetup {
  * Make a test setup that has disk access to the debug.log file disabled. Can
  * be used in "hot loops", for example fuzzing or benchmarking.
  */
-template <class T = const BasicTestingSetup>
+template <class T = BasicTestingSetup>
 std::unique_ptr<T> MakeNoLogFileContext(const ChainType chain_type = ChainType::REGTEST, const std::vector<const char*>& extra_args = {})
 {
     const std::vector<const char*> arguments = Cat(

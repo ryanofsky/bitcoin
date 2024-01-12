@@ -394,7 +394,7 @@ struct SnapshotTestSetup : TestChain100Setup {
             // For robustness, ensure the old manager is destroyed before creating a
             // new one.
             m_node.chainman.reset();
-            m_node.chainman = std::make_unique<ChainstateManager>(*Assert(m_node.shutdown), chainman_opts, blockman_opts);
+            m_node.chainman = std::make_unique<ChainstateManager>(m_logger, *Assert(m_node.shutdown), chainman_opts, blockman_opts);
         }
         return *Assert(m_node.chainman);
     }
@@ -731,7 +731,7 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_snapshot_completion_hash_mismatch, Sna
     BOOST_CHECK(fs::exists(snapshot_chainstate_dir));
 
     {
-        ASSERT_DEBUG_LOG("failed to validate the -assumeutxo snapshot state");
+        ASSERT_DEBUG_LOG(m_logger, "failed to validate the -assumeutxo snapshot state");
         res = WITH_LOCK(::cs_main, return chainman.MaybeCompleteSnapshotValidation());
         BOOST_CHECK_EQUAL(res, SnapshotCompletionResult::HASH_MISMATCH);
     }

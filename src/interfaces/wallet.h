@@ -444,7 +444,7 @@ std::unique_ptr<Wallet> MakeWallet(wallet::WalletContext& context, const std::sh
 
 //! Return implementation of ChainClient interface for a wallet loader. This
 //! function will be undefined in builds where ENABLE_WALLET is false.
-std::unique_ptr<WalletLoader> MakeWalletLoader(Chain& chain, ArgsManager& args);
+std::unique_ptr<WalletLoader> MakeWalletLoader(Chain& chain, BCLog::Logger& logger, ArgsManager& args);
 
 } // namespace interfaces
 

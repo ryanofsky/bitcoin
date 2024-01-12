@@ -7,6 +7,7 @@
 #define BITCOIN_WALLET_DB_H
 
 #include <clientversion.h>
+#include <logging.h>
 #include <streams.h>
 #include <support/allocators/secure.h>
 #include <util/fs.h>
@@ -125,7 +126,7 @@ class WalletDatabase
 {
 public:
     /** Create dummy DB handle */
-    WalletDatabase() : nUpdateCounter(0) {}
+    WalletDatabase(BCLog::Logger& logger) : m_log{logger, BCLog::WALLETDB}, nUpdateCounter(0) {}
     virtual ~WalletDatabase() {};
 
     /** Open the database if it is not already opened. */
@@ -166,6 +167,7 @@ public:
 
     virtual std::string Format() = 0;
 
+    BCLog::Source m_log;
     std::atomic<unsigned int> nUpdateCounter;
     unsigned int nLastSeen{0};
     unsigned int nLastFlushed{0};
@@ -212,7 +214,7 @@ enum class DatabaseStatus {
 std::vector<fs::path> ListDatabases(const fs::path& path);
 
 void ReadDatabaseArgs(const ArgsManager& args, DatabaseOptions& options);
-std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, BCLog::Logger& logger, DatabaseStatus& status, bilingual_str& error);
 
 fs::path BDBDataFile(const fs::path& path);
 fs::path SQLiteDataFile(const fs::path& path);

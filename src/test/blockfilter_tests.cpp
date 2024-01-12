@@ -20,6 +20,7 @@ BOOST_AUTO_TEST_SUITE(blockfilter_tests)
 
 BOOST_AUTO_TEST_CASE(gcsfilter_test)
 {
+    GlobalLogger logger;
     GCSFilter::ElementSet included_elements, excluded_elements;
     for (int i = 0; i < 100; ++i) {
         GCSFilter::Element element1(32);
@@ -43,6 +44,7 @@ BOOST_AUTO_TEST_CASE(gcsfilter_test)
 
 BOOST_AUTO_TEST_CASE(gcsfilter_default_constructor)
 {
+    GlobalLogger logger;
     GCSFilter filter;
     BOOST_CHECK_EQUAL(filter.GetN(), 0U);
     BOOST_CHECK_EQUAL(filter.GetEncoded().size(), 1U);
@@ -56,6 +58,7 @@ BOOST_AUTO_TEST_CASE(gcsfilter_default_constructor)
 
 BOOST_AUTO_TEST_CASE(blockfilter_basic_test)
 {
+    GlobalLogger logger;
     CScript included_scripts[5], excluded_scripts[4];
 
     // First two are outputs on a single transaction.
@@ -129,6 +132,7 @@ BOOST_AUTO_TEST_CASE(blockfilter_basic_test)
 
 BOOST_AUTO_TEST_CASE(blockfilters_json_test)
 {
+    GlobalLogger logger;
     UniValue json;
     if (!json.read(json_tests::blockfilters) || !json.isArray()) {
         BOOST_ERROR("Parse error.");
@@ -181,6 +185,7 @@ BOOST_AUTO_TEST_CASE(blockfilters_json_test)
 
 BOOST_AUTO_TEST_CASE(blockfilter_type_names)
 {
+    GlobalLogger logger;
     BOOST_CHECK_EQUAL(BlockFilterTypeName(BlockFilterType::BASIC), "basic");
     BOOST_CHECK_EQUAL(BlockFilterTypeName(static_cast<BlockFilterType>(255)), "");
 

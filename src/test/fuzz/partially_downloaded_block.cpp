@@ -20,12 +20,12 @@
 #include <vector>
 
 namespace {
-const TestingSetup* g_setup;
+TestingSetup* g_setup;
 } // namespace
 
 void initialize_pdb()
 {
-    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    static const auto testing_setup = MakeNoLogFileContext<TestingSetup>();
     g_setup = testing_setup.get();
 }
 
@@ -52,7 +52,7 @@ FUZZ_TARGET(partially_downloaded_block, .init = initialize_pdb)
 
     CBlockHeaderAndShortTxIDs cmpctblock{*block};
 
-    CTxMemPool pool{MemPoolOptionsForTest(g_setup->m_node)};
+    CTxMemPool pool{g_setup->m_logger, MemPoolOptionsForTest(g_setup->m_node)};
     PartiallyDownloadedBlock pdb{&pool};
 
     // Set of available transactions (mempool or extra_txn)
