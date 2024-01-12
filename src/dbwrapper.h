@@ -20,6 +20,10 @@
 #include <string>
 #include <vector>
 
+namespace BCLog {
+class Logger;
+} // namespace BCLog
+
 static const size_t DBWRAPPER_PREALLOC_KEY_SIZE = 64;
 static const size_t DBWRAPPER_PREALLOC_VALUE_SIZE = 1024;
 
@@ -211,7 +215,7 @@ private:
     auto& DBContext() const LIFETIMEBOUND { return *Assert(m_db_context); }
 
 public:
-    CDBWrapper(const DBParams& params);
+    CDBWrapper(BCLog::Logger& logger, const DBParams& params);
     ~CDBWrapper();
 
     CDBWrapper(const CDBWrapper&) = delete;

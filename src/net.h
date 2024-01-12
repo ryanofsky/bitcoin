@@ -1095,7 +1095,7 @@ public:
     }
 
     CConnman(uint64_t seed0, uint64_t seed1, AddrMan& addrman, const NetGroupManager& netgroupman,
-             const CChainParams& params, bool network_active = true);
+             const CChainParams& params, BCLog::Logger& logger, bool network_active = true);
 
     ~CConnman();
 
@@ -1625,6 +1625,7 @@ private:
     };
 
     const CChainParams& m_params;
+    BCLog::Source m_log;
 
     friend struct ConnmanTestMsg;
 };

@@ -200,6 +200,7 @@ void InitContext(NodeContext& node)
 
     node.args = &gArgs;
     node.shutdown = &*g_shutdown;
+    node.logger = new GlobalLogger();
 }
 
 //////////////////////////////////////////////////////////////////////////////
