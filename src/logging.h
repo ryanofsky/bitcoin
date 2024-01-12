@@ -195,13 +195,10 @@ namespace BCLog {
         /** Returns a vector of the log categories in alphabetical order. */
         std::vector<LogCategory> LogCategoriesList() const;
         /** Returns a string with the log categories in alphabetical order. */
-        std::string LogCategoriesString() const
-        {
-            return Join(LogCategoriesList(), ", ", [&](const LogCategory& i) { return i.category; });
-        };
+        static std::string LogCategoriesString();
 
         //! Returns a string with all user-selectable log levels.
-        std::string LogLevelsString() const;
+        static std::string LogLevelsString();
 
         //! Returns the string representation of a log level.
         static std::string LogLevelToStr(BCLog::Level level);

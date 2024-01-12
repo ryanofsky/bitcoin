@@ -187,6 +187,15 @@ const CLogCategoryDesc LogCategories[] =
     {BCLog::ALL, "all"},
 };
 
+auto LogCategoriesSorted()
+{
+    // Sort log categories by alphabetical order.
+    std::array<CLogCategoryDesc, std::size(LogCategories)> categories;
+    std::copy(std::begin(LogCategories), std::end(LogCategories), categories.begin());
+    std::sort(categories.begin(), categories.end(), [](auto a, auto b) { return a.category < b.category; });
+    return categories;
+}
+
 bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str)
 {
     if (str.empty()) {
@@ -312,11 +321,7 @@ static std::optional<BCLog::Level> GetLogLevel(const std::string& level_str)
 
 std::vector<LogCategory> BCLog::Logger::LogCategoriesList() const
 {
-    // Sort log categories by alphabetical order.
-    std::array<CLogCategoryDesc, std::size(LogCategories)> categories;
-    std::copy(std::begin(LogCategories), std::end(LogCategories), categories.begin());
-    std::sort(categories.begin(), categories.end(), [](auto a, auto b) { return a.category < b.category; });
-
+    const auto categories{LogCategoriesSorted()};
     std::vector<LogCategory> ret;
     for (const CLogCategoryDesc& category_desc : categories) {
         if (category_desc.flag == BCLog::NONE || category_desc.flag == BCLog::ALL) continue;
@@ -328,13 +333,24 @@ std::vector<LogCategory> BCLog::Logger::LogCategoriesList() const
     return ret;
 }
 
+std::string BCLog::Logger::LogCategoriesString()
+{
+    const auto categories{LogCategoriesSorted()};
+    std::vector<std::string> ret;
+    for (const CLogCategoryDesc& category_desc : categories) {
+        if (category_desc.flag == BCLog::NONE || category_desc.flag == BCLog::ALL) continue;
+        ret.push_back(category_desc.category);
+    }
+    return Join(ret, ", ");
+}
+
 /** Log severity levels that can be selected by the user. */
 static constexpr std::array<BCLog::Level, 3> LogLevelsList()
 {
     return {BCLog::Level::Info, BCLog::Level::Debug, BCLog::Level::Trace};
 }
 
-std::string BCLog::Logger::LogLevelsString() const
+std::string BCLog::Logger::LogLevelsString()
 {
     const auto& levels = LogLevelsList();
     return Join(std::vector<BCLog::Level>{levels.begin(), levels.end()}, ", ", [](BCLog::Level level) { return LogLevelToStr(level); });
