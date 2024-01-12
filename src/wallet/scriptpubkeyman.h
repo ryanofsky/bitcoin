@@ -16,6 +16,7 @@
 #include <util/result.h>
 #include <util/time.h>
 #include <wallet/crypter.h>
+#include <wallet/logging.h>
 #include <wallet/types.h>
 #include <wallet/walletdb.h>
 #include <wallet/walletutil.h>
@@ -41,6 +42,7 @@ class WalletStorage
 public:
     virtual ~WalletStorage() = default;
     virtual std::string GetDisplayName() const = 0;
+    virtual const WalletLogSource& GetLogSource() const = 0;
     virtual WalletDatabase& GetDatabase() const = 0;
     virtual bool IsWalletFlagSet(uint64_t) const = 0;
     virtual void UnsetBlankWalletFlag(WalletBatch&) = 0;
@@ -168,10 +170,11 @@ struct WalletDestination
 class ScriptPubKeyMan
 {
 protected:
+    const WalletLogSource& m_log;
     WalletStorage& m_storage;
 
 public:
-    explicit ScriptPubKeyMan(WalletStorage& storage) : m_storage(storage) {}
+    explicit ScriptPubKeyMan(WalletStorage& storage) : m_log{storage.GetLogSource()}, m_storage(storage) {}
     virtual ~ScriptPubKeyMan() {};
     virtual util::Result<CTxDestination> GetNewDestination(const OutputType type) { return util::Error{Untranslated("Not supported")}; }
     virtual isminetype IsMine(const CScript& script) const { return ISMINE_NO; }
@@ -245,13 +248,6 @@ public:
 
     /** Returns a set of all the scriptPubKeys that this ScriptPubKeyMan watches */
     virtual std::unordered_set<CScript, SaltedSipHasher> GetScriptPubKeys() const { return {}; };
-
-    /** Prepends the wallet name in logging output to ease debugging in multi-wallet use cases */
-    template <typename... Params>
-    void WalletLogPrintf(const char* fmt, Params... parameters) const
-    {
-        LogPrintf(("%s " + std::string{fmt}).c_str(), m_storage.GetDisplayName(), parameters...);
-    };
 
     /** Watch-only address added */
     boost::signals2::signal<void (bool fHaveWatchOnly)> NotifyWatchonlyChanged;
