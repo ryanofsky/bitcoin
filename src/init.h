@@ -16,6 +16,9 @@ static constexpr bool DEFAULT_DAEMON = false;
 static constexpr bool DEFAULT_DAEMONWAIT = false;
 
 class ArgsManager;
+namespace BCLog {
+class Logger;
+} // namespace BCLog
 namespace interfaces {
 struct BlockAndHeaderTipInfo;
 }
@@ -35,7 +38,7 @@ bool ShutdownRequested(node::NodeContext& node);
 void Interrupt(node::NodeContext& node);
 void Shutdown(node::NodeContext& node);
 //!Initialize the logging infrastructure
-void InitLogging(const ArgsManager& args);
+void InitLogging(BCLog::Logger& logger, const ArgsManager& args);
 //!Parameter interaction: change current parameters depending on various rules
 void InitParameterInteraction(ArgsManager& args);
 
@@ -49,7 +52,7 @@ bool AppInitBasicSetup(const ArgsManager& args, std::atomic<int>& exit_status);
  * @note This can be done before daemonization. Do not call Shutdown() if this function fails.
  * @pre Parameters should be parsed and config file should be read, AppInitBasicSetup should have been called.
  */
-bool AppInitParameterInteraction(const ArgsManager& args);
+bool AppInitParameterInteraction(const ArgsManager& args, BCLog::Logger& logger);
 /**
  * Initialization sanity checks.
  * @note This can be done before daemonization. Do not call Shutdown() if this function fails.

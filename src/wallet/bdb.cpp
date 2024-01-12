@@ -299,8 +299,8 @@ static Span<const std::byte> SpanFromDbt(const SafeDbt& dbt)
     return {reinterpret_cast<const std::byte*>(dbt.get_data()), dbt.get_size()};
 }
 
-BerkeleyDatabase::BerkeleyDatabase(std::shared_ptr<BerkeleyEnvironment> env, fs::path filename, const DatabaseOptions& options) :
-    WalletDatabase(), env(std::move(env)), m_filename(std::move(filename)), m_max_log_mb(options.max_log_mb)
+BerkeleyDatabase::BerkeleyDatabase(std::shared_ptr<BerkeleyEnvironment> env, fs::path filename, const DatabaseOptions& options, BCLog::Logger& logger) :
+    WalletDatabase(logger), env(std::move(env)), m_filename(std::move(filename)), m_max_log_mb(options.max_log_mb)
 {
     auto inserted = this->env->m_databases.emplace(m_filename, std::ref(*this));
     assert(inserted.second);
@@ -926,7 +926,7 @@ std::unique_ptr<DatabaseBatch> BerkeleyDatabase::MakeBatch(bool flush_on_close)
     return std::make_unique<BerkeleyBatch>(*this, false, flush_on_close);
 }
 
-std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
+std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, BCLog::Logger& logger, DatabaseStatus& status, bilingual_str& error)
 {
     fs::path data_file = BDBDataFile(path);
     std::unique_ptr<BerkeleyDatabase> db;
@@ -939,7 +939,7 @@ std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, con
             status = DatabaseStatus::FAILED_ALREADY_LOADED;
             return nullptr;
         }
-        db = std::make_unique<BerkeleyDatabase>(std::move(env), std::move(data_filename), options);
+        db = std::make_unique<BerkeleyDatabase>(std::move(env), std::move(data_filename), options, logger);
     }
 
     if (options.verify && !db->Verify(error)) {

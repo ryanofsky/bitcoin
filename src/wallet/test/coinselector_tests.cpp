@@ -92,9 +92,9 @@ static void add_coin(CoinsResult& available_coins, CWallet& wallet, const CAmoun
 
 // Helpers
 std::optional<SelectionResult> KnapsackSolver(std::vector<OutputGroup>& groups, const CAmount& nTargetValue,
-                                              CAmount change_target, FastRandomContext& rng)
+                                              CAmount change_target, FastRandomContext& rng, BCLog::Logger& logger)
 {
-    auto res{KnapsackSolver(groups, nTargetValue, change_target, rng, MAX_STANDARD_TX_WEIGHT)};
+    auto res{KnapsackSolver(groups, nTargetValue, change_target, logger, rng, MAX_STANDARD_TX_WEIGHT)};
     return res ? std::optional<SelectionResult>(*res) : std::nullopt;
 }
 
@@ -162,6 +162,7 @@ inline std::vector<OutputGroup>& KnapsackGroupOutputs(const CoinsResult& availab
 {
     FastRandomContext rand{};
     CoinSelectionParams coin_selection_params{
+        wallet.m_log.logger,
         rand,
         /*change_output_size=*/ 0,
         /*change_spend_size=*/ 0,
@@ -179,7 +180,8 @@ inline std::vector<OutputGroup>& KnapsackGroupOutputs(const CoinsResult& availab
 
 static std::unique_ptr<CWallet> NewWallet(const node::NodeContext& m_node, const std::string& wallet_name = "")
 {
-    std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(m_node.chain.get(), wallet_name, CreateMockableWalletDatabase());
+    BCLog::Logger& logger = *Assert(m_node.logger);
+    std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(logger, m_node.chain.get(), wallet_name, CreateMockableWalletDatabase(logger));
     BOOST_CHECK(wallet->LoadWallet() == DBErrors::LOAD_OK);
     LOCK(wallet->cs_wallet);
     wallet->SetWalletFlag(WALLET_FLAG_DESCRIPTORS);
@@ -307,6 +309,7 @@ BOOST_AUTO_TEST_CASE(bnb_search_test)
 
     // Make sure that effective value is working in AttemptSelection when BnB is used
     CoinSelectionParams coin_selection_params_bnb{
+        m_logger,
         rand,
         /*change_output_size=*/ 31,
         /*change_spend_size=*/ 68,
@@ -464,6 +467,7 @@ BOOST_AUTO_TEST_CASE(bnb_sffo_restriction)
 
     FastRandomContext rand{};
     CoinSelectionParams params{
+            m_logger,
             rand,
             /*change_output_size=*/ 31,  // unused value, p2wpkh output size (wallet default change type)
             /*change_spend_size=*/ 68,   // unused value, p2wpkh input size (high-r signature)
@@ -496,7 +500,7 @@ BOOST_AUTO_TEST_CASE(bnb_sffo_restriction)
 BOOST_AUTO_TEST_CASE(knapsack_solver_test)
 {
     FastRandomContext rand{};
-    const auto temp1{[&rand](std::vector<OutputGroup>& g, const CAmount& v, CAmount c) { return KnapsackSolver(g, v, c, rand); }};
+    const auto temp1{[&rand, this](std::vector<OutputGroup>& g, const CAmount& v, CAmount c) { return KnapsackSolver(g, v, c, rand, m_logger); }};
     const auto KnapsackSolver{temp1};
     std::unique_ptr<CWallet> wallet = NewWallet(m_node);
 
@@ -813,7 +817,7 @@ BOOST_AUTO_TEST_CASE(ApproximateBestSubset)
         add_coin(available_coins, *wallet, 1000 * COIN);
     add_coin(available_coins, *wallet, 3 * COIN);
 
-    const auto result = KnapsackSolver(KnapsackGroupOutputs(available_coins, *wallet, filter_standard), 1003 * COIN, CENT, rand);
+    const auto result = KnapsackSolver(KnapsackGroupOutputs(available_coins, *wallet, filter_standard), 1003 * COIN, CENT, rand, m_logger);
     BOOST_CHECK(result);
     BOOST_CHECK_EQUAL(result->GetSelectedValue(), 1003 * COIN);
     BOOST_CHECK_EQUAL(result->GetInputSet().size(), 2U);
@@ -852,6 +856,7 @@ BOOST_AUTO_TEST_CASE(SelectCoins_test)
 
         // Perform selection
         CoinSelectionParams cs_params{
+            m_logger,
             rand,
             /*change_output_size=*/ 34,
             /*change_spend_size=*/ 148,
@@ -1112,6 +1117,7 @@ BOOST_AUTO_TEST_CASE(srd_tests)
 
     FastRandomContext rand;
     CoinSelectionParams dummy_params{ // Only used to provide the 'avoid_partial' flag.
+            m_logger,
             rand,
             /*change_output_size=*/34,
             /*change_spend_size=*/68,
@@ -1207,6 +1213,7 @@ BOOST_AUTO_TEST_CASE(check_max_weight)
 
     FastRandomContext rand;
     CoinSelectionParams cs_params{
+        m_logger,
         rand,
         /*change_output_size=*/34,
         /*change_spend_size=*/68,
@@ -1312,6 +1319,7 @@ BOOST_AUTO_TEST_CASE(SelectCoins_effective_value_test)
 
     FastRandomContext rand;
     CoinSelectionParams cs_params{
+        m_logger,
         rand,
         /*change_output_size=*/34,
         /*change_spend_size=*/148,

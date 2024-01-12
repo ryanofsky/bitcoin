@@ -34,7 +34,7 @@ static const DatabaseFormat DATABASE_FORMATS[] = {
 
 const std::string ADDRESS_BCRT1_UNSPENDABLE = "bcrt1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq3xueyj";
 
-std::unique_ptr<CWallet> CreateSyncedWallet(interfaces::Chain& chain, CChain& cchain, const CKey& key);
+std::unique_ptr<CWallet> CreateSyncedWallet(BCLog::Logger& logger, interfaces::Chain& chain, CChain& cchain, const CKey& key);
 
 std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context);
 std::shared_ptr<CWallet> TestLoadWallet(std::unique_ptr<WalletDatabase> database, WalletContext& context, uint64_t create_flags);
@@ -103,7 +103,7 @@ public:
     MockableData m_records;
     bool m_pass{true};
 
-    MockableDatabase(MockableData records = {}) : WalletDatabase(), m_records(records) {}
+    MockableDatabase(BCLog::Logger& logger, MockableData records = {}) : WalletDatabase(logger), m_records(records) {}
     ~MockableDatabase() {};
 
     void Open() override {}
@@ -123,7 +123,7 @@ public:
     std::unique_ptr<DatabaseBatch> MakeBatch(bool flush_on_close = true) override { return std::make_unique<MockableBatch>(m_records, m_pass); }
 };
 
-std::unique_ptr<WalletDatabase> CreateMockableWalletDatabase(MockableData records = {});
+std::unique_ptr<WalletDatabase> CreateMockableWalletDatabase(BCLog::Logger& logger, MockableData records = {});
 
 MockableDatabase& GetMockableDatabase(CWallet& wallet);
 } // namespace wallet

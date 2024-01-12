@@ -68,6 +68,8 @@ private:
     // Local protocol version
     uint32_t m_recon_version;
 
+    BCLog::Source m_log;
+
     /**
      * Keeps track of txreconciliation states of eligible peers.
      * For pre-registered peers, the locally generated salt is stored.
@@ -77,7 +79,7 @@ private:
     std::unordered_map<NodeId, std::variant<uint64_t, TxReconciliationState>> m_states GUARDED_BY(m_txreconciliation_mutex);
 
 public:
-    explicit Impl(uint32_t recon_version) : m_recon_version(recon_version) {}
+    explicit Impl(uint32_t recon_version, BCLog::Logger& logger) : m_recon_version(recon_version), m_log{logger, BCLog::TXRECONCILIATION} {}
 
     uint64_t PreRegisterPeer(NodeId peer_id) EXCLUSIVE_LOCKS_REQUIRED(!m_txreconciliation_mutex)
     {
@@ -144,7 +146,7 @@ public:
     }
 };
 
-TxReconciliationTracker::TxReconciliationTracker(uint32_t recon_version) : m_impl{std::make_unique<TxReconciliationTracker::Impl>(recon_version)} {}
+TxReconciliationTracker::TxReconciliationTracker(uint32_t recon_version, BCLog::Logger& logger) : m_impl{std::make_unique<TxReconciliationTracker::Impl>(recon_version, logger)} {}
 
 TxReconciliationTracker::~TxReconciliationTracker() = default;
 

@@ -172,13 +172,13 @@ static bool AppInit(NodeContext& node)
         // -server defaults to true for bitcoind but not for the GUI so do this here
         args.SoftSetBoolArg("-server", true);
         // Set this early so that parameter interactions go to console
-        InitLogging(args);
+        InitLogging(*Assert(node.logger), args);
         InitParameterInteraction(args);
         if (!AppInitBasicSetup(args, node.exit_status)) {
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }
-        if (!AppInitParameterInteraction(args)) {
+        if (!AppInitParameterInteraction(args, *Assert(node.logger))) {
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }

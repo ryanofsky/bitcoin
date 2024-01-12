@@ -89,15 +89,15 @@ class NodeImpl : public Node
 {
 public:
     explicit NodeImpl(NodeContext& context) { setContext(&context); }
-    void initLogging() override { InitLogging(args()); }
+    void initLogging() override { InitLogging(*Assert(m_context)->logger, args()); }
     void initParameterInteraction() override { InitParameterInteraction(args()); }
     bilingual_str getWarnings() override { return GetWarnings(true); }
     int getExitStatus() override { return Assert(m_context)->exit_status.load(); }
-    uint32_t getLogCategories() override { return LogInstance().GetCategoryMask(); }
+    uint32_t getLogCategories() override { return Assert(Assert(m_context)->logger)->GetCategoryMask(); }
     bool baseInitialize() override
     {
         if (!AppInitBasicSetup(args(), Assert(context())->exit_status)) return false;
-        if (!AppInitParameterInteraction(args())) return false;
+        if (!AppInitParameterInteraction(args(), *Assert(m_context)->logger)) return false;
 
         m_context->kernel = std::make_unique<kernel::Context>();
         if (!AppInitSanityChecks(*m_context->kernel)) return false;

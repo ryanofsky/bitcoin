@@ -31,6 +31,7 @@ static void WalletLoading(benchmark::Bench& bench, bool legacy_wallet)
     const auto test_setup = MakeNoLogFileContext<TestingSetup>();
 
     WalletContext context;
+    context.logger = &test_setup->m_logger;
     context.args = &test_setup->m_args;
     context.chain = test_setup->m_node.chain.get();
 
@@ -40,7 +41,7 @@ static void WalletLoading(benchmark::Bench& bench, bool legacy_wallet)
     if (!legacy_wallet) {
         create_flags = WALLET_FLAG_DESCRIPTORS;
     }
-    auto database = CreateMockableWalletDatabase();
+    auto database = CreateMockableWalletDatabase(test_setup->m_logger);
     auto wallet = TestLoadWallet(std::move(database), context, create_flags);
 
     // Generate a bunch of transactions and addresses to put into the wallet

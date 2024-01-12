@@ -30,8 +30,8 @@ BOOST_AUTO_TEST_CASE(file)
         BOOST_REQUIRE(WriteBinaryFile(banlist_path + ".json", entries_write));
         {
             // The invalid entries will be dropped, but the valid one remains
-            ASSERT_DEBUG_LOG("Dropping entry with unparseable address or subnet (aaaaaaaaa) from ban list");
-            ASSERT_DEBUG_LOG("Dropping entry with unknown version (2) from ban list");
+            ASSERT_DEBUG_LOG(m_logger, "Dropping entry with unparseable address or subnet (aaaaaaaaa) from ban list");
+            ASSERT_DEBUG_LOG(m_logger, "Dropping entry with unknown version (2) from ban list");
             BanMan banman{banlist_path, /*client_interface=*/nullptr, /*default_ban_time=*/0};
             banmap_t entries_read;
             banman.GetBanned(entries_read);

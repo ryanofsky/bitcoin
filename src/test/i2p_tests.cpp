@@ -24,16 +24,16 @@ public:
     explicit EnvTestingSetup(const ChainType chainType = ChainType::MAIN,
                              const std::vector<const char*>& extra_args = {})
         : BasicTestingSetup{chainType, extra_args},
-          m_prev_log_level{LogInstance().LogLevel()},
+          m_prev_log_level{m_logger.LogLevel()},
           m_create_sock_orig{CreateSock}
     {
-        LogInstance().SetLogLevel(BCLog::Level::Trace);
+        m_logger.SetLogLevel(BCLog::Level::Trace);
     }
 
     ~EnvTestingSetup()
     {
         CreateSock = m_create_sock_orig;
-        LogInstance().SetLogLevel(m_prev_log_level);
+        m_logger.SetLogLevel(m_prev_log_level);
     }
 
 private:
@@ -54,8 +54,8 @@ BOOST_AUTO_TEST_CASE(unlimited_recv)
     i2p::sam::Session session(gArgs.GetDataDirNet() / "test_i2p_private_key", CService{}, &interrupt);
 
     {
-        ASSERT_DEBUG_LOG("Creating persistent SAM session");
-        ASSERT_DEBUG_LOG("too many bytes without a terminator");
+        ASSERT_DEBUG_LOG(m_logger, "Creating persistent SAM session");
+        ASSERT_DEBUG_LOG(m_logger, "too many bytes without a terminator");
 
         i2p::Connection conn;
         bool proxy_error;
@@ -117,10 +117,10 @@ BOOST_AUTO_TEST_CASE(listen_ok_accept_fail)
 
     i2p::Connection conn;
     for (size_t i = 0; i < 5; ++i) {
-        ASSERT_DEBUG_LOG("Creating persistent SAM session");
-        ASSERT_DEBUG_LOG("Persistent SAM session" /* ... created */);
-        ASSERT_DEBUG_LOG("Error accepting");
-        ASSERT_DEBUG_LOG("Destroying SAM session");
+        ASSERT_DEBUG_LOG(m_logger, "Creating persistent SAM session");
+        ASSERT_DEBUG_LOG(m_logger, "Persistent SAM session" /* ... created */);
+        ASSERT_DEBUG_LOG(m_logger, "Error accepting");
+        ASSERT_DEBUG_LOG(m_logger, "Destroying SAM session");
         BOOST_REQUIRE(session.Listen(conn));
         BOOST_REQUIRE(!session.Accept(conn));
     }
@@ -157,8 +157,8 @@ BOOST_AUTO_TEST_CASE(damaged_private_key)
         i2p::sam::Session session(i2p_private_key_file, CService{}, &interrupt);
 
         {
-            ASSERT_DEBUG_LOG("Creating persistent SAM session");
-            ASSERT_DEBUG_LOG(expected_error);
+            ASSERT_DEBUG_LOG(m_logger, "Creating persistent SAM session");
+            ASSERT_DEBUG_LOG(m_logger, expected_error);
 
             i2p::Connection conn;
             bool proxy_error;

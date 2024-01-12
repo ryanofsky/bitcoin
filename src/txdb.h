@@ -55,9 +55,10 @@ class CCoinsViewDB final : public CCoinsView
 protected:
     DBParams m_db_params;
     CoinsViewOptions m_options;
+    BCLog::Source m_log;
     std::unique_ptr<CDBWrapper> m_db;
 public:
-    explicit CCoinsViewDB(DBParams db_params, CoinsViewOptions options);
+    explicit CCoinsViewDB(BCLog::Logger& logger, DBParams db_params, CoinsViewOptions options);
 
     bool GetCoin(const COutPoint &outpoint, Coin &coin) const override;
     bool HaveCoin(const COutPoint &outpoint) const override;

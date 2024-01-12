@@ -91,7 +91,7 @@ public:
     BerkeleyDatabase() = delete;
 
     /** Create DB handle to real database */
-    BerkeleyDatabase(std::shared_ptr<BerkeleyEnvironment> env, fs::path filename, const DatabaseOptions& options);
+    BerkeleyDatabase(std::shared_ptr<BerkeleyEnvironment> env, fs::path filename, const DatabaseOptions& options, BCLog::Logger& logger);
 
     ~BerkeleyDatabase() override;
 
@@ -215,7 +215,7 @@ std::string BerkeleyDatabaseVersion();
 bool BerkeleyDatabaseSanityCheck();
 
 //! Return object giving access to Berkeley database at specified path.
-std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, BCLog::Logger& logger, DatabaseStatus& status, bilingual_str& error);
 } // namespace wallet
 
 #endif // BITCOIN_WALLET_BDB_H

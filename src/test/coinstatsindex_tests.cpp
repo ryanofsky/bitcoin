@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_SUITE(coinstatsindex_tests)
 
 BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
 {
-    CoinStatsIndex coin_stats_index{interfaces::MakeChain(m_node), 1 << 20, true};
+    CoinStatsIndex coin_stats_index{m_logger, interfaces::MakeChain(m_node), 1 << 20, true};
     BOOST_REQUIRE(coin_stats_index.Init());
 
     const CBlockIndex* block_index;
@@ -83,7 +83,7 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_unclean_shutdown, TestChain100Setup)
     Chainstate& chainstate = Assert(m_node.chainman)->ActiveChainstate();
     const CChainParams& params = Params();
     {
-        CoinStatsIndex index{interfaces::MakeChain(m_node), 1 << 20};
+        CoinStatsIndex index{m_logger, interfaces::MakeChain(m_node), 1 << 20};
         BOOST_REQUIRE(index.Init());
         BOOST_REQUIRE(index.StartBackgroundSync());
         IndexWaitSynced(index, *Assert(m_node.shutdown));
@@ -110,7 +110,7 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_unclean_shutdown, TestChain100Setup)
     }
 
     {
-        CoinStatsIndex index{interfaces::MakeChain(m_node), 1 << 20};
+        CoinStatsIndex index{m_logger, interfaces::MakeChain(m_node), 1 << 20};
         BOOST_REQUIRE(index.Init());
         // Make sure the index can be loaded.
         BOOST_REQUIRE(index.StartBackgroundSync());

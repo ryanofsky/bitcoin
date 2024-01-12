@@ -1434,7 +1434,7 @@ bool WalletBatch::TxnAbort()
     return m_batch->TxnAbort();
 }
 
-std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
+std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, BCLog::Logger& logger, DatabaseStatus& status, bilingual_str& error)
 {
     bool exists;
     try {
@@ -1498,7 +1498,7 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
 
     if (format == DatabaseFormat::SQLITE) {
 #ifdef USE_SQLITE
-        return MakeSQLiteDatabase(path, options, status, error);
+        return MakeSQLiteDatabase(path, options, logger, status, error);
 #else
         error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support SQLite database format.", fs::PathToString(path)));
         status = DatabaseStatus::FAILED_BAD_FORMAT;
@@ -1507,7 +1507,7 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
     }
 
 #ifdef USE_BDB
-    return MakeBerkeleyDatabase(path, options, status, error);
+    return MakeBerkeleyDatabase(path, options, logger, status, error);
 #else
     error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support Berkeley DB database format.", fs::PathToString(path)));
     status = DatabaseStatus::FAILED_BAD_FORMAT;

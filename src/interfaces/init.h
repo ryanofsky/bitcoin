@@ -34,6 +34,7 @@ public:
     virtual std::unique_ptr<Chain> makeChain() { return nullptr; }
     virtual std::unique_ptr<WalletLoader> makeWalletLoader(Chain& chain) { return nullptr; }
     virtual std::unique_ptr<Echo> makeEcho() { return nullptr; }
+    virtual BCLog::Logger* logger() { return nullptr; }
     virtual Ipc* ipc() { return nullptr; }
 };
 

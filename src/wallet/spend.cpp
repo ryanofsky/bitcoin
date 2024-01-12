@@ -705,7 +705,7 @@ util::Result<SelectionResult> ChooseSelectionResult(interfaces::Chain& chain, co
     max_inputs_weight -= (coin_selection_params.change_output_size * WITNESS_SCALE_FACTOR);
 
     // The knapsack solver has some legacy behavior where it will spend dust outputs. We retain this behavior, so don't filter for positive only here.
-    if (auto knapsack_result{KnapsackSolver(groups.mixed_group, nTargetValue, coin_selection_params.m_min_change_target, coin_selection_params.rng_fast, max_inputs_weight)}) {
+    if (auto knapsack_result{KnapsackSolver(groups.mixed_group, nTargetValue, coin_selection_params.m_min_change_target, coin_selection_params.log.logger, coin_selection_params.rng_fast, max_inputs_weight)}) {
         results.push_back(*knapsack_result);
     } else append_error(knapsack_result);
 
@@ -981,7 +981,7 @@ static util::Result<CreatedTransactionResult> CreateTransactionInternal(
         txNew.nVersion = coin_control.m_version.value();
     }
 
-    CoinSelectionParams coin_selection_params{rng_fast}; // Parameters for coin selection, init with dummy
+    CoinSelectionParams coin_selection_params{wallet.m_log.logger, rng_fast}; // Parameters for coin selection, init with dummy
     coin_selection_params.m_avoid_partial_spends = coin_control.m_avoid_partial_spends;
     coin_selection_params.m_include_unsafe_inputs = coin_control.m_include_unsafe_inputs;
 

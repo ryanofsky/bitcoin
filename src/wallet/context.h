@@ -35,6 +35,7 @@ using LoadWalletFn = std::function<void(std::unique_ptr<interfaces::Wallet> wall
 //! behavior.
 struct WalletContext {
     interfaces::Chain* chain{nullptr};
+    BCLog::Logger* logger{nullptr};
     CScheduler* scheduler{nullptr};
     ArgsManager* args{nullptr}; // Currently a raw pointer because the memory is not managed by this struct
     // It is unsafe to lock this after locking a CWallet::cs_wallet mutex because

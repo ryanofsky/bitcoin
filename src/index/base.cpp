@@ -43,8 +43,8 @@ CBlockLocator GetLocator(interfaces::Chain& chain, const uint256& block_hash)
     return locator;
 }
 
-BaseIndex::DB::DB(const fs::path& path, size_t n_cache_size, bool f_memory, bool f_wipe, bool f_obfuscate) :
-    CDBWrapper{DBParams{
+BaseIndex::DB::DB(BCLog::Logger& logger, const fs::path& path, size_t n_cache_size, bool f_memory, bool f_wipe, bool f_obfuscate) :
+    CDBWrapper{logger, DBParams{
         .path = path,
         .cache_bytes = n_cache_size,
         .memory_only = f_memory,
@@ -67,8 +67,8 @@ void BaseIndex::DB::WriteBestBlock(CDBBatch& batch, const CBlockLocator& locator
     batch.Write(DB_BEST_BLOCK, locator);
 }
 
-BaseIndex::BaseIndex(std::unique_ptr<interfaces::Chain> chain, std::string name)
-    : m_chain{std::move(chain)}, m_name{std::move(name)} {}
+BaseIndex::BaseIndex(BCLog::Logger& logger, std::unique_ptr<interfaces::Chain> chain, std::string name)
+    : m_logger{logger}, m_chain{std::move(chain)}, m_name{std::move(name)} {}
 
 BaseIndex::~BaseIndex()
 {

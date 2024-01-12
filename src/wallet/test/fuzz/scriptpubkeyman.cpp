@@ -36,14 +36,14 @@
 
 namespace wallet {
 namespace {
-const TestingSetup* g_setup;
+TestingSetup* g_setup;
 
 //! The converter of mocked descriptors, needs to be initialized when the target is.
 MockedDescriptorConverter MOCKED_DESC_CONVERTER;
 
 void initialize_spkm()
 {
-    static const auto testing_setup{MakeNoLogFileContext<const TestingSetup>()};
+    static const auto testing_setup{MakeNoLogFileContext<TestingSetup>()};
     g_setup = testing_setup.get();
     SelectParams(ChainType::MAIN);
     MOCKED_DESC_CONVERTER.Init();
@@ -88,7 +88,7 @@ FUZZ_TARGET(scriptpubkeyman, .init = initialize_spkm)
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
     const auto& node{g_setup->m_node};
     Chainstate& chainstate{node.chainman->ActiveChainstate()};
-    std::unique_ptr<CWallet> wallet_ptr{std::make_unique<CWallet>(node.chain.get(), "", CreateMockableWalletDatabase())};
+    std::unique_ptr<CWallet> wallet_ptr{std::make_unique<CWallet>(g_setup->m_logger, node.chain.get(), "", CreateMockableWalletDatabase(g_setup->m_logger))};
     CWallet& wallet{*wallet_ptr};
     {
         LOCK(wallet.cs_wallet);

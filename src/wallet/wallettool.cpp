@@ -9,8 +9,10 @@
 #include <wallet/wallettool.h>
 
 #include <common/args.h>
+#include <util/check.h>
 #include <util/fs.h>
 #include <util/translation.h>
+#include <wallet/context.h>
 #include <wallet/dump.h>
 #include <wallet/salvage.h>
 #include <wallet/wallet.h>
@@ -47,18 +49,19 @@ static void WalletCreate(CWallet* wallet_instance, uint64_t wallet_creation_flag
     wallet_instance->TopUpKeyPool();
 }
 
-static std::shared_ptr<CWallet> MakeWallet(const std::string& name, const fs::path& path, DatabaseOptions options)
+static std::shared_ptr<CWallet> MakeWallet(const WalletContext& context, const std::string& name, const fs::path& path, DatabaseOptions options)
 {
+    BCLog::Logger& logger = *Assert(context.logger);
     DatabaseStatus status;
     bilingual_str error;
-    std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, status, error);
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, logger, status, error);
     if (!database) {
         tfm::format(std::cerr, "%s\n", error.original);
         return nullptr;
     }
 
     // dummy chain interface
-    std::shared_ptr<CWallet> wallet_instance{new CWallet(/*chain=*/nullptr, name, std::move(database)), WalletToolReleaseWallet};
+    std::shared_ptr<CWallet> wallet_instance{new CWallet(logger, /*chain=*/nullptr, name, std::move(database)), WalletToolReleaseWallet};
     DBErrors load_wallet_ret;
     try {
         load_wallet_ret = wallet_instance->LoadWallet();
@@ -112,8 +115,11 @@ static void WalletShowInfo(CWallet* wallet_instance)
     tfm::format(std::cout, "Address Book: %zu\n", wallet_instance->m_address_book.size());
 }
 
-bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
+bool ExecuteWalletToolFunc(const WalletContext& context, const std::string& command)
 {
+    ArgsManager& args = *Assert(context.args);
+    BCLog::Logger& logger = *Assert(context.logger);
+
     if (args.IsArgSet("-format") && command != "createfromdump") {
         tfm::format(std::cerr, "The -format option can only be used with the \"createfromdump\" command.\n");
         return false;
@@ -158,7 +164,7 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
             options.require_format = DatabaseFormat::SQLITE;
         }
 
-        const std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, options);
+        const std::shared_ptr<CWallet> wallet_instance = MakeWallet(context, name, path, options);
         if (wallet_instance) {
             WalletShowInfo(wallet_instance.get());
             wallet_instance->Close();
@@ -167,7 +173,7 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
         DatabaseOptions options;
         ReadDatabaseArgs(args, options);
         options.require_existing = true;
-        const std::shared_ptr<CWallet> wallet_instance = MakeWallet(name, path, options);
+        const std::shared_ptr<CWallet> wallet_instance = MakeWallet(context, name, path, options);
         if (!wallet_instance) return false;
         WalletShowInfo(wallet_instance.get());
         wallet_instance->Close();
@@ -175,7 +181,7 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
 #ifdef USE_BDB
         bilingual_str error;
         std::vector<bilingual_str> warnings;
-        bool ret = RecoverDatabaseFile(args, path, error, warnings);
+        bool ret = RecoverDatabaseFile(logger, args, path, error, warnings);
         if (!ret) {
             for (const auto& warning : warnings) {
                 tfm::format(std::cerr, "%s\n", warning.original);
@@ -195,7 +201,7 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
         options.require_existing = true;
         DatabaseStatus status;
         bilingual_str error;
-        std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, status, error);
+        std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, logger, status, error);
         if (!database) {
             tfm::format(std::cerr, "%s\n", error.original);
             return false;
@@ -211,7 +217,7 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
     } else if (command == "createfromdump") {
         bilingual_str error;
         std::vector<bilingual_str> warnings;
-        bool ret = CreateFromDump(args, name, path, error, warnings);
+        bool ret = CreateFromDump(logger, args, name, path, error, warnings);
         for (const auto& warning : warnings) {
             tfm::format(std::cout, "%s\n", warning.original);
         }

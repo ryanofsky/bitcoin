@@ -101,7 +101,9 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vecto
     : m_path_root{fs::temp_directory_path() / "test_common_" PACKAGE_NAME / g_insecure_rand_ctx_temp_path.rand256().ToString()},
       m_args{}
 {
+    m_node.logger = &m_logger;
     m_node.shutdown = &m_interrupt;
+    m_node.args = &gArgs;
     m_node.args = &gArgs;
     std::vector<const char*> arguments = Cat(
         {
@@ -134,10 +136,10 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vecto
     }
     SelectParams(chainType);
     SeedInsecureRand();
-    if (G_TEST_LOG_FUN) LogInstance().PushBackCallback(G_TEST_LOG_FUN);
-    InitLogging(*m_node.args);
-    AppInitParameterInteraction(*m_node.args);
-    LogInstance().StartLogging();
+    if (G_TEST_LOG_FUN) m_logger.PushBackCallback(G_TEST_LOG_FUN);
+    InitLogging(m_logger, *m_node.args);
+    AppInitParameterInteraction(*m_node.args, m_logger);
+    m_logger.StartLogging();
     m_node.kernel = std::make_unique<kernel::Context>();
     SetupEnvironment();
 
@@ -158,7 +160,7 @@ BasicTestingSetup::~BasicTestingSetup()
 {
     m_node.kernel.reset();
     SetMockTime(0s); // Reset mocktime for following tests
-    LogInstance().DisconnectTestLogger();
+    m_logger.DisconnectTestLogger();
     fs::remove_all(m_path_root);
     gArgs.ClearArgs();
 }
@@ -175,7 +177,7 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
     GetMainSignals().RegisterBackgroundSignalScheduler(*m_node.scheduler);
 
     m_node.fee_estimator = std::make_unique<CBlockPolicyEstimator>(FeeestPath(*m_node.args), DEFAULT_ACCEPT_STALE_FEE_ESTIMATES);
-    m_node.mempool = std::make_unique<CTxMemPool>(MemPoolOptionsForTest(m_node));
+    m_node.mempool = std::make_unique<CTxMemPool>(m_logger, MemPoolOptionsForTest(m_node));
 
     m_cache_sizes = CalculateCacheSizes(m_args);
 
@@ -194,8 +196,8 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, const std::vecto
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = chainman_opts.notifications,
     };
-    m_node.chainman = std::make_unique<ChainstateManager>(*Assert(m_node.shutdown), chainman_opts, blockman_opts);
-    m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<BlockTreeDB>(DBParams{
+    m_node.chainman = std::make_unique<ChainstateManager>(m_logger, *Assert(m_node.shutdown), chainman_opts, blockman_opts);
+    m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<BlockTreeDB>(m_logger, DBParams{
         .path = m_args.GetDataDirNet() / "blocks" / "index",
         .cache_bytes = static_cast<size_t>(m_cache_sizes.block_tree_db),
         .memory_only = true});
@@ -262,13 +264,13 @@ TestingSetup::TestingSetup(
                                                /*deterministic=*/false,
                                                m_node.args->GetIntArg("-checkaddrman", 0));
     m_node.banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
-    m_node.connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman, Params()); // Deterministic randomness for tests.
+    m_node.connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman, Params(), m_logger); // Deterministic randomness for tests.
     PeerManager::Options peerman_opts;
     ApplyArgsManOptions(*m_node.args, peerman_opts);
     peerman_opts.deterministic_rng = true;
     m_node.peerman = PeerManager::make(*m_node.connman, *m_node.addrman,
                                        m_node.banman.get(), *m_node.chainman,
-                                       *m_node.mempool, peerman_opts);
+                                       *m_node.mempool, m_logger, peerman_opts);
 
     {
         CConnman::Options options;

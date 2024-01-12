@@ -99,7 +99,7 @@ public:
     SQLiteDatabase() = delete;
 
     /** Create DB handle to real database */
-    SQLiteDatabase(const fs::path& dir_path, const fs::path& file_path, const DatabaseOptions& options, bool mock = false);
+    SQLiteDatabase(const fs::path& dir_path, const fs::path& file_path, const DatabaseOptions& options, BCLog::Logger& logger, bool mock = false);
 
     ~SQLiteDatabase();
 
@@ -146,7 +146,7 @@ public:
     bool m_use_unsafe_sync;
 };
 
-std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+std::unique_ptr<SQLiteDatabase> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options, BCLog::Logger& logger, DatabaseStatus& status, bilingual_str& error);
 
 std::string SQLiteDatabaseVersion();
 } // namespace wallet

@@ -13,6 +13,10 @@
 #include <cstdint>
 #include <vector>
 
+namespace BCLog {
+class Logger;
+} // namespace BCLog
+
 static const int64_t DEFAULT_MAX_TIME_ADJUSTMENT = 70 * 60;
 
 class CNetAddr;
@@ -76,7 +80,7 @@ public:
 /** Functions to keep track of adjusted P2P time */
 int64_t GetTimeOffset();
 NodeClock::time_point GetAdjustedTime();
-void AddTimeData(const CNetAddr& ip, int64_t nTime);
+void AddTimeData(BCLog::Logger& logger, const CNetAddr& ip, int64_t nTime);
 
 /**
  * Reset the internal state of GetTimeOffset(), GetAdjustedTime() and AddTimeData().

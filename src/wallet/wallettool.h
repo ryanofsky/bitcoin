@@ -7,12 +7,11 @@
 
 #include <string>
 
-class ArgsManager;
-
 namespace wallet {
+struct WalletContext;
 namespace WalletTool {
 
-bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command);
+bool ExecuteWalletToolFunc(const WalletContext& context, const std::string& command);
 
 } // namespace WalletTool
 } // namespace wallet

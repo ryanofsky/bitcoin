@@ -20,7 +20,7 @@
 #include <vector>
 
 namespace {
-const BasicTestingSetup* g_setup;
+BasicTestingSetup* g_setup;
 } // namespace
 
 void initialize_rbf()
@@ -38,7 +38,7 @@ FUZZ_TARGET(rbf, .init = initialize_rbf)
         return;
     }
 
-    CTxMemPool pool{MemPoolOptionsForTest(g_setup->m_node)};
+    CTxMemPool pool{Assert(g_setup)->m_logger, MemPoolOptionsForTest(g_setup->m_node)};
 
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 10000)
     {

@@ -378,7 +378,7 @@ bool CConnman::CheckIncomingNonce(uint64_t nonce)
 }
 
 /** Get the bind address for a socket as CAddress */
-static CAddress GetBindAddress(const Sock& sock)
+static CAddress GetBindAddress(const BCLog::Source& log, const Sock& sock)
 {
     CAddress addr_bind;
     struct sockaddr_storage sockaddr_bind;
@@ -523,7 +523,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
     NodeId id = GetNewNodeId();
     uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
     if (!addr_bind.IsValid()) {
-        addr_bind = GetBindAddress(*sock);
+        addr_bind = GetBindAddress(m_log, *sock);
     }
     CNode* pnode = new CNode(id,
                              std::move(sock),
@@ -1711,7 +1711,7 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
         addr = CAddress{MaybeFlipIPv6toCJDNS(addr), NODE_NONE};
     }
 
-    const CAddress addr_bind{MaybeFlipIPv6toCJDNS(GetBindAddress(*sock)), NODE_NONE};
+    const CAddress addr_bind{MaybeFlipIPv6toCJDNS(GetBindAddress(m_log, *sock)), NODE_NONE};
 
     NetPermissionFlags permission_flags = NetPermissionFlags::None;
     hListenSocket.AddSocketPermissionFlags(permission_flags);
@@ -3112,12 +3112,13 @@ void CConnman::SetNetworkActive(bool active)
 }
 
 CConnman::CConnman(uint64_t nSeed0In, uint64_t nSeed1In, AddrMan& addrman_in,
-                   const NetGroupManager& netgroupman, const CChainParams& params, bool network_active)
+                   const NetGroupManager& netgroupman, const CChainParams& params, BCLog::Logger& logger, bool network_active)
     : addrman(addrman_in)
     , m_netgroupman{netgroupman}
     , nSeed0(nSeed0In)
     , nSeed1(nSeed1In)
     , m_params(params)
+    , m_log{logger, BCLog::NET}
 {
     SetTryNewOutboundPeer(false);
 

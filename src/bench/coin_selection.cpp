@@ -45,9 +45,11 @@ static void addCoin(const CAmount& nValue, const CWallet& wallet, std::vector<st
 // (https://github.com/bitcoin/bitcoin/issues/7883#issuecomment-224807484)
 static void CoinSelection(benchmark::Bench& bench)
 {
+    GlobalLogger logger;
     NodeContext node;
+    node.logger = &logger;
     auto chain = interfaces::MakeChain(node);
-    CWallet wallet(chain.get(), "", CreateMockableWalletDatabase());
+    CWallet wallet(logger, chain.get(), "", CreateMockableWalletDatabase(logger));
     std::vector<std::unique_ptr<CWalletTx>> wtxs;
     LOCK(wallet.cs_wallet);
 
@@ -67,6 +69,7 @@ static void CoinSelection(benchmark::Bench& bench)
     const CoinEligibilityFilter filter_standard(1, 6, 0);
     FastRandomContext rand{};
     const CoinSelectionParams coin_selection_params{
+        logger,
         rand,
         /*change_output_size=*/ 34,
         /*change_spend_size=*/ 148,
@@ -112,6 +115,7 @@ static CAmount make_hard_case(int utxos, std::vector<OutputGroup>& utxo_pool)
 static void BnBExhaustion(benchmark::Bench& bench)
 {
     // Setup
+    GlobalLogger logger;
     std::vector<OutputGroup> utxo_pool;
 
     bench.run([&] {

@@ -199,6 +199,12 @@ namespace BCLog {
         bool DefaultShrinkDebugFile() const;
     };
 
+    //! Object representing a particular source of log messages. Holds a logging
+    //! category and reference to the logger object to output to.
+    struct Source {
+        Logger& logger;
+        LogFlags category;
+    };
 } // namespace BCLog
 
 BCLog::Logger& LogInstance();
@@ -259,6 +265,15 @@ static inline void LogPrintf_(const std::string& logging_function, const std::st
 
 // Deprecated conditional logging
 #define LogPrint(category, ...)  LogDebug(category, __VA_ARGS__)
+
+//! Deprecated global logging variable. Avoid this and use BCLog::Source in new code.
+inline BCLog::Logger* g_deprecated_logger{nullptr};
+class GlobalLogger : public BCLog::Logger
+{
+public:
+    GlobalLogger() { g_deprecated_logger = this; }
+    ~GlobalLogger() { g_deprecated_logger = nullptr; }
+};
 
 template <typename... Args>
 bool error(const char* fmt, const Args&... args)
