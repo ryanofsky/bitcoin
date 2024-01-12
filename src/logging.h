@@ -213,6 +213,7 @@ namespace BCLog {
     //! category, a reference to the logger object to output to, and a
     //! formatting hook.
     struct Source {
+        static constexpr bool log_source{true};
         LogFlags category;
         Logger& logger;
 
@@ -241,7 +242,8 @@ static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level leve
 }
 
 //! Determine whether logging is enabled from source at a logging level.
-static inline bool LogAccept(const BCLog::Source& source, BCLog::Level level)
+template<typename Source>
+static inline bool LogAccept(const Source& source, BCLog::Level level)
 {
     return source.logger.WillLogCategoryLevel(source.category, level);
 }
@@ -256,9 +258,13 @@ bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str);
 //! Internal helper. Implicitly convert macro source argument to BCLog::Source reference.
 static inline const BCLog::Source& _LogSource(const BCLog::Source& source LIFETIMEBOUND) { return source; }
 
+//! Internal helper. Overload for _LogSource accepting custom sources that may override the Format method.
+template <typename Source>
+static inline std::enable_if_t<Source::log_source, const Source&> _LogSource(const Source& source LIFETIMEBOUND) { return source; }
+
 //! Internal helper. Format logging arguments and log.
-template <typename... Args>
-static inline void _LogArgs(const BCLog::Source& source, const std::string& logging_function, const std::string& source_file, const int source_line, const BCLog::Level level, const char* fmt, const Args&... args)
+template <typename Source, typename... Args>
+static inline void _LogArgs(const Source& source, const std::string& logging_function, const std::string& source_file, const int source_line, const BCLog::Level level, const char* fmt, const Args&... args)
 {
     if (source.logger.Enabled()) {
         source.logger.LogPrintStr(source.Format(fmt, args...), logging_function, source_file, source_line, source.category, level);
