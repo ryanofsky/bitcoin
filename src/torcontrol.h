@@ -8,6 +8,7 @@
 #ifndef BITCOIN_TORCONTROL_H
 #define BITCOIN_TORCONTROL_H
 
+#include <logging.h>
 #include <netaddress.h>
 #include <util/fs.h>
 
@@ -118,6 +119,7 @@ public:
     /** Reconnect, after getting disconnected */
     void Reconnect();
 private:
+    const BCLog::Source m_log{BCLog::TOR};
     struct event_base* base;
     const std::string m_tor_control_center;
     TorControlConnection conn;

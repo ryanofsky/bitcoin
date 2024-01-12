@@ -407,6 +407,7 @@ static void HTTPWorkQueueRun(WorkQueue<HTTPClosure>* queue, int worker_num)
 /** libevent event log callback */
 static void libevent_log_cb(int severity, const char *msg)
 {
+    const BCLog::Source log{BCLog::HTTP};
     BCLog::Level level;
     switch (severity) {
     case EVENT_LOG_DEBUG:
@@ -422,11 +423,12 @@ static void libevent_log_cb(int severity, const char *msg)
         level = BCLog::Level::Error;
         break;
     }
-    LogPrintLevel(BCLog::LIBEVENT, level, "%s\n", msg);
+    LogPrintLevel(log, level, "%s\n", msg);
 }
 
 bool InitHTTPServer(const util::SignalInterrupt& interrupt)
 {
+    const BCLog::Source log{BCLog::HTTP};
     if (!InitHTTPAllowList())
         return false;
 
@@ -461,9 +463,9 @@ bool InitHTTPServer(const util::SignalInterrupt& interrupt)
         return false;
     }
 
-    LogPrint(BCLog::HTTP, "Initialized HTTP server\n");
+    LogDebug(log, "Initialized HTTP server\n");
     int workQueueDepth = std::max((long)gArgs.GetIntArg("-rpcworkqueue", DEFAULT_HTTP_WORKQUEUE), 1L);
-    LogDebug(BCLog::HTTP, "creating work queue of depth %d\n", workQueueDepth);
+    LogDebug(log, "creating work queue of depth %d\n", workQueueDepth);
 
     g_work_queue = std::make_unique<WorkQueue<HTTPClosure>>(workQueueDepth);
     // transfer ownership to eventBase/HTTP via .release()
@@ -485,8 +487,9 @@ static std::vector<std::thread> g_thread_http_workers;
 
 void StartHTTPServer()
 {
+    const BCLog::Source log{BCLog::HTTP};
     int rpcThreads = std::max((long)gArgs.GetIntArg("-rpcthreads", DEFAULT_HTTP_THREADS), 1L);
-    LogInfo("Starting HTTP server with %d worker threads\n", rpcThreads);
+    LogInfo(log, "Starting HTTP server with %d worker threads\n", rpcThreads);
     g_thread_http = std::thread(ThreadHTTP, eventBase);
 
     for (int i = 0; i < rpcThreads; i++) {

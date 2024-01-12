@@ -51,14 +51,14 @@ static void LogPrintWithoutCategory(benchmark::Bench& bench)
 static void LogPrintfCategoryWithThreadNames(benchmark::Bench& bench)
 {
     Logging(bench, {"-logthreadnames=1", "-debug=net"}, [] {
-        LogPrintfCategory(BCLog::NET, "%s\n", "test");
+        LogInfo(BCLog::NET, "%s\n", "test");
     });
 }
 
 static void LogPrintfCategoryWithoutThreadNames(benchmark::Bench& bench)
 {
     Logging(bench, {"-logthreadnames=0", "-debug=net"}, [] {
-        LogPrintfCategory(BCLog::NET, "%s\n", "test");
+        LogInfo(BCLog::NET, "%s\n", "test");
     });
 }
 
