@@ -13,6 +13,7 @@
 #include <kernel/chainparams.h>
 #include <kernel/cs_main.h>
 #include <kernel/messagestartchars.h>
+#include <logging.h>
 #include <primitives/block.h>
 #include <streams.h>
 #include <sync.h>
@@ -254,8 +255,10 @@ public:
     explicit BlockManager(const util::SignalInterrupt& interrupt, Options opts)
         : m_prune_mode{opts.prune_target > 0},
           m_opts{std::move(opts)},
+          m_log{BCLog::BLOCKSTORAGE},
           m_interrupt{interrupt} {};
 
+    const BCLog::Source m_log;
     const util::SignalInterrupt& m_interrupt;
     std::atomic<bool> m_importing{false};
 

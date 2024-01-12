@@ -63,6 +63,7 @@ public:
 class TxReconciliationTracker::Impl
 {
 private:
+    const BCLog::Source m_log;
     mutable Mutex m_txreconciliation_mutex;
 
     // Local protocol version
@@ -77,14 +78,14 @@ private:
     std::unordered_map<NodeId, std::variant<uint64_t, TxReconciliationState>> m_states GUARDED_BY(m_txreconciliation_mutex);
 
 public:
-    explicit Impl(uint32_t recon_version) : m_recon_version(recon_version) {}
+    explicit Impl(uint32_t recon_version) : m_log{BCLog::TXRECONCILIATION}, m_recon_version(recon_version) {}
 
     uint64_t PreRegisterPeer(NodeId peer_id) EXCLUSIVE_LOCKS_REQUIRED(!m_txreconciliation_mutex)
     {
         AssertLockNotHeld(m_txreconciliation_mutex);
         LOCK(m_txreconciliation_mutex);
 
-        LogPrintLevel(BCLog::TXRECONCILIATION, BCLog::Level::Debug, "Pre-register peer=%d\n", peer_id);
+        LogDebug(m_log, "Pre-register peer=%d\n", peer_id);
         const uint64_t local_salt{GetRand(UINT64_MAX)};
 
         // We do this exactly once per peer (which are unique by NodeId, see GetNewNodeId) so it's
@@ -117,7 +118,7 @@ public:
         // v1 is the lowest version, so suggesting something below must be a protocol violation.
         if (recon_version < 1) return ReconciliationRegisterResult::PROTOCOL_VIOLATION;
 
-        LogPrintLevel(BCLog::TXRECONCILIATION, BCLog::Level::Debug, "Register peer=%d (inbound=%i)\n",
+        LogDebug(m_log, "Register peer=%d (inbound=%i)\n",
                       peer_id, is_peer_inbound);
 
         const uint256 full_salt{ComputeSalt(local_salt, remote_salt)};
@@ -130,7 +131,7 @@ public:
         AssertLockNotHeld(m_txreconciliation_mutex);
         LOCK(m_txreconciliation_mutex);
         if (m_states.erase(peer_id)) {
-            LogPrintLevel(BCLog::TXRECONCILIATION, BCLog::Level::Debug, "Forget txreconciliation state of peer=%d\n", peer_id);
+            LogDebug(m_log, "Forget txreconciliation state of peer=%d\n", peer_id);
         }
     }
 

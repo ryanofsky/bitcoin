@@ -52,11 +52,12 @@ static void HandleError(const leveldb::Status& status)
 }
 
 class CBitcoinLevelDBLogger : public leveldb::Logger {
+    const BCLog::Source m_log{BCLog::LEVELDB};
 public:
     // This code is adapted from posix_logger.h, which is why it is using vsprintf.
     // Please do not do this in normal code
     void Logv(const char * format, va_list ap) override {
-            if (!LogAcceptCategory(BCLog::LEVELDB, BCLog::Level::Debug)) {
+            if (!LogAccept(m_log, BCLog::Level::Debug)) {
                 return;
             }
             char buffer[500];
@@ -100,7 +101,7 @@ public:
 
                 assert(p <= limit);
                 base[std::min(bufsize - 1, (int)(p - base))] = '\0';
-                LogPrintLevel(BCLog::LEVELDB, BCLog::Level::Debug, "%s", base); // NOLINT(bitcoin-unterminated-logprintf)
+                LogDebug(m_log, "%s", base); // NOLINT(bitcoin-unterminated-logprintf)
                 if (base != buffer) {
                     delete[] base;
                 }
