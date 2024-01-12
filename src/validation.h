@@ -924,7 +924,7 @@ private:
 public:
     using Options = kernel::ChainstateManagerOpts;
 
-    explicit ChainstateManager(const util::SignalInterrupt& interrupt, Options options, node::BlockManager::Options blockman_options);
+    explicit ChainstateManager(BCLog::Logger& logger, const util::SignalInterrupt& interrupt, Options options, node::BlockManager::Options blockman_options);
 
     //! Function to restart active indexes; set dynamically to avoid a circular
     //! dependency on `base/index.cpp`.
@@ -957,6 +957,7 @@ public:
      */
     RecursiveMutex& GetMutex() const LOCK_RETURNED(::cs_main) { return ::cs_main; }
 
+    BCLog::Logger& m_logger;
     const util::SignalInterrupt& m_interrupt;
     const Options m_options;
     std::thread m_thread_load;

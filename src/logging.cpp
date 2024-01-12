@@ -45,6 +45,16 @@ static int FileWriteStr(const std::string &str, FILE *fp)
     return fwrite(str.data(), 1, str.size(), fp);
 }
 
+BCLog::Logger::Logger()
+{
+    g_deprecated_logger = this;
+}
+
+BCLog::Logger::~Logger()
+{
+    g_deprecated_logger = nullptr;
+}
+
 bool BCLog::Logger::StartLogging()
 {
     StdLockGuard scoped_lock(m_cs);
