@@ -11,11 +11,15 @@
 
 #include <QObject>
 
+namespace BCLog {
+class Logger;
+} // namespace BCLog
+
 class OptionTests : public QObject
 {
     Q_OBJECT
 public:
-    explicit OptionTests(interfaces::Node& node);
+    explicit OptionTests(BCLog::Logger& logger, interfaces::Node& node);
 
 private Q_SLOTS:
     void init(); // called before each test function execution.
@@ -25,6 +29,7 @@ private Q_SLOTS:
     void extractFilter();
 
 private:
+    BCLog::Logger& m_logger;
     interfaces::Node& m_node;
     common::Settings m_previous_settings;
 };

@@ -16,7 +16,7 @@
 
 #include <fstream>
 
-OptionTests::OptionTests(interfaces::Node& node) : m_node(node)
+OptionTests::OptionTests(BCLog::Logger& logger, interfaces::Node& node) : m_logger{logger}, m_node(node)
 {
     gArgs.LockSettings([&](common::Settings& s) { m_previous_settings = s; });
 }
@@ -116,7 +116,7 @@ void OptionTests::parametersInteraction()
     QVERIFY(gArgs.IsArgSet("-listenonion"));
     QCOMPARE(gArgs.GetBoolArg("-listenonion", !expected), expected);
 
-    QVERIFY(AppInitParameterInteraction(gArgs));
+    QVERIFY(AppInitParameterInteraction(gArgs, m_logger));
 
     // cleanup
     settings.remove("fListen");

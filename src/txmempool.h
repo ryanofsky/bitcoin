@@ -392,6 +392,8 @@ public:
     using txiter = indexed_transaction_set::nth_index<0>::type::const_iterator;
     std::vector<CTransactionRef> txns_randomized GUARDED_BY(cs); //!< All transactions in mapTx, in random order
 
+    BCLog::Source m_log;
+
     typedef std::set<txiter, CompareIteratorByHash> setEntries;
 
     using Limits = kernel::MemPoolLimits;
@@ -453,7 +455,7 @@ public:
      * accepting transactions becomes O(N^2) where N is the number of transactions
      * in the pool.
      */
-    explicit CTxMemPool(const Options& opts);
+    explicit CTxMemPool(BCLog::Logger& logger, const Options& opts);
 
     /**
      * If sanity-checking is turned on, check makes sure the pool is

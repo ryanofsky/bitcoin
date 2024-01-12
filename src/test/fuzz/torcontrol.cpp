@@ -12,6 +12,10 @@
 #include <string>
 #include <vector>
 
+namespace {
+BasicTestingSetup* g_setup;
+} // namespace
+
 class DummyTorControlConnection : public TorControlConnection
 {
 public:
@@ -37,13 +41,14 @@ public:
 void initialize_torcontrol()
 {
     static const auto testing_setup = MakeNoLogFileContext<>();
+    g_setup = testing_setup.get();
 }
 
 FUZZ_TARGET(torcontrol, .init = initialize_torcontrol)
 {
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
 
-    TorController tor_controller;
+    TorController tor_controller(g_setup->m_logger);
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 10000) {
         TorControlReply tor_control_reply;
         CallOneOf(

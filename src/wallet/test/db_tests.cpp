@@ -122,26 +122,26 @@ BOOST_AUTO_TEST_CASE(getwalletenv_g_dbenvs_free_instance)
     BOOST_CHECK(env_2_a == env_2_b);
 }
 
-static std::vector<std::unique_ptr<WalletDatabase>> TestDatabases(const fs::path& path_root)
+static std::vector<std::unique_ptr<WalletDatabase>> TestDatabases(BCLog::Logger& logger, const fs::path& path_root)
 {
     std::vector<std::unique_ptr<WalletDatabase>> dbs;
     DatabaseOptions options;
     DatabaseStatus status;
     bilingual_str error;
 #ifdef USE_BDB
-    dbs.emplace_back(MakeBerkeleyDatabase(path_root / "bdb", options, status, error));
+    dbs.emplace_back(MakeBerkeleyDatabase(path_root / "bdb", options, logger, status, error));
 #endif
 #ifdef USE_SQLITE
-    dbs.emplace_back(MakeSQLiteDatabase(path_root / "sqlite", options, status, error));
+    dbs.emplace_back(MakeSQLiteDatabase(path_root / "sqlite", options, logger, status, error));
 #endif
-    dbs.emplace_back(CreateMockableWalletDatabase());
+    dbs.emplace_back(CreateMockableWalletDatabase(logger));
     return dbs;
 }
 
 BOOST_AUTO_TEST_CASE(db_cursor_prefix_range_test)
 {
     // Test each supported db
-    for (const auto& database : TestDatabases(m_path_root)) {
+    for (const auto& database : TestDatabases(m_logger, m_path_root)) {
         std::vector<std::string> prefixes = {"", "FIRST", "SECOND", "P\xfe\xff", "P\xff\x01", "\xff\xff"};
 
         // Write elements to it
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(db_cursor_prefix_byte_test)
         fs{StringData("\xffsuffix"), StringData("fs")},
         ff{StringData("\xff\xff"), StringData("ff")},
         ffs{StringData("\xff\xffsuffix"), StringData("ffs")};
-    for (const auto& database : TestDatabases(m_path_root)) {
+    for (const auto& database : TestDatabases(m_logger, m_path_root)) {
         std::unique_ptr<DatabaseBatch> batch = database->MakeBatch();
         for (const auto& [k, v] : {e, p, ps, f, fs, ff, ffs}) {
             batch->Write(Span{k}, Span{v});

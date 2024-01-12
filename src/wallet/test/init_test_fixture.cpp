@@ -16,7 +16,7 @@
 namespace wallet {
 InitWalletDirTestingSetup::InitWalletDirTestingSetup(const ChainType chainType) : BasicTestingSetup(chainType)
 {
-    m_wallet_loader = MakeWalletLoader(*m_node.chain, m_args);
+    m_wallet_loader = MakeWalletLoader(*m_node.chain, m_logger, m_args);
 
     const auto sep = fs::path::preferred_separator;
 

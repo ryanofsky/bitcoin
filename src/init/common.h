@@ -11,13 +11,16 @@
 #include <util/result.h>
 
 class ArgsManager;
+namespace BCLog {
+class Logger;
+} // namespace BCLog
 
 namespace init {
 void AddLoggingArgs(ArgsManager& args);
-void SetLoggingOptions(const ArgsManager& args);
-[[nodiscard]] util::Result<void> SetLoggingCategories(const ArgsManager& args);
-[[nodiscard]] util::Result<void> SetLoggingLevel(const ArgsManager& args);
-bool StartLogging(const ArgsManager& args);
+void SetLoggingOptions(BCLog::Logger& logger, const ArgsManager& args);
+[[nodiscard]] util::Result<void> SetLoggingCategories(BCLog::Logger& logger, const ArgsManager& args);
+[[nodiscard]] util::Result<void> SetLoggingLevel(BCLog::Logger& logger, const ArgsManager& args);
+bool StartLogging(BCLog::Logger& logger, const ArgsManager& args);
 void LogPackageVersion();
 } // namespace init
 

@@ -18,6 +18,7 @@ BOOST_AUTO_TEST_SUITE(minisketch_tests)
 
 BOOST_AUTO_TEST_CASE(minisketch_test)
 {
+    GlobalLogger logger;
     for (int i = 0; i < 100; ++i) {
         uint32_t errors = 0 + InsecureRandRange(11);
         uint32_t start_a = 1 + InsecureRandRange(1000000000);

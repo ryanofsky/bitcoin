@@ -19,10 +19,10 @@
 
 BOOST_FIXTURE_TEST_SUITE(logging_tests, BasicTestingSetup)
 
-static void ResetLogger()
+static void ResetLogger(BCLog::Logger& logger)
 {
-    LogInstance().SetLogLevel(BCLog::DEFAULT_LOG_LEVEL);
-    LogInstance().SetCategoryLogLevel({});
+    logger.SetLogLevel(BCLog::DEFAULT_LOG_LEVEL);
+    logger.SetCategoryLogLevel({});
 }
 
 struct LogSetup : public BasicTestingSetup {
@@ -36,40 +36,40 @@ struct LogSetup : public BasicTestingSetup {
     std::unordered_map<BCLog::LogFlags, BCLog::Level> prev_category_levels;
     BCLog::Level prev_log_level;
 
-    LogSetup() : prev_log_path{LogInstance().m_file_path},
+    LogSetup() : prev_log_path{m_logger.m_file_path},
                  tmp_log_path{m_args.GetDataDirBase() / "tmp_debug.log"},
-                 prev_reopen_file{LogInstance().m_reopen_file},
-                 prev_print_to_file{LogInstance().m_print_to_file},
-                 prev_log_timestamps{LogInstance().m_log_timestamps},
-                 prev_log_threadnames{LogInstance().m_log_threadnames},
-                 prev_log_sourcelocations{LogInstance().m_log_sourcelocations},
-                 prev_category_levels{LogInstance().CategoryLevels()},
-                 prev_log_level{LogInstance().LogLevel()}
+                 prev_reopen_file{m_logger.m_reopen_file},
+                 prev_print_to_file{m_logger.m_print_to_file},
+                 prev_log_timestamps{m_logger.m_log_timestamps},
+                 prev_log_threadnames{m_logger.m_log_threadnames},
+                 prev_log_sourcelocations{m_logger.m_log_sourcelocations},
+                 prev_category_levels{m_logger.CategoryLevels()},
+                 prev_log_level{m_logger.LogLevel()}
     {
-        LogInstance().m_file_path = tmp_log_path;
-        LogInstance().m_reopen_file = true;
-        LogInstance().m_print_to_file = true;
-        LogInstance().m_log_timestamps = false;
-        LogInstance().m_log_threadnames = false;
+        m_logger.m_file_path = tmp_log_path;
+        m_logger.m_reopen_file = true;
+        m_logger.m_print_to_file = true;
+        m_logger.m_log_timestamps = false;
+        m_logger.m_log_threadnames = false;
 
         // Prevent tests from failing when the line number of the logs changes.
-        LogInstance().m_log_sourcelocations = false;
+        m_logger.m_log_sourcelocations = false;
 
-        LogInstance().SetLogLevel(BCLog::Level::Debug);
-        LogInstance().SetCategoryLogLevel({});
+        m_logger.SetLogLevel(BCLog::Level::Debug);
+        m_logger.SetCategoryLogLevel({});
     }
 
     ~LogSetup()
     {
-        LogInstance().m_file_path = prev_log_path;
+        m_logger.m_file_path = prev_log_path;
         LogPrintf("Sentinel log to reopen log file\n");
-        LogInstance().m_print_to_file = prev_print_to_file;
-        LogInstance().m_reopen_file = prev_reopen_file;
-        LogInstance().m_log_timestamps = prev_log_timestamps;
-        LogInstance().m_log_threadnames = prev_log_threadnames;
-        LogInstance().m_log_sourcelocations = prev_log_sourcelocations;
-        LogInstance().SetLogLevel(prev_log_level);
-        LogInstance().SetCategoryLogLevel(prev_category_levels);
+        m_logger.m_print_to_file = prev_print_to_file;
+        m_logger.m_reopen_file = prev_reopen_file;
+        m_logger.m_log_timestamps = prev_log_timestamps;
+        m_logger.m_log_threadnames = prev_log_threadnames;
+        m_logger.m_log_sourcelocations = prev_log_sourcelocations;
+        m_logger.SetLogLevel(prev_log_level);
+        m_logger.SetCategoryLogLevel(prev_category_levels);
     }
 };
 
@@ -160,7 +160,7 @@ BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacros, LogSetup)
 
 BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacros_CategoryName, LogSetup)
 {
-    LogInstance().EnableCategory(BCLog::LogFlags::ALL);
+    m_logger.EnableCategory(BCLog::LogFlags::ALL);
     const auto concatenated_category_names = BCLog::Logger::LogCategoriesString();
     std::vector<std::pair<BCLog::LogFlags, std::string>> expected_category_names;
     const auto category_names = SplitString(concatenated_category_names, ',');
@@ -190,10 +190,10 @@ BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacros_CategoryName, LogSetup)
 
 BOOST_FIXTURE_TEST_CASE(logging_SeverityLevels, LogSetup)
 {
-    LogInstance().EnableCategory(BCLog::LogFlags::ALL);
+    m_logger.EnableCategory(BCLog::LogFlags::ALL);
 
-    LogInstance().SetLogLevel(BCLog::Level::Debug);
-    LogInstance().SetCategoryLogLevel(/*category_str=*/"net", /*level_str=*/"info");
+    m_logger.SetLogLevel(BCLog::Level::Debug);
+    m_logger.SetCategoryLogLevel(/*category_str=*/"net", /*level_str=*/"info");
 
     // Global log level
     LogPrintLevel(BCLog::HTTP, BCLog::Level::Info, "foo1: %s\n", "bar1");
@@ -263,32 +263,32 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
 {
     // Set global log level
     {
-        ResetLogger();
+        ResetLogger(m_logger);
         ArgsManager args;
         args.AddArg("-loglevel", "...", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
         const char* argv_test[] = {"bitcoind", "-loglevel=debug"};
         std::string err;
         BOOST_REQUIRE(args.ParseParameters(2, argv_test, err));
 
-        auto result = init::SetLoggingLevel(args);
+        auto result = init::SetLoggingLevel(m_logger, args);
         BOOST_REQUIRE(result);
-        BOOST_CHECK_EQUAL(LogInstance().LogLevel(), BCLog::Level::Debug);
+        BOOST_CHECK_EQUAL(m_logger.LogLevel(), BCLog::Level::Debug);
     }
 
     // Set category-specific log level
     {
-        ResetLogger();
+        ResetLogger(m_logger);
         ArgsManager args;
         args.AddArg("-loglevel", "...", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
         const char* argv_test[] = {"bitcoind", "-loglevel=net:trace"};
         std::string err;
         BOOST_REQUIRE(args.ParseParameters(2, argv_test, err));
 
-        auto result = init::SetLoggingLevel(args);
+        auto result = init::SetLoggingLevel(m_logger, args);
         BOOST_REQUIRE(result);
-        BOOST_CHECK_EQUAL(LogInstance().LogLevel(), BCLog::DEFAULT_LOG_LEVEL);
+        BOOST_CHECK_EQUAL(m_logger.LogLevel(), BCLog::DEFAULT_LOG_LEVEL);
 
-        const auto& category_levels{LogInstance().CategoryLevels()};
+        const auto& category_levels{m_logger.CategoryLevels()};
         const auto net_it{category_levels.find(BCLog::LogFlags::NET)};
         BOOST_REQUIRE(net_it != category_levels.end());
         BOOST_CHECK_EQUAL(net_it->second, BCLog::Level::Trace);
@@ -296,18 +296,18 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
 
     // Set both global log level and category-specific log level
     {
-        ResetLogger();
+        ResetLogger(m_logger);
         ArgsManager args;
         args.AddArg("-loglevel", "...", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
         const char* argv_test[] = {"bitcoind", "-loglevel=debug", "-loglevel=net:trace", "-loglevel=http:info"};
         std::string err;
         BOOST_REQUIRE(args.ParseParameters(4, argv_test, err));
 
-        auto result = init::SetLoggingLevel(args);
+        auto result = init::SetLoggingLevel(m_logger, args);
         BOOST_REQUIRE(result);
-        BOOST_CHECK_EQUAL(LogInstance().LogLevel(), BCLog::Level::Debug);
+        BOOST_CHECK_EQUAL(m_logger.LogLevel(), BCLog::Level::Debug);
 
-        const auto& category_levels{LogInstance().CategoryLevels()};
+        const auto& category_levels{m_logger.CategoryLevels()};
         BOOST_CHECK_EQUAL(category_levels.size(), 2);
 
         const auto net_it{category_levels.find(BCLog::LogFlags::NET)};

@@ -50,7 +50,7 @@ protected:
     class DB : public CDBWrapper
     {
     public:
-        DB(const fs::path& path, size_t n_cache_size,
+        DB(BCLog::Logger& logger, const fs::path& path, size_t n_cache_size,
            bool f_memory = false, bool f_wipe = false, bool f_obfuscate = false);
 
         /// Read block locator of the chain that the index is in sync with.
@@ -104,6 +104,7 @@ private:
     void FatalErrorf(const char* fmt, const Args&... args);
 
 protected:
+    BCLog::Logger& m_logger;
     std::unique_ptr<interfaces::Chain> m_chain;
     Chainstate* m_chainstate{nullptr};
     const std::string m_name;
@@ -132,7 +133,7 @@ protected:
     void SetBestBlockIndex(const CBlockIndex* block);
 
 public:
-    BaseIndex(std::unique_ptr<interfaces::Chain> chain, std::string name);
+    BaseIndex(BCLog::Logger& logger, std::unique_ptr<interfaces::Chain> chain, std::string name);
     /// Destructor interrupts sync thread if running and blocks until it exits.
     virtual ~BaseIndex();
 

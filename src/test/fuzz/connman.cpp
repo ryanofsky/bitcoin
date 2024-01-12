@@ -19,12 +19,12 @@
 #include <vector>
 
 namespace {
-const TestingSetup* g_setup;
+TestingSetup* g_setup;
 } // namespace
 
 void initialize_connman()
 {
-    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    static auto testing_setup = MakeNoLogFileContext<TestingSetup>();
     g_setup = testing_setup.get();
 }
 
@@ -37,6 +37,7 @@ FUZZ_TARGET(connman, .init = initialize_connman)
                      *g_setup->m_node.addrman,
                      *g_setup->m_node.netgroupman,
                      Params(),
+                     g_setup->m_logger,
                      fuzzed_data_provider.ConsumeBool()};
 
     const uint64_t max_outbound_limit{fuzzed_data_provider.ConsumeIntegral<uint64_t>()};

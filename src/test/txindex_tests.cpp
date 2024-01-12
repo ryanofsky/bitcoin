@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_SUITE(txindex_tests)
 
 BOOST_FIXTURE_TEST_CASE(txindex_initial_sync, TestChain100Setup)
 {
-    TxIndex txindex(interfaces::MakeChain(m_node), 1 << 20, true);
+    TxIndex txindex(m_logger, interfaces::MakeChain(m_node), 1 << 20, true);
     BOOST_REQUIRE(txindex.Init());
 
     CTransactionRef tx_disk;

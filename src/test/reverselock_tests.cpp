@@ -44,6 +44,7 @@ BOOST_AUTO_TEST_CASE(reverselock_multiple)
 
 BOOST_AUTO_TEST_CASE(reverselock_errors)
 {
+    GlobalLogger logger;
     Mutex mutex2;
     Mutex mutex;
     WAIT_LOCK(mutex2, lock2);

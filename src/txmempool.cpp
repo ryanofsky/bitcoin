@@ -394,8 +394,8 @@ void CTxMemPoolEntry::UpdateAncestorState(int32_t modifySize, CAmount modifyFee,
     assert(int(nSigOpCostWithAncestors) >= 0);
 }
 
-CTxMemPool::CTxMemPool(const Options& opts)
-    : m_log{BCLog::MEMPOOL},
+CTxMemPool::CTxMemPool(BCLog::Logger& logger, const Options& opts)
+    : m_log{BCLog::MEMPOOL, logger},
       m_check_ratio{opts.check_ratio},
       m_max_size_bytes{opts.max_size_bytes},
       m_expiry{opts.expiry},

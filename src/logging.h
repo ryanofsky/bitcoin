@@ -289,6 +289,13 @@ static inline void _LogArgs(const Source& source, const std::string& logging_fun
 //! Deprecated functions relying on global variable. Avoid these and use BCLog::Source in new code.
 #define LogPrint(category, ...) LogDebug({(category)}, __VA_ARGS__)
 #define LogPrintf(...) LogInfo({}, __VA_ARGS__)
+inline BCLog::Logger* g_deprecated_logger{nullptr};
+class GlobalLogger : public BCLog::Logger
+{
+public:
+    GlobalLogger() { g_deprecated_logger = this; }
+    ~GlobalLogger() { g_deprecated_logger = nullptr; }
+};
 
 template <typename... Args>
 bool error(const char* fmt, const Args&... args)

@@ -89,13 +89,15 @@ public:
  * call overhead associated with local static variables even though
  * signatureCache could be made local to VerifySignature.
 */
-static CSignatureCache signatureCache;
+static std::optional<CSignatureCache> g_signature_cache;
 } // namespace
 
 // To be called once in AppInitMain/BasicTestingSetup to initialize the
 // signatureCache.
 bool InitSignatureCache(size_t max_size_bytes)
 {
+    g_signature_cache.emplace();
+    CSignatureCache& signatureCache{*g_signature_cache};
     auto setup_results = signatureCache.setup_bytes(max_size_bytes);
     if (!setup_results) return false;
 
@@ -107,6 +109,7 @@ bool InitSignatureCache(size_t max_size_bytes)
 
 bool CachingTransactionSignatureChecker::VerifyECDSASignature(const std::vector<unsigned char>& vchSig, const CPubKey& pubkey, const uint256& sighash) const
 {
+    CSignatureCache& signatureCache{*g_signature_cache};
     uint256 entry;
     signatureCache.ComputeEntryECDSA(entry, sighash, vchSig, pubkey);
     if (signatureCache.Get(entry, !store))
@@ -120,6 +123,7 @@ bool CachingTransactionSignatureChecker::VerifyECDSASignature(const std::vector<
 
 bool CachingTransactionSignatureChecker::VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const
 {
+    CSignatureCache& signatureCache{*g_signature_cache};
     uint256 entry;
     signatureCache.ComputeEntrySchnorr(entry, sighash, sig, pubkey);
     if (signatureCache.Get(entry, !store)) return true;

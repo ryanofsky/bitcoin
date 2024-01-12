@@ -426,7 +426,7 @@ static void libevent_log_cb(int severity, const char *msg)
     LogPrintLevel(log, level, "%s\n", msg);
 }
 
-bool InitHTTPServer(const util::SignalInterrupt& interrupt)
+bool InitHTTPServer(BCLog::Logger& logger, const util::SignalInterrupt& interrupt)
 {
     const BCLog::Source log{BCLog::HTTP};
     if (!InitHTTPAllowList())
@@ -435,7 +435,7 @@ bool InitHTTPServer(const util::SignalInterrupt& interrupt)
     // Redirect libevent's logging to our own log
     event_set_log_callback(&libevent_log_cb);
     // Update libevent's log handling.
-    UpdateHTTPServerLogging(LogInstance().WillLogCategory(BCLog::LIBEVENT));
+    UpdateHTTPServerLogging(logger.WillLogCategory(BCLog::LIBEVENT));
 
 #ifdef WIN32
     evthread_use_windows_threads();
@@ -485,7 +485,7 @@ void UpdateHTTPServerLogging(bool enable) {
 static std::thread g_thread_http;
 static std::vector<std::thread> g_thread_http_workers;
 
-void StartHTTPServer()
+void StartHTTPServer(BCLog::Logger& logger)
 {
     const BCLog::Source log{BCLog::HTTP};
     int rpcThreads = std::max((long)gArgs.GetIntArg("-rpcthreads", DEFAULT_HTTP_THREADS), 1L);

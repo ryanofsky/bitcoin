@@ -27,6 +27,9 @@ class PlatformStyle;
 class SplashScreen;
 class WalletController;
 class WalletModel;
+namespace BCLog {
+class Logger;
+} // namespace BCLog
 namespace interfaces {
 class Init;
 } // namespace interfaces
@@ -37,7 +40,7 @@ class BitcoinApplication: public QApplication
 {
     Q_OBJECT
 public:
-    explicit BitcoinApplication();
+    explicit BitcoinApplication(BCLog::Logger& logger);
     ~BitcoinApplication();
 
 #ifdef ENABLE_WALLET
@@ -68,6 +71,7 @@ public:
     /// Setup platform style
     void setupPlatformStyle();
 
+    BCLog::Logger& logger() const { return m_logger; }
     interfaces::Node& node() const { assert(m_node); return *m_node; }
 
 public Q_SLOTS:
@@ -92,6 +96,7 @@ protected:
     bool event(QEvent* e) override;
 
 private:
+    BCLog::Logger& m_logger;
     std::optional<InitExecutor> m_executor;
     OptionsModel* optionsModel{nullptr};
     ClientModel* clientModel{nullptr};

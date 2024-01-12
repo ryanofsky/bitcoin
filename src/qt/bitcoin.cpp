@@ -221,8 +221,8 @@ void DebugMessageHandler(QtMsgType type, const QMessageLogContext& context, cons
 static int qt_argc = 1;
 static const char* qt_argv = "bitcoin-qt";
 
-BitcoinApplication::BitcoinApplication()
-    : QApplication(qt_argc, const_cast<char**>(&qt_argv))
+BitcoinApplication::BitcoinApplication(BCLog::Logger& logger)
+    : QApplication(qt_argc, const_cast<char**>(&qt_argv)), m_logger(logger)
 {
     // Qt runs setlocale(LC_ALL, "") on initialization.
     RegisterMetaTypes();
@@ -334,7 +334,7 @@ void BitcoinApplication::parameterSetup()
     // print to the console unnecessarily.
     gArgs.SoftSetBoolArg("-printtoconsole", false);
 
-    InitLogging(gArgs);
+    InitLogging(m_logger, gArgs);
     InitParameterInteraction(gArgs);
 }
 
@@ -530,7 +530,7 @@ int GuiMain(int argc, char* argv[])
     QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
 #endif
 
-    BitcoinApplication app;
+    BitcoinApplication app(*Assert(init->logger()));
     GUIUtil::LoadFont(QStringLiteral(":/fonts/monospace"));
 
     /// 2. Parse command-line options. We do this after qt in order to show an error if there are problems parsing these

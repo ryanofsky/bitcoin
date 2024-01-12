@@ -5,6 +5,7 @@
 #ifndef BITCOIN_TEST_UTIL_LOGGING_H
 #define BITCOIN_TEST_UTIL_LOGGING_H
 
+#include <logging.h>
 #include <util/macros.h>
 
 #include <functional>
@@ -13,6 +14,7 @@
 
 class DebugLogHelper
 {
+    BCLog::Logger& m_logger;
     const std::string m_message;
     bool m_found{false};
     std::list<std::function<void(const std::string&)>>::iterator m_print_connection;
@@ -32,10 +34,10 @@ class DebugLogHelper
     void check_found();
 
 public:
-    explicit DebugLogHelper(std::string message, MatchFn match = [](const std::string*){ return true; });
+    explicit DebugLogHelper(BCLog::Logger& logger, std::string message, MatchFn match = [](const std::string*){ return true; });
     ~DebugLogHelper() { check_found(); }
 };
 
-#define ASSERT_DEBUG_LOG(message) DebugLogHelper UNIQUE_NAME(debugloghelper)(message)
+#define ASSERT_DEBUG_LOG(logger, message) DebugLogHelper UNIQUE_NAME(debugloghelper)(logger, message)
 
 #endif // BITCOIN_TEST_UTIL_LOGGING_H

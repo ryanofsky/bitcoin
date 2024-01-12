@@ -20,12 +20,15 @@
 #include <tinyformat.h>
 #include <util/exception.h>
 #include <util/translation.h>
+#include <wallet/context.h>
 #include <wallet/wallettool.h>
 
 #include <exception>
 #include <functional>
 #include <string>
 #include <tuple>
+
+using wallet::WalletContext;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 UrlDecodeFn* const URL_DECODE = nullptr;
@@ -52,8 +55,11 @@ static void SetupWalletToolArgs(ArgsManager& argsman)
     argsman.AddCommand("createfromdump", "Create new wallet file from dumped records");
 }
 
-static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[])
+static std::optional<int> WalletAppInit(const WalletContext& context, int argc, char* argv[])
 {
+    ArgsManager& args = *Assert(context.args);
+    BCLog::Logger& logger = *Assert(context.logger);
+
     SetupWalletToolArgs(args);
     std::string error_message;
     if (!args.ParseParameters(argc, argv, error_message)) {
@@ -84,7 +90,7 @@ static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[
     }
 
     // check for printtoconsole, allow -debug
-    LogInstance().m_print_to_console = args.GetBoolArg("-printtoconsole", args.GetBoolArg("-debug", false));
+    logger.m_print_to_console = args.GetBoolArg("-printtoconsole", args.GetBoolArg("-debug", false));
 
     if (!CheckDataDirOption(args)) {
         tfm::format(std::cerr, "Error: Specified data directory \"%s\" does not exist.\n", args.GetArg("-datadir", ""));
@@ -98,11 +104,15 @@ static std::optional<int> WalletAppInit(ArgsManager& args, int argc, char* argv[
 
 MAIN_FUNCTION
 {
-    ArgsManager& args = gArgs;
 #ifdef WIN32
     common::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+
+    WalletContext context;
+    GlobalLogger logger;
+    context.args = &gArgs;
+    context.logger = &logger;
 
     int exit_status;
     std::unique_ptr<interfaces::Init> init = interfaces::MakeWalletInit(argc, argv, exit_status);
@@ -113,7 +123,7 @@ MAIN_FUNCTION
     SetupEnvironment();
     RandomInit();
     try {
-        if (const auto maybe_exit{WalletAppInit(args, argc, argv)}) return *maybe_exit;
+        if (const auto maybe_exit{WalletAppInit(context, argc, argv)}) return *maybe_exit;
     } catch (const std::exception& e) {
         PrintExceptionContinue(&e, "WalletAppInit()");
         return EXIT_FAILURE;
@@ -122,7 +132,7 @@ MAIN_FUNCTION
         return EXIT_FAILURE;
     }
 
-    const auto command = args.GetCommand();
+    const auto command = Assert(context.args)->GetCommand();
     if (!command) {
         tfm::format(std::cerr, "No method provided. Run `bitcoin-wallet -help` for valid methods.\n");
         return EXIT_FAILURE;
@@ -133,7 +143,7 @@ MAIN_FUNCTION
     }
 
     ECC_Start();
-    if (!wallet::WalletTool::ExecuteWalletToolFunc(args, command->command)) {
+    if (!wallet::WalletTool::ExecuteWalletToolFunc(context, command->command)) {
         return EXIT_FAILURE;
     }
     ECC_Stop();

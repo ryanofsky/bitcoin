@@ -869,6 +869,7 @@ static int CommandLineRawTx(int argc, char* argv[])
 
 MAIN_FUNCTION
 {
+    GlobalLogger logger;
     SetupEnvironment();
 
     try {
