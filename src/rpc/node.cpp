@@ -187,16 +187,16 @@ static RPCHelpMan getmemoryinfo()
     };
 }
 
-static void EnableOrDisableLogCategories(UniValue cats, bool enable) {
+static void EnableOrDisableLogCategories(BCLog::Logger& logger, UniValue cats, bool enable) {
     cats = cats.get_array();
     for (unsigned int i = 0; i < cats.size(); ++i) {
         std::string cat = cats[i].get_str();
 
         bool success;
         if (enable) {
-            success = LogInstance().EnableCategory(cat);
+            success = logger.EnableCategory(cat);
         } else {
-            success = LogInstance().DisableCategory(cat);
+            success = logger.DisableCategory(cat);
         }
 
         if (!success) {
@@ -213,7 +213,7 @@ static RPCHelpMan logging()
             "When called with arguments, adds or removes categories from debug logging and return the lists above.\n"
             "The arguments are evaluated in order \"include\", \"exclude\".\n"
             "If an item is both included and excluded, it will thus end up being excluded.\n"
-            "The valid logging categories are: " + LogInstance().LogCategoriesString() + "\n"
+            "The valid logging categories are: " + BCLog::Logger::LogCategoriesString() + "\n"
             "In addition, the following are available as category names with special meanings:\n"
             "  - \"all\",  \"1\" : represent all logging categories.\n"
             "  - \"none\", \"0\" : even if other logging categories are specified, ignore all of them.\n"
@@ -240,23 +240,24 @@ static RPCHelpMan logging()
                 },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-    uint32_t original_log_categories = LogInstance().GetCategoryMask();
+    BCLog::Logger& logger{*Assert(EnsureAnyNodeContext(request.context).logger)};
+    uint32_t original_log_categories = logger.GetCategoryMask();
     if (request.params[0].isArray()) {
-        EnableOrDisableLogCategories(request.params[0], true);
+        EnableOrDisableLogCategories(logger, request.params[0], true);
     }
     if (request.params[1].isArray()) {
-        EnableOrDisableLogCategories(request.params[1], false);
+        EnableOrDisableLogCategories(logger, request.params[1], false);
     }
-    uint32_t updated_log_categories = LogInstance().GetCategoryMask();
+    uint32_t updated_log_categories = logger.GetCategoryMask();
     uint32_t changed_log_categories = original_log_categories ^ updated_log_categories;
 
     // Update libevent logging if BCLog::LIBEVENT has changed.
     if (changed_log_categories & BCLog::LIBEVENT) {
-        UpdateHTTPServerLogging(LogInstance().WillLogCategory(BCLog::LIBEVENT));
+        UpdateHTTPServerLogging(logger.WillLogCategory(BCLog::LIBEVENT));
     }
 
     UniValue result(UniValue::VOBJ);
-    for (const auto& logCatActive : LogInstance().LogCategoriesList()) {
+    for (const auto& logCatActive : logger.LogCategoriesList()) {
         result.pushKV(logCatActive.category, logCatActive.active);
     }
 

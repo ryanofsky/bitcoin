@@ -200,6 +200,7 @@ void InitContext(NodeContext& node)
 
     node.args = &gArgs;
     node.shutdown = &*g_shutdown;
+    node.logger = new GlobalLogger();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -401,7 +402,7 @@ static void HandleSIGTERM(int)
 
 static void HandleSIGHUP(int)
 {
-    LogInstance().m_reopen_file = true;
+    Assert(g_deprecated_logger)->m_reopen_file = true;
 }
 #else
 static BOOL WINAPI consoleCtrlHandler(DWORD dwCtrlType)
@@ -706,7 +707,7 @@ static bool AppInitServers(NodeContext& node)
     const ArgsManager& args = *Assert(node.args);
     RPCServer::OnStarted(&OnRPCStarted);
     RPCServer::OnStopped(&OnRPCStopped);
-    if (!InitHTTPServer(*Assert(node.shutdown))) {
+    if (!InitHTTPServer(*Assert(node.logger), *Assert(node.shutdown))) {
         return false;
     }
     StartRPC();
@@ -714,7 +715,7 @@ static bool AppInitServers(NodeContext& node)
     if (!StartHTTPRPC(&node))
         return false;
     if (args.GetBoolArg("-rest", DEFAULT_REST_ENABLE)) StartREST(&node);
-    StartHTTPServer();
+    StartHTTPServer(*Assert(node.logger));
     return true;
 }
 
@@ -811,9 +812,9 @@ void InitParameterInteraction(ArgsManager& args)
  * Note that this is called very early in the process lifetime, so you should be
  * careful about what global state you rely on here.
  */
-void InitLogging(const ArgsManager& args)
+void InitLogging(BCLog::Logger& logger, const ArgsManager& args)
 {
-    init::SetLoggingOptions(args);
+    init::SetLoggingOptions(logger, args);
     init::LogPackageVersion();
 }
 
@@ -878,7 +879,7 @@ bool AppInitBasicSetup(const ArgsManager& args, std::atomic<int>& exit_status)
     return true;
 }
 
-bool AppInitParameterInteraction(const ArgsManager& args)
+bool AppInitParameterInteraction(const ArgsManager& args, BCLog::Logger& logger)
 {
     const CChainParams& chainparams = Params();
     // ********************************************************* Step 2: parameter interactions
@@ -991,9 +992,9 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
 
     // ********************************************************* Step 3: parameter-to-internal-flags
-    auto result = init::SetLoggingCategories(args);
+    auto result = init::SetLoggingCategories(logger, args);
     if (!result) return InitError(util::ErrorString(result));
-    result = init::SetLoggingLevel(args);
+    result = init::SetLoggingLevel(logger, args);
     if (!result) return InitError(util::ErrorString(result));
 
     nConnectTimeout = args.GetIntArg("-timeout", DEFAULT_CONNECT_TIMEOUT);
@@ -1099,6 +1100,7 @@ bool AppInitInterfaces(NodeContext& node)
 
 bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 {
+    BCLog::Logger& logger = *Assert(node.logger);
     const ArgsManager& args = *Assert(node.args);
     const CChainParams& chainparams = Params();
 
@@ -1112,7 +1114,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         // Detailed error printed inside CreatePidFile().
         return false;
     }
-    if (!init::StartLogging(args)) {
+    if (!init::StartLogging(logger, args)) {
         // Detailed error printed inside StartLogging().
         return false;
     }
@@ -1249,7 +1251,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     assert(!node.connman);
     node.connman = std::make_unique<CConnman>(GetRand<uint64_t>(),
                                               GetRand<uint64_t>(),
-                                              *node.addrman, *node.netgroupman, chainparams, args.GetBoolArg("-networkactive", true));
+                                              *node.addrman, *node.netgroupman, chainparams, *Assert(node.logger), args.GetBoolArg("-networkactive", true));
 
     assert(!node.fee_estimator);
     // Don't initialize fee estimation with old data if we don't relay transactions,
@@ -1493,9 +1495,9 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     LogPrintf("* Using %.1f MiB for in-memory UTXO set (plus up to %.1f MiB of unused mempool space)\n", cache_sizes.coins * (1.0 / 1024 / 1024), mempool_opts.max_size_bytes * (1.0 / 1024 / 1024));
 
     for (bool fLoaded = false; !fLoaded && !ShutdownRequested(node);) {
-        node.mempool = std::make_unique<CTxMemPool>(mempool_opts);
+        node.mempool = std::make_unique<CTxMemPool>(*Assert(node.logger), mempool_opts);
 
-        node.chainman = std::make_unique<ChainstateManager>(*Assert(node.shutdown), chainman_opts, blockman_opts);
+        node.chainman = std::make_unique<ChainstateManager>(*Assert(node.logger), *Assert(node.shutdown), chainman_opts, blockman_opts);
         ChainstateManager& chainman = *node.chainman;
 
         // This is defined and set here instead of inline in validation.h to avoid a hard
@@ -1594,23 +1596,23 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     assert(!node.peerman);
     node.peerman = PeerManager::make(*node.connman, *node.addrman,
                                      node.banman.get(), chainman,
-                                     *node.mempool, peerman_opts);
+                                     *node.mempool, logger, peerman_opts);
     RegisterValidationInterface(node.peerman.get());
 
     // ********************************************************* Step 8: start indexers
 
     if (args.GetBoolArg("-txindex", DEFAULT_TXINDEX)) {
-        g_txindex = std::make_unique<TxIndex>(interfaces::MakeChain(node), cache_sizes.tx_index, false, fReindex);
+        g_txindex = std::make_unique<TxIndex>(interfaces::MakeChain(node), logger, cache_sizes.tx_index, false, fReindex);
         node.indexes.emplace_back(g_txindex.get());
     }
 
     for (const auto& filter_type : g_enabled_filter_types) {
-        InitBlockFilterIndex([&]{ return interfaces::MakeChain(node); }, filter_type, cache_sizes.filter_index, false, fReindex);
+        InitBlockFilterIndex([&]{ return interfaces::MakeChain(node); }, logger, filter_type, cache_sizes.filter_index, false, fReindex);
         node.indexes.emplace_back(GetBlockFilterIndex(filter_type));
     }
 
     if (args.GetBoolArg("-coinstatsindex", DEFAULT_COINSTATSINDEX)) {
-        g_coin_stats_index = std::make_unique<CoinStatsIndex>(interfaces::MakeChain(node), /*cache_size=*/0, false, fReindex);
+        g_coin_stats_index = std::make_unique<CoinStatsIndex>(interfaces::MakeChain(node), logger, /*cache_size=*/0, false, fReindex);
         node.indexes.emplace_back(g_coin_stats_index.get());
     }
 
@@ -1847,7 +1849,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
                                     "for the automatically created Tor onion service."),
                                   onion_service_target.ToStringAddrPort()));
         }
-        StartTorControl(onion_service_target);
+        StartTorControl(logger, onion_service_target);
     }
 
     if (connOptions.bind_on_any) {
@@ -1919,7 +1921,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     uiInterface.InitMessage(_("Done loading").translated);
 
     for (const auto& client : node.chain_clients) {
-        client->start(*node.scheduler);
+        client->start(logger, *node.scheduler);
     }
 
     BanMan* banman = node.banman.get();

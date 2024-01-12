@@ -431,7 +431,7 @@ public:
         // Fetch selected coins total amount
         if (coin_control.HasSelected()) {
             FastRandomContext rng{};
-            CoinSelectionParams params(rng);
+            CoinSelectionParams params{*Assert(m_context.logger), rng,};
             // Note: for now, swallow any error.
             if (auto res = FetchSelectedInputs(*m_wallet, coin_control, params)) {
                 total_amount += res->total_amount;
@@ -586,8 +586,9 @@ public:
     }
     bool verify() override { return VerifyWallets(m_context); }
     bool load() override { return LoadWallets(m_context); }
-    void start(CScheduler& scheduler) override
+    void start(BCLog::Logger& logger, CScheduler& scheduler) override
     {
+        m_context.logger = &logger;
         m_context.scheduler = &scheduler;
         return StartWallets(m_context);
     }

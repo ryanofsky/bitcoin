@@ -8,6 +8,7 @@
 #ifndef BITCOIN_TORCONTROL_H
 #define BITCOIN_TORCONTROL_H
 
+#include <logging.h>
 #include <netaddress.h>
 #include <util/fs.h>
 
@@ -23,7 +24,7 @@ constexpr int DEFAULT_TOR_CONTROL_PORT = 9051;
 extern const std::string DEFAULT_TOR_CONTROL;
 static const bool DEFAULT_LISTEN_ONION = true;
 
-void StartTorControl(CService onion_service_target);
+void StartTorControl(BCLog::Logger& logger, CService onion_service_target);
 void InterruptTorControl();
 void StopTorControl();
 
@@ -106,8 +107,8 @@ private:
 class TorController
 {
 public:
-    TorController(struct event_base* base, const std::string& tor_control_center, const CService& target);
-    TorController() : conn{nullptr} {
+    TorController(BCLog::Logger& logger, struct event_base* base, const std::string& tor_control_center, const CService& target);
+    TorController(BCLog::Logger& logger) : m_log{logger, BCLog::TOR}, conn{nullptr} {
         // Used for testing only.
     }
     ~TorController();
@@ -118,6 +119,7 @@ public:
     /** Reconnect, after getting disconnected */
     void Reconnect();
 private:
+    BCLog::Source m_log;
     struct event_base* base;
     const std::string m_tor_control_center;
     TorControlConnection conn;

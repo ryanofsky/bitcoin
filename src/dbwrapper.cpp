@@ -52,11 +52,14 @@ static void HandleError(const leveldb::Status& status)
 }
 
 class CBitcoinLevelDBLogger : public leveldb::Logger {
+private:
+    const BCLog::Source& m_log;
 public:
+    CBitcoinLevelDBLogger(const BCLog::Source& log) : m_log{log} {}
     // This code is adapted from posix_logger.h, which is why it is using vsprintf.
     // Please do not do this in normal code
     void Logv(const char * format, va_list ap) override {
-            if (!LogAcceptCategory(BCLog::LEVELDB, BCLog::Level::Debug)) {
+            if (!m_log.logger.WillLogCategoryLevel(m_log.category, BCLog::Level::Debug)) {
                 return;
             }
             char buffer[500];
@@ -134,14 +137,14 @@ static void SetMaxOpenFiles(leveldb::Options *options) {
              options->max_open_files, default_open_files);
 }
 
-static leveldb::Options GetOptions(size_t nCacheSize)
+static leveldb::Options GetOptions(const BCLog::Source& log, size_t nCacheSize)
 {
     leveldb::Options options;
     options.block_cache = leveldb::NewLRUCache(nCacheSize / 2);
     options.write_buffer_size = nCacheSize / 4; // up to two write buffers may be held in memory simultaneously
     options.filter_policy = leveldb::NewBloomFilterPolicy(10);
     options.compression = leveldb::kNoCompression;
-    options.info_log = new CBitcoinLevelDBLogger();
+    options.info_log = new CBitcoinLevelDBLogger(log);
     if (leveldb::kMajorVersion > 1 || (leveldb::kMajorVersion == 1 && leveldb::kMinorVersion >= 16)) {
         // LevelDB versions before 1.16 consider short writes to be corruption. Only trigger error
         // on corruption in later versions.
@@ -218,15 +221,16 @@ struct LevelDBContext {
     leveldb::DB* pdb;
 };
 
-CDBWrapper::CDBWrapper(const DBParams& params)
+CDBWrapper::CDBWrapper(const DBParams& params, BCLog::Logger& logger)
     : m_db_context{std::make_unique<LevelDBContext>()}, m_name{fs::PathToString(params.path.stem())}, m_path{params.path}, m_is_memory{params.memory_only}
+    , m_log{logger, BCLog::LEVELDB}
 {
     DBContext().penv = nullptr;
     DBContext().readoptions.verify_checksums = true;
     DBContext().iteroptions.verify_checksums = true;
     DBContext().iteroptions.fill_cache = false;
     DBContext().syncoptions.sync = true;
-    DBContext().options = GetOptions(params.cache_bytes);
+    DBContext().options = GetOptions(m_log, params.cache_bytes);
     DBContext().options.create_if_missing = true;
     if (params.memory_only) {
         DBContext().penv = leveldb::NewMemEnv(leveldb::Env::Default());
@@ -290,7 +294,7 @@ CDBWrapper::~CDBWrapper()
 
 bool CDBWrapper::WriteBatch(CDBBatch& batch, bool fSync)
 {
-    const bool log_memory = LogAcceptCategory(BCLog::LEVELDB, BCLog::Level::Debug);
+    const bool log_memory = m_log.logger.WillLogCategoryLevel(m_log.category, BCLog::Level::Debug);
     double mem_before = 0;
     if (log_memory) {
         mem_before = DynamicMemoryUsage() / 1024.0 / 1024;

@@ -43,14 +43,14 @@ CBlockLocator GetLocator(interfaces::Chain& chain, const uint256& block_hash)
     return locator;
 }
 
-BaseIndex::DB::DB(const fs::path& path, size_t n_cache_size, bool f_memory, bool f_wipe, bool f_obfuscate) :
+BaseIndex::DB::DB(BCLog::Logger& logger, const fs::path& path, size_t n_cache_size, bool f_memory, bool f_wipe, bool f_obfuscate) :
     CDBWrapper{DBParams{
         .path = path,
         .cache_bytes = n_cache_size,
         .memory_only = f_memory,
         .wipe_data = f_wipe,
         .obfuscate = f_obfuscate,
-        .options = [] { DBOptions options; node::ReadDatabaseArgs(gArgs, options); return options; }()}}
+        .options = [] { DBOptions options; node::ReadDatabaseArgs(gArgs, options); return options; }()}, logger}
 {}
 
 bool BaseIndex::DB::ReadBestBlock(CBlockLocator& locator) const

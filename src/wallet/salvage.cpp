@@ -51,6 +51,7 @@ public:
 class DummyDatabase : public WalletDatabase
 {
 public:
+    using WalletDatabase::WalletDatabase;
     void Open() override {};
     void AddRef() override {}
     void RemoveRef() override {}
@@ -66,7 +67,7 @@ public:
     std::unique_ptr<DatabaseBatch> MakeBatch(bool flush_on_close = true) override { return std::make_unique<DummyBatch>(); }
 };
 
-bool RecoverDatabaseFile(const ArgsManager& args, const fs::path& file_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
+bool RecoverDatabaseFile(BCLog::Logger& logger, const ArgsManager& args, const fs::path& file_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
     DatabaseOptions options;
     DatabaseStatus status;
@@ -74,7 +75,7 @@ bool RecoverDatabaseFile(const ArgsManager& args, const fs::path& file_path, bil
     options.require_existing = true;
     options.verify = false;
     options.require_format = DatabaseFormat::BERKELEY;
-    std::unique_ptr<WalletDatabase> database = MakeDatabase(file_path, options, status, error);
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(file_path, options, logger, status, error);
     if (!database) return false;
 
     BerkeleyDatabase& berkeley_database = static_cast<BerkeleyDatabase&>(*database);
@@ -178,7 +179,7 @@ bool RecoverDatabaseFile(const ArgsManager& args, const fs::path& file_path, bil
     }
 
     DbTxn* ptxn = env->TxnBegin(DB_TXN_WRITE_NOSYNC);
-    CWallet dummyWallet(nullptr, "", std::make_unique<DummyDatabase>());
+    CWallet dummyWallet(nullptr, logger, "", std::make_unique<DummyDatabase>(logger));
     for (KeyValPair& row : salvagedData)
     {
         /* Filter for only private key type KV pairs to be added to the salvaged wallet */

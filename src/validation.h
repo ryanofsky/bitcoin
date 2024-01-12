@@ -458,7 +458,7 @@ public:
     //! state to disk, which should not be done until the health of the database is verified.
     //!
     //! All arguments forwarded onto CCoinsViewDB.
-    CoinsViews(DBParams db_params, CoinsViewOptions options);
+    CoinsViews(DBParams db_params, CoinsViewOptions options, BCLog::Logger& logger);
 
     //! Initialize the CCoinsViewCache member.
     void InitCache() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
@@ -529,6 +529,8 @@ public:
     //! necessary so that this instance can check whether it is the active
     //! chainstate within deeply nested method calls.
     ChainstateManager& m_chainman;
+
+    const BCLog::Source& m_log;
 
     explicit Chainstate(
         CTxMemPool* mempool,
@@ -924,7 +926,7 @@ private:
 public:
     using Options = kernel::ChainstateManagerOpts;
 
-    explicit ChainstateManager(const util::SignalInterrupt& interrupt, Options options, node::BlockManager::Options blockman_options);
+    explicit ChainstateManager(BCLog::Logger& logger, const util::SignalInterrupt& interrupt, Options options, node::BlockManager::Options blockman_options);
 
     //! Function to restart active indexes; set dynamically to avoid a circular
     //! dependency on `base/index.cpp`.
@@ -957,6 +959,7 @@ public:
      */
     RecursiveMutex& GetMutex() const LOCK_RETURNED(::cs_main) { return ::cs_main; }
 
+    BCLog::Source m_log;
     const util::SignalInterrupt& m_interrupt;
     const Options m_options;
     std::thread m_thread_load;

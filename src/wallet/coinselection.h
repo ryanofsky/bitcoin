@@ -18,6 +18,10 @@
 #include <optional>
 
 
+namespace BCLog {
+class Logger;
+class Source;
+} // namespace BCLog
 namespace wallet {
 //! lower bound for randomly-chosen target change amount
 static constexpr CAmount CHANGE_LOWER{50000};
@@ -136,6 +140,7 @@ public:
 
 /** Parameters for one iteration of Coin Selection. */
 struct CoinSelectionParams {
+    const BCLog::Source& log;
     /** Randomness to use in the context of coin selection. */
     FastRandomContext& rng_fast;
     /** Size of a change output in bytes, determined by the output type. */
@@ -175,10 +180,11 @@ struct CoinSelectionParams {
      */
     bool m_include_unsafe_inputs = false;
 
-    CoinSelectionParams(FastRandomContext& rng_fast, size_t change_output_size, size_t change_spend_size,
+    CoinSelectionParams(BCLog::Logger& logger, FastRandomContext& rng_fast, size_t change_output_size, size_t change_spend_size,
                         CAmount min_change_target, CFeeRate effective_feerate,
                         CFeeRate long_term_feerate, CFeeRate discard_feerate, size_t tx_noinputs_size, bool avoid_partial)
-        : rng_fast{rng_fast},
+        : log{logger, BCLog::LogFlags::SELECTCOINS},
+          rng_fast{rng_fast},
           change_output_size(change_output_size),
           change_spend_size(change_spend_size),
           m_min_change_target(min_change_target),
@@ -189,8 +195,9 @@ struct CoinSelectionParams {
           m_avoid_partial_spends(avoid_partial)
     {
     }
-    CoinSelectionParams(FastRandomContext& rng_fast)
-        : rng_fast{rng_fast} {}
+    CoinSelectionParams(BCLog::Logger& logger, FastRandomContext& rng_fast)
+        : log{logger, BCLog::LogFlags::SELECTCOINS},
+          rng_fast{rng_fast} {}
 };
 
 /** Parameters for filtering which OutputGroups we may use in coin selection.
@@ -444,7 +451,7 @@ util::Result<SelectionResult> SelectCoinsSRD(const std::vector<OutputGroup>& utx
 
 // Original coin selection algorithm as a fallback
 util::Result<SelectionResult> KnapsackSolver(std::vector<OutputGroup>& groups, const CAmount& nTargetValue,
-                                             CAmount change_target, FastRandomContext& rng, int max_weight);
+                                             CAmount change_target, BCLog::Logger& logger, FastRandomContext& rng, int max_weight);
 } // namespace wallet
 
 #endif // BITCOIN_WALLET_COINSELECTION_H

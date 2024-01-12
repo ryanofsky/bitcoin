@@ -26,6 +26,7 @@ bool VerifyWallets(WalletContext& context)
 {
     interfaces::Chain& chain = *context.chain;
     ArgsManager& args = *Assert(context.args);
+    BCLog::Logger& logger{*Assert(context.logger)};
 
     if (args.IsArgSet("-walletdir")) {
         const fs::path wallet_dir{args.GetPathArg("-walletdir")};
@@ -61,7 +62,7 @@ bool VerifyWallets(WalletContext& context)
         bilingual_str error_string;
         options.require_existing = true;
         options.verify = false;
-        if (MakeWalletDatabase("", options, status, error_string)) {
+        if (MakeWalletDatabase("", options, logger, status, error_string)) {
             common::SettingsValue wallets(common::SettingsValue::VARR);
             wallets.push_back(""); // Default wallet name is ""
             // Pass write=false because no need to write file and probably
@@ -89,7 +90,7 @@ bool VerifyWallets(WalletContext& context)
         options.require_existing = true;
         options.verify = true;
         bilingual_str error_string;
-        if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
+        if (!MakeWalletDatabase(wallet_file, options, logger, status, error_string)) {
             if (status == DatabaseStatus::FAILED_NOT_FOUND) {
                 chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s", error_string.original)));
             } else {
@@ -104,6 +105,7 @@ bool VerifyWallets(WalletContext& context)
 
 bool LoadWallets(WalletContext& context)
 {
+    BCLog::Logger& logger{*Assert(context.logger)};
     interfaces::Chain& chain = *context.chain;
     try {
         std::set<fs::path> wallet_paths;
@@ -119,7 +121,7 @@ bool LoadWallets(WalletContext& context)
             options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
             bilingual_str error;
             std::vector<bilingual_str> warnings;
-            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
+            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, logger, status, error);
             if (!database && status == DatabaseStatus::FAILED_NOT_FOUND) {
                 continue;
             }

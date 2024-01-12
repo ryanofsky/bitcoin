@@ -50,7 +50,7 @@ protected:
     class DB : public CDBWrapper
     {
     public:
-        DB(const fs::path& path, size_t n_cache_size,
+        DB(BCLog::Logger& logger, const fs::path& path, size_t n_cache_size,
            bool f_memory = false, bool f_wipe = false, bool f_obfuscate = false);
 
         /// Read block locator of the chain that the index is in sync with.

@@ -306,7 +306,7 @@ static void ApproximateBestSubset(FastRandomContext& insecure_rand, const std::v
 }
 
 util::Result<SelectionResult> KnapsackSolver(std::vector<OutputGroup>& groups, const CAmount& nTargetValue,
-                                             CAmount change_target, FastRandomContext& rng, int max_weight)
+                                             CAmount change_target, BCLog::Logger& logger, FastRandomContext& rng, int max_weight)
 {
     SelectionResult result(nTargetValue, SelectionAlgorithm::KNAPSACK);
 
@@ -376,7 +376,7 @@ util::Result<SelectionResult> KnapsackSolver(std::vector<OutputGroup>& groups, c
             result.AddInput(*lowest_larger);
         }
 
-        if (LogAcceptCategory(BCLog::SELECTCOINS, BCLog::Level::Debug)) {
+        if (logger.WillLogCategoryLevel(BCLog::SELECTCOINS, BCLog::Level::Debug)) {
             std::string log_message{"Coin selection best subset: "};
             for (unsigned int i = 0; i < applicable_groups.size(); i++) {
                 if (vfBest[i]) {

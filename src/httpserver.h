@@ -9,6 +9,9 @@
 #include <optional>
 #include <string>
 
+namespace BCLog {
+class Logger;
+} // namespace BCLog
 namespace util {
 class SignalInterrupt;
 } // namespace util
@@ -25,12 +28,12 @@ class HTTPRequest;
 /** Initialize HTTP server.
  * Call this before RegisterHTTPHandler or EventBase().
  */
-bool InitHTTPServer(const util::SignalInterrupt& interrupt);
+bool InitHTTPServer(BCLog::Logger& logger, const util::SignalInterrupt& interrupt);
 /** Start HTTP server.
  * This is separate from InitHTTPServer to give users race-condition-free time
  * to register their handlers between InitHTTPServer and StartHTTPServer.
  */
-void StartHTTPServer();
+void StartHTTPServer(BCLog::Logger& logger);
 /** Interrupt HTTP server threads */
 void InterruptHTTPServer();
 /** Stop HTTP server */

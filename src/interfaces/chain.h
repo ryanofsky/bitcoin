@@ -32,6 +32,9 @@ enum class ChainstateRole;
 struct bilingual_str;
 struct CBlockLocator;
 struct FeeCalculation;
+namespace BCLog {
+class Logger;
+} // namespace BCLog
 namespace node {
 struct NodeContext;
 } // namespace node
@@ -382,8 +385,8 @@ public:
     //! Load saved state.
     virtual bool load() = 0;
 
-    //! Start client execution and provide a scheduler.
-    virtual void start(CScheduler& scheduler) = 0;
+    //! Start client execution and provide a logger and scheduler.
+    virtual void start(BCLog::Logger& logger, CScheduler& scheduler) = 0;
 
     //! Save state to disk.
     virtual void flush() = 0;
