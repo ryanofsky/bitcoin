@@ -604,14 +604,28 @@ bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::stri
     return true;
 }
 
-bool util::log::ShouldLog(Category category, Level level)
+bool util::log::ShouldLog(Logger* log, Category category, Level level)
 {
-    BCLog::Logger& logger{LogInstance()};
+    auto& logger{log ? *static_cast<BCLog::Logger*>(log) : LogInstance()};
     return logger.Enabled() && logger.WillLogCategoryLevel(static_cast<BCLog::LogFlags>(category), level);
 }
 
+<<<<<<< HEAD
 void util::log::Log(const Options& options, Entry entry)
+||||||| parent of 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
+void util::log::Log(util::log::Entry entry)
+=======
+void util::log::Log(Logger* log, Entry entry)
+>>>>>>> 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
 {
+<<<<<<< HEAD
     BCLog::Logger& logger{LogInstance()};
     logger.LogPrint(options, std::move(entry));
+||||||| parent of 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
+    BCLog::Logger& logger{LogInstance()};
+    logger.LogPrintStr(std::move(entry.message), std::move(entry.source_loc), static_cast<BCLog::LogFlags>(entry.category), entry.level, entry.should_ratelimit);
+=======
+    auto& logger{log ? *static_cast<BCLog::Logger*>(log) : LogInstance()};
+    logger.LogPrintStr(std::move(entry.message), std::move(entry.source_loc), static_cast<BCLog::LogFlags>(entry.category), entry.level, entry.should_ratelimit);
+>>>>>>> 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
 }

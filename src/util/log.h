@@ -77,6 +77,9 @@ namespace util::log {
 /** Opaque to util::log; interpreted by consumers (e.g., BCLog::LogFlags). */
 using Category = uint64_t;
 
+/** Base class inherited by log consumers. Opaque like category, used for basic type-checking. */
+class Logger{};
+
 enum class Level {
     Trace = 0, // High-volume or detailed logging for development/debugging
     Debug,     // Reasonably noisy logging, but still usable in production
@@ -113,12 +116,14 @@ struct Options {
     bool always_evaluate_arguments{level >= Level::Info};
 };
 
-//! Object representing context of log messages. Holds a logging category and
-//! implements log formatting.
+//! Object representing context of log messages. Holds a logging category, an
+//! optional log pointer which can be used by the application's log handler to
+//! determine where to log to, and a Format hook to control message formatting.
 struct Context {
     Category category;
+    Logger* logger;
 
-    explicit Context(Category category = BCLog::LogFlags::ALL) : category{category} {}
+    explicit Context(Category category = BCLog::LogFlags::ALL, Logger* logger = nullptr) : category{category}, logger{logger} {}
 
     template <typename... Args>
     std::string Format(util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args) const
@@ -135,15 +140,23 @@ struct Context {
 
 /** Return whether messages with specified category and level should be logged. Applications using
  * the logging library need to provide this. */
-bool ShouldLog(Category category, Level level);
+bool ShouldLog(Logger* logger, Category category, Level level);
 
 /** Send message to be logged. Applications using the logging library need to provide this. */
+<<<<<<< HEAD
 void Log(const Options& options, Entry entry);
+||||||| parent of 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
+void Log(Entry entry);
+=======
+void Log(Logger* logger, Entry entry);
+>>>>>>> 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
 
 namespace detail {
 //! Internal helper to get Context from the first macro argument. Overloaded to
-//! detect case where first macro argument is a string literal instead of a
-//! category.
+//! detect case where first macro argument is a string literal and context has
+//! been omitted.
+template <Options options>
+Context& GetContext(Context& context LIFETIMEBOUND) { return context; }
 template <Options options>
 Context GetContext(std::string_view fmt)
 {
@@ -170,12 +183,18 @@ Context GetContext(Category category)
 }
 
 //! Internal helper to construct log entry and emit log message. Overloaded to
-//! detect case where first macro argument is a string literal instead of a
-//! category.
+//! detect case where first macro argument is a string literal and context has
+//! been omitted.
 template <typename Context, typename... Args>
 void Emit(Options options, SourceLocation&& source_loc, Context&& context, ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
 {
+<<<<<<< HEAD
     Log(options, Entry{
+||||||| parent of 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
+    Log(Entry{
+=======
+    Log(context.logger, Entry{
+>>>>>>> 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
         .category = context.category,
         .level = options.level,
         .source_loc = std::move(source_loc),
@@ -195,10 +214,80 @@ namespace BCLog {
 using Level = util::log::Level;
 } // namespace BCLog
 
+<<<<<<< HEAD
+||||||| parent of 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
+//! Return the first argument from a variadic macro argument list.
+#define PP_FIRST_ARG(arg, ...) arg
+
+//! Expand parenthesized macro arguments `(a, b)` into `a, b`.
+#define PP_EXPAND_ARGS(...) __VA_ARGS__
+
+//! Low-level logging macro called with an initial options argument. Meant to be
+//! called internally, and in special cases to override default behaviors.
+// NOLINTBEGIN(bugprone-lambda-function-name)
+// Allow __func__ to be used in any context without warnings:
+#define LOG_EMIT(options, ...)                                                                     \
+    do {                                                                                           \
+        constexpr util::log::Options _options{PP_EXPAND_ARGS options};                             \
+        auto&& _context{util::log::detail::GetContext<_options>(PP_FIRST_ARG(__VA_ARGS__))};       \
+        if (util::log::ShouldLog(_context.category, _options.level)) {                             \
+            util::log::detail::Emit(_options, SourceLocation{__func__}, _context, __VA_ARGS__);    \
+        } else if (_options.always_evaluate_arguments) {                                           \
+            [](auto&&...) {}(__VA_ARGS__);                                                         \
+        }                                                                                          \
+    } while (0)
+// NOLINTEND(bugprone-lambda-function-name)
+
+//! Logging macros which output log messages at the specified levels. They
+//! accept printf-style format strings and arguments. The debug and trace macros
+//! also require an initial BCLog::LogFlags category argument.
+//! See the "Logging" section of /doc/developer-notes.md for more details.
+#define LogError(...) LOG_EMIT((.level = util::log::Level::Error), __VA_ARGS__)
+#define LogWarning(...) LOG_EMIT((.level = util::log::Level::Warning), __VA_ARGS__)
+#define LogInfo(...) LOG_EMIT((.level = util::log::Level::Info), __VA_ARGS__)
+#define LogDebug(...) LOG_EMIT((.level = util::log::Level::Debug), __VA_ARGS__)
+#define LogTrace(...) LOG_EMIT((.level = util::log::Level::Trace), __VA_ARGS__)
+
+=======
+//! Return the first argument from a variadic macro argument list.
+#define PP_FIRST_ARG(arg, ...) arg
+
+//! Expand parenthesized macro arguments `(a, b)` into `a, b`.
+#define PP_EXPAND_ARGS(...) __VA_ARGS__
+
+//! Low-level logging macro called with an initial options argument. Meant to be
+//! called internally, and in special cases to override default behaviors.
+// NOLINTBEGIN(bugprone-lambda-function-name)
+// Allow __func__ to be used in any context without warnings:
+#define LOG_EMIT(options, ...)                                                                     \
+    do {                                                                                           \
+        constexpr util::log::Options _options{PP_EXPAND_ARGS options};                             \
+        auto&& _context{util::log::detail::GetContext<_options>(PP_FIRST_ARG(__VA_ARGS__))};       \
+        if (util::log::ShouldLog(_context.logger, _context.category, _options.level)) {            \
+            util::log::detail::Emit(_options, SourceLocation{__func__}, _context, __VA_ARGS__);    \
+        } else if (_options.always_evaluate_arguments) {                                           \
+            [](auto&&...) {}(__VA_ARGS__);                                                         \
+        }                                                                                          \
+    } while (0)
+// NOLINTEND(bugprone-lambda-function-name)
+
+//! Logging macros which output log messages at the specified levels. The
+//! macros accept an optional log context parameter followed by a
+//! printf-style format string and arguments. For Debug and Trace macros,
+//! if a context parameter is not provided, a BCLog::LogFlags category argument
+//! must be provided instead.
+//! See the "Logging" section of /doc/developer-notes.md for more details.
+#define LogError(...) LOG_EMIT((.level = util::log::Level::Error), __VA_ARGS__)
+#define LogWarning(...) LOG_EMIT((.level = util::log::Level::Warning), __VA_ARGS__)
+#define LogInfo(...) LOG_EMIT((.level = util::log::Level::Info), __VA_ARGS__)
+#define LogDebug(...) LOG_EMIT((.level = util::log::Level::Debug), __VA_ARGS__)
+#define LogTrace(...) LOG_EMIT((.level = util::log::Level::Trace), __VA_ARGS__)
+
+>>>>>>> 9a9f683c1bd (log refactor: Allow log macros to accept context arguments)
 /** Return true if log accepts specified category, at the specified level. */
 static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level level)
 {
-    return util::log::ShouldLog(category, level);
+    return util::log::ShouldLog(/*logger=*/nullptr, category, level);
 }
 
 #endif // BITCOIN_UTIL_LOG_H
