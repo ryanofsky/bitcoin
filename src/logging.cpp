@@ -4,7 +4,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <logging.h>
-#include <util/check.h>
 #include <util/fs.h>
 #include <util/string.h>
 #include <util/threadnames.h>
@@ -17,11 +16,6 @@
 
 const char * const DEFAULT_DEBUGLOGFILE = "debug.log";
 constexpr auto MAX_USER_SETABLE_SEVERITY_LEVEL{BCLog::Level::Info};
-
-BCLog::Logger& LogInstance()
-{
-    return *Assert(g_deprecated_logger);
-}
 
 bool fLogIPs = DEFAULT_LOGIPS;
 
