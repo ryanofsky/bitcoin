@@ -156,7 +156,7 @@ BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacros, LogSetup)
 BOOST_FIXTURE_TEST_CASE(logging_LogPrintMacros_CategoryName, LogSetup)
 {
     LogInstance().EnableCategory(BCLog::LogFlags::ALL);
-    const auto concatenated_category_names = LogInstance().LogCategoriesString();
+    const auto concatenated_category_names = BCLog::Logger::LogCategoriesString();
     std::vector<std::pair<BCLog::LogFlags, std::string>> expected_category_names;
     const auto category_names = SplitString(concatenated_category_names, ',');
     for (const auto& category_name : category_names) {
