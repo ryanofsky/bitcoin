@@ -378,7 +378,7 @@ bool CConnman::CheckIncomingNonce(uint64_t nonce)
 }
 
 /** Get the bind address for a socket as CAddress */
-static CAddress GetBindAddress(const Sock& sock)
+static CAddress GetBindAddress(const BCLog::Source& log, const Sock& sock)
 {
     CAddress addr_bind;
     struct sockaddr_storage sockaddr_bind;
@@ -386,7 +386,7 @@ static CAddress GetBindAddress(const Sock& sock)
     if (!sock.GetSockName((struct sockaddr*)&sockaddr_bind, &sockaddr_bind_len)) {
         addr_bind.SetSockAddr((const struct sockaddr*)&sockaddr_bind);
     } else {
-        LogPrintLevel(BCLog::NET, BCLog::Level::Warning, "getsockname failed\n");
+        LogWarning(log, "getsockname failed\n");
     }
     return addr_bind;
 }
@@ -409,7 +409,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
         }
     }
 
-    LogPrintLevel(BCLog::NET, BCLog::Level::Debug, "trying %s connection %s lastseen=%.1fhrs\n",
+    LogDebug(m_log, "trying %s connection %s lastseen=%.1fhrs\n",
         use_v2transport ? "v2" : "v1",
         pszDest ? pszDest : addrConnect.ToStringAddrPort(),
         Ticks<HoursDouble>(pszDest ? 0h : Now<NodeSeconds>() - addrConnect.nTime));
@@ -523,7 +523,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
     NodeId id = GetNewNodeId();
     uint64_t nonce = GetDeterministicRandomizer(RANDOMIZER_ID_LOCALHOSTNONCE).Write(id).Finalize();
     if (!addr_bind.IsValid()) {
-        addr_bind = GetBindAddress(*sock);
+        addr_bind = GetBindAddress(m_log, *sock);
     }
     CNode* pnode = new CNode(id,
                              std::move(sock),
@@ -1706,12 +1706,12 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     }
 
     if (!addr.SetSockAddr((const struct sockaddr*)&sockaddr)) {
-        LogPrintLevel(BCLog::NET, BCLog::Level::Warning, "Unknown socket family\n");
+        LogWarning(m_log, "Unknown socket family\n");
     } else {
         addr = CAddress{MaybeFlipIPv6toCJDNS(addr), NODE_NONE};
     }
 
-    const CAddress addr_bind{MaybeFlipIPv6toCJDNS(GetBindAddress(*sock)), NODE_NONE};
+    const CAddress addr_bind{MaybeFlipIPv6toCJDNS(GetBindAddress(m_log, *sock)), NODE_NONE};
 
     NetPermissionFlags permission_flags = NetPermissionFlags::None;
     hListenSocket.AddSocketPermissionFlags(permission_flags);
@@ -2719,7 +2719,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             // not use our limited outbound slots for them and to ensure
             // addnode connections benefit from their intended protections.
             if (AddedNodesContain(addr)) {
-                LogPrintLevel(BCLog::NET, BCLog::Level::Debug, "Not making automatic %s%s connection to %s peer selected for manual (addnode) connection%s\n",
+                LogDebug(m_log, "Not making automatic %s%s connection to %s peer selected for manual (addnode) connection%s\n",
                               preferred_net.has_value() ? "network-specific " : "",
                               ConnectionTypeAsString(conn_type), GetNetworkName(addr.GetNetwork()),
                               fLogIPs ? strprintf(": %s", addr.ToStringAddrPort()) : "");
@@ -2989,14 +2989,14 @@ bool CConnman::BindListenPort(const CService& addrBind, bilingual_str& strError,
     if (!addrBind.GetSockAddr((struct sockaddr*)&sockaddr, &len))
     {
         strError = strprintf(Untranslated("Bind address family for %s not supported"), addrBind.ToStringAddrPort());
-        LogPrintLevel(BCLog::NET, BCLog::Level::Error, "%s\n", strError.original);
+        LogError(m_log, "%s\n", strError.original);
         return false;
     }
 
     std::unique_ptr<Sock> sock = CreateSock(addrBind);
     if (!sock) {
         strError = strprintf(Untranslated("Couldn't open socket for incoming connections (socket returned error %s)"), NetworkErrorString(WSAGetLastError()));
-        LogPrintLevel(BCLog::NET, BCLog::Level::Error, "%s\n", strError.original);
+        LogError(m_log, "%s\n", strError.original);
         return false;
     }
 
@@ -3031,7 +3031,7 @@ bool CConnman::BindListenPort(const CService& addrBind, bilingual_str& strError,
             strError = strprintf(_("Unable to bind to %s on this computer. %s is probably already running."), addrBind.ToStringAddrPort(), PACKAGE_NAME);
         else
             strError = strprintf(_("Unable to bind to %s on this computer (bind returned error %s)"), addrBind.ToStringAddrPort(), NetworkErrorString(nErr));
-        LogPrintLevel(BCLog::NET, BCLog::Level::Error, "%s\n", strError.original);
+        LogError(m_log, "%s\n", strError.original);
         return false;
     }
     LogPrintf("Bound to %s\n", addrBind.ToStringAddrPort());
@@ -3040,7 +3040,7 @@ bool CConnman::BindListenPort(const CService& addrBind, bilingual_str& strError,
     if (sock->Listen(SOMAXCONN) == SOCKET_ERROR)
     {
         strError = strprintf(_("Listening for incoming connections failed (listen returned error %s)"), NetworkErrorString(WSAGetLastError()));
-        LogPrintLevel(BCLog::NET, BCLog::Level::Error, "%s\n", strError.original);
+        LogError(m_log, "%s\n", strError.original);
         return false;
     }
 
@@ -3117,6 +3117,7 @@ CConnman::CConnman(uint64_t nSeed0In, uint64_t nSeed1In, AddrMan& addrman_in,
     , m_netgroupman{netgroupman}
     , nSeed0(nSeed0In)
     , nSeed1(nSeed1In)
+    , m_log(BCLog::NET)
     , m_params(params)
 {
     SetTryNewOutboundPeer(false);

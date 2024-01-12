@@ -43,7 +43,7 @@ def parse_function_calls(function_name, source_code):
     0
     """
     assert type(function_name) is str and type(source_code) is str and function_name
-    lines = [re.sub("// .*", " ", line).strip()
+    lines = [re.sub("//[ !].*", " ", line).strip()
              for line in source_code.split("\n")
              if not line.strip().startswith("#")]
     return re.findall(r"[^a-zA-Z_](?=({}\(.*).*)".format(function_name), " " + " ".join(lines))
