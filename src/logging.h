@@ -207,14 +207,6 @@ namespace BCLog {
     };
 } // namespace BCLog
 
-BCLog::Logger& LogInstance();
-
-/** Return true if log accepts specified category, at the specified level. */
-static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level level)
-{
-    return LogInstance().WillLogCategoryLevel(category, level);
-}
-
 /** Return true if str parses as a log category and set the flag */
 bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str);
 
@@ -222,10 +214,11 @@ bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str);
 // unconditionally log to debug.log! It should not be the case that an inbound
 // peer can fill up a user's disk with debug.log entries.
 
+//! Internal helper. Expand logging arguments and log.
 template <typename... Args>
-static inline void LogPrintf_(const std::string& logging_function, const std::string& source_file, const int source_line, const BCLog::LogFlags flag, const BCLog::Level level, const char* fmt, const Args&... args)
+static inline void _LogArgs(const BCLog::Source& source, const std::string& logging_function, const std::string& source_file, const int source_line, const BCLog::Level level, const char* fmt, const Args&... args)
 {
-    if (LogInstance().Enabled()) {
+    if (source.logger.Enabled()) {
         std::string log_msg;
         try {
             log_msg = tfm::format(fmt, args...);
@@ -233,40 +226,31 @@ static inline void LogPrintf_(const std::string& logging_function, const std::st
             /* Original format string will have newline so don't add one here */
             log_msg = "Error \"" + std::string(fmterr.what()) + "\" while formatting log message: " + fmt;
         }
-        LogInstance().LogPrintStr(log_msg, logging_function, source_file, source_line, flag, level);
+        source.logger.LogPrintStr(log_msg, logging_function, source_file, source_line, source.category, level);
     }
 }
 
-#define LogPrintLevel_(category, level, ...) LogPrintf_(__func__, __FILE__, __LINE__, category, level, __VA_ARGS__)
+//! Internal helper. Expand logging location and log.
+#define _LogLocation(source, level, ...) _LogArgs(source, __func__, __FILE__, __LINE__, level, __VA_ARGS__)
 
-// Log unconditionally.
-#define LogInfo(...) LogPrintLevel_(BCLog::LogFlags::ALL, BCLog::Level::Info, __VA_ARGS__)
-#define LogWarning(...) LogPrintLevel_(BCLog::LogFlags::ALL, BCLog::Level::Warning, __VA_ARGS__)
-#define LogError(...) LogPrintLevel_(BCLog::LogFlags::ALL, BCLog::Level::Error, __VA_ARGS__)
-
-// Deprecated unconditional logging.
-#define LogPrintf(...) LogInfo(__VA_ARGS__)
-#define LogPrintfCategory(category, ...) LogPrintLevel_(category, BCLog::Level::Info, __VA_ARGS__)
-
-// Use a macro instead of a function for conditional logging to prevent
-// evaluating arguments when logging for the category is not enabled.
-
-// Log conditionally, prefixing the output with the passed category name and severity level.
-#define LogPrintLevel(category, level, ...)               \
+//! Internal helper. Check logging category and log. Avoid evaluating arguments if not logging.
+#define _LogCategory(source, level, ...)               \
     do {                                                  \
-        if (LogAcceptCategory((category), (level))) {     \
-            LogPrintLevel_(category, level, __VA_ARGS__); \
+        if ((source).logger.WillLogCategoryLevel((source).category, (level))) {     \
+            _LogLocation(source, level, __VA_ARGS__); \
         }                                                 \
     } while (0)
 
-// Log conditionally, prefixing the output with the passed category name.
-#define LogDebug(category, ...) LogPrintLevel(category, BCLog::Level::Debug, __VA_ARGS__)
-#define LogTrace(category, ...) LogPrintLevel(category, BCLog::Level::Trace, __VA_ARGS__)
+#define LogDebug(source, ...) _LogCategory(source, BCLog::Level::Debug, __VA_ARGS__)
+#define LogTrace(source, ...) _LogCategory(source, BCLog::Level::Trace, __VA_ARGS__)
+#define LogInfo(source, ...) _LogCategory(source, BCLog::Level::Info, __VA_ARGS__)
+#define LogWarning(source, ...) _LogCategory(source, BCLog::Level::Warning, __VA_ARGS__)
+#define LogError(source, ...) _LogCategory(source, BCLog::Level::Error, __VA_ARGS__)
+#define LogWithLevel(source, level, ...) _LogCategory(source, level, __VA_ARGS__)
 
-// Deprecated conditional logging
-#define LogPrint(category, ...)  LogDebug(category, __VA_ARGS__)
-
-//! Deprecated global logging variable. Avoid this and use BCLog::Source in new code.
+//! Deprecated functions relying on global variable. Avoid these and use BCLog::Source in new code.
+#define LogPrint(category, ...) LogDebug(BCLog::Source(*g_deprecated_logger, (category)), __VA_ARGS__)
+#define LogPrintf(...) LogInfo(BCLog::Source(*g_deprecated_logger, BCLog::LogFlags::ALL), __VA_ARGS__)
 inline BCLog::Logger* g_deprecated_logger{nullptr};
 class GlobalLogger : public BCLog::Logger
 {
