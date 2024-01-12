@@ -28,6 +28,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+using util::log::Level;
 using util::SplitString;
 using util::TrimString;
 
@@ -139,6 +140,16 @@ BOOST_FIXTURE_TEST_CASE(logging_macro_args, LogSetup)
     LogDebug(BCLog::NET, "debug %s", "arg");
     LogTrace(BCLog::NET, "trace %s", "arg");
 
+    LogPrint((.level = Level::Info), "print info");
+    LogPrint((.level = Level::Info), "print info %s", "arg");
+    // LogPrint((.level = Level::Info), BCLog::NET, "print info"); // Not allowed because category is forbidden!
+    // LogPrint((.level = Level::Info), BCLog::NET, "print info %s", "arg"); // Not allowed because category is forbidden!
+
+    // LogPrint((.level = Level::Debug), "print debug"); // Not allowed because category is required!
+    // LogPrint((.level = Level::Debug), "print debug %s", "arg"); // Not allowed because category is required!
+    LogPrint((.level = Level::Debug), BCLog::NET, "print debug");
+    LogPrint((.level = Level::Debug), BCLog::NET, "print debug %s", "arg");
+
     const auto log_lines{ReadDebugLogLines()};
     constexpr auto expected{std::to_array({
         "[error] error",
@@ -154,6 +165,11 @@ BOOST_FIXTURE_TEST_CASE(logging_macro_args, LogSetup)
 
         "[net] debug arg",
         "[net:trace] trace arg",
+
+        "print info",
+        "print info arg",
+        "[net] print debug",
+        "[net] print debug arg",
     })};
     BOOST_CHECK_EQUAL_COLLECTIONS(log_lines.begin(), log_lines.end(), expected.begin(), expected.end());
 }
@@ -420,7 +436,7 @@ void LogFromLocation(Location location, const std::string& message) {
         LogDebug(BCLog::LogFlags::HTTP, "%s\n", message);
         return;
     case Location::INFO_NOLIMIT:
-        LogPrintLevel_(BCLog::LogFlags::ALL, BCLog::Level::Info, /*should_ratelimit=*/false, "%s\n", message);
+        LogPrint((.level = Level::Info, .ratelimit = false), "%s\n", message);
         return;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
