@@ -105,6 +105,7 @@ struct LogSetup : public BasicTestingSetup {
     }
 };
 
+<<<<<<< HEAD
 //! Test calls to log macros with all possible types of arguments: with and
 //! without categories and with and without format arguments to make sure
 //! varargs are processed correctly.
@@ -174,6 +175,48 @@ BOOST_FIXTURE_TEST_CASE(logging_macro_args, LogSetup)
     BOOST_CHECK_EQUAL_COLLECTIONS(log_lines.begin(), log_lines.end(), expected.begin(), expected.end());
 }
 
+||||||| parent of f468c1b5402 (log test: Add test for currently accepted logging arguments)
+=======
+//! Test logging to global logger with different types of context arguments.
+BOOST_FIXTURE_TEST_CASE(logging_context_args, LogSetup)
+{
+    LogInstance().EnableCategory(BCLog::LogFlags::ALL);
+    LogInstance().SetLogLevel(BCLog::Level::Trace);
+
+    // Test logging with no context arguments.
+    LogError("error");
+    LogWarning("warning");
+    LogInfo("info");
+    LogError("error %s", "arg");
+    LogWarning("warning %s", "arg");
+    LogInfo("info %s", "arg");
+
+    // Test logging with category constant arguments.
+    LogDebug(BCLog::NET, "debug");
+    LogTrace(BCLog::NET, "trace");
+    LogDebug(BCLog::NET, "debug %s", "arg");
+    LogTrace(BCLog::NET, "trace %s", "arg");
+
+    const auto log_lines{ReadDebugLogLines()};
+    constexpr auto expected{std::to_array({
+        "[error] error",
+        "[warning] warning",
+        "info",
+
+        "[error] error arg",
+        "[warning] warning arg",
+        "info arg",
+
+        "[net] debug",
+        "[net:trace] trace",
+
+        "[net] debug arg",
+        "[net:trace] trace arg",
+    })};
+    BOOST_CHECK_EQUAL_COLLECTIONS(log_lines.begin(), log_lines.end(), expected.begin(), expected.end());
+}
+
+>>>>>>> f468c1b5402 (log test: Add test for currently accepted logging arguments)
 BOOST_AUTO_TEST_CASE(logging_timer)
 {
     auto micro_timer = BCLog::Timer<std::chrono::microseconds>("tests", "end_msg");
