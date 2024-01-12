@@ -106,6 +106,7 @@ struct LogSetup : public BasicTestingSetup {
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //! Test calls to log macros with all possible types of arguments: with and
 //! without categories and with and without format arguments to make sure
 //! varargs are processed correctly.
@@ -177,6 +178,38 @@ BOOST_FIXTURE_TEST_CASE(logging_macro_args, LogSetup)
 
 ||||||| parent of f468c1b5402 (log test: Add test for currently accepted logging arguments)
 =======
+||||||| parent of 8517c14b77a (log refactor: Allow log macros to accept context arguments)
+=======
+//! Test logging to local logger.
+BOOST_AUTO_TEST_CASE(logging_local_logger)
+{
+    BCLog::Logger logger;
+    logger.m_log_timestamps = false;
+    logger.EnableCategory(BCLog::LogFlags::ALL);
+    logger.SetLogLevel(BCLog::Level::Trace);
+    BOOST_REQUIRE(logger.StartLogging());
+
+    std::vector<std::string> messages;
+    logger.PushBackCallback([&](const std::string& s) { messages.push_back(s); });
+
+    util::log::Context log{BCLog::NET, &logger};
+    LogError(log, "error %s", "arg");
+    LogWarning(log, "warning %s", "arg");
+    LogInfo(log, "info %s", "arg");
+    LogDebug(log, "debug %s", "arg");
+    LogTrace(log, "trace %s", "arg");
+
+    constexpr auto expected{std::to_array({
+        "[error] error arg\n",
+        "[warning] warning arg\n",
+        "info arg\n",
+        "[net] debug arg\n",
+        "[net:trace] trace arg\n",
+    })};
+    BOOST_CHECK_EQUAL_COLLECTIONS(messages.begin(), messages.end(), expected.begin(), expected.end());
+}
+
+>>>>>>> 8517c14b77a (log refactor: Allow log macros to accept context arguments)
 //! Test logging to global logger with different types of context arguments.
 BOOST_FIXTURE_TEST_CASE(logging_context_args, LogSetup)
 {
@@ -197,6 +230,19 @@ BOOST_FIXTURE_TEST_CASE(logging_context_args, LogSetup)
     LogDebug(BCLog::NET, "debug %s", "arg");
     LogTrace(BCLog::NET, "trace %s", "arg");
 
+    // Test logging with context object.
+    util::log::Context log{BCLog::TOR, &LogInstance()};
+    LogError(log, "error");
+    LogWarning(log, "warning");
+    LogInfo(log, "info");
+    LogDebug(log, "debug");
+    LogTrace(log, "trace");
+    LogError(log, "error %s", "arg");
+    LogWarning(log, "warning %s", "arg");
+    LogInfo(log, "info %s", "arg");
+    LogDebug(log, "debug %s", "arg");
+    LogTrace(log, "trace %s", "arg");
+
     const auto log_lines{ReadDebugLogLines()};
     constexpr auto expected{std::to_array({
         "[error] error",
@@ -212,6 +258,18 @@ BOOST_FIXTURE_TEST_CASE(logging_context_args, LogSetup)
 
         "[net] debug arg",
         "[net:trace] trace arg",
+
+        "[error] error",
+        "[warning] warning",
+        "info",
+        "[tor] debug",
+        "[tor:trace] trace",
+
+        "[error] error arg",
+        "[warning] warning arg",
+        "info arg",
+        "[tor] debug arg",
+        "[tor:trace] trace arg",
     })};
     BOOST_CHECK_EQUAL_COLLECTIONS(log_lines.begin(), log_lines.end(), expected.begin(), expected.end());
 }
