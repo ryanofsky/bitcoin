@@ -4,7 +4,14 @@
 
 #include <zmq/zmqutil.h>
 
+<<<<<<< HEAD
 #include <util/log.h>
+||||||| parent of af3ca8272d2 (log refactor: log macro rewrite)
+#include <logging.h>
+#include <util/check.h>
+=======
+#include <logging.h>
+>>>>>>> af3ca8272d2 (log refactor: log macro rewrite)
 
 #include <zmq.h>
 
