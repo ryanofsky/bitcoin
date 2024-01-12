@@ -204,6 +204,19 @@ namespace BCLog {
     struct Source {
         Logger& logger;
         LogFlags category;
+
+        template <typename... Args>
+        std::string Format(const char* fmt, const Args&... args) const
+        {
+            std::string log_msg;
+            try {
+                log_msg = tfm::format(fmt, args...);
+            } catch (tinyformat::format_error& fmterr) {
+                /* Original format string will have newline so don't add one here */
+                log_msg = "Error \"" + std::string(fmterr.what()) + "\" while formatting log message: " + fmt;
+            }
+            return log_msg;
+        }
     };
 } // namespace BCLog
 
@@ -215,18 +228,11 @@ bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str);
 // peer can fill up a user's disk with debug.log entries.
 
 //! Internal helper. Expand logging arguments and log.
-template <typename... Args>
-static inline void _LogArgs(const BCLog::Source& source, const std::string& logging_function, const std::string& source_file, const int source_line, const BCLog::Level level, const char* fmt, const Args&... args)
+template <typename Source, typename... Args>
+static inline void _LogArgs(const Source& source, const std::string& logging_function, const std::string& source_file, const int source_line, const BCLog::Level level, const char* fmt, const Args&... args)
 {
     if (source.logger.Enabled()) {
-        std::string log_msg;
-        try {
-            log_msg = tfm::format(fmt, args...);
-        } catch (tinyformat::format_error& fmterr) {
-            /* Original format string will have newline so don't add one here */
-            log_msg = "Error \"" + std::string(fmterr.what()) + "\" while formatting log message: " + fmt;
-        }
-        source.logger.LogPrintStr(log_msg, logging_function, source_file, source_line, source.category, level);
+        source.logger.LogPrintStr(source.Format(fmt, args...), logging_function, source_file, source_line, source.category, level);
     }
 }
 
