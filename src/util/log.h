@@ -43,6 +43,10 @@ using Category = uint64_t;
 /** Base class inherited by log consumers. Opaque like category, used for basic type-checking. */
 class Logger{};
 
+//! Log level constants. Most code will not need to use these directly and can
+//! use LogTrace, LogDebug, LogInfo, LogWarning, and LogError macros defined
+//! below. See macro definitions below or "Logging" section in
+//! developer-notes.md for more detailed information.
 enum class Level {
     Trace = 0, // High-volume or detailed logging for development/debugging
     Debug,     // Reasonably noisy logging, but still usable in production
@@ -264,6 +268,32 @@ void Log(Level level, bool should_ratelimit, SourceLocation&& source_loc, Contex
 //! Logging macros which output log messages at the specified levels. The
 //! macros accept an optional log context or category parameter followed by a
 //! printf-style format string and arguments.
+//!
+//! - LogError(), LogWarning(), and LogInfo() are all enabled by default, so
+//!   they should be called infrequently, in cases where they will not spam the
+//!   log and take up disk space.
+//!
+//! - LogDebug() is enabled when debug logging is enabled, and should be used to
+//!   show messages that can help users troubleshoot issues.
+//!
+//! - LogTrace() is enabled when both debug logging AND tracing are enabled, and
+//!   should be used for fine-grained traces that will be helpful to developers.
+//!
+//! For more information about log levels, see the -debug and -loglevel
+//! documentation, or the "Logging" section of developer notes.
+//!
+//! `LogDebug` and `LogTrace` macros should take an initial category argument,
+//! so messages can be filtered by category, but categories can be omitted at
+//! higher levels:
+//!
+//!   LogDebug(BCLog::TXRECONCILIATION, "Forget txreconciliation state of peer=%d", peer_id);
+//!   LogInfo("Important information, no category.");
+//!
+//! Context arguments can also be passed to control log output (see class definition).
+//!
+//!   const util::log::Context m_log{BCLog::TXRECONCILIATION};
+//!   ...
+//!   LogDebug(m_log, "Forget txreconciliation state of peer=%d", peer_id);
 //!
 //! If severity level is Info or higher, rate limiting is applied to mitigate
 //! disk filling attacks. Users enabling logging at Debug and lower levels are
