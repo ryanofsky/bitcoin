@@ -20,10 +20,24 @@
 #include <string_view>
 #include <type_traits>
 
+<<<<<<< HEAD
 /// Logging macros which output log messages at the specified levels. They
 /// accept printf-style format strings and arguments. The debug and trace macros
 /// also require an initial BCLog::LogFlags category argument.
 /// See the "Logging" section of /doc/developer-notes.md for more details.
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+//! Logging macros which output log messages at the specified levels. They
+//! accept printf-style format strings and arguments. The debug and trace macros
+//! also require an initial BCLog::LogFlags category argument.
+//! See the "Logging" section of /doc/developer-notes.md for more details.
+=======
+//! Logging macros which output log messages at the specified levels. The
+//! macros accept an optional log context parameter followed by a
+//! printf-style format string and arguments. For Debug and Trace macros,
+//! if a context parameter is not provided, a BCLog::LogFlags category argument
+//! must be provided instead.
+//! See the "Logging" section of /doc/developer-notes.md for more details.
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
 #define LogError(...) LOG_EMIT((.level = util::log::Level::Error), __VA_ARGS__)
 #define LogWarning(...) LOG_EMIT((.level = util::log::Level::Warning), __VA_ARGS__)
 #define LogInfo(...) LOG_EMIT((.level = util::log::Level::Info), __VA_ARGS__)
@@ -38,7 +52,13 @@
     do {                                                                                           \
         constexpr util::log::Options _options{PP_EXPAND_ARGS options};                             \
         auto&& _context{util::log::detail::GetContext<_options>(PP_FIRST_ARG(__VA_ARGS__))};       \
+<<<<<<< HEAD
         if (util::log::hooks::ShouldLog(_context.category, _options.level)) {                      \
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+        if (util::log::ShouldLog(_context.category, _options.level)) {                             \
+=======
+        if (util::log::ShouldLog(_context.logger, _context.category, _options.level)) {            \
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
             util::log::detail::Emit(_options, SourceLocation{__func__}, _context, __VA_ARGS__);    \
         } else if constexpr (_options.evaluate_when_disabled) {                                    \
             [](auto&&...) {}(__VA_ARGS__);                                                         \
@@ -77,6 +97,9 @@ namespace util::log {
 /** Opaque to util::log; interpreted by consumers (e.g., BCLog::LogFlags). */
 using Category = uint64_t;
 
+/** Base class inherited by log consumers. Opaque like category, used for basic type-checking. */
+class Logger{};
+
 enum class Level {
     Trace = 0, // High-volume or detailed logging for development/debugging
     Debug,     // Reasonably noisy logging, but still usable in production
@@ -113,12 +136,22 @@ struct Options {
     bool evaluate_when_disabled{level >= Level::Info};
 };
 
+<<<<<<< HEAD
 /// Object representing context of log messages. Holds a logging category and
 /// implements log formatting.
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+//! Object representing context of log messages. Holds a logging category and
+//! implements log formatting.
+=======
+//! Object representing context of log messages. Holds a logging category, an
+//! optional log pointer which can be used by the application's log handler to
+//! determine where to log to, and a Format hook to control message formatting.
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
 struct Context {
     Category category;
+    Logger* logger;
 
-    explicit Context(Category category = BCLog::LogFlags::ALL) : category{category} {}
+    explicit Context(Category category = BCLog::LogFlags::ALL, Logger* logger = nullptr) : category{category}, logger{logger} {}
 
     template <typename... Args>
     std::string Format(util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args) const
@@ -133,20 +166,50 @@ struct Context {
     }
 };
 
+<<<<<<< HEAD
 /// External hooks that logging backends need to implement.
 namespace hooks {
 /// Return whether messages with specified category and level should be logged.
 bool ShouldLog(Category category, Level level);
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+/** Return whether messages with specified category and level should be logged. Applications using
+ * the logging library need to provide this. */
+bool ShouldLog(Category category, Level level);
+=======
+/** Return whether messages with specified category and level should be logged. Applications using
+ * the logging library need to provide this. */
+bool ShouldLog(Logger* logger, Category category, Level level);
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
 
+<<<<<<< HEAD
 /// Send message to be logged.
 void Log(const Options& options, Entry entry);
 } // namespace hooks
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+/** Send message to be logged. Applications using the logging library need to provide this. */
+void Log(const Options& options, Entry entry);
+=======
+/** Send message to be logged. Applications using the logging library need to provide this. */
+void Log(Logger* logger, const Options& options, Entry entry);
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
 
 /// Internal functions used to help implement logging macros.
 namespace detail {
+<<<<<<< HEAD
 /// Internal helper to get Context from the first macro argument. Overloaded to
 /// detect case where first macro argument is a string literal instead of a
 /// category.
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+//! Internal helper to get Context from the first macro argument. Overloaded to
+//! detect case where first macro argument is a string literal instead of a
+//! category.
+=======
+//! Internal helper to get Context from the first macro argument. Overloaded to
+//! detect case where first macro argument is a string literal and context has
+//! been omitted.
+template <Options options>
+Context& GetContext(Context& context LIFETIMEBOUND) { return context; }
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
 template <Options options>
 Context GetContext(std::string_view fmt)
 {
@@ -172,13 +235,29 @@ Context GetContext(Category category)
     return Context{category};
 }
 
+<<<<<<< HEAD
 /// Internal helper to construct log entry and emit log message. Overloaded to
 /// detect case where first macro argument is a string literal instead of a
 /// category.
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+//! Internal helper to construct log entry and emit log message. Overloaded to
+//! detect case where first macro argument is a string literal instead of a
+//! category.
+=======
+//! Internal helper to construct log entry and emit log message. Overloaded to
+//! detect case where first macro argument is a string literal and context has
+//! been omitted.
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
 template <typename Context, typename... Args>
 void Emit(Options options, SourceLocation&& source_loc, Context&& context, ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
 {
+<<<<<<< HEAD
     hooks::Log(options, Entry{
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+    Log(options, Entry{
+=======
+    Log(context.logger, options, Entry{
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
         .category = context.category,
         .level = options.level,
         .source_loc = std::move(source_loc),
@@ -215,5 +294,19 @@ namespace BCLog {
 using Level = util::log::Level;
 } // namespace BCLog
 
+<<<<<<< HEAD
+||||||| parent of 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
+/** Return true if log accepts specified category, at the specified level. */
+static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level level)
+{
+    return util::log::ShouldLog(category, level);
+}
+=======
+/** Return true if log accepts specified category, at the specified level. */
+static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level level)
+{
+    return util::log::ShouldLog(/*logger=*/nullptr, category, level);
+}
+>>>>>>> 0a582a83e8b (log refactor: Allow log macros to accept context arguments)
 
 #endif // BITCOIN_UTIL_LOG_H
