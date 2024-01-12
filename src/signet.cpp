@@ -13,8 +13,13 @@
 #include <script/script.h>
 #include <streams.h>
 #include <uint256.h>
+<<<<<<< HEAD
 #include <util/check.h>
 #include <util/log.h>
+||||||| parent of 05d22deffdb (log, refactor: Allow log macros to accept context arguments)
+#include <util/check.h>
+=======
+>>>>>>> 05d22deffdb (log, refactor: Allow log macros to accept context arguments)
 
 #include <algorithm>
 #include <cstddef>
