@@ -20,9 +20,9 @@ FUNCTION_NAMES_AND_NUMBER_OF_LEADING_ARGUMENTS = [
     'fprintf,1',
     'tfm::format,1',  # Assuming tfm::::format(std::ostream&, ...
     'LogConnectFailure,1',
-    'LogError,0',
-    'LogWarning,0',
-    'LogInfo,0',
+    'LogError,1',
+    'LogWarning,1',
+    'LogInfo,1',
     'LogDebug,1',
     'LogTrace,1',
     'LogPrint,1',

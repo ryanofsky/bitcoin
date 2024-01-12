@@ -15,6 +15,7 @@
 #include <hash.h>
 #include <i2p.h>
 #include <kernel/messagestartchars.h>
+#include <logging.h>
 #include <net_permissions.h>
 #include <netaddress.h>
 #include <netbase.h>
@@ -1624,6 +1625,7 @@ private:
         std::vector<CNode*> m_nodes_copy;
     };
 
+    const BCLog::Source m_log;
     const CChainParams& m_params;
 
     friend struct ConnmanTestMsg;
