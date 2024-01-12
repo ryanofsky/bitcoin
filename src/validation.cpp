@@ -2628,7 +2628,7 @@ bool Chainstate::FlushStateToDisk(
                 // TODO: Handle return error, or add detailed comment why it is
                 // safe to not return an error upon failure.
                 if (!m_blockman.FlushChainstateBlockFile(m_chain.Height())) {
-                    LogPrintLevel(BCLog::VALIDATION, BCLog::Level::Warning, "%s: Failed to flush block file.\n", __func__);
+                    LogWarning(m_log, "%s: Failed to flush block file.\n", __func__);
                 }
             }
 
@@ -4012,7 +4012,7 @@ bool ChainstateManager::AcceptBlockHeader(const CBlockHeader& block, BlockValida
         "Saw new header hash=%s height=%d", hash.ToString(), pindex->nHeight);
 
     if (IsInitialBlockDownload()) {
-        LogPrintLevel(BCLog::VALIDATION, BCLog::Level::Debug, "%s\n", msg);
+        LogDebug(m_log, "%s\n", msg);
     } else {
         LogPrintf("%s\n", msg);
     }
