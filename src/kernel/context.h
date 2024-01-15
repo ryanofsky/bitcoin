@@ -19,7 +19,6 @@ namespace kernel {
 //! should be stored to std::unique_ptr members pointing to opaque types.
 struct Context {
     Context();
-    ~Context();
 };
 } // namespace kernel
 

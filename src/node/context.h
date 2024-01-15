@@ -23,6 +23,7 @@ class CConnman;
 class CScheduler;
 class CTxMemPool;
 class ChainstateManager;
+class ECC_Context;
 class NetGroupManager;
 class PeerManager;
 namespace interfaces {
@@ -48,6 +49,7 @@ class KernelNotifications;
 struct NodeContext {
     //! libbitcoin_kernel context
     std::unique_ptr<kernel::Context> kernel;
+    std::unique_ptr<ECC_Context> ecc_context;
     //! Init interface for initializing current process and connecting to other processes.
     interfaces::Init* init{nullptr};
     //! Interrupt object used to track whether node shutdown was requested.
