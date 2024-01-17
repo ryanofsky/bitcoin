@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -x
+set -e
+test/functional/interface_bitcoin_cli.py --descriptors
+test/functional/interface_bitcoin_cli.py --legacy-wallet
+test/functional/interface_rpc.py
+test/functional/rpc_deriveaddresses.py --usecli
+test/functional/tool_signet_miner.py --descriptors
+test/functional/tool_signet_miner.py --legacy-wallet
+test/functional/wallet_createwallet.py --usecli
+test/functional/wallet_importdescriptors.py --descriptors
+test/functional/wallet_listreceivedby.py --descriptors
+test/functional/wallet_listreceivedby.py --legacy-wallet
+test/functional/wallet_migration.py
+test/functional/wallet_multiwallet.py --usecli
+test/functional/wallet_transactiontime_rescan.py --legacy-wallet
+test/functional/wallet_watchonly.py --usecli --legacy-wallet
