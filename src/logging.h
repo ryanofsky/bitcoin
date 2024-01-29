@@ -241,11 +241,18 @@ static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level leve
     return LogInstance().WillLogCategoryLevel(category, level);
 }
 
-//! Determine whether logging is enabled from source at a logging level.
+//! Determine whether logging is accepted from source at a logging level.
 template<typename Source>
 static inline bool LogAccept(const Source& source, BCLog::Level level)
 {
     return source.logger.WillLogCategoryLevel(source.category, level);
+}
+
+//! Determine whether logging is enabled from source at a logging level.
+template<typename Source>
+static inline bool LogEnabled(const Source& source, BCLog::Level level)
+{
+    return LogAccept(source, level) && source.logger.Enabled();
 }
 
 /** Return true if str parses as a log category and set the flag */
@@ -258,28 +265,40 @@ bool GetLogCategory(BCLog::LogFlags& flag, const std::string& str);
 //! Internal helper. Implicitly convert macro source argument to BCLog::Source reference.
 static inline const BCLog::Source& _LogSource(const BCLog::Source& source LIFETIMEBOUND) { return source; }
 
+//! Internal helper. Overload for _LogSource just returning the default source
+//! when a format string is passed to log macros without no source.
+static inline BCLog::Source _LogSource(const char* fmt) { return {}; }
+
 //! Internal helper. Overload for _LogSource accepting custom sources that may override the Format method.
 template <typename Source>
 static inline std::enable_if_t<Source::log_source, const Source&> _LogSource(const Source& source LIFETIMEBOUND) { return source; }
 
-//! Internal helper. Format logging arguments and log.
+//! Internal helper. Unpack __VA_ARGS__ and return log source.
+#define _LogSourceArg(source_or_fmt, ...) _LogSource(source_or_fmt)
+
+//! Internal helper. Format logging arguments and log when a source argument is not specified.
 template <typename Source, typename... Args>
-static inline void _LogArgs(const Source& source, const std::string& logging_function, const std::string& source_file, const int source_line, const BCLog::Level level, const char* fmt, const Args&... args)
+static inline void _LogArgs(const std::string& logging_function, const std::string& source_file, const int source_line, const Source& source, const BCLog::Level level, const char* fmt, const Args&... args)
 {
-    if (source.logger.Enabled()) {
-        source.logger.LogPrintStr(source.Format(fmt, args...), logging_function, source_file, source_line, source.category, level);
-    }
+    source.logger.LogPrintStr(source.Format(fmt, args...), logging_function, source_file, source_line, source.category, level);
+}
+
+//! Internal helper. Format logging arguments and log when a source argument is specified.
+template <typename Source, typename SourceArg, typename... Args>
+static inline std::enable_if_t<std::is_reference_v<Source>> _LogArgs(const std::string& logging_function, const std::string& source_file, const int source_line, Source&& source, const BCLog::Level level, SourceArg&&, const char* fmt, const Args&... args)
+{
+    source.logger.LogPrintStr(source.Format(fmt, args...), logging_function, source_file, source_line, source.category, level);
 }
 
 //! Internal helper. Attach logging location and log.
-#define _LogLocation(source, level, ...) _LogArgs(source, __func__, __FILE__, __LINE__, level, __VA_ARGS__)
+#define _LogLocation(source, level, ...) _LogArgs(__func__, __FILE__, __LINE__, source, level, __VA_ARGS__)
 
 //! Internal helper. Check logging category and log. Avoid evaluating arguments if not logging.
-#define _LogCategory(source, level, ...)               \
-    do {                                                  \
-        if (LogAccept(_LogSource(source), (level))) {     \
-            _LogLocation(_LogSource(source), (level), __VA_ARGS__); \
-        }                                                 \
+#define _LogCategory(level, ...)                                   \
+    do {                                                                    \
+        if (LogEnabled(_LogSourceArg(__VA_ARGS__), (level))) {              \
+            _LogLocation(_LogSourceArg(__VA_ARGS__), (level), __VA_ARGS__); \
+        }                                                                   \
     } while (0)
 
 //! Logging macros output log messages at the specified levels, and avoid
@@ -314,16 +333,16 @@ static inline void _LogArgs(const Source& source, const std::string& logging_fun
 //! and custom formatting to log messages, or to divert log messages to a local
 //! logger instead of the global logging instance, without needing to change
 //! existing log statements.
-#define LogError(source, ...) _LogCategory(source, BCLog::Level::Error, __VA_ARGS__)
-#define LogWarning(source, ...) _LogCategory(source, BCLog::Level::Warning, __VA_ARGS__)
-#define LogInfo(source, ...) _LogCategory(source, BCLog::Level::Info, __VA_ARGS__)
-#define LogDebug(source, ...) _LogCategory(source, BCLog::Level::Debug, __VA_ARGS__)
-#define LogTrace(source, ...) _LogCategory(source, BCLog::Level::Trace, __VA_ARGS__)
-#define LogPrintLevel(source, level, ...) _LogCategory(source, level, __VA_ARGS__)
+#define LogError(...) _LogCategory(BCLog::Level::Error, __VA_ARGS__)
+#define LogWarning(...) _LogCategory(BCLog::Level::Warning, __VA_ARGS__)
+#define LogInfo(...) _LogCategory(BCLog::Level::Info, __VA_ARGS__)
+#define LogDebug(...) _LogCategory(BCLog::Level::Debug, __VA_ARGS__)
+#define LogTrace(...) _LogCategory(BCLog::Level::Trace, __VA_ARGS__)
+#define LogPrintLevel(source, level, ...) _LogCategory(level, source, __VA_ARGS__)
 
 //! Deprecated functions relying on global variable. Avoid these and use BCLog::Source in new code.
-#define LogPrint(category, ...) LogDebug({(category)}, __VA_ARGS__)
-#define LogPrintf(...) LogInfo({}, __VA_ARGS__)
+#define LogPrint(category, ...) LogDebug((category), __VA_ARGS__)
+#define LogPrintf(...) LogInfo(__VA_ARGS__)
 
 template <typename... Args>
 bool error(const char* fmt, const Args&... args)

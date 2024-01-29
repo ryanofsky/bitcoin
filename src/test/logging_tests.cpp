@@ -86,12 +86,12 @@ BOOST_FIXTURE_TEST_CASE(logging_LogArgs, LogSetup)
     const BCLog::Source log_net{BCLog::LogFlags::NET};
     const BCLog::Source log_all{BCLog::LogFlags::ALL};
     const BCLog::Source log_none{BCLog::LogFlags::NONE};
-    _LogArgs(log_net, "fn1", "src1", 1, BCLog::Level::Debug, "foo1: %s\n", "bar1");
-    _LogArgs(log_net, "fn2", "src2", 2, BCLog::Level::Info, "foo2: %s\n", "bar2");
-    _LogArgs(log_all, "fn3", "src3", 3, BCLog::Level::Debug, "foo3: %s\n", "bar3");
-    _LogArgs(log_all, "fn4", "src4", 4, BCLog::Level::Info, "foo4: %s\n", "bar4");
-    _LogArgs(log_none, "fn5", "src5", 5, BCLog::Level::Debug, "foo5: %s\n", "bar5");
-    _LogArgs(log_none, "fn6", "src6", 6, BCLog::Level::Info, "foo6: %s\n", "bar6");
+    _LogArgs("fn1", "src1", 1, _LogSource(log_net), BCLog::Level::Debug, "foo1: %s\n", "bar1");
+    _LogArgs("fn2", "src2", 2, _LogSource(log_net), BCLog::Level::Info, "foo2: %s\n", "bar2");
+    _LogArgs("fn3", "src3", 3, _LogSource(log_all), BCLog::Level::Debug, "foo3: %s\n", "bar3");
+    _LogArgs("fn4", "src4", 4, _LogSource(log_all), BCLog::Level::Info, "foo4: %s\n", "bar4");
+    _LogArgs("fn5", "src5", 5, _LogSource(log_none), BCLog::Level::Debug, "foo5: %s\n", "bar5");
+    _LogArgs("fn6", "src6", 6, _LogSource(log_none), BCLog::Level::Info, "foo6: %s\n", "bar6");
     std::ifstream file{tmp_log_path};
     std::vector<std::string> log_lines;
     for (std::string log; std::getline(file, log);) {
@@ -212,6 +212,43 @@ BOOST_FIXTURE_TEST_CASE(logging_SeverityLevels, LogSetup)
         "[rpc:error] foo4: bar4",
         "[net:warning] foo5: bar5",
         "[net:error] foo7: bar7",
+    };
+    std::ifstream file{tmp_log_path};
+    std::vector<std::string> log_lines;
+    for (std::string log; std::getline(file, log);) {
+        log_lines.push_back(log);
+    }
+    BOOST_CHECK_EQUAL_COLLECTIONS(log_lines.begin(), log_lines.end(), expected.begin(), expected.end());
+}
+
+BOOST_FIXTURE_TEST_CASE(logging_no_source, LogSetup)
+{
+    LogInstance().EnableCategory(BCLog::LogFlags::ALL);
+    LogInstance().SetLogLevel(BCLog::Level::Trace);
+
+    LogError("error\n");
+    LogWarning("warning\n");
+    LogInfo("info\n");
+    LogDebug("debug\n");
+    LogTrace("trace\n");
+
+    LogError("error %s\n", "arg");
+    LogWarning("warning %s\n", "arg");
+    LogInfo("info %s\n", "arg");
+    LogDebug("debug %s\n", "arg");
+    LogTrace("trace %s\n", "arg");
+
+    std::vector<std::string> expected = {
+        "[error] error",
+        "[warning] warning",
+        "info",
+        "[debug] debug",
+        "[trace] trace",
+        "[error] error arg",
+        "[warning] warning arg",
+        "info arg",
+        "[debug] debug arg",
+        "[trace] trace arg",
     };
     std::ifstream file{tmp_log_path};
     std::vector<std::string> log_lines;
