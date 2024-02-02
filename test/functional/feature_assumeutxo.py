@@ -207,9 +207,9 @@ class AssumeutxoTest(BitcoinTestFramework):
         snapshot_prev_hash = n1.getblockhash(height=SNAPSHOT_BASE_HEIGHT-1)
         snapshot_hash = n1.getblockhash(height=SNAPSHOT_BASE_HEIGHT)
         assert_equal(n1.getblockheader(start_hash)["nTx"], 1)
-        assert_equal(n1.getblockheader(start_next_hash)["nTx"], 1)
-        assert_equal(n1.getblockheader(snapshot_prev_hash)["nTx"], 1)
-        assert_equal(n1.getblockheader(snapshot_hash)["nTx"], 1)
+        assert_equal(n1.getblockheader(start_next_hash)["nTx"], 0)
+        assert_equal(n1.getblockheader(snapshot_prev_hash)["nTx"], 0)
+        assert_equal(n1.getblockheader(snapshot_hash)["nTx"], 0)
 
         # After loading the snapshot, check nChainTx values indirectly, by using the
         # getchaintxstats RPC, which returns differences of nChainTx values
@@ -217,16 +217,15 @@ class AssumeutxoTest(BitcoinTestFramework):
 
         # nChainTx of the snapshot block should be SNAPSHOT_BASE_HEIGHT+1
         # because every block has one transaction. nChainTx of the previous
-        # block should be SNAPSHOT_BASE_HEIGHT, which is a fake value set by the
-        # snapshot loading code. Confirm expected difference of these values.
+        # block should be 0. Confirm expected difference of these values.
         stats = n1.getchaintxstats(nblocks=1, blockhash=snapshot_hash)
-        assert_equal(stats["window_tx_count"], 1)
+        assert_equal(stats["window_tx_count"], SNAPSHOT_BASE_HEIGHT+1)
 
         # nChainTx of all blocks after START_HEIGHT and before
-        # SNAPSHOT_BASE_HEIGHT should be fake values set by snapshot loading.
-        # Confirm expected difference at beginning and end of this window.
+        # SNAPSHOT_BASE_HEIGHT should be 0. Confirm expected difference at
+        # beginning and end of this window.
         stats = n1.getchaintxstats(nblocks=SNAPSHOT_BASE_HEIGHT-START_HEIGHT-2, blockhash=snapshot_prev_hash)
-        assert_equal(stats["window_tx_count"], SNAPSHOT_BASE_HEIGHT-START_HEIGHT-2)
+        assert_equal(stats["window_tx_count"], 0)
 
         normal, snapshot = n1.getchainstates()["chainstates"]
         assert_equal(normal['blocks'], START_HEIGHT)
