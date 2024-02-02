@@ -94,7 +94,8 @@ enum BlockStatus : uint32_t {
     /**
      * Only first tx is coinbase, 2 <= coinbase input script length <= 100, transactions valid, no duplicate txids,
      * sigops, size, merkle root. Implies all parents are at least TREE but not necessarily TRANSACTIONS. When all
-     * parent blocks also have TRANSACTIONS, CBlockIndex::nChainTx will be set.
+     * parent blocks back to the genesis block or an assumeutxo snapshot block also have TRANSACTIONS,
+     * CBlockIndex::nChainTx will be set.
      */
     BLOCK_VALID_TRANSACTIONS =    3,
 
@@ -168,7 +169,8 @@ public:
     //! (memory only) Total amount of work (expected number of hashes) in the chain up to and including this block
     arith_uint256 nChainWork{};
 
-    //! Number of transactions in this block.
+    //! Number of transactions in this block. This will be nonzero if the block
+    //! reached the VALID_TRANSACTIONS validity level, and zero otherwise.
     //! Note: in a potential headers-first mode, this number cannot be relied upon
     //! Note: this value is faked during UTXO snapshot load to ensure that
     //! LoadBlockIndex() will load index entries for blocks that we lack data for.
@@ -176,13 +178,9 @@ public:
     unsigned int nTx{0};
 
     //! (memory only) Number of transactions in the chain up to and including this block.
-    //! This value will be non-zero only if and only if transactions for this block and all its parents are available.
-    //! Change to 64-bit type before 2024 (assuming worst case of 60 byte transactions).
-    //!
-    //! Note: this value is faked during use of a UTXO snapshot because we don't
-    //! have the underlying block data available during snapshot load.
-    //! @sa AssumeutxoData
-    //! @sa ActivateSnapshot
+    //! This value will be non-zero if this block and all previous blocks back
+    //! to the genesis block or an assumeutxo snapshot block have reached the
+    //! VALID_TRANSACTIONS validity level.
     unsigned int nChainTx{0};
 
     //! Verification status of this block. See enum BlockStatus
@@ -257,8 +255,9 @@ public:
     }
 
     /**
-     * Check whether this block's and all previous blocks' transactions have been
-     * downloaded (and stored to disk) at some point.
+     * Check whether this block and previous blocks back to the genesis block
+     * or an assumeutxo snapshot block have reached VALID_TRANSACTIONS and had
+     * transactions downloaded (and stored to disk) at some point.
      *
      * Does not imply the transactions are consensus-valid (ConnectTip might fail)
      * Does not imply the transactions are still stored on disk. (IsBlockPruned might return true)
