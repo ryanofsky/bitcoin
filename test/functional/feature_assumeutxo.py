@@ -168,6 +168,14 @@ class AssumeutxoTest(BitcoinTestFramework):
             self.generate(n0, nblocks=1, sync_fun=self.no_op)
             snapshot_nchaintx += 1
             newblock = n0.getblock(n0.getbestblockhash(), 0)
+            if i == 4:
+                # Create a stale block that forks off the main chain before the snapshot.
+                temp_invalid = n0.getbestblockhash()
+                n0.invalidateblock(temp_invalid)
+                stale_hash = self.generateblock(n0, output="raw(aaaa)", transactions=[], sync_fun=self.no_op)["hash"]
+                n0.invalidateblock(stale_hash)
+                n0.reconsiderblock(temp_invalid)
+                stale_block = n0.getblock(stale_hash, 0)
 
             # make n1 aware of the new header, but don't give it the block.
             n1.submitheader(newblock)
@@ -216,26 +224,25 @@ class AssumeutxoTest(BitcoinTestFramework):
         snapshot_prev_hash = n1.getblockhash(height=SNAPSHOT_BASE_HEIGHT-1)
         snapshot_hash = n1.getblockhash(height=SNAPSHOT_BASE_HEIGHT)
         assert_equal(n1.getblockheader(start_hash)["nTx"], 1)
-        assert_equal(n1.getblockheader(start_next_hash)["nTx"], 1)
-        assert_equal(n1.getblockheader(snapshot_prev_hash)["nTx"], 1)
-        assert_equal(n1.getblockheader(snapshot_hash)["nTx"], 1)
+        assert_equal(n1.getblockheader(start_next_hash)["nTx"], 0)
+        assert_equal(n1.getblockheader(snapshot_prev_hash)["nTx"], 0)
+        assert_equal(n1.getblockheader(snapshot_hash)["nTx"], 0)
 
         # After loading the snapshot, check nChainTx values indirectly, by using the
         # getchaintxstats RPC, which returns differences of nChainTx values
         # between two blocks at the beginning and end of a specified window.
 
         # nChainTx of the snapshot block should be snapshot_nchaintx. nChainTx
-        # of the previous block should be SNAPSHOT_BASE_HEIGHT, which is a fake
-        # value set by the snapshot loading code. Confirm expected difference
-        # of these values.
+        # of the previous block should be 0. Confirm expected difference of
+        # these values.
         stats = n1.getchaintxstats(nblocks=1, blockhash=snapshot_hash)
-        assert_equal(stats["window_tx_count"], snapshot_nchaintx - SNAPSHOT_BASE_HEIGHT)
+        assert_equal(stats["window_tx_count"], snapshot_nchaintx)
 
         # nChainTx of all blocks after START_HEIGHT and before
-        # SNAPSHOT_BASE_HEIGHT should be fake values set by snapshot loading.
-        # Confirm expected difference at beginning and end of this window.
+        # SNAPSHOT_BASE_HEIGHT should be 0. Confirm expected difference at
+        # beginning and end of this window.
         stats = n1.getchaintxstats(nblocks=SNAPSHOT_BASE_HEIGHT-START_HEIGHT-2, blockhash=snapshot_prev_hash)
-        assert_equal(stats["window_tx_count"], SNAPSHOT_BASE_HEIGHT-START_HEIGHT-2)
+        assert_equal(stats["window_tx_count"], 0)
 
         normal, snapshot = n1.getchainstates()["chainstates"]
         assert_equal(normal['blocks'], START_HEIGHT)
@@ -246,6 +253,15 @@ class AssumeutxoTest(BitcoinTestFramework):
         assert_equal(snapshot['validated'], False)
 
         assert_equal(n1.getblockchaininfo()["blocks"], SNAPSHOT_BASE_HEIGHT)
+
+        self.log.info("Submit a stale block that forked off the chain before the snapshot")
+        # Normally a block like this would not be downloaded, but if it is
+        # submitted early before the background chain catches up to the fork
+        # point, it winds up in m_blocks_unlinked and triggers a corner case
+        # that previously crashed CheckBlockIndex.
+        n1.submitblock(stale_block)
+        n1.getchaintips()
+        n1.getblock(stale_hash)
 
         self.log.info("Submit a spending transaction for a snapshot chainstate coin to the mempool")
         # spend the coinbase output of the first block that is not available on node1
