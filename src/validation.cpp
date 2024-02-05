@@ -4847,6 +4847,8 @@ void ChainstateManager::CheckBlockIndex()
     rangeGenesis.first++;
     assert(rangeGenesis.first == rangeGenesis.second); // There is only one index entry with parent nullptr.
 
+    const CBlockIndex* snap_base{GetSnapshotBaseBlock()};
+
     // Iterate over the entire block tree, using depth-first search.
     // Along the way, remember whether there are blocks on the path from genesis
     // block being explored which are the first to have certain properties.
@@ -4859,10 +4861,8 @@ void ChainstateManager::CheckBlockIndex()
     CBlockIndex* pindexFirstNotTransactionsValid = nullptr; // Oldest ancestor of pindex which does not have BLOCK_VALID_TRANSACTIONS (regardless of being valid or not), since assumeutxo snapshot.
     CBlockIndex* pindexFirstNotChainValid = nullptr; // Oldest ancestor of pindex which does not have BLOCK_VALID_CHAIN (regardless of being valid or not), since assumeutxo snapshot.
     CBlockIndex* pindexFirstNotScriptsValid = nullptr; // Oldest ancestor of pindex which does not have BLOCK_VALID_SCRIPTS (regardless of being valid or not), since assumeutxo snapshot.
-    CBlockIndex* pindexFirstAssumeValid = nullptr; // Oldest ancestor of pindex which has BLOCK_ASSUMED_VALID
     while (pindex != nullptr) {
         nNodes++;
-        if (pindexFirstAssumeValid == nullptr && pindex->nStatus & BLOCK_ASSUMED_VALID) pindexFirstAssumeValid = pindex;
         if (pindexFirstInvalid == nullptr && pindex->nStatus & BLOCK_FAILED_VALID) pindexFirstInvalid = pindex;
         if (pindexFirstMissing == nullptr && !(pindex->nStatus & BLOCK_HAVE_DATA)) {
             pindexFirstMissing = pindex;
@@ -4909,7 +4909,7 @@ void ChainstateManager::CheckBlockIndex()
             if (pindex->nStatus & BLOCK_HAVE_DATA) assert(pindex->nTx > 0);
         }
         if (pindex->nStatus & BLOCK_HAVE_UNDO) assert(pindex->nStatus & BLOCK_HAVE_DATA);
-        if (pindex->IsAssumedValid()) {
+        if (snap_base && snap_base->GetAncestor(pindex->nHeight) == pindex) {
             // Assumed-valid blocks should connect to the main chain.
             assert((pindex->nStatus & BLOCK_VALID_MASK) >= BLOCK_VALID_TREE);
         }
@@ -4918,7 +4918,7 @@ void ChainstateManager::CheckBlockIndex()
         assert(((pindex->nStatus & BLOCK_VALID_MASK) >= BLOCK_VALID_TRANSACTIONS) == (pindex->nTx > 0)); // This is pruning-independent.
         // All parents having had data (at some point) is equivalent to all parents being VALID_TRANSACTIONS, which is equivalent to HaveNumChainTxs().
         // HaveNumChainTxs will also be set in the assumeutxo snapshot block from snapshot metadata.
-        const bool snap_block = pindex == GetSnapshotBaseBlock();
+        const bool snap_block = pindex == snap_base;
         assert((pindexFirstNeverProcessed == nullptr || snap_block) == pindex->HaveNumChainTxs());
         assert((pindexFirstNotTransactionsValid == nullptr || snap_block) == pindex->HaveNumChainTxs());
         assert(pindex->nHeight == nHeight); // nHeight must be consistent.
@@ -4959,7 +4959,7 @@ void ChainstateManager::CheckBlockIndex()
                         // The active chainstate should always have this block
                         // as a candidate, but a background chainstate should
                         // only have it if it is an ancestor of the snapshot base.
-                        if (is_active || GetSnapshotBaseBlock()->GetAncestor(pindex->nHeight) == pindex) {
+                        if (is_active || snap_base->GetAncestor(pindex->nHeight) == pindex) {
                             assert(c->setBlockIndexCandidates.count(pindex));
                         }
                     }
@@ -5003,7 +5003,7 @@ void ChainstateManager::CheckBlockIndex()
                 const bool is_active = c == &ActiveChainstate();
                 if (!CBlockIndexWorkComparator()(pindex, c->m_chain.Tip()) && c->setBlockIndexCandidates.count(pindex) == 0) {
                     if (pindexFirstInvalid == nullptr) {
-                        if (is_active || GetSnapshotBaseBlock()->GetAncestor(pindex->nHeight) == pindex) {
+                        if (is_active || snap_base->GetAncestor(pindex->nHeight) == pindex) {
                             assert(foundInUnlinked);
                         }
                     }
@@ -5046,7 +5046,6 @@ void ChainstateManager::CheckBlockIndex()
             if (pindex == pindexFirstNotTransactionsValid) pindexFirstNotTransactionsValid = nullptr;
             if (pindex == pindexFirstNotChainValid) pindexFirstNotChainValid = nullptr;
             if (pindex == pindexFirstNotScriptsValid) pindexFirstNotScriptsValid = nullptr;
-            if (pindex == pindexFirstAssumeValid) pindexFirstAssumeValid = nullptr;
             // Find our parent.
             CBlockIndex* pindexPar = pindex->pprev;
             // Find which child we just visited.
@@ -5527,20 +5526,10 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
     CBlockIndex* index = nullptr;
 
     // Don't make any modifications to the genesis block.
-    // This is especially important because we don't want to erroneously
-    // apply BLOCK_ASSUMED_VALID to genesis, which would happen if we didn't skip
-    // it here (since it apparently isn't BLOCK_VALID_SCRIPTS).
     constexpr int AFTER_GENESIS_START{1};
 
     for (int i = AFTER_GENESIS_START; i <= snapshot_chainstate.m_chain.Height(); ++i) {
         index = snapshot_chainstate.m_chain[i];
-
-        // Mark unvalidated block index entries beneath the snapshot base block as assumed-valid.
-        if (!index->IsValid(BLOCK_VALID_SCRIPTS)) {
-            // This flag will be removed once the block is fully validated by a
-            // background chainstate.
-            index->nStatus |= BLOCK_ASSUMED_VALID;
-        }
 
         // Fake BLOCK_OPT_WITNESS so that Chainstate::NeedsRedownload()
         // won't ask to rewind the entire assumed-valid chain on startup.
