@@ -50,7 +50,6 @@ index 65e31724bc..f61b471953 100644
 
    mutex_.Lock();
    stats_[compact->compaction->level() + 1].Add(stats);' | patch -p1
-  git diff
 )
 
 if [ "$RUN_FUZZ_TESTS" = "true" ]; then
