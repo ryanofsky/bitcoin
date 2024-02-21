@@ -1104,7 +1104,7 @@ size_t GetSerializeSize(const T& t)
 }
 
 /** Wrapper that overrides the GetParams() function of a stream. */
-template <typename SubStream, typename Params>
+template <typename SubStream, typename Params, bool nested = false>
 class ParamsStream
 {
     const Params& m_params;
@@ -1126,11 +1126,11 @@ public:
 
     template <typename U> ParamsStream& operator<<(const U& obj) { ::Serialize(*this, obj); return *this; }
     template <typename U> ParamsStream& operator>>(U&& obj) { ::Unserialize(*this, obj); return *this; }
-    void write(Span<const std::byte> src) { m_substream.write(src); }
-    void read(Span<std::byte> dst) { m_substream.read(dst); }
-    void ignore(size_t num) { m_substream.ignore(num); }
-    bool eof() const { return m_substream.eof(); }
-    size_t size() const { return m_substream.size(); }
+    void write(Span<const std::byte> src) { GetStream().write(src); }
+    void read(Span<std::byte> dst) { GetStream().read(dst); }
+    void ignore(size_t num) { GetStream().ignore(num); }
+    bool eof() const { return GetStream().eof(); }
+    size_t size() const { return GetStream().size(); }
 
     //! Get reference to stream parameters.
     template <typename P>
@@ -1140,6 +1140,24 @@ public:
             return m_params;
         } else {
             return m_substream.template GetParams<P>();
+        }
+    }
+
+    //! Get reference to underlying stream.
+    auto& GetStream()
+    {
+        if constexpr (nested) {
+            return m_substream.GetStream();
+        } else {
+            return m_substream;
+        }
+    }
+    auto& GetStream() const
+    {
+        if constexpr (nested) {
+            return m_substream.GetStream();
+        } else {
+            return m_substream;
         }
     }
 };
@@ -1158,7 +1176,7 @@ ParamsStream(Substream&&, const Params&) -> ParamsStream<Substream, Params>;
  */
 template <typename Substream, typename Params1, typename Params2, typename... Params>
 ParamsStream(Substream&& s, const Params1& params1, const Params2& params2, const Params&... params) ->
-    ParamsStream<decltype(ParamsStream{std::forward<Substream>(s), params2, params...}), Params1>;
+    ParamsStream<decltype(ParamsStream{std::forward<Substream>(s), params2, params...}), Params1, /*nested=*/true>;
 
 /** Wrapper that serializes objects with the specified parameters. */
 template <typename Params, typename T>
