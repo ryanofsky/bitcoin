@@ -19,7 +19,7 @@
 #include <iostream>
 
 using wallet::DatabaseOptions;
-using wallet::DatabaseStatus;
+using wallet::DatabaseError;
 
 namespace {
 TestingSetup* g_setup;
