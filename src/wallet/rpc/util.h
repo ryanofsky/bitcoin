@@ -22,7 +22,7 @@ class UniValue;
 struct bilingual_str;
 
 namespace wallet {
-enum class DatabaseStatus;
+enum class DatabaseError;
 struct WalletContext;
 
 extern const std::string HELP_REQUIRING_PASSPHRASE;
@@ -55,6 +55,7 @@ std::string LabelFromValue(const UniValue& value);
 void PushParentDescriptors(const CWallet& wallet, const CScript& script_pubkey, UniValue& entry);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 void HandleWalletError(const std::shared_ptr<CWallet>& wallet, DatabaseStatus& status, bilingual_str& error);
 RPCErrorCode HandleWalletErrorCode(WalletErrorCode code);
 ||||||| parent of 480a59b0ad0 (refactor: Use util::Result class in wallet/rpc)
@@ -62,6 +63,11 @@ void HandleWalletError(const std::shared_ptr<CWallet>& wallet, DatabaseStatus& s
 =======
 void HandleWalletError(const util::ResultPtr<std::shared_ptr<CWallet>, DatabaseStatus>& wallet);
 >>>>>>> 480a59b0ad0 (refactor: Use util::Result class in wallet/rpc)
+||||||| parent of 109d356f8ff (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
+void HandleWalletError(const util::ResultPtr<std::shared_ptr<CWallet>, DatabaseStatus>& wallet);
+=======
+void HandleWalletError(const util::ResultPtr<std::shared_ptr<CWallet>, DatabaseError>& wallet);
+>>>>>>> 109d356f8ff (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
 void AppendLastProcessedBlock(UniValue& entry, const CWallet& wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
 } //  namespace wallet
 
