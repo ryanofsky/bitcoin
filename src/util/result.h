@@ -209,11 +209,18 @@ template <typename SuccessType_, typename FailureType_, typename MessagesType_>
 class Result : public detail::SuccessHolder<SuccessType_, FailureType_, MessagesType_>
 {
 public:
+<<<<<<< HEAD
     using SuccessType = SuccessType_;
     using FailureType = FailureType_;
     using MessagesType = MessagesType_;
     static constexpr bool is_result{true};
 
+||||||| parent of 5972a3abf26c (Add temporary ResultExtract helper for porting to util::Result)
+=======
+    using success_type = T;
+    using failure_type = F;
+
+>>>>>>> 5972a3abf26c (Add temporary ResultExtract helper for porting to util::Result)
     //! Construct a Result object setting a success or failure value and
     //! optional warning and error messages. Initial util::Error and
     //! util::Warning arguments are processed first to add warning and error
@@ -429,5 +436,30 @@ bilingual_str ErrorString(const Result& result)
     return messages ? detail::JoinMessages(*messages) : bilingual_str{};
 }
 } // namespace util
+
+//! Temporary helper used to decompose util::Result into success / failure /
+//! error / warning values.  This is used in upcoming commits to incrementally
+//! port code not using util::Result to start using it, and it is removed after
+//! the last commit when everything is using util::Result.
+template<typename Result, typename FailPtr>
+auto ResultExtract(Result&& result, FailPtr failure=nullptr, bilingual_str* error = nullptr, std::vector<bilingual_str>* warnings = nullptr)
+{
+    if constexpr (!std::is_same_v<FailPtr, std::nullptr_t>) {
+        if (failure && !result) *failure = result.GetFailure();
+    }
+    if (error) {
+        const auto& e = result.GetErrors();
+        if (!e.empty()) *error = *e.begin();
+    }
+    if (warnings) {
+        const auto& w = result.GetWarnings();
+        warnings->insert(warnings->end(), w.begin(), w.end());
+    }
+    if constexpr (std::is_same_v<typename Result::success_type, void>) {
+        return bool{result};
+    } else {
+        return result ? std::move(result.value()) : typename Result::success_type{};
+    }
+}
 
 #endif // BITCOIN_UTIL_RESULT_H
