@@ -435,7 +435,7 @@ static RPCHelpMan createwallet()
     auto wallet{CreateWallet(context, request.params[0].get_str(), load_on_start, options) >> result};
 >>>>>>> 77c54af5a42 (refactor: Use util::Result class in wallet/rpc)
     if (!wallet) {
-        RPCErrorCode code = wallet.error() == DatabaseStatus::FAILED_ENCRYPT ? RPC_WALLET_ENCRYPTION_FAILED : RPC_WALLET_ERROR;
+        RPCErrorCode code = wallet.error() == DatabaseError::FAILED_ENCRYPT ? RPC_WALLET_ENCRYPTION_FAILED : RPC_WALLET_ERROR;
         throw JSONRPCError(code, util::ErrorString(result).original);
     }
 >>>>>>> 49420333797 (refactor: Use util::Result class in wallet/wallet)
