@@ -22,7 +22,15 @@ class UniValue;
 struct bilingual_str;
 
 namespace wallet {
+<<<<<<< HEAD
 enum class DatabaseStatus;
+||||||| parent of 090e9ba606b (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
+class LegacyScriptPubKeyMan;
+enum class DatabaseStatus;
+=======
+class LegacyScriptPubKeyMan;
+enum class DatabaseError;
+>>>>>>> 090e9ba606b (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
 struct WalletContext;
 
 extern const std::string HELP_REQUIRING_PASSPHRASE;
@@ -54,7 +62,7 @@ std::string LabelFromValue(const UniValue& value);
 //! Fetch parent descriptors of this scriptPubKey.
 void PushParentDescriptors(const CWallet& wallet, const CScript& script_pubkey, UniValue& entry);
 
-void HandleWalletError(const util::ResultPtr<std::shared_ptr<CWallet>, DatabaseStatus>& wallet);
+void HandleWalletError(const util::ResultPtr<std::shared_ptr<CWallet>, DatabaseError>& wallet);
 void AppendLastProcessedBlock(UniValue& entry, const CWallet& wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
 } //  namespace wallet
 
