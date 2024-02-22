@@ -177,6 +177,7 @@ public:
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 /** An in-memory SQLiteDatabase. Used as a temporary build artifact where no
  *  on-disk persistence is needed. */
 class InMemoryWalletDatabase : public SQLiteDatabase
@@ -194,6 +195,11 @@ util::ResultPtr<std::unique_ptr<SQLiteDatabase>, DatabaseStatus> MakeSQLiteDatab
 >>>>>>> 0a2a1abac67 (refactor: Use util::Result class in wallet/sqlite)
 
 std::unique_ptr<WalletDatabase> MakeInMemoryWalletDatabase();
+||||||| parent of 036ce1d818c (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
+util::ResultPtr<std::unique_ptr<SQLiteDatabase>, DatabaseStatus> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options);
+=======
+util::ResultPtr<std::unique_ptr<SQLiteDatabase>, DatabaseError> MakeSQLiteDatabase(const fs::path& path, const DatabaseOptions& options);
+>>>>>>> 036ce1d818c (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
 
 std::string SQLiteDatabaseVersion();
 } // namespace wallet
