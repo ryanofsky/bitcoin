@@ -109,7 +109,7 @@ bool VerifyWallets(WalletContext& context)
 =======
         auto result{MakeWalletDatabase(wallet_file, options)};
         if (!result) {
-            if (result.GetFailure() == DatabaseStatus::FAILED_NOT_FOUND) {
+            if (result.GetFailure() == DatabaseError::FAILED_NOT_FOUND) {
                 chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s", util::ErrorString(result).original)));
 >>>>>>> 960f5847c232 (refactor: Use util::Result class in wallet/load)
             } else {
@@ -168,8 +168,14 @@ bool LoadWallets(WalletContext& context)
 =======
             util::Result<void> result;
             auto database{MakeWalletDatabase(name, options) >> result};
+<<<<<<< HEAD
             if (!database && database.GetFailure() == DatabaseStatus::FAILED_NOT_FOUND) {
 >>>>>>> 960f5847c232 (refactor: Use util::Result class in wallet/load)
+||||||| parent of 88dfdac4bc23 (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
+            if (!database && database.GetFailure() == DatabaseStatus::FAILED_NOT_FOUND) {
+=======
+            if (!database && database.GetFailure() == DatabaseError::FAILED_NOT_FOUND) {
+>>>>>>> 88dfdac4bc23 (scripted-diff: replace wallet DatabaseStatus with DatabaseError)
                 continue;
 >>>>>>> 37a1d5e0e3c6 (refactor: Use util::Result class in wallet/wallet)
             }
