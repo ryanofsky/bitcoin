@@ -18,6 +18,19 @@ import sys
 FUNCTION_NAMES_AND_NUMBER_OF_LEADING_ARGUMENTS = [
     'tfm::format,1',  # Assuming tfm::::format(std::ostream&, ...
     'strprintf,0',
+<<<<<<< HEAD
+||||||| parent of 816ca5420848 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    'vfprintf,1',
+    'vprintf,1',
+    'vsnprintf,1',
+    'vsprintf,1',
+    'WalletLogPrintf,0',
+=======
+    'vfprintf,1',
+    'vprintf,1',
+    'vsnprintf,1',
+    'vsprintf,1',
+>>>>>>> 816ca5420848 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 ]
 RUN_LINT_FILE = 'test/lint/run-lint-format-strings.py'
 
