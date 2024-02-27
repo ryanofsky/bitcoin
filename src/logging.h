@@ -240,7 +240,14 @@ namespace BCLog {
     //! Object representing a particular source of log messages. Holds a logging
     //! category, a reference to the logger object to output to, and a
     //! formatting hook.
+<<<<<<< HEAD
     struct Context {
+||||||| parent of fab945da7169 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    struct Source {
+=======
+    struct Source {
+        static constexpr bool log_source{true};
+>>>>>>> fab945da7169 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         LogFlags category;
         Logger& logger;
 
@@ -325,6 +332,58 @@ static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level leve
 /** Return true if str parses as a log category and set the flag */
 bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 
+<<<<<<< HEAD
+||||||| parent of fab945da7169 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+//! Internal helper to get log source object from macro argument, if argument is
+//! BCLog::Source object or a category constant that BCLog::Source can be
+//! constructed from.
+static inline const BCLog::Source& _LogSource(const BCLog::Source& source LIFETIMEBOUND) { return source; }
+
+//! Internal helper to get log source object from macro argument, if argument is
+//! just a format string and no source or category was provided.
+static inline BCLog::Source _LogSource(std::string_view fmt) { return {}; }
+
+//! Internal helper to format log arguments and call a logging function.
+template <typename LogFn, typename Source, typename SourceArg, typename... Args>
+requires (!std::is_convertible_v<SourceArg, std::string_view>)
+void _LogFormat(LogFn&& log, Source&& source, SourceArg&&, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(source, source.Format(fmt, args...));
+}
+template <typename LogFn, typename Source, typename... Args>
+void _LogFormat(LogFn&& log, Source&& source, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(source, source.Format(fmt, args...));
+}
+=======
+//! Internal helper to get log source object from macro argument, if argument is
+//! BCLog::Source object or a category constant that BCLog::Source can be
+//! constructed from.
+static inline const BCLog::Source& _LogSource(const BCLog::Source& source LIFETIMEBOUND) { return source; }
+
+//! Internal helper to get log source object from macro argument, if argument is
+//! a custom log source with a log_source member.
+template <typename Source>
+requires (Source::log_source)
+static inline const Source& _LogSource(const Source& source LIFETIMEBOUND) { return source; }
+
+//! Internal helper to get log source object from macro argument, if argument is
+//! just a format string and no source or category was provided.
+static inline BCLog::Source _LogSource(std::string_view fmt) { return {}; }
+
+//! Internal helper to format log arguments and call a logging function.
+template <typename LogFn, typename Source, typename SourceArg, typename... Args>
+requires (!std::is_convertible_v<SourceArg, std::string_view>)
+void _LogFormat(LogFn&& log, Source&& source, SourceArg&&, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(source, source.Format(fmt, args...));
+}
+template <typename LogFn, typename Source, typename... Args>
+void _LogFormat(LogFn&& log, Source&& source, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(source, source.Format(fmt, args...));
+}
+>>>>>>> fab945da7169 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
 //! Internal helper to return first arg in a __VA_ARGS__ pack. This could be
 //! simplified to `#define FirstArg_(arg, ...) arg` if not for a preprocessor
@@ -376,12 +435,34 @@ bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 //!   ...
 //!   LogDebug(m_log, "Forget txreconciliation state of peer=%d\n", peer_id);
 //!
+<<<<<<< HEAD
 #define LogError(...) LogPrint_(BCLog::Level::Error, false, __VA_ARGS__)
 #define LogWarning(...) LogPrint_(BCLog::Level::Warning, false, __VA_ARGS__)
 #define LogInfo(...) LogPrint_(BCLog::Level::Info, false, __VA_ARGS__)
 #define LogDebug(...) LogPrint_(BCLog::Level::Debug, true, __VA_ARGS__)
 #define LogTrace(...) LogPrint_(BCLog::Level::Trace, true, __VA_ARGS__)
 #define LogPrintLevel(ctx, level, ...) LogPrint_(level, true, ctx, __VA_ARGS__)
+||||||| parent of fab945da7169 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+//! Using source objects also allows diverting log messages to a local logger
+//! instead of the global logging instance.
+#define LogError(...) _LogPrint(BCLog::Level::Error, __VA_ARGS__)
+#define LogWarning(...) _LogPrint(BCLog::Level::Warning, __VA_ARGS__)
+#define LogInfo(...) _LogPrint(BCLog::Level::Info, __VA_ARGS__)
+#define LogDebug(...) _LogPrint(BCLog::Level::Debug, __VA_ARGS__)
+#define LogTrace(...) _LogPrint(BCLog::Level::Trace, __VA_ARGS__)
+#define LogPrintLevel(source, level, ...) _LogPrint(level, source, __VA_ARGS__)
+=======
+//! Using source objects also provides the flexibility to add extra information
+//! and custom formatting to log messages, or to divert log messages to a local
+//! logger instead of the global logging instance, without needing to change
+//! existing log statements.
+#define LogError(...) _LogPrint(BCLog::Level::Error, __VA_ARGS__)
+#define LogWarning(...) _LogPrint(BCLog::Level::Warning, __VA_ARGS__)
+#define LogInfo(...) _LogPrint(BCLog::Level::Info, __VA_ARGS__)
+#define LogDebug(...) _LogPrint(BCLog::Level::Debug, __VA_ARGS__)
+#define LogTrace(...) _LogPrint(BCLog::Level::Trace, __VA_ARGS__)
+#define LogPrintLevel(source, level, ...) _LogPrint(level, source, __VA_ARGS__)
+>>>>>>> fab945da7169 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
 //! Deprecated macros.
 #define LogPrintf(...) LogInfo(__VA_ARGS__)
