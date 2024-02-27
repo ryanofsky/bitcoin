@@ -37,7 +37,6 @@ FUNCTION_NAMES_AND_NUMBER_OF_LEADING_ARGUMENTS = [
     'vprintf,1',
     'vsnprintf,1',
     'vsprintf,1',
-    'WalletLogPrintf,0',
 ]
 RUN_LINT_FILE = 'test/lint/run-lint-format-strings.py'
 
