@@ -462,6 +462,7 @@ static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level leve
 bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 05d22deffdb (log, refactor: Allow log macros to accept context arguments)
 template <typename... Args>
 inline void LogPrintFormatInternal(SourceLocation&& source_loc, BCLog::LogFlags flag, BCLog::Level level, bool should_ratelimit, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
@@ -511,13 +512,23 @@ inline void LogPrintFormatInternal(SourceLocation&& source_loc, BCLog::LogFlags 
 =======
 //! Internal helper to return first arg in a __VA_ARGS__ pack.
 #define FirstArg_(arg, ...) arg
+||||||| parent of b9842125715 (log, refactor: Add preprocessor workaround for MSVC)
+//! Internal helper to return first arg in a __VA_ARGS__ pack.
+#define FirstArg_(arg, ...) arg
+=======
+//! Internal helper to return first arg in a __VA_ARGS__ pack. This could be
+//! simplified to `#define FirstArg_(arg, ...) arg` if not for a preprocessor
+//! bug in Visual C++.
+#define FirstArg_Impl(arg, ...) arg
+#define FirstArg_(args) FirstArg_Impl args
+>>>>>>> b9842125715 (log, refactor: Add preprocessor workaround for MSVC)
 
 //! Internal helper to conditionally log. Only evaluates arguments when needed.
 // Allow __func__ to be used in any context without warnings:
 // NOLINTBEGIN(bugprone-lambda-function-name)
 #define LogPrint_(level, ratelimit, ...)                                       \
     do {                                                                       \
-        const auto& ctx{BCLog::detail::GetContext(FirstArg_(__VA_ARGS__))};    \
+        const auto& ctx{BCLog::detail::GetContext(FirstArg_((__VA_ARGS__)))};  \
         if (const BCLog::Level lvl{level}; LogEnabled(ctx, lvl)) {             \
             const BCLog::LogFlags cat{ctx.category};                           \
             const bool rl{ratelimit};                                          \
