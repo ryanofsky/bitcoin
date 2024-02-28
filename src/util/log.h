@@ -216,6 +216,7 @@ void Log(Level level, bool should_ratelimit, SourceLocation&& source_loc, Contex
 } // namespace util::log
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //! Return the first argument from a variadic macro argument list.
 #define FIRST_ARG(arg, ...) arg
 
@@ -251,13 +252,23 @@ void Log(Level level, bool should_ratelimit, SourceLocation&& source_loc, Contex
 =======
 //! Internal helper to return first arg in a __VA_ARGS__ pack.
 #define FirstArg_(arg, ...) arg
+||||||| parent of ee4974c081e (log refactor: Add preprocessor workaround for MSVC)
+//! Internal helper to return first arg in a __VA_ARGS__ pack.
+#define FirstArg_(arg, ...) arg
+=======
+//! Internal helper to return first arg in a __VA_ARGS__ pack. This could be
+//! simplified to `#define FirstArg_(arg, ...) arg` if not for a preprocessor
+//! bug in Visual C++.
+#define FirstArg_Impl(arg, ...) arg
+#define FirstArg_(args) FirstArg_Impl args
+>>>>>>> ee4974c081e (log refactor: Add preprocessor workaround for MSVC)
 
 //! Internal helper to conditionally log. Only evaluates arguments when needed.
 // Allow __func__ to be used in any context without warnings:
 // NOLINTBEGIN(bugprone-lambda-function-name)
 #define LogPrint_(level, should_ratelimit, ...)                                                    \
     do {                                                                                           \
-        auto&& _context{util::log::detail::GetContext(FirstArg_(__VA_ARGS__))};                    \
+        auto&& _context{util::log::detail::GetContext(FirstArg_((__VA_ARGS__)))};                  \
         if (util::log::ShouldLog(_context.logger, _context.category, (level))) {                   \
             util::log::detail::Log((level), (should_ratelimit), SourceLocation{__func__},          \
                                    _context, __VA_ARGS__);                                         \
