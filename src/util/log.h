@@ -122,15 +122,18 @@ void Log(Level level, bool ratelimit, SourceLocation&& source_loc, Source&& sour
 } // namespace detail
 } // namespace util::log
 
-//! Internal helper to return first arg in a __VA_ARGS__ pack.
-#define FirstArg_(arg, ...) arg
+//! Internal helper to return first arg in a __VA_ARGS__ pack. This could be
+//! simplified to `#define FirstArg_(arg, ...) arg` if not for a preprocessor
+//! bug in Visual C++.
+#define FirstArg_Impl(arg, ...) arg
+#define FirstArg_(args) FirstArg_Impl args
 
 //! Internal helper to conditionally log. Only evaluates arguments when needed.
 // Allow __func__ to be used in any context without warnings:
 // NOLINTBEGIN(bugprone-lambda-function-name)
 #define LogPrint_(level, ratelimit, ...)                                                           \
     do {                                                                                           \
-        const auto& _source{util::log::detail::GetSource(FirstArg_(__VA_ARGS__))};                 \
+        const auto& _source{util::log::detail::GetSource(FirstArg_((__VA_ARGS__)))};               \
         if (util::log::ShouldLog(_source.logger, _source.category, (level))) {                     \
             SourceLocation loc{SourceLocation{__func__}};                                          \
             util::log::detail::Log((level), ratelimit, std::move(loc), _source, __VA_ARGS__);      \
