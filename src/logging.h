@@ -427,6 +427,7 @@ inline void LogPrintFormatInternal(std::string_view logging_function, std::strin
 >>>>>>> eaac991552ab (log, refactor: Allow log macros to accept context arguments)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 #define LogPrintLevel_(category, level, should_ratelimit, ...) LogPrintFormatInternal(std::source_location::current(), category, level, should_ratelimit, __VA_ARGS__)
 ||||||| parent of eaac991552ab (log, refactor: Allow log macros to accept context arguments)
 #define LogPrintLevel_(category, level, ...) LogPrintFormatInternal(__func__, __FILE__, __LINE__, category, level, __VA_ARGS__)
@@ -434,6 +435,16 @@ inline void LogPrintFormatInternal(std::string_view logging_function, std::strin
 //! Internal helper to return first arg in a __VA_ARGS__ pack.
 #define FirstArg_(arg, ...) arg
 >>>>>>> eaac991552ab (log, refactor: Allow log macros to accept context arguments)
+||||||| parent of 6e41dfa31722 (log, refactor: Add preprocessor workaround for MSVC)
+//! Internal helper to return first arg in a __VA_ARGS__ pack.
+#define FirstArg_(arg, ...) arg
+=======
+//! Internal helper to return first arg in a __VA_ARGS__ pack. This could be
+//! simplified to `#define FirstArg_(arg, ...) arg` if not for a preprocessor
+//! bug in Visual C++.
+#define FirstArg_Impl(arg, ...) arg
+#define FirstArg_(args) FirstArg_Impl args
+>>>>>>> 6e41dfa31722 (log, refactor: Add preprocessor workaround for MSVC)
 
 <<<<<<< HEAD
 // Log unconditionally. Uses basic rate limiting to mitigate disk filling attacks.
@@ -487,7 +498,7 @@ inline void LogPrintFormatInternal(std::string_view logging_function, std::strin
 //! Internal helper to conditionally log. Only evaluates arguments when needed.
 #define LogPrint_(level, ...)                                                  \
     do {                                                                       \
-        const auto& ctx{BCLog::detail::GetContext(FirstArg_(__VA_ARGS__))};    \
+        const auto& ctx{BCLog::detail::GetContext(FirstArg_((__VA_ARGS__)))};  \
         if (LogEnabled(ctx, (level))) {                                        \
             const auto& func = __func__;                                       \
             BCLog::detail::Format([&](auto&& message) {                        \
