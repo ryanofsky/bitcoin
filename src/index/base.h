@@ -116,14 +116,8 @@ private:
     template <typename... Args>
     void FatalErrorf(const char* fmt, const Args&... args) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
 
-    /// Temporary helper function to convert block hashes to index pointers
-    /// while index code is being migrated to use interfaces::Chain methods
-    /// instead of index pointers.
-    const CBlockIndex& BlockIndex(const uint256& hash);
-
 protected:
     std::unique_ptr<interfaces::Chain> m_chain;
-    Chainstate* m_chainstate{nullptr};
     const std::string m_name;
 
     /// Return whether to ignore stale, out-of-sync block connected event
