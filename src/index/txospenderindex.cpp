@@ -59,8 +59,8 @@ struct DBKey {
     }
 };
 
-TxoSpenderIndex::TxoSpenderIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, bool f_memory, bool f_wipe)
-    : BaseIndex(std::move(chain), "txospenderindex"), m_db{std::make_unique<DB>(gArgs.GetDataDirNet() / "indexes" / "txospenderindex" / "db", n_cache_size, f_memory, f_wipe)}
+TxoSpenderIndex::TxoSpenderIndex(std::unique_ptr<interfaces::Chain> chain, node::BlockManager& blockman, size_t n_cache_size, bool f_memory, bool f_wipe)
+    : BaseIndex(std::move(chain), "txospenderindex"), m_db{std::make_unique<DB>(gArgs.GetDataDirNet() / "indexes" / "txospenderindex" / "db", n_cache_size, f_memory, f_wipe)}, m_blockman(blockman)
 {
     if (!m_db->Read("siphash_key", m_siphash_key)) {
         FastRandomContext rng(false);
@@ -140,7 +140,7 @@ bool TxoSpenderIndex::CustomRemove(const interfaces::BlockInfo& block)
 
 util::Expected<TxoSpender, std::string> TxoSpenderIndex::ReadTransaction(const CDiskTxPos& tx_pos) const
 {
-    AutoFile file{m_chainstate->m_blockman.OpenBlockFile(tx_pos, /*fReadOnly=*/true)};
+    AutoFile file{m_blockman.OpenBlockFile(tx_pos, /*fReadOnly=*/true)};
     if (file.IsNull()) {
         return util::Unexpected("cannot open block");
     }

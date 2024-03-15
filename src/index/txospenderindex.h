@@ -7,6 +7,7 @@
 
 #include <index/base.h>
 #include <interfaces/chain.h>
+#include <node/blockstorage.h>
 #include <primitives/transaction.h>
 #include <uint256.h>
 #include <util/expected.h>
@@ -38,6 +39,7 @@ class TxoSpenderIndex final : public BaseIndex
 private:
     std::unique_ptr<BaseIndex::DB> m_db;
     std::pair<uint64_t, uint64_t> m_siphash_key;
+    node::BlockManager& m_blockman;
     bool AllowPrune() const override { return false; }
     void WriteSpenderInfos(const std::vector<std::pair<COutPoint, CDiskTxPos>>& items);
     void EraseSpenderInfos(const std::vector<std::pair<COutPoint, CDiskTxPos>>& items);
@@ -53,7 +55,7 @@ protected:
     BaseIndex::DB& GetDB() const override;
 
 public:
-    explicit TxoSpenderIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
+    explicit TxoSpenderIndex(std::unique_ptr<interfaces::Chain> chain, node::BlockManager& blockman, size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
 
     /**
      * Search the index for a transaction that spends the given outpoint.
