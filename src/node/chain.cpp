@@ -9,19 +9,28 @@
 #include <node/chain.h>
 #include <sync.h>
 #include <uint256.h>
+#include <undo.h>
 #include <util/threadinterrupt.h>
 
 using interfaces::BlockInfo;
 using kernel::MakeBlockInfo;
 
 namespace node {
-bool ReadBlockData(node::BlockManager& blockman, const CBlockIndex& block, CBlock* data, interfaces::BlockInfo& info)
+bool ReadBlockData(node::BlockManager& blockman, const CBlockIndex& block, CBlock* data, CBlockUndo* undo_data, interfaces::BlockInfo& info)
 {
     if (data) {
         if (blockman.ReadBlockFromDisk(*data, block)) {
             info.data = data;
         } else {
             info.error = strprintf("%s: Failed to read block %s from disk", __func__, block.GetBlockHash().ToString());
+            return false;
+        }
+    }
+    if (undo_data && block.nHeight > 0) {
+        if (blockman.UndoReadFromDisk(*undo_data, block)) {
+            info.undo_data = undo_data;
+        } else {
+            info.error = strprintf("%s: Failed to read block %s undo data from disk", __func__, block.GetBlockHash().ToString());
             return false;
         }
     }
@@ -49,7 +58,8 @@ bool SyncChain(BlockManager& blockman, const CChain& chain, const CBlockIndex* b
             BlockInfo block_info = MakeBlockInfo(block);
             block_info.chain_tip = false;
             CBlock data;
-            ReadBlockData(blockman, *block, &data, block_info);
+            CBlockUndo undo_data;
+            ReadBlockData(blockman, *block, &data, &undo_data, block_info);
             if (rewind) {
                 notifications->blockDisconnected(block_info);
                 block = Assert(block->pprev);

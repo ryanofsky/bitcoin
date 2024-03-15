@@ -60,7 +60,6 @@ public:
     void blockDisconnected(const interfaces::BlockInfo& block) override;
     void chainStateFlushed(ChainstateRole role, const CBlockLocator& locator) override;
     BaseIndex& m_index;
-    interfaces::Chain::NotifyOptions m_options = m_index.CustomOptions();
     std::chrono::steady_clock::time_point m_last_log_time{0s};
     std::chrono::steady_clock::time_point m_last_locator_write_time{0s};
     //! As blocks are disconnected, index is updated but not committed to until
@@ -71,12 +70,8 @@ public:
     bool m_rewind_error = false;
 };
 
-void BaseIndexNotifications::blockConnected(ChainstateRole role, const interfaces::BlockInfo& block_info)
+void BaseIndexNotifications::blockConnected(ChainstateRole role, const interfaces::BlockInfo& block)
 {
-    // Make a mutable copy of the BlockInfo argument so undo_data can be
-    // attached below. This is temporary and removed in upcoming commits.
-    interfaces::BlockInfo block{block_info};
-
     if (!block.error.empty()) {
         m_index.FatalErrorf("%s", block.error);
         return;
@@ -114,16 +109,6 @@ void BaseIndexNotifications::blockConnected(ChainstateRole role, const interface
         m_index.FatalErrorf("%s: Failed to rewind index %s to a previous chain tip",
                    __func__, m_index.GetName());
         return;
-    }
-
-    CBlockUndo block_undo;
-    if (m_options.connect_undo_data && !block.undo_data && pindex->nHeight > 0) {
-        if (!m_index.m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *pindex)) {
-            m_index.FatalErrorf("%s: Failed to read block %s undo data from disk",
-                       __func__, pindex->GetBlockHash().ToString());
-            return;
-        }
-        block.undo_data = &block_undo;
     }
 
     std::chrono::steady_clock::time_point current_time{0s};
@@ -164,12 +149,8 @@ void BaseIndexNotifications::blockConnected(ChainstateRole role, const interface
     m_index.SetBestBlockIndex(pindex);
 }
 
-void BaseIndexNotifications::blockDisconnected(const interfaces::BlockInfo& block_info)
+void BaseIndexNotifications::blockDisconnected(const interfaces::BlockInfo& block)
 {
-    // Make a mutable copy of the BlockInfo argument so block data can be
-    // attached below. This is temporary and removed in upcoming commits.
-    interfaces::BlockInfo block{block_info};
-
     if (!block.error.empty()) {
         m_index.FatalErrorf("%s", block.error);
         return;
@@ -178,20 +159,6 @@ void BaseIndexNotifications::blockDisconnected(const interfaces::BlockInfo& bloc
     assert(block.data);
     const CBlockIndex* pindex = &m_index.BlockIndex(block.hash);
     if (!m_rewind_start) m_rewind_start = pindex;
-    if (m_rewind_error) return;
-
-    CBlockUndo block_undo;
-    if (m_options.disconnect_undo_data && !block.undo_data && block.height > 0) {
-        if (!m_index.m_chainstate->m_blockman.UndoReadFromDisk(block_undo, *pindex)) {
-            // If undo data can't be read, subsequent CustomRemove calls will be
-            // skipped, and will be a fatal error if there an attempt to connect
-            // a another block to the index.
-            m_rewind_error = true;
-            return;
-        }
-        block.undo_data = &block_undo;
-    }
-
     // If one CustomRemove call fails, subsequent calls will be skipped,
     // and there will be a fatal error if there an attempt to connect
     // a another block to the index.
