@@ -838,16 +838,29 @@ public:
         if (!m_node.mempool) return CFeeRate{DUST_RELAY_TX_FEE};
         return m_node.mempool->m_opts.dust_relay_feerate;
     }
+    void updatePruneLock(const std::string& name, const PruneLockInfo& lock_info) override
+    {
+        LOCK(cs_main);
+        m_node.chainman->m_blockman.UpdatePruneLock(name, lock_info);
+    }
     bool havePruned() override
     {
         LOCK(::cs_main);
         return chainman().m_blockman.m_have_pruned;
     }
+<<<<<<< HEAD
     std::optional<int> getPruneHeight() override
     {
         LOCK(chainman().GetMutex());
         return GetPruneHeight(chainman().m_blockman, chainman().ActiveChain());
     }
+||||||| parent of fcfed64bc11a (Remove direct index -> node dependency)
+=======
+    bool pruningEnabled() override
+    {
+        return chainman().m_blockman.IsPruneMode();
+    }
+>>>>>>> fcfed64bc11a (Remove direct index -> node dependency)
     bool isReadyToBroadcast() override { return !chainman().m_blockman.LoadingBlocks() && !isInitialBlockDownload(); }
     bool isInitialBlockDownload() override
     {
