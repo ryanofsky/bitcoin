@@ -19,12 +19,18 @@
 #include <validation.h>
 #include <validationinterface.h>
 
+<<<<<<< HEAD
 #include <memory>
 #include <utility>
 #include <vector>
 
 using kernel::ChainstateRole;
 
+||||||| parent of 0cb43e15cb4 (Remove direct index -> node dependency)
+using kernel::ChainstateRole;
+
+=======
+>>>>>>> 0cb43e15cb4 (Remove direct index -> node dependency)
 void TestBlockManager::CleanupForFuzzing()
 {
     m_dirty_blockindex.clear();

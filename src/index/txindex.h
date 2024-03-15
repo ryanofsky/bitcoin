@@ -16,7 +16,17 @@ namespace interfaces {
 class Chain;
 }
 
+<<<<<<< HEAD
 inline constexpr bool DEFAULT_TXINDEX{false};
+||||||| parent of 0cb43e15cb4 (Remove direct index -> node dependency)
+static constexpr bool DEFAULT_TXINDEX{false};
+=======
+namespace node {
+class BlockManager;
+} // namespace node
+
+static constexpr bool DEFAULT_TXINDEX{false};
+>>>>>>> 0cb43e15cb4 (Remove direct index -> node dependency)
 
 /**
  * TxIndex is used to look up transactions included in the blockchain by hash.
@@ -30,6 +40,7 @@ protected:
 
 private:
     const std::unique_ptr<DB> m_db;
+    node::BlockManager& m_blockman;
 
     bool AllowPrune() const override { return false; }
 
@@ -40,7 +51,7 @@ protected:
 
 public:
     /// Constructs the index, which becomes available to be queried.
-    explicit TxIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
+    explicit TxIndex(std::unique_ptr<interfaces::Chain> chain, node::BlockManager& blockman, size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
 
     // Destructor is declared because this class contains a unique_ptr to an incomplete type.
     virtual ~TxIndex() override;
