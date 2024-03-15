@@ -11,6 +11,7 @@
 #include <test/util/validation.h>
 #include <util/byte_units.h>
 #include <validation.h>
+#include <validationinterface.h>
 
 #include <boost/test/unit_test.hpp>
 
