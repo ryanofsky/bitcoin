@@ -24,7 +24,6 @@
 #include <uint256.h>
 #include <util/fs.h>
 #include <util/log.h>
-#include <validation.h>
 
 #include <algorithm>
 #include <array>
@@ -133,6 +132,7 @@ void TxIndex::DB::WriteTxs(const interfaces::BlockInfo& block)
     WriteBatch(batch);
 }
 
+<<<<<<< HEAD
 TxIndex::TxIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, bool f_memory, bool f_wipe)
     : BaseIndex(std::move(chain), "txindex", "txidx"), m_db(std::make_unique<TxIndex::DB>(n_cache_size, f_memory, f_wipe))
 {
@@ -142,6 +142,15 @@ TxIndex::TxIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, 
                 fs::PathToString(TxIndexDBPath()));
     }
 }
+||||||| parent of 0b16d4b8188 (Remove direct index -> node dependency)
+TxIndex::TxIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, bool f_memory, bool f_wipe)
+    : BaseIndex(std::move(chain), "txindex", "txidx"), m_db(std::make_unique<TxIndex::DB>(n_cache_size, f_memory, f_wipe))
+{}
+=======
+TxIndex::TxIndex(std::unique_ptr<interfaces::Chain> chain, node::BlockManager& blockman, size_t n_cache_size, bool f_memory, bool f_wipe)
+    : BaseIndex(std::move(chain), "txindex", "txidx"), m_db(std::make_unique<TxIndex::DB>(n_cache_size, f_memory, f_wipe)), m_blockman(blockman)
+{}
+>>>>>>> 0b16d4b8188 (Remove direct index -> node dependency)
 
 TxIndex::~TxIndex() = default;
 
@@ -191,6 +200,7 @@ std::optional<TxIndexResult> TxIndex::FindTx(const Txid& tx_hash) const
         }
     }
 
+<<<<<<< HEAD
     // Prefer active-chain matches, then later-connected blocks.
     std::ranges::sort(candidates, std::greater{}, [](const Candidate& c) {
         return std::pair{c.in_active_chain, c.block_seq};
@@ -226,6 +236,11 @@ std::optional<TxIndexResult> TxIndex::FindLegacyTx(const Txid& tx_hash) const
     }
 
     AutoFile file{m_chainstate->m_blockman.OpenBlockFile(postx, /*fReadOnly=*/true)};
+||||||| parent of 0b16d4b8188 (Remove direct index -> node dependency)
+    AutoFile file{m_chainstate->m_blockman.OpenBlockFile(postx, true)};
+=======
+    AutoFile file{m_blockman.OpenBlockFile(postx, true)};
+>>>>>>> 0b16d4b8188 (Remove direct index -> node dependency)
     if (file.IsNull()) {
         LogError("OpenBlockFile failed");
         return std::nullopt;

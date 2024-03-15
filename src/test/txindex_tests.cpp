@@ -15,17 +15,23 @@
 #include <index/txindex.h>
 #include <index/txindex_key.h>
 #include <interfaces/chain.h>
+<<<<<<< HEAD
 #include <key.h>
 #include <node/blockstorage.h>
 #include <primitives/block.h>
 #include <script/script.h>
 #include <streams.h>
 #include <sync.h>
+||||||| parent of 0b16d4b8188 (Remove direct index -> node dependency)
+=======
+#include <node/context.h>
+>>>>>>> 0b16d4b8188 (Remove direct index -> node dependency)
 #include <test/util/setup_common.h>
 #include <util/byte_units.h>
 #include <util/check.h>
 #include <util/strencodings.h>
 #include <validation.h>
+#include <validationinterface.h>
 
 #include <cstdint>
 #include <memory>
@@ -135,7 +141,13 @@ BOOST_AUTO_TEST_CASE(txindex_hash_prefix)
 
 BOOST_FIXTURE_TEST_CASE(txindex_initial_sync, TestChain100Setup)
 {
+<<<<<<< HEAD
     TxIndex txindex(interfaces::MakeChain(m_node), /*n_cache_size=*/1_MiB, /*f_memory=*/true);
+||||||| parent of 0b16d4b8188 (Remove direct index -> node dependency)
+    TxIndex txindex(interfaces::MakeChain(m_node), 1_MiB, true);
+=======
+    TxIndex txindex(interfaces::MakeChain(m_node), m_node.chainman->m_blockman, 1_MiB, true);
+>>>>>>> 0b16d4b8188 (Remove direct index -> node dependency)
     BOOST_REQUIRE(txindex.Init());
 
     // Transaction should not be found in the index before it is started.
