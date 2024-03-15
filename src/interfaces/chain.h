@@ -44,7 +44,12 @@ struct ChainstateRole;
 } // namespace kernel
 namespace node {
 struct NodeContext;
+<<<<<<< HEAD
 enum class TxBroadcast : uint8_t;
+||||||| parent of 427f96cc83d (Remove direct index -> node dependency)
+=======
+struct PruneLockInfo;
+>>>>>>> 427f96cc83d (Remove direct index -> node dependency)
 } // namespace node
 
 namespace interfaces {
@@ -280,6 +285,12 @@ public:
 
     //! Relay dust fee setting (-dustrelayfee), reflecting lowest rate it's economical to spend.
     virtual CFeeRate relayDustFee() = 0;
+
+    //! Set or remove a prune lock.
+    virtual void updatePruneLock(const std::string& name, const node::PruneLockInfo& lock_info) = 0;
+
+    //! Check if pruning is enabled.
+    virtual bool pruningEnabled() = 0;
 
     //! Check if any block has been pruned.
     virtual bool havePruned() = 0;
