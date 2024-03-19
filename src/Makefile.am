@@ -195,6 +195,13 @@ BITCOIN_CORE_H = \
   kernel/mempool_removal_reason.h \
   kernel/messagestartchars.h \
   kernel/notifications_interface.h \
+<<<<<<< HEAD
+||||||| parent of 97cb62492903 (refactor: Convert ChainstateRole enum to struct)
+  kernel/validation_cache_sizes.h \
+=======
+  kernel/types.h \
+  kernel/validation_cache_sizes.h \
+>>>>>>> 97cb62492903 (refactor: Convert ChainstateRole enum to struct)
   kernel/warning.h \
   key.h \
   key_io.h \

@@ -5,7 +5,7 @@
 #include <zmq/zmqnotificationinterface.h>
 
 #include <common/args.h>
-#include <kernel/chain.h>
+#include <kernel/types.h>
 #include <kernel/mempool_entry.h>
 #include <logging.h>
 #include <netbase.h>
@@ -24,7 +24,19 @@
 #include <utility>
 #include <vector>
 
+<<<<<<< HEAD
 CZMQNotificationInterface::CZMQNotificationInterface() = default;
+||||||| parent of 97cb62492903 (refactor: Convert ChainstateRole enum to struct)
+CZMQNotificationInterface::CZMQNotificationInterface()
+{
+}
+=======
+using kernel::ChainstateRole;
+
+CZMQNotificationInterface::CZMQNotificationInterface()
+{
+}
+>>>>>>> 97cb62492903 (refactor: Convert ChainstateRole enum to struct)
 
 CZMQNotificationInterface::~CZMQNotificationInterface()
 {
@@ -176,9 +188,9 @@ void CZMQNotificationInterface::TransactionRemovedFromMempool(const CTransaction
     });
 }
 
-void CZMQNotificationInterface::BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected)
+void CZMQNotificationInterface::BlockConnected(const ChainstateRole& role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected)
 {
-    if (role == ChainstateRole::BACKGROUND) {
+    if (role.historical) {
         return;
     }
     for (const CTransactionRef& ptx : pblock->vtx) {
