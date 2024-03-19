@@ -10,7 +10,6 @@
 #include <attributes.h>
 #include <chain.h>
 #include <checkqueue.h>
-#include <kernel/chain.h>
 #include <consensus/amount.h>
 #include <deploymentstatus.h>
 #include <kernel/chainparams.h>
@@ -52,6 +51,9 @@ class DisconnectedBlockTransactions;
 struct PrecomputedTransactionData;
 struct LockPoints;
 struct AssumeutxoData;
+namespace kernel {
+struct ChainstateRole;
+} // namespace kernel
 namespace node {
 class SnapshotMetadata;
 } // namespace node
@@ -547,7 +549,7 @@ public:
     //! documentation for a description of the different types of chainstates.
     //!
     //! @sa ChainstateRole
-    ChainstateRole GetRole() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    kernel::ChainstateRole GetRole() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     //! Return whether chain is fully validated, assumed valid, or invalid.
     ChainValidity Validity() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
