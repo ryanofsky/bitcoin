@@ -20,14 +20,18 @@
 #include <cuckoocache.h>
 #include <flatfile.h>
 #include <hash.h>
-#include <kernel/chain.h>
 #include <kernel/chainparams.h>
 #include <kernel/coinstats.h>
 #include <kernel/disconnected_transactions.h>
 #include <kernel/mempool_entry.h>
 #include <kernel/messagestartchars.h>
 #include <kernel/notifications_interface.h>
+<<<<<<< HEAD
 #include <kernel/warning.h>
+||||||| parent of 142812cfb8d8 (refactor: Convert ChainstateRole enum to struct)
+=======
+#include <kernel/types.h>
+>>>>>>> 142812cfb8d8 (refactor: Convert ChainstateRole enum to struct)
 #include <logging.h>
 #include <logging/timer.h>
 #include <node/blockstorage.h>
@@ -75,6 +79,7 @@
 #include <utility>
 
 using kernel::CCoinsStats;
+using kernel::ChainstateRole;
 using kernel::CoinStatsHashType;
 using kernel::ComputeUTXOStats;
 using kernel::Notifications;
@@ -6341,7 +6346,7 @@ bool ChainstateManager::DeleteSnapshotChainstate()
 
 ChainstateRole Chainstate::GetRole() const
 {
-    return m_target_blockhash ? ChainstateRole::BACKGROUND : m_validity == ChainValidity::ASSUMED_VALID ? ChainstateRole::ASSUMEDVALID : ChainstateRole::NORMAL;
+    return ChainstateRole{.validated = m_validity == ChainValidity::VALIDATED, .historical = bool{m_target_blockhash}};
 }
 
 bool ChainstateManager::ValidatedSnapshotCleanup(Chainstate& validated_chainstate, Chainstate& from_snapshot_chainstate)
