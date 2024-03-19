@@ -16,7 +16,7 @@
 #include <hash.h>
 #include <headerssync.h>
 #include <index/blockfilterindex.h>
-#include <kernel/chain.h>
+#include <kernel/types.h>
 #include <kernel/mempool_entry.h>
 #include <logging.h>
 #include <merkleblock.h>
@@ -52,6 +52,8 @@
 #include <optional>
 #include <typeinfo>
 #include <utility>
+
+using kernel::ChainstateRole;
 
 /** Headers download timeout.
  *  Timeout = base + per_header * (expected number of headers) */
@@ -492,7 +494,7 @@ public:
                     CTxMemPool& pool, Options opts);
 
     /** Overridden from CValidationInterface. */
-    void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected) override
+    void BlockConnected(const ChainstateRole& role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected) override
         EXCLUSIVE_LOCKS_REQUIRED(!m_recent_confirmed_transactions_mutex);
     void BlockDisconnected(const std::shared_ptr<const CBlock> &block, const CBlockIndex* pindex) override
         EXCLUSIVE_LOCKS_REQUIRED(!m_recent_confirmed_transactions_mutex);
@@ -2088,7 +2090,7 @@ void PeerManagerImpl::StartScheduledTasks(CScheduler& scheduler)
  * possibly reduce dynamic block stalling timeout.
  */
 void PeerManagerImpl::BlockConnected(
-    ChainstateRole role,
+    const ChainstateRole& role,
     const std::shared_ptr<const CBlock>& pblock,
     const CBlockIndex* pindex)
 {
@@ -2107,8 +2109,8 @@ void PeerManagerImpl::BlockConnected(
     }
 
     // The following task can be skipped since we don't maintain a mempool for
-    // the ibd/background chainstate.
-    if (role == ChainstateRole::BACKGROUND) {
+    // the historical chainstate.
+    if (role.historical) {
         return;
     }
     m_orphanage.EraseForBlock(*pblock);
