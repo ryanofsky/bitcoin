@@ -117,6 +117,13 @@
 using common::AmountErrMsg;
 using common::InvalidPortErrMsg;
 using common::ResolveErrMsg;
+<<<<<<< HEAD
+||||||| parent of b21704ed472f (refactor, validation: Return fatal errors from FlushStateToDisk)
+using kernel::DumpMempool;
+=======
+using kernel::DumpMempool;
+using kernel::FlushResult;
+>>>>>>> b21704ed472f (refactor, validation: Return fatal errors from FlushStateToDisk)
 using kernel::InterruptResult;
 using node::ApplyArgsManOptions;
 using node::BlockManager;
@@ -327,7 +334,7 @@ void Shutdown(NodeContext& node)
         LOCK(cs_main);
         for (Chainstate* chainstate : node.chainman->GetAll()) {
             if (chainstate->CanFlushToDisk()) {
-                chainstate->ForceFlushStateToDisk();
+                (void)chainstate->ForceFlushStateToDisk();
             }
         }
     }
@@ -353,7 +360,7 @@ void Shutdown(NodeContext& node)
         LOCK(cs_main);
         for (Chainstate* chainstate : node.chainman->GetAll()) {
             if (chainstate->CanFlushToDisk()) {
-                chainstate->ForceFlushStateToDisk();
+                (void)chainstate->ForceFlushStateToDisk();
                 chainstate->ResetCoinsViews();
             }
         }
@@ -1571,7 +1578,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
         uiInterface.InitMessage(_("Loading block index…").translated);
         const auto load_block_index_start_time{SteadyClock::now()};
-        auto catch_exceptions = [](auto&& f) -> util::Result<InterruptResult, node::ChainstateLoadError> {
+        auto catch_exceptions = [](auto&& f) -> FlushResult<InterruptResult, node::ChainstateLoadError> {
             try {
                 return f();
             } catch (const std::exception& e) {
@@ -1675,7 +1682,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
             LOCK(cs_main);
             for (Chainstate* chainstate : chainman.GetAll()) {
                 uiInterface.InitMessage(_("Pruning blockstore…").translated);
-                chainstate->PruneAndFlush();
+                (void)chainstate->PruneAndFlush();
             }
         }
     } else {
