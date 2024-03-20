@@ -59,8 +59,14 @@ util::Result<kernel::InterruptResult, ChainstateLoadError> LoadChainstate(Chains
 =======
 kernel::FlushResult<kernel::InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
                                                                                  const ChainstateLoadOptions& options);
+<<<<<<< HEAD
 >>>>>>> 5f04c656352b (refactor, validation: Return fatal errors from FlushStateToDisk)
 util::Result<kernel::InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
+||||||| parent of 63aa292c8e68 (refactor, validation: Return more errors from VerifyDB)
+util::Result<kernel::InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
+=======
+kernel::FlushResult<kernel::InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
+>>>>>>> 63aa292c8e68 (refactor, validation: Return more errors from VerifyDB)
 } // namespace node
 
 #endif // BITCOIN_NODE_CHAINSTATE_H
