@@ -82,6 +82,9 @@ using kernel::ChainstateRole;
 using kernel::CoinStatsHashType;
 using kernel::ComputeUTXOStats;
 using kernel::FlushResult;
+using kernel::Interrupted;
+using kernel::InterruptResult;
+using kernel::IsInterrupted;
 using kernel::Notifications;
 
 using fsbridge::FopenFn;
@@ -4892,6 +4895,7 @@ void Chainstate::ClearBlockIndexCandidates()
     setBlockIndexCandidates.clear();
 }
 
+<<<<<<< HEAD
 void Chainstate::PopulateBlockIndexCandidates()
 {
     AssertLockHeld(::cs_main);
@@ -4909,12 +4913,18 @@ void Chainstate::PopulateBlockIndexCandidates()
 }
 
 bool ChainstateManager::LoadBlockIndex()
+||||||| parent of 5d556d3de7c (refactor, blockstorage: Return fatal error from LoadBlockIndex)
+bool ChainstateManager::LoadBlockIndex()
+=======
+util::Result<InterruptResult, AbortFailure> ChainstateManager::LoadBlockIndex()
+>>>>>>> 5d556d3de7c (refactor, blockstorage: Return fatal error from LoadBlockIndex)
 {
     AssertLockHeld(cs_main);
+    util::Result<InterruptResult, AbortFailure> result;
     // Load block index from databases
     if (m_blockman.m_blockfiles_indexed) {
-        bool ret{m_blockman.LoadBlockIndexDB(CurrentChainstate().m_from_snapshot_blockhash)};
-        if (!ret) return false;
+        result.update(m_blockman.LoadBlockIndexDB(CurrentChainstate().m_from_snapshot_blockhash));
+        if (!result || IsInterrupted(*result)) return result;
 
         m_blockman.ScanAndUnlinkAlreadyPrunedFiles();
 
@@ -4923,7 +4933,42 @@ bool ChainstateManager::LoadBlockIndex()
                   CBlockIndexHeightOnlyComparator());
 
         for (CBlockIndex* pindex : vSortedByHeight) {
+<<<<<<< HEAD
             if (m_interrupt) return false;
+||||||| parent of 5d556d3de7c (refactor, blockstorage: Return fatal error from LoadBlockIndex)
+            if (m_interrupt) return false;
+            // If we have an assumeutxo-based chainstate, then the snapshot
+            // block will be a candidate for the tip, but it may not be
+            // VALID_TRANSACTIONS (eg if we haven't yet downloaded the block),
+            // so we special-case the snapshot block as a potential candidate
+            // here.
+            if (pindex == CurrentChainstate().SnapshotBase() ||
+                    (pindex->IsValid(BLOCK_VALID_TRANSACTIONS) &&
+                     (pindex->HaveNumChainTxs() || pindex->pprev == nullptr))) {
+
+                for (const auto& chainstate : m_chainstates) {
+                    chainstate->TryAddBlockIndexCandidate(pindex);
+                }
+            }
+=======
+            if (m_interrupt) {
+                result.update(Interrupted{});
+                return result;
+            }
+            // If we have an assumeutxo-based chainstate, then the snapshot
+            // block will be a candidate for the tip, but it may not be
+            // VALID_TRANSACTIONS (eg if we haven't yet downloaded the block),
+            // so we special-case the snapshot block as a potential candidate
+            // here.
+            if (pindex == CurrentChainstate().SnapshotBase() ||
+                    (pindex->IsValid(BLOCK_VALID_TRANSACTIONS) &&
+                     (pindex->HaveNumChainTxs() || pindex->pprev == nullptr))) {
+
+                for (const auto& chainstate : m_chainstates) {
+                    chainstate->TryAddBlockIndexCandidate(pindex);
+                }
+            }
+>>>>>>> 5d556d3de7c (refactor, blockstorage: Return fatal error from LoadBlockIndex)
             if (pindex->nStatus & BLOCK_FAILED_VALID && (!m_best_invalid || pindex->nChainWork > m_best_invalid->nChainWork)) {
                 m_best_invalid = pindex;
             }
@@ -4931,7 +4976,7 @@ bool ChainstateManager::LoadBlockIndex()
                 m_best_header = pindex;
         }
     }
-    return true;
+    return result;
 }
 
 bool Chainstate::LoadGenesisBlock()

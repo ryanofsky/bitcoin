@@ -497,10 +497,16 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_loadblockindex, TestChain100Setup)
             cs->ClearBlockIndexCandidates();
             BOOST_CHECK(cs->setBlockIndexCandidates.empty());
         }
+<<<<<<< HEAD
         chainman.LoadBlockIndex();
         for (const auto& cs : chainman.m_chainstates) {
             cs->PopulateBlockIndexCandidates();
         }
+||||||| parent of 5d556d3de7c (refactor, blockstorage: Return fatal error from LoadBlockIndex)
+        chainman.LoadBlockIndex();
+=======
+        BOOST_CHECK(chainman.LoadBlockIndex());
+>>>>>>> 5d556d3de7c (refactor, blockstorage: Return fatal error from LoadBlockIndex)
     };
 
     // Ensure that without any assumed-valid BlockIndex entries, only the current tip is
@@ -610,7 +616,7 @@ BOOST_FIXTURE_TEST_CASE(loadblockindex_invalid_descendants, TestChain100Setup)
     child->nStatus = (child->nStatus & ~BLOCK_FAILED_VALID);
 
     // Reload block index to recompute block status validity flags.
-    m_node.chainman->LoadBlockIndex();
+    BOOST_CHECK(m_node.chainman->LoadBlockIndex());
 
     // check grand_parent, parent, child is marked as BLOCK_FAILED_VALID after reloading the block index
     BOOST_CHECK(grand_parent->nStatus & BLOCK_FAILED_VALID);
