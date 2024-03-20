@@ -4377,9 +4377,8 @@ void ChainstateManager::ReportHeadersPresync(const arith_uint256& work, int64_t 
 }
 
 /** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */
-bool ChainstateManager::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, BlockValidationState& state, CBlockIndex** ppindex, bool fRequested, const FlatFilePos* dbp, bool* fNewBlock, bool min_pow_checked)
+bool ChainstateManager::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, FlushResult<void, AbortFailure>& result, BlockValidationState& state, CBlockIndex** ppindex, bool fRequested, const FlatFilePos* dbp, bool* fNewBlock, bool min_pow_checked)
 {
-    FlushResult<> result;
     const CBlock& block = *pblock;
 
     if (fNewBlock) *fNewBlock = false;
@@ -4437,6 +4436,7 @@ bool ChainstateManager::AcceptBlock(const std::shared_ptr<const CBlock>& pblock,
             m_blockman.m_dirty_blockindex.insert(pindex);
         }
         LogError("%s: %s\n", __func__, state.ToString());
+        result.Update(util::Error{Untranslated(state.ToString())});
         return false;
     }
 
@@ -4458,7 +4458,10 @@ bool ChainstateManager::AcceptBlock(const std::shared_ptr<const CBlock>& pblock,
         }
         ReceivedBlockTransactions(block, pindex, *blockPos);
     } catch (const std::runtime_error& e) {
-        return FatalError(GetNotifications(), state, strprintf(_("System error while saving block to disk: %s"), e.what()));
+        auto error{strprintf(_("System error while saving block to disk: %s"), e.what())};
+        FatalError(GetNotifications(), state, error);
+        result.Update({util::Error{std::move(error)}, AbortFailure{.fatal = true}});
+        return false;
     }
 
     // TODO: FlushStateToDisk() handles flushing of both block and chainstate
@@ -4476,10 +4479,9 @@ bool ChainstateManager::AcceptBlock(const std::shared_ptr<const CBlock>& pblock,
     return true;
 }
 
-bool ChainstateManager::ProcessNewBlock(const std::shared_ptr<const CBlock>& block, bool force_processing, bool min_pow_checked, bool* new_block)
+bool ChainstateManager::ProcessNewBlock(const std::shared_ptr<const CBlock>& block, bool force_processing, bool min_pow_checked, bool* new_block, FlushResult<void, AbortFailure>& result)
 {
     AssertLockNotHeld(cs_main);
-    FlushResult<> result;
 
     {
         CBlockIndex *pindex = nullptr;
@@ -4498,7 +4500,7 @@ bool ChainstateManager::ProcessNewBlock(const std::shared_ptr<const CBlock>& blo
         bool ret = CheckBlock(*block, state, GetConsensus());
         if (ret) {
             // Store to disk
-            ret = AcceptBlock(block, state, &pindex, force_processing, nullptr, new_block, min_pow_checked);
+            ret = AcceptBlock(block, result, state, &pindex, force_processing, nullptr, new_block, min_pow_checked);
         }
         if (!ret) {
             if (m_options.signals) {
@@ -4541,7 +4543,7 @@ std::tuple<MempoolAcceptResult, FlushResult<void, AbortFailure>> ChainstateManag
     return result;
 }
 
-bool TestBlockValidity(BlockValidationState& state,
+FlushResult<> TestBlockValidity(BlockValidationState& state,
                        const CChainParams& chainparams,
                        Chainstate& chainstate,
                        const CBlock& block,
@@ -4561,24 +4563,30 @@ bool TestBlockValidity(BlockValidationState& state,
 
     // NOTE: CheckBlockHeader is called by CheckBlock
     if (!ContextualCheckBlockHeader(block, state, chainstate.m_blockman, chainstate.m_chainman, pindexPrev)) {
-        LogError("%s: Consensus::ContextualCheckBlockHeader: %s\n", __func__, state.ToString());
-        return false;
+        auto error{Untranslated(strprintf("Consensus::ContextualCheckBlockHeader: %s", state.ToString()))};
+        LogError("%s: %s\n", __func__, error.original);
+        result.Update(util::Error{std::move(error)});
+        return result;
     }
     if (!CheckBlock(block, state, chainparams.GetConsensus(), fCheckPOW, fCheckMerkleRoot)) {
-        LogError("%s: Consensus::CheckBlock: %s\n", __func__, state.ToString());
-        return false;
+        auto error{Untranslated(strprintf("Consensus::CheckBlock: %s", state.ToString()))};
+        LogError("%s: %s\n", __func__, error.original);
+        result.Update(util::Error{std::move(error)});
+        return result;
     }
     if (!ContextualCheckBlock(block, state, chainstate.m_chainman, pindexPrev)) {
-        LogError("%s: Consensus::ContextualCheckBlock: %s\n", __func__, state.ToString());
-        return false;
+        auto error{Untranslated(strprintf("Consensus::ContextualCheckBlock: %s", state.ToString()))};
+        LogError("%s: %s\n", __func__, error.original);
+        result.Update(util::Error{std::move(error)});
+        return result;
     }
     if (!(chainstate.ConnectBlock(block, state, &indexDummy, viewNew, true) >> result)) {
         result.Update(util::Error{});
-        return false;
+        return result;
     }
     assert(state.IsValid());
 
-    return true;
+    return result;
 }
 
 /* This function is called from the RPC code for pruneblockchain */
@@ -4952,7 +4960,7 @@ util::Result<InterruptResult, AbortFailure> ChainstateManager::LoadBlockIndex()
     return result;
 }
 
-bool Chainstate::LoadGenesisBlock()
+FlushResult<> Chainstate::LoadGenesisBlock()
 {
     LOCK(cs_main);
 
@@ -4963,8 +4971,9 @@ bool Chainstate::LoadGenesisBlock()
     // m_blockman.m_block_index. Note that we can't use m_chain here, since it is
     // set based on the coins db, not the block index db, which is the only
     // thing loaded at this point.
-    if (m_blockman.m_block_index.count(params.GenesisBlock().GetHash()))
-        return true;
+    if (m_blockman.m_block_index.count(params.GenesisBlock().GetHash())) {
+        return result;
+    }
 
     try {
         const CBlock& block = params.GenesisBlock();
@@ -4973,19 +4982,21 @@ bool Chainstate::LoadGenesisBlock()
             auto error{Untranslated("writing genesis block to disk failed")};
             LogError("%s: %s\n", __func__, error.original);
             result.Update(util::Error{std::move(error)});
-            return false;
+            return result;
         }
         CBlockIndex* pindex = m_blockman.AddToBlockIndex(block, m_chainman.m_best_header);
         m_chainman.ReceivedBlockTransactions(block, pindex, *blockPos);
     } catch (const std::runtime_error& e) {
-        LogError("%s: failed to write genesis block: %s\n", __func__, e.what());
-        return false;
+        auto error{Untranslated(strprintf("failed to write genesis block: %s", e.what()))};
+        LogError("%s: %s\n", __func__, error.original);
+        result.Update(util::Error{std::move(error)});
+        return result;
     }
 
-    return true;
+    return result;
 }
 
-void ChainstateManager::LoadExternalBlockFile(
+FlushResult<InterruptResult, AbortFailure> ChainstateManager::LoadExternalBlockFile(
     AutoFile& file_in,
     FlatFilePos* dbp,
     std::multimap<uint256, FlatFilePos>* blocks_with_unknown_parent)
@@ -5004,7 +5015,10 @@ void ChainstateManager::LoadExternalBlockFile(
         // such as a block fails to deserialize.
         uint64_t nRewind = blkdat.GetPos();
         while (!blkdat.eof()) {
-            if (m_interrupt) return;
+            if (m_interrupt) {
+                result.Update(Interrupted{});
+                return result;
+            }
 
             blkdat.SetPos(nRewind);
             nRewind++; // start one byte further next time, in case of failure
@@ -5065,10 +5079,13 @@ void ChainstateManager::LoadExternalBlockFile(
                         blkdat >> TX_WITH_WITNESS(*pblock);
                         nRewind = blkdat.GetPos();
 
+                        FlushResult<void, AbortFailure> accept_result;
                         BlockValidationState state;
-                        if (AcceptBlock(pblock, state, nullptr, true, dbp, nullptr, true)) {
+                        if (AcceptBlock(pblock, accept_result, state, nullptr, true, dbp, nullptr, true)) {
                             nLoaded++;
                         }
+                        // Ignore failure value if block was accepted, do not treat flush errors as failure.
+                        accept_result >> result;
                         if (state.IsError()) {
                             break;
                         }
@@ -5132,11 +5149,14 @@ void ChainstateManager::LoadExternalBlockFile(
                             LogPrint(BCLog::REINDEX, "%s: Processing out of order child %s of %s\n", __func__, pblockrecursive->GetHash().ToString(),
                                     head.ToString());
                             LOCK(cs_main);
+                            FlushResult<void, AbortFailure> accept_result;
                             BlockValidationState dummy;
-                            if (AcceptBlock(pblockrecursive, dummy, nullptr, true, &it->second, nullptr, true)) {
+                            if (AcceptBlock(pblockrecursive, accept_result, dummy, nullptr, true, &it->second, nullptr, true)) {
                                 nLoaded++;
                                 queue.push_back(pblockrecursive->GetHash());
                             }
+                            // Ignore failure value if block was accepted, do not treat flush errors as failure.
+                            accept_result >> result;
                         }
                         range.first++;
                         blocks_with_unknown_parent->erase(it);
@@ -5159,9 +5179,12 @@ void ChainstateManager::LoadExternalBlockFile(
             }
         }
     } catch (const std::runtime_error& e) {
-        GetNotifications().fatalError(strprintf(_("System error while loading external block file: %s"), e.what()));
+        auto error{strprintf(_("System error while loading external block file: %s"), e.what())};
+        GetNotifications().fatalError(error);
+        result.Update({util::Error{std::move(error)}, AbortFailure{.fatal = true}});
     }
     LogPrintf("Loaded %i blocks from external file in %dms\n", nLoaded, Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
+    return result;
 }
 
 void ChainstateManager::CheckBlockIndex()
