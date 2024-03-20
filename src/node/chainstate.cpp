@@ -165,9 +165,10 @@ static FlushResult<void, ChainstateLoadError> CompleteChainstateInitialization(
     return result;
 }
 
-util::Result<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+FlushResult<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
                                                        const ChainstateLoadOptions& options)
 {
+    FlushResult<void, ChainstateLoadError> result;
     if (!chainman.AssumedValidBlock().IsNull()) {
         LogPrintf("Assuming ancestors of block %s have valid signatures.\n", chainman.AssumedValidBlock().GetHex());
     } else {
@@ -201,10 +202,8 @@ util::Result<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainm
         }
     }
 
-    auto result{CompleteChainstateInitialization(chainman, cache_sizes, options)};
-    if (!result) {
-        return result;
-    }
+    result.Set(CompleteChainstateInitialization(chainman, cache_sizes, options));
+    if (!result) return result;
 
     // If a snapshot chainstate was fully validated by a background chainstate during
     // the last run, detect it here and clean up the now-unneeded background
@@ -214,7 +213,10 @@ util::Result<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainm
     // snapshot is actually validated? Because this entails unusual
     // filesystem operations to move leveldb data directories around, and that seems
     // too risky to do in the middle of normal runtime.
-    auto snapshot_completion = chainman.MaybeCompleteSnapshotValidation();
+    FlushResult snapshot_result;
+    auto snapshot_completion = chainman.MaybeCompleteSnapshotValidation(snapshot_result);
+    // Ignore failure value, do not treat flush error as failure.
+    (void)result.MergeFrom(snapshot_result);
 
     if (snapshot_completion == SnapshotCompletionResult::SKIPPED) {
         // do nothing; expected case

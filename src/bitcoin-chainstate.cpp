@@ -128,8 +128,8 @@ int main(int argc, char* argv[])
         std::cerr << "Failed to load Chain state from your datadir." << std::endl;
         goto epilogue;
     } else {
-        result = node::VerifyLoadedChainstate(chainman, options);
-        if (!result) {
+        auto verify_result{node::VerifyLoadedChainstate(chainman, options)};
+        if (!verify_result) {
             std::cerr << "Failed to verify loaded Chain state from your datadir." << std::endl;
             goto epilogue;
         }

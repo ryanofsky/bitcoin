@@ -287,8 +287,8 @@ void ChainTestingSetup::LoadVerifyActivateChainstate()
     auto result = LoadChainstate(chainman, m_cache_sizes, options);
     assert(result);
 
-    result = VerifyLoadedChainstate(chainman, options);
-    assert(result);
+    auto verify_result{VerifyLoadedChainstate(chainman, options)};
+    Assert(verify_result);
 
     BlockValidationState state;
     if (!chainman.ActiveChainstate().ActivateBestChain(state)) {
