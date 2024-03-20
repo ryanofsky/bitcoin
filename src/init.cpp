@@ -1977,8 +1977,14 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     node.background_init_thread = std::thread(&util::TraceThread, "initload", [=, &chainman, &args, &node] {
         ScheduleBatchPriority();
         // Import blocks and ActivateBestChain()
+<<<<<<< HEAD
         ImportBlocks(chainman, vImportFiles);
         WITH_LOCK(::cs_main, chainman.UpdateIBDStatus());
+||||||| parent of 7cd8dac6b81 (refactor, blockstorage: Return fatal error from ImportBlocks)
+        ImportBlocks(chainman, vImportFiles);
+=======
+        (void)ImportBlocks(chainman, vImportFiles);
+>>>>>>> 7cd8dac6b81 (refactor, blockstorage: Return fatal error from ImportBlocks)
         if (args.GetBoolArg("-stopafterblockimport", DEFAULT_STOPAFTERBLOCKIMPORT)) {
             LogInfo("Stopping after block import");
             if (!(Assert(node.shutdown_request))()) {
