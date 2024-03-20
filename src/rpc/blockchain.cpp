@@ -1582,7 +1582,7 @@ static RPCHelpMan preciousblock()
     }
 
     BlockValidationState state;
-    chainman.ActiveChainstate().PreciousBlock(state, pblockindex);
+    (void)chainman.ActiveChainstate().PreciousBlock(state, pblockindex);
 
     if (!state.IsValid()) {
         throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
@@ -1653,7 +1653,25 @@ static RPCHelpMan invalidateblock()
     (void)chainman.ActiveChainstate().InvalidateBlock(state, pblockindex);
 >>>>>>> db00b423b266 (refactor, validation: Return fatal errors from block connect functions)
 
+<<<<<<< HEAD
     InvalidateBlock(chainman, hash);
+||||||| parent of bce8d65d3c6a (refactor, validation: Return fatal errors from activate best chain functions)
+    if (state.IsValid()) {
+        chainman.ActiveChainstate().ActivateBestChain(state);
+    }
+
+    if (!state.IsValid()) {
+        throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
+    }
+=======
+    if (state.IsValid()) {
+        (void)chainman.ActiveChainstate().ActivateBestChain(state);
+    }
+
+    if (!state.IsValid()) {
+        throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
+    }
+>>>>>>> bce8d65d3c6a (refactor, validation: Return fatal errors from activate best chain functions)
 
     return UniValue::VNULL;
 },
@@ -1697,7 +1715,43 @@ static RPCHelpMan reconsiderblock()
     ChainstateManager& chainman = EnsureAnyChainman(request.context);
     uint256 hash(ParseHashV(request.params[0], "blockhash"));
 
+<<<<<<< HEAD
     ReconsiderBlock(chainman, hash);
+||||||| parent of bce8d65d3c6a (refactor, validation: Return fatal errors from activate best chain functions)
+    {
+        LOCK(cs_main);
+        CBlockIndex* pblockindex = chainman.m_blockman.LookupBlockIndex(hash);
+        if (!pblockindex) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        }
+
+        chainman.ActiveChainstate().ResetBlockFailureFlags(pblockindex);
+    }
+
+    BlockValidationState state;
+    chainman.ActiveChainstate().ActivateBestChain(state);
+
+    if (!state.IsValid()) {
+        throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
+    }
+=======
+    {
+        LOCK(cs_main);
+        CBlockIndex* pblockindex = chainman.m_blockman.LookupBlockIndex(hash);
+        if (!pblockindex) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        }
+
+        chainman.ActiveChainstate().ResetBlockFailureFlags(pblockindex);
+    }
+
+    BlockValidationState state;
+    (void)chainman.ActiveChainstate().ActivateBestChain(state);
+
+    if (!state.IsValid()) {
+        throw JSONRPCError(RPC_DATABASE_ERROR, state.ToString());
+    }
+>>>>>>> bce8d65d3c6a (refactor, validation: Return fatal errors from activate best chain functions)
 
     return UniValue::VNULL;
 },
