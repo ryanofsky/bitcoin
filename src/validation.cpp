@@ -3160,7 +3160,10 @@ bool Chainstate::ConnectTip(BlockValidationState& state, CBlockIndex* pindexNew,
     if (this != &m_chainman.ActiveChainstate()) {
         // This call may set `m_disabled`, which is referenced immediately afterwards in
         // ActivateBestChain, so that we stop connecting blocks past the snapshot base.
-        m_chainman.MaybeCompleteSnapshotValidation();
+        FlushResult snapshot_result;
+        // Ignore failure value, do not treat snapshot validation error as failure to connect the block.
+        (void)m_chainman.MaybeCompleteSnapshotValidation(snapshot_result);
+        (void)result.MergeFrom(snapshot_result);
     }
 
     connectTrace.BlockConnected(pindexNew, std::move(pthisBlock));
@@ -5568,7 +5571,7 @@ Chainstate& ChainstateManager::InitializeChainstate(CTxMemPool* mempool)
     return destroyed && !fs::exists(db_path);
 }
 
-bool ChainstateManager::ActivateSnapshot(
+FlushResult<> ChainstateManager::ActivateSnapshot(
         AutoFile& coins_file,
         const SnapshotMetadata& metadata,
         bool in_memory)
@@ -5577,15 +5580,19 @@ bool ChainstateManager::ActivateSnapshot(
     uint256 base_blockhash = metadata.m_base_blockhash;
 
     if (this->SnapshotBlockhash()) {
-        LogPrintf("[snapshot] can't activate a snapshot-based chainstate more than once\n");
-        return false;
+        auto error{Untranslated("[snapshot] can't activate a snapshot-based chainstate more than once")};
+        LogPrintf("%s\n", error.original);
+        result.Set(util::Error{std::move(error)});
+        return result;
     }
 
     {
         LOCK(::cs_main);
         if (Assert(m_active_chainstate->GetMempool())->size() > 0) {
-            LogPrintf("[snapshot] can't activate a snapshot when mempool not empty\n");
-            return false;
+            auto error{Untranslated("[snapshot] can't activate a snapshot when mempool not empty")};
+            LogPrintf("%s\n", error.original);
+            result.Set(util::Error{std::move(error)});
+            return result;
         }
     }
 
@@ -5636,8 +5643,9 @@ bool ChainstateManager::ActivateSnapshot(
     }
 
     auto cleanup_bad_snapshot = [&](const char* reason) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) {
-        LogPrintf("[snapshot] activation failed - %s\n", reason);
-        // Ignore failure value, do not treat flush error as failure.
+        auto error{Untranslated(strprintf("[snapshot] activation failed - %s", reason))};
+        LogPrintf("%s\n", error.original);
+        result.Set(util::Error{std::move(error)});
         (void)result.MergeFrom(this->MaybeRebalanceCaches());
 
         // PopulateAndValidateSnapshot can return (in error) before the leveldb datadir
@@ -5649,16 +5657,26 @@ bool ChainstateManager::ActivateSnapshot(
             snapshot_chainstate.reset();
             bool removed = DeleteCoinsDBFromDisk(*snapshot_datadir, /*is_snapshot=*/true);
             if (!removed) {
+<<<<<<< HEAD
                 GetNotifications().fatalError(strprintf(_("Failed to remove snapshot chainstate dir (%s). "
                     "Manually remove it before restarting.\n"), fs::PathToString(*snapshot_datadir)));
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+                GetNotifications().fatalError(strprintf("Failed to remove snapshot chainstate dir (%s). "
+                    "Manually remove it before restarting.\n", fs::PathToString(*snapshot_datadir)));
+=======
+                auto error{Untranslated(strprintf("Failed to remove snapshot chainstate dir (%s). "
+                    "Manually remove it before restarting.\n", fs::PathToString(*snapshot_datadir)))};
+                GetNotifications().fatalError(error.original);
+                result.Set(util::Error{std::move(error)});
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
             }
         }
-        return false;
     };
 
     if (!this->PopulateAndValidateSnapshot(*snapshot_chainstate, coins_file, metadata)) {
         LOCK(::cs_main);
-        return cleanup_bad_snapshot("population failed");
+        cleanup_bad_snapshot("population failed");
+        return result;
     }
 
     LOCK(::cs_main);  // cs_main required for rest of snapshot activation.
@@ -5667,13 +5685,15 @@ bool ChainstateManager::ActivateSnapshot(
     // work chain than the active chainstate; a user could have loaded a snapshot
     // very late in the IBD process, and we wouldn't want to load a useless chainstate.
     if (!CBlockIndexWorkComparator()(ActiveTip(), snapshot_chainstate->m_chain.Tip())) {
-        return cleanup_bad_snapshot("work does not exceed active chainstate");
+        cleanup_bad_snapshot("work does not exceed active chainstate");
+        return result;
     }
     // If not in-memory, persist the base blockhash for use during subsequent
     // initialization.
     if (!in_memory) {
         if (!node::WriteSnapshotBaseBlockhash(*snapshot_chainstate)) {
-            return cleanup_bad_snapshot("could not write base blockhash");
+            cleanup_bad_snapshot("could not write base blockhash");
+            return result;
         }
     }
 
@@ -5697,7 +5717,7 @@ bool ChainstateManager::ActivateSnapshot(
 
     // Ignore failure value, do not treat flush error as failure.
     (void)result.MergeFrom(this->MaybeRebalanceCaches());
-    return true;
+    return result;
 }
 
 static void FlushSnapshotToDisk(CCoinsViewCache& coins_cache, bool snapshot_loaded)
@@ -5938,9 +5958,8 @@ bool ChainstateManager::PopulateAndValidateSnapshot(
 //      through IsUsable() checks, or
 //
 //  (ii) giving each chainstate its own lock instead of using cs_main for everything.
-SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
+SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(FlushResult<>& result)
 {
-    FlushResult result;
     AssertLockHeld(cs_main);
     if (m_ibd_chainstate.get() == &this->ActiveChainstate() ||
             !this->IsUsable(m_snapshot_chainstate.get()) ||
@@ -5991,7 +6010,14 @@ SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
             user_error = strprintf(Untranslated("%s\n%s"), user_error, util::ErrorString(rename_result));
         }
 
+<<<<<<< HEAD
         GetNotifications().fatalError(user_error);
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+        GetNotifications().fatalError(user_error.original, user_error);
+=======
+        GetNotifications().fatalError(user_error.original, user_error);
+        result.Set(util::Error{std::move(user_error)});
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
     };
 
     if (index_new.GetBlockHash() != snapshot_blockhash) {
@@ -6292,9 +6318,10 @@ std::optional<int> ChainstateManager::GetSnapshotBaseHeight() const
     return base ? std::make_optional(base->nHeight) : std::nullopt;
 }
 
-bool ChainstateManager::ValidatedSnapshotCleanup()
+util::Result<void> ChainstateManager::ValidatedSnapshotCleanup()
 {
     AssertLockHeld(::cs_main);
+    util::Result<void> result;
     auto get_storage_path = [](auto& chainstate) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) -> std::optional<fs::path> {
         if (!(chainstate && chainstate->HasCoinsViews())) {
             return {};
@@ -6306,7 +6333,8 @@ bool ChainstateManager::ValidatedSnapshotCleanup()
 
     if (!this->IsSnapshotValidated()) {
         // No need to clean up.
-        return false;
+        result.Set(util::Error{});
+        return result;
     }
     // If either path doesn't exist, that means at least one of the chainstates
     // is in-memory, in which case we can't do on-disk cleanup. You'd better be
@@ -6314,7 +6342,8 @@ bool ChainstateManager::ValidatedSnapshotCleanup()
     if (!ibd_chainstate_path_maybe || !snapshot_chainstate_path_maybe) {
         LogPrintf("[snapshot] snapshot chainstate cleanup cannot happen with "
                   "in-memory chainstates. You are testing, right?\n");
-        return false;
+        result.Set(util::Error{});
+        return result;
     }
 
     const auto& snapshot_chainstate_path = *snapshot_chainstate_path_maybe;
@@ -6336,16 +6365,32 @@ bool ChainstateManager::ValidatedSnapshotCleanup()
 
     fs::path tmp_old{ibd_chainstate_path + "_todelete"};
 
-    auto rename_failed_abort = [this](
+    auto rename_failed_abort = [&](
                                    fs::path p_old,
                                    fs::path p_new,
                                    const fs::filesystem_error& err) {
         LogPrintf("Error renaming path (%s) -> (%s): %s\n",
                   fs::PathToString(p_old), fs::PathToString(p_new), err.what());
+<<<<<<< HEAD
         GetNotifications().fatalError(strprintf(_(
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+        GetNotifications().fatalError(strprintf(
+=======
+        auto error{Untranslated(strprintf(
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
             "Rename of '%s' -> '%s' failed. "
+<<<<<<< HEAD
             "Cannot clean up the background chainstate leveldb directory."),
             fs::PathToString(p_old), fs::PathToString(p_new)));
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+            "Cannot clean up the background chainstate leveldb directory.",
+            fs::PathToString(p_old), fs::PathToString(p_new)));
+=======
+            "Cannot clean up the background chainstate leveldb directory.",
+            fs::PathToString(p_old), fs::PathToString(p_new)))};
+        GetNotifications().fatalError(error.original);
+        result.Set(util::Error{std::move(error)});
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
     };
 
     try {
@@ -6376,7 +6421,7 @@ bool ChainstateManager::ValidatedSnapshotCleanup()
         LogPrintf("[snapshot] deleted background chainstate directory (%s)\n",
                   fs::PathToString(ibd_chainstate_path));
     }
-    return true;
+    return result;
 }
 
 Chainstate& ChainstateManager::GetChainstateForIndexing()

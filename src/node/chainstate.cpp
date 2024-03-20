@@ -213,10 +213,23 @@ static FlushResult<void, ChainstateLoadError> CompleteChainstateInitialization(
 >>>>>>> f84c73423f34 (refactor, validation: Return fatal errors from FlushStateToDisk)
 }
 
+<<<<<<< HEAD
 util::Result<InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
                                                                   const ChainstateLoadOptions& options)
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+util::Result<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+                                                       const ChainstateLoadOptions& options)
+=======
+FlushResult<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+                                                       const ChainstateLoadOptions& options)
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 {
+<<<<<<< HEAD
     util::Result<InterruptResult, ChainstateLoadError> result;
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+=======
+    FlushResult<void, ChainstateLoadError> result;
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
     if (!chainman.AssumedValidBlock().IsNull()) {
         LogPrintf("Assuming ancestors of block %s have valid signatures.\n", chainman.AssumedValidBlock().GetHex());
     } else {
@@ -251,10 +264,20 @@ util::Result<InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateMana
         }
     }
 
+<<<<<<< HEAD
     result.Update(CompleteChainstateInitialization(chainman, cache_sizes, options));
     if (!result || IsInterrupted(*result)) {
         return result;
     }
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    auto result{CompleteChainstateInitialization(chainman, cache_sizes, options)};
+    if (!result) {
+        return result;
+    }
+=======
+    result.Set(CompleteChainstateInitialization(chainman, cache_sizes, options));
+    if (!result) return result;
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 
     // If a snapshot chainstate was fully validated by a background chainstate during
     // the last run, detect it here and clean up the now-unneeded background
@@ -264,7 +287,10 @@ util::Result<InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateMana
     // snapshot is actually validated? Because this entails unusual
     // filesystem operations to move leveldb data directories around, and that seems
     // too risky to do in the middle of normal runtime.
-    auto snapshot_completion = chainman.MaybeCompleteSnapshotValidation();
+    FlushResult snapshot_result;
+    auto snapshot_completion = chainman.MaybeCompleteSnapshotValidation(snapshot_result);
+    // Ignore failure value, do not treat flush error as failure.
+    (void)result.MergeFrom(snapshot_result);
 
     if (snapshot_completion == SnapshotCompletionResult::SKIPPED) {
         // do nothing; expected case

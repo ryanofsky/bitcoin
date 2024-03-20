@@ -48,9 +48,19 @@ enum class ChainstateLoadError {
     FAILURE_INSUFFICIENT_DBCACHE,
 };
 
+<<<<<<< HEAD
 util::Result<kernel::InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
                                                                           const ChainstateLoadOptions& options);
 util::Result<kernel::InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
+||||||| parent of 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+util::Result<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+                                                       const ChainstateLoadOptions& options);
+util::Result<void, ChainstateLoadError> VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
+=======
+kernel::FlushResult<void, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+                                                       const ChainstateLoadOptions& options);
+util::Result<void, ChainstateLoadError> VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
+>>>>>>> 3e663e3df590 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 } // namespace node
 
 #endif // BITCOIN_NODE_CHAINSTATE_H
