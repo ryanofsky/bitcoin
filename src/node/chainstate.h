@@ -50,8 +50,16 @@ enum class ChainstateLoadError {
     FAILURE_INSUFFICIENT_DBCACHE,
 };
 
+<<<<<<< HEAD
 util::Result<kernel::InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const kernel::CacheSizes& cache_sizes,
                                                                           const ChainstateLoadOptions& options);
+||||||| parent of 5f04c656352b (refactor, validation: Return fatal errors from FlushStateToDisk)
+util::Result<kernel::InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+                                                                          const ChainstateLoadOptions& options);
+=======
+kernel::FlushResult<kernel::InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
+                                                                                 const ChainstateLoadOptions& options);
+>>>>>>> 5f04c656352b (refactor, validation: Return fatal errors from FlushStateToDisk)
 util::Result<kernel::InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(ChainstateManager& chainman, const ChainstateLoadOptions& options);
 } // namespace node
 
