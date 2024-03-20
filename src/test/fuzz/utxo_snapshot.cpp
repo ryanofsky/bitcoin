@@ -57,7 +57,13 @@ void sanity_check_snapshot()
     // Connect the chain to the tmp chainman and sanity check the chainparams snapshot values.
     LOCK(cs_main);
     auto& cs{node.chainman->ActiveChainstate()};
+<<<<<<< HEAD
     cs.ForceFlushStateToDisk(/*wipe_cache=*/false);
+||||||| parent of 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
+    cs.ForceFlushStateToDisk();
+=======
+    Assert(cs.ForceFlushStateToDisk());
+>>>>>>> 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
     const auto stats{*Assert(kernel::ComputeUTXOStats(kernel::CoinStatsHashType::HASH_SERIALIZED, &cs.CoinsDB(), node.chainman->m_blockman))};
     const auto cp_au_data{*Assert(node.chainman->GetParams().AssumeutxoForHeight(2 * COINBASE_MATURITY))};
     Assert(stats.nHeight == cp_au_data.height);

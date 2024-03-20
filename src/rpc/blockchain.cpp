@@ -929,7 +929,7 @@ static RPCHelpMan pruneblockchain()
         height = chainHeight - MIN_BLOCKS_TO_KEEP;
     }
 
-    PruneBlockFilesManual(active_chainstate, height);
+    (void)PruneBlockFilesManual(active_chainstate, height);
     return GetPruneHeight(chainman.m_blockman, active_chain).value_or(-1);
 },
     };
@@ -1043,7 +1043,13 @@ static RPCHelpMan gettxoutsetinfo()
     NodeContext& node = EnsureAnyNodeContext(request.context);
     ChainstateManager& chainman = EnsureChainman(node);
     Chainstate& active_chainstate = chainman.ActiveChainstate();
+<<<<<<< HEAD
     active_chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+||||||| parent of 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
+    active_chainstate.ForceFlushStateToDisk();
+=======
+    (void)active_chainstate.ForceFlushStateToDisk();
+>>>>>>> 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
 
     CCoinsView* coins_view;
     BlockManager* blockman;
@@ -2383,7 +2389,13 @@ static RPCHelpMan scantxoutset()
             ChainstateManager& chainman = EnsureChainman(node);
             LOCK(cs_main);
             Chainstate& active_chainstate = chainman.ActiveChainstate();
+<<<<<<< HEAD
             active_chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+||||||| parent of 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
+            active_chainstate.ForceFlushStateToDisk();
+=======
+            (void)active_chainstate.ForceFlushStateToDisk();
+>>>>>>> 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
             pcursor = CHECK_NONFATAL(active_chainstate.CoinsDB().Cursor());
             tip = CHECK_NONFATAL(active_chainstate.m_chain.Tip());
         }
@@ -3200,7 +3212,13 @@ PrepareUTXOSnapshot(
         //
         AssertLockHeld(::cs_main);
 
+<<<<<<< HEAD
         chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+||||||| parent of 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
+        chainstate.ForceFlushStateToDisk();
+=======
+        (void)chainstate.ForceFlushStateToDisk();
+>>>>>>> 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
 
         maybe_stats = GetUTXOStats(&chainstate.CoinsDB(), chainstate.m_blockman, CoinStatsHashType::HASH_SERIALIZED, interruption_point);
         if (!maybe_stats) {

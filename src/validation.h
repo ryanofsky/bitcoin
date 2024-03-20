@@ -17,6 +17,7 @@
 #include <kernel/chainparams.h>
 #include <kernel/chainstatemanager_opts.h>
 #include <kernel/cs_main.h> // IWYU pragma: export
+#include <kernel/result.h>
 #include <node/blockstorage.h>
 #include <policy/feerate.h>
 #include <policy/packages.h>
@@ -103,7 +104,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
 bool FatalError(kernel::Notifications& notifications, BlockValidationState& state, const bilingual_str& message);
 
 /** Prune block files up to a given height */
-void PruneBlockFilesManual(Chainstate& active_chainstate, int nManualPruneHeight);
+[[nodiscard]] kernel::FlushResult<void, kernel::AbortFailure> PruneBlockFilesManual(Chainstate& active_chainstate, int nManualPruneHeight);
 
 /**
 * Validation result for a transaction evaluated by MemPoolAccept (single or package).
@@ -721,7 +722,7 @@ public:
 
     //! Resize the CoinsViews caches dynamically and flush state to disk.
     //! @returns true unless an error occurred during the flush.
-    bool ResizeCoinsCaches(size_t coinstip_size, size_t coinsdb_size)
+    [[nodiscard]] kernel::FlushResult<void, kernel::AbortFailure> ResizeCoinsCaches(size_t coinstip_size, size_t coinsdb_size)
         EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     /**
@@ -735,17 +736,25 @@ public:
      *
      * @returns true unless a system error occurred
      */
-    bool FlushStateToDisk(
+    [[nodiscard]] kernel::FlushResult<void, kernel::AbortFailure> FlushStateToDisk(
         BlockValidationState& state,
         FlushStateMode mode,
         int nManualPruneHeight = 0);
 
+<<<<<<< HEAD
     //! Flush all changes to disk.
     void ForceFlushStateToDisk(bool wipe_cache = true);
+||||||| parent of 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
+    //! Unconditionally flush all changes to disk.
+    void ForceFlushStateToDisk();
+=======
+    //! Unconditionally flush all changes to disk.
+    [[nodiscard]] kernel::FlushResult<> ForceFlushStateToDisk();
+>>>>>>> 8f2d7139167 (refactor, validation: Return fatal errors from FlushStateToDisk)
 
     //! Prune blockfiles from the disk if necessary and then flush chainstate changes
     //! if we pruned.
-    void PruneAndFlush();
+    [[nodiscard]] kernel::FlushResult<> PruneAndFlush();
 
     /**
      * Find the best known block, and make it the tip of the block chain. The
@@ -1097,7 +1106,7 @@ public:
     //! - Wait for our headers chain to include the base block of the snapshot.
     //! - "Fast forward" the tip of the new chainstate to the base of the snapshot.
     //! - Construct the new Chainstate and add it to m_chainstates.
-    [[nodiscard]] util::Result<CBlockIndex*> ActivateSnapshot(
+    [[nodiscard]] kernel::FlushResult<CBlockIndex*> ActivateSnapshot(
         AutoFile& coins_file, const node::SnapshotMetadata& metadata, bool in_memory);
 
     //! Try to validate an assumeutxo snapshot by using a validated historical
@@ -1300,7 +1309,7 @@ public:
 
     //! Check to see if caches are out of balance and if so, call
     //! ResizeCoinsCaches() as needed.
-    void MaybeRebalanceCaches() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    [[nodiscard]] kernel::FlushResult<> MaybeRebalanceCaches() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     /**
      * Update uncommitted block structures (currently: only the witness reserved
