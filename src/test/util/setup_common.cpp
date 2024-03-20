@@ -97,6 +97,8 @@
 #include <utility>
 
 using namespace util::hex_literals;
+using kernel::AbortFailure;
+using kernel::FlushResult;
 using node::ApplyArgsManOptions;
 using node::BlockManager;
 using node::KernelNotifications;
@@ -484,8 +486,16 @@ CBlock TestChain100Setup::CreateAndProcessBlock(
 {
     CBlock block = this->CreateBlock(txns, scriptPubKey);
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
+<<<<<<< HEAD
     Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr);
     if (sync && m_node.validation_signals) m_node.validation_signals->SyncWithValidationInterfaceQueue();
+||||||| parent of 3aaa4c9f5d2 (refactor, validation: Return fatal errors from new block functions)
+    Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr);
+=======
+    FlushResult<void, AbortFailure> process_result;
+    (void)Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr, process_result);
+    Assert(process_result);
+>>>>>>> 3aaa4c9f5d2 (refactor, validation: Return fatal errors from new block functions)
 
     return block;
 }
