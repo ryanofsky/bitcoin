@@ -3071,8 +3071,16 @@ bool PeerManagerImpl::ProcessOrphanTx(Peer& peer)
 
     CTransactionRef porphanTx = nullptr;
 
+<<<<<<< HEAD
     while (CTransactionRef porphanTx = m_txdownloadman.GetTxToReconsider(peer.m_id)) {
         const MempoolAcceptResult result = m_chainman.ProcessTransaction(porphanTx);
+||||||| parent of 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
+    while (CTransactionRef porphanTx = m_orphanage.GetTxToReconsider(peer.m_id)) {
+        const MempoolAcceptResult result = m_chainman.ProcessTransaction(porphanTx);
+=======
+    while (CTransactionRef porphanTx = m_orphanage.GetTxToReconsider(peer.m_id)) {
+        auto [result, flush_result]{m_chainman.ProcessTransaction(porphanTx)};
+>>>>>>> 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
         const TxValidationState& state = result.m_state;
         const Txid& orphanHash = porphanTx->GetHash();
         const Wtxid& orphan_wtxid = porphanTx->GetWitnessHash();
@@ -4244,19 +4252,53 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                 }
             }
 
+<<<<<<< HEAD
             if (package_to_validate) {
                 const auto package_result{ProcessNewPackage(m_chainman.ActiveChainstate(), m_mempool, package_to_validate->m_txns, /*test_accept=*/false, /*client_maxfeerate=*/std::nullopt)};
                 LogDebug(BCLog::TXPACKAGES, "package evaluation for %s: %s\n", package_to_validate->ToString(),
                          package_result.m_state.IsValid() ? "package accepted" : "package rejected");
                 ProcessPackageResult(package_to_validate.value(), package_result);
+||||||| parent of 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
+            if (RecentRejectsReconsiderableFilter().contains(wtxid)) {
+                // When a transaction is already in m_lazy_recent_rejects_reconsiderable, we shouldn't submit
+                // it by itself again. However, look for a matching child in the orphanage, as it is
+                // possible that they succeed as a package.
+                LogPrint(BCLog::TXPACKAGES, "found tx %s (wtxid=%s) in reconsiderable rejects, looking for child in orphanage\n",
+                         txid.ToString(), wtxid.ToString());
+                if (auto package_to_validate{Find1P1CPackage(ptx, pfrom.GetId())}) {
+                    const auto package_result{ProcessNewPackage(m_chainman.ActiveChainstate(), m_mempool, package_to_validate->m_txns, /*test_accept=*/false, /*client_maxfeerate=*/std::nullopt)};
+                    LogDebug(BCLog::TXPACKAGES, "package evaluation for %s: %s\n", package_to_validate->ToString(),
+                             package_result.m_state.IsValid() ? "package accepted" : "package rejected");
+                    ProcessPackageResult(package_to_validate.value(), package_result);
+                }
+=======
+            if (RecentRejectsReconsiderableFilter().contains(wtxid)) {
+                // When a transaction is already in m_lazy_recent_rejects_reconsiderable, we shouldn't submit
+                // it by itself again. However, look for a matching child in the orphanage, as it is
+                // possible that they succeed as a package.
+                LogPrint(BCLog::TXPACKAGES, "found tx %s (wtxid=%s) in reconsiderable rejects, looking for child in orphanage\n",
+                         txid.ToString(), wtxid.ToString());
+                if (auto package_to_validate{Find1P1CPackage(ptx, pfrom.GetId())}) {
+                    auto [package_result, process_result]{ProcessNewPackage(m_chainman.ActiveChainstate(), m_mempool, package_to_validate->m_txns, /*test_accept=*/false, /*client_maxfeerate=*/std::nullopt)};
+                    LogDebug(BCLog::TXPACKAGES, "package evaluation for %s: %s\n", package_to_validate->ToString(),
+                             package_result.m_state.IsValid() ? "package accepted" : "package rejected");
+                    ProcessPackageResult(package_to_validate.value(), package_result);
+                }
+>>>>>>> 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
             }
             return;
         }
 
+<<<<<<< HEAD
         // ReceivedTx should not be telling us to validate the tx and a package.
         Assume(!package_to_validate.has_value());
 
         const MempoolAcceptResult result = m_chainman.ProcessTransaction(ptx);
+||||||| parent of 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
+        const MempoolAcceptResult result = m_chainman.ProcessTransaction(ptx);
+=======
+        auto [result, flush_result]{m_chainman.ProcessTransaction(ptx)};
+>>>>>>> 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
         const TxValidationState& state = result.m_state;
 
         if (result.m_result_type == MempoolAcceptResult::ResultType::VALID) {
@@ -4264,8 +4306,30 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             pfrom.m_last_tx_time = GetTime<std::chrono::seconds>();
         }
         if (state.IsInvalid()) {
+<<<<<<< HEAD
             if (auto package_to_validate{ProcessInvalidTx(pfrom.GetId(), ptx, state, /*first_time_failure=*/true)}) {
                 const auto package_result{ProcessNewPackage(m_chainman.ActiveChainstate(), m_mempool, package_to_validate->m_txns, /*test_accept=*/false, /*client_maxfeerate=*/std::nullopt)};
+||||||| parent of 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
+            ProcessInvalidTx(pfrom.GetId(), ptx, state, /*maybe_add_extra_compact_tx=*/true);
+        }
+        // When a transaction fails for TX_RECONSIDERABLE, look for a matching child in the
+        // orphanage, as it is possible that they succeed as a package.
+        if (state.GetResult() == TxValidationResult::TX_RECONSIDERABLE) {
+            LogPrint(BCLog::TXPACKAGES, "tx %s (wtxid=%s) failed but reconsiderable, looking for child in orphanage\n",
+                     txid.ToString(), wtxid.ToString());
+            if (auto package_to_validate{Find1P1CPackage(ptx, pfrom.GetId())}) {
+                const auto package_result{ProcessNewPackage(m_chainman.ActiveChainstate(), m_mempool, package_to_validate->m_txns, /*test_accept=*/false, /*client_maxfeerate=*/std::nullopt)};
+=======
+            ProcessInvalidTx(pfrom.GetId(), ptx, state, /*maybe_add_extra_compact_tx=*/true);
+        }
+        // When a transaction fails for TX_RECONSIDERABLE, look for a matching child in the
+        // orphanage, as it is possible that they succeed as a package.
+        if (state.GetResult() == TxValidationResult::TX_RECONSIDERABLE) {
+            LogPrint(BCLog::TXPACKAGES, "tx %s (wtxid=%s) failed but reconsiderable, looking for child in orphanage\n",
+                     txid.ToString(), wtxid.ToString());
+            if (auto package_to_validate{Find1P1CPackage(ptx, pfrom.GetId())}) {
+                auto [package_result, process_result]{ProcessNewPackage(m_chainman.ActiveChainstate(), m_mempool, package_to_validate->m_txns, /*test_accept=*/false, /*client_maxfeerate=*/std::nullopt)};
+>>>>>>> 359ed188c3ca (refactor, validation: Return fatal errors from mempool accept functions)
                 LogDebug(BCLog::TXPACKAGES, "package evaluation for %s: %s\n", package_to_validate->ToString(),
                          package_result.m_state.IsValid() ? "package accepted" : "package rejected");
                 ProcessPackageResult(package_to_validate.value(), package_result);
