@@ -62,6 +62,7 @@ static void LoadExternalBlockFile(benchmark::Bench& bench)
 
     std::multimap<uint256, FlatFilePos> blocks_with_unknown_parent;
     FlatFilePos pos;
+<<<<<<< HEAD
     bench.epochIterations(1)
         .setup([&] {
             blocks_with_unknown_parent.clear();
@@ -73,6 +74,21 @@ static void LoadExternalBlockFile(benchmark::Bench& bench)
             AutoFile file{fsbridge::fopen(blkfile, "rb")};
             testing_setup->m_node.chainman->LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
         });
+||||||| parent of 57782f56ba8 (refactor, validation: Return fatal errors from new block functions)
+    bench.run([&] {
+        // "rb" is "binary, O_RDONLY", positioned to the start of the file.
+        // The file will be closed by LoadExternalBlockFile().
+        AutoFile file{fsbridge::fopen(blkfile, "rb")};
+        testing_setup->m_node.chainman->LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+    });
+=======
+    bench.run([&] {
+        // "rb" is "binary, O_RDONLY", positioned to the start of the file.
+        // The file will be closed by LoadExternalBlockFile().
+        AutoFile file{fsbridge::fopen(blkfile, "rb")};
+        Assert(testing_setup->m_node.chainman->LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent));
+    });
+>>>>>>> 57782f56ba8 (refactor, validation: Return fatal errors from new block functions)
     fs::remove(blkfile);
 }
 
