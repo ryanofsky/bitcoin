@@ -22,12 +22,18 @@
 
 #include <boost/test/unit_test.hpp>
 
+<<<<<<< HEAD
 #include <memory>
 #include <optional>
 #include <span>
 #include <vector>
 
+||||||| parent of fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
+=======
+using kernel::AbortFailure;
+>>>>>>> fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
 using kernel::ChainstateRole;
+using kernel::FlushResult;
 
 BOOST_AUTO_TEST_SUITE(coinstatsindex_tests)
 
@@ -103,7 +109,9 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_unclean_shutdown, TestChain100Setup)
             LOCK(cs_main);
             BlockValidationState state;
             BOOST_CHECK(CheckBlock(block, state, params.GetConsensus()));
-            BOOST_CHECK(m_node.chainman->AcceptBlock(new_block, state, &new_block_index, true, nullptr, nullptr, true));
+            FlushResult<void, AbortFailure> accept_result;
+            BOOST_CHECK(m_node.chainman->AcceptBlock(new_block, accept_result, state, &new_block_index, true, nullptr, nullptr, true));
+            BOOST_CHECK(accept_result);
             CCoinsViewCache view(&chainstate.CoinsTip());
             BOOST_CHECK(chainstate.ConnectBlock(block, state, new_block_index, view));
         }

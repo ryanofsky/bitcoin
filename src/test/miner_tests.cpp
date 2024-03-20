@@ -52,6 +52,8 @@
 using namespace util::hex_literals;
 using interfaces::BlockTemplate;
 using interfaces::Mining;
+using kernel::AbortFailure;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using node::BlockCreateOptions;
 
@@ -861,6 +863,7 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
         // Alternate calls between submitBlock and submitSolution via the
         // Mining interface.
         if (current_height % 2 == 0) {
+<<<<<<< HEAD
             std::string reason{"stale reason"};
             std::string debug{"stale debug"};
             BOOST_REQUIRE(mining->submitBlock(block, reason, debug));
@@ -872,6 +875,13 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
             BOOST_REQUIRE(!mining->submitBlock(block, reason, debug));
             BOOST_REQUIRE_EQUAL(reason, "duplicate");
             BOOST_REQUIRE_EQUAL(debug, "");
+||||||| parent of fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
+            BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr));
+=======
+            FlushResult<void, AbortFailure> process_result;
+            BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr, process_result));
+            BOOST_CHECK(process_result);
+>>>>>>> fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
         } else {
             BOOST_REQUIRE(block_template->submitSolution(block.nVersion, block.nTime, block.nNonce, MakeTransactionRef(txCoinbase)));
         }

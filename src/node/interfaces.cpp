@@ -94,7 +94,9 @@ using interfaces::Mining;
 using interfaces::Node;
 using interfaces::Rpc;
 using interfaces::WalletLoader;
+using kernel::AbortFailure;
 using kernel::ChainstateRole;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using node::BlockCreateOptions;
 using node::BlockWaitOptions;
@@ -920,9 +922,16 @@ public:
     bool submitSolution(uint32_t version, uint32_t timestamp, uint32_t nonce, CTransactionRef coinbase) override
     {
         AddMerkleRootAndCoinbase(m_block_template->block, std::move(coinbase), version, timestamp, nonce);
+<<<<<<< HEAD
         std::string reason;
         std::string debug;
         return SubmitBlock(chainman(), std::make_shared<const CBlock>(m_block_template->block), /*new_block=*/nullptr, reason, debug);
+||||||| parent of fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
+        return chainman().ProcessNewBlock(std::make_shared<const CBlock>(m_block_template->block), /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/nullptr);
+=======
+        FlushResult<void, AbortFailure> process_result; // Ignore flush and fatal error information, only care whether block is accepted.
+        return chainman().ProcessNewBlock(std::make_shared<const CBlock>(m_block_template->block), /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/nullptr, process_result);
+>>>>>>> fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
     }
 
     std::unique_ptr<BlockTemplate> waitNext(BlockWaitOptions options) override
@@ -1017,7 +1026,10 @@ public:
     bool checkBlock(const CBlock& block, const node::BlockCheckOptions& options, std::string& reason, std::string& debug) override
     {
         LOCK(chainman().GetMutex());
-        BlockValidationState state{TestBlockValidity(chainman().ActiveChainstate(), block, /*check_pow=*/options.check_pow, /*check_merkle_root=*/options.check_merkle_root)};
+        BlockValidationState state;
+        if (auto result{TestBlockValidity(chainman().ActiveChainstate(), block, /*check_pow=*/options.check_pow, /*check_merkle_root=*/options.check_merkle_root)}; !result) {
+            state = std::move(result.error());
+        }
         reason = state.GetRejectReason();
         debug = state.GetDebugMessage();
         return state.IsValid();

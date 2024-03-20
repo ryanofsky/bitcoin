@@ -31,6 +31,9 @@
 
 class CTxMemPool;
 
+using kernel::AbortFailure;
+using kernel::FlushResult;
+
 BOOST_FIXTURE_TEST_SUITE(validation_chainstate_tests, ChainTestingSetup)
 
 //! Test resizing coins-related Chainstate caches during runtime.
@@ -90,8 +93,18 @@ BOOST_FIXTURE_TEST_CASE(connect_tip_does_not_cache_inputs_on_failed_connect, Tes
     tx.vout.emplace_back(MAX_MONEY, CScript{} << OP_TRUE);
 
     const auto tip{WITH_LOCK(cs_main, return chainstate.m_chain.Tip()->GetBlockHash())};
+<<<<<<< HEAD
     const CBlock block{CreateBlock({tx}, CScript{} << OP_TRUE)};
     BOOST_CHECK(Assert(m_node.chainman)->ProcessNewBlock(std::make_shared<CBlock>(block), true, true, nullptr));
+||||||| parent of fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
+    const CBlock block{CreateBlock({tx}, CScript{} << OP_TRUE, chainstate)};
+    BOOST_CHECK(Assert(m_node.chainman)->ProcessNewBlock(std::make_shared<CBlock>(block), true, true, nullptr));
+=======
+    const CBlock block{CreateBlock({tx}, CScript{} << OP_TRUE, chainstate)};
+    kernel::FlushResult<void, kernel::AbortFailure> process_result;
+    BOOST_CHECK(Assert(m_node.chainman)->ProcessNewBlock(std::make_shared<CBlock>(block), true, true, nullptr, process_result));
+    BOOST_CHECK(process_result);
+>>>>>>> fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
 
     LOCK(cs_main);
     BOOST_CHECK_EQUAL(tip, chainstate.m_chain.Tip()->GetBlockHash()); // block rejected
@@ -156,9 +169,11 @@ BOOST_FIXTURE_TEST_CASE(chainstate_update_tip, TestChain100Setup)
         LOCK(::cs_main);
         bool checked = CheckBlock(*pblockone, state, chainparams.GetConsensus());
         BOOST_CHECK(checked);
+        FlushResult<void, AbortFailure> accept_result;
         bool accepted = chainman.AcceptBlock(
-            pblockone, state, &pindex, true, nullptr, &newblock, true);
+            pblockone, accept_result, state, &pindex, true, nullptr, &newblock, true);
         BOOST_CHECK(accepted);
+        BOOST_CHECK(accept_result);
     }
 
     // UpdateTip is called here

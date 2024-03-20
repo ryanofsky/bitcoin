@@ -30,6 +30,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+<<<<<<< HEAD
 #include <compare>
 #include <cstddef>
 #include <cstdint>
@@ -42,6 +43,13 @@
 #include <utility>
 #include <vector>
 
+||||||| parent of fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
+using node::BlockAssembler;
+=======
+using kernel::AbortFailure;
+using kernel::FlushResult;
+using node::BlockAssembler;
+>>>>>>> fbff0b6abef (refactor, validation: Return fatal errors from new block functions)
 using node::BlockManager;
 
 BOOST_AUTO_TEST_SUITE(blockfilter_index_tests)
@@ -197,7 +205,9 @@ BOOST_FIXTURE_TEST_CASE(blockfilter_index_initial_sync, BuildChainTestingSetup)
     uint256 chainA_last_header = last_header;
     for (size_t i = 0; i < 2; i++) {
         const auto& block = chainA[i];
-        BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(block, true, true, nullptr));
+        FlushResult<void, AbortFailure> process_result;
+        BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(block, true, true, nullptr, process_result));
+        BOOST_CHECK(process_result);
     }
     for (size_t i = 0; i < 2; i++) {
         const auto& block = chainA[i];
@@ -215,7 +225,9 @@ BOOST_FIXTURE_TEST_CASE(blockfilter_index_initial_sync, BuildChainTestingSetup)
     uint256 chainB_last_header = last_header;
     for (size_t i = 0; i < 3; i++) {
         const auto& block = chainB[i];
-        BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(block, true, true, nullptr));
+        FlushResult<void, AbortFailure> process_result;
+        BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(block, true, true, nullptr, process_result));
+        BOOST_CHECK(process_result);
     }
     for (size_t i = 0; i < 3; i++) {
         const auto& block = chainB[i];
@@ -246,7 +258,9 @@ BOOST_FIXTURE_TEST_CASE(blockfilter_index_initial_sync, BuildChainTestingSetup)
     // Reorg back to chain A.
      for (size_t i = 2; i < 4; i++) {
          const auto& block = chainA[i];
-         BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(block, true, true, nullptr));
+         FlushResult<void, AbortFailure> process_result;
+         BOOST_REQUIRE(Assert(m_node.chainman)->ProcessNewBlock(block, true, true, nullptr, process_result));
+         BOOST_CHECK(process_result);
      }
 
      // Check that chain A and B blocks can be retrieved.
@@ -396,7 +410,9 @@ BOOST_FIXTURE_TEST_CASE(index_reorg_crash, BuildChainTestingSetup)
     BOOST_REQUIRE(BuildChain(prev_tip, GetScriptForDestination(PKHash(GenerateRandomKey().GetPubKey())), 3, fork));
 
     for (const auto& block : fork) {
-        BOOST_REQUIRE(m_node.chainman->ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr));
+        FlushResult<void, AbortFailure> process_result;
+        BOOST_REQUIRE(m_node.chainman->ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr, process_result));
+        BOOST_CHECK(process_result);
     }
 
     // Unblock the index thread so it can process the reorg
