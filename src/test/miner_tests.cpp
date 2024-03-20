@@ -27,7 +27,13 @@
 
 #include <boost/test/unit_test.hpp>
 
+<<<<<<< HEAD
 using namespace util::hex_literals;
+||||||| parent of 0d6434fde451 (refactor, validation: Return fatal errors from new block functions)
+=======
+using kernel::AbortFailure;
+using kernel::FlushResult;
+>>>>>>> 0d6434fde451 (refactor, validation: Return fatal errors from new block functions)
 using node::BlockAssembler;
 using node::CBlockTemplate;
 
@@ -640,7 +646,9 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
             pblock->nNonce = bi.nonce;
         }
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
-        BOOST_CHECK(Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr));
+        FlushResult<void, AbortFailure> process_result;
+        BOOST_CHECK(Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr, process_result));
+        BOOST_CHECK(process_result);
         pblock->hashPrevBlock = pblock->GetHash();
     }
 
