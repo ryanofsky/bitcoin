@@ -1210,7 +1210,7 @@ public:
     }
 };
 
-void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles)
+FlushResult<InterruptResult> ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles)
 {
     FlushResult<InterruptResult> result;
     ScheduleBatchPriority();
@@ -1238,7 +1238,8 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
                 (void)result.MergeFrom(chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent));
                 if (chainman.m_interrupt) {
                     LogPrintf("Interrupt requested. Exit %s\n", __func__);
-                    return;
+                    result.Set(Interrupted{});
+                    return result;
                 }
                 nFile++;
             }
@@ -1259,7 +1260,8 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
                 (void)result.MergeFrom(chainman.LoadExternalBlockFile(file));
                 if (chainman.m_interrupt) {
                     LogPrintf("Interrupt requested. Exit %s\n", __func__);
-                    return;
+                    result.Set(Interrupted{});
+                    return result;
                 }
             } else {
                 LogPrintf("Warning: Could not open blocks file %s\n", fs::PathToString(path));
@@ -1274,11 +1276,14 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
         for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
             BlockValidationState state;
             if (!result.MergeFrom(chainstate->ActivateBestChain(state, nullptr))) {
-                chainman.GetNotifications().fatalError(strprintf("Failed to connect best block (%s)", state.ToString()));
-                return;
+                auto error{Untranslated(strprintf("Failed to connect best block (%s)", state.ToString()))};;
+                chainman.GetNotifications().fatalError(error.original);
+                result.Set(util::Error{std::move(error)});
+                return result;
             }
         }
     } // End scope of ImportingNow
+    return result;
 }
 
 std::ostream& operator<<(std::ostream& os, const BlockfileType& type) {
