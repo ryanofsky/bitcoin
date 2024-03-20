@@ -1851,8 +1851,16 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
 
     node.background_init_thread = std::thread(&util::TraceThread, "initload", [=, &chainman, &args, &node] {
         ScheduleBatchPriority();
+<<<<<<< HEAD
         // Import blocks and ActivateBestChain()
         ImportBlocks(chainman, vImportFiles);
+||||||| parent of dcdf292b4af2 (refactor, blockstorage: Return fatal error from ImportBlocks)
+        // Import blocks
+        ImportBlocks(chainman, vImportFiles);
+=======
+        // Import blocks
+        (void)ImportBlocks(chainman, vImportFiles);
+>>>>>>> dcdf292b4af2 (refactor, blockstorage: Return fatal error from ImportBlocks)
         if (args.GetBoolArg("-stopafterblockimport", DEFAULT_STOPAFTERBLOCKIMPORT)) {
             LogPrintf("Stopping after block import\n");
             if (!(Assert(node.shutdown_request))()) {

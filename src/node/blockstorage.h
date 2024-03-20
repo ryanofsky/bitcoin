@@ -436,8 +436,14 @@ public:
     void CleanupBlockRevFiles() const;
 };
 
+<<<<<<< HEAD
 // Calls ActivateBestChain() even if no blocks are imported.
 void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_paths);
+||||||| parent of dcdf292b4af2 (refactor, blockstorage: Return fatal error from ImportBlocks)
+void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_paths);
+=======
+[[nodiscard]] kernel::FlushResult<kernel::InterruptResult, kernel::AbortFailure> ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_paths);
+>>>>>>> dcdf292b4af2 (refactor, blockstorage: Return fatal error from ImportBlocks)
 } // namespace node
 
 #endif // BITCOIN_NODE_BLOCKSTORAGE_H
