@@ -1629,7 +1629,29 @@ static RPCHelpMan invalidateblock()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     ChainstateManager& chainman = EnsureAnyChainman(request.context);
+<<<<<<< HEAD
     uint256 hash(ParseHashV(request.params[0], "blockhash"));
+||||||| parent of db00b423b266 (refactor, validation: Return fatal errors from block connect functions)
+    CBlockIndex* pblockindex;
+    {
+        LOCK(cs_main);
+        pblockindex = chainman.m_blockman.LookupBlockIndex(hash);
+        if (!pblockindex) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        }
+    }
+    chainman.ActiveChainstate().InvalidateBlock(state, pblockindex);
+=======
+    CBlockIndex* pblockindex;
+    {
+        LOCK(cs_main);
+        pblockindex = chainman.m_blockman.LookupBlockIndex(hash);
+        if (!pblockindex) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Block not found");
+        }
+    }
+    (void)chainman.ActiveChainstate().InvalidateBlock(state, pblockindex);
+>>>>>>> db00b423b266 (refactor, validation: Return fatal errors from block connect functions)
 
     InvalidateBlock(chainman, hash);
 
