@@ -18,13 +18,37 @@
 #include <vector>
 
 namespace util {
+<<<<<<< HEAD
 //! The Result<SuccessType, ErrorType, MessagesType> class provides
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//! Default MessagesType, simple list of errors and warnings.
+struct Messages {
+    std::vector<bilingual_str> errors{};
+    std::vector<bilingual_str> warnings{};
+};
+
+//! The Result<SuccessType, FailureType, MessagesType> class provides
+=======
+//! Default MessagesType, simple list of errors and warnings.
+struct Messages {
+    std::vector<bilingual_str> errors{};
+    std::vector<bilingual_str> warnings{};
+};
+
+//! The Result<SuccessType, FailureType, InfoType, MessagesType> class provides
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 //! an efficient way for functions to return structured result information, as
 //! well as descriptive error messages.
 //!
 //! Logically, a result object is equivalent to:
 //!
+<<<<<<< HEAD
 //!     tuple<variant<SuccessType, ErrorType>, MessagesType>
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//!     tuple<variant<SuccessType, FailureType>, MessagesType>
+=======
+//!     tuple<variant<SuccessType, FailureType>, InfoType, MessagesType>
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 //!
 //! But the physical representation is more efficient because it avoids
 //! allocating memory for ErrorType and MessagesType fields unless there is an
@@ -33,7 +57,13 @@ namespace util {
 //! Result<SuccessType> objects support the same operators as
 //! std::optional<SuccessType>, such as !result, *result, result->member, to
 //! make SuccessType values easy to access. They also provide
+<<<<<<< HEAD
 //! result.error() and result.messages() methods to
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//! result.GetFailure() and result.GetMessages() methods to
+=======
+//! result.GetFailure(), result.GetInfo(), result.GetMessages() methods to
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 //! access other parts of the result. A simple usage example is:
 //!
 //!    util::Result<int> AddNumbers(int a, int b)
@@ -55,6 +85,7 @@ namespace util {
 //! features for combining results from different functions and returning error
 //! messages for users instead of just error values for callers.
 //!
+<<<<<<< HEAD
 //! It provides an >> operator to move messages between results without
 //! affecting success and error values.
 //!
@@ -83,8 +114,16 @@ namespace util {
 //! Semantically, the update() method merges state from different results,
 //! appending data instead of overwriting it where possible.
 template <typename SuccessType = void, typename ErrorType = void, typename MessagesType = Messages>
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//! Usage examples can be found in \example ../test/result_tests.cpp.
+template <typename SuccessType = void, typename FailureType = void, typename MessagesType = Messages>
+=======
+//! Usage examples can be found in \example ../test/result_tests.cpp.
+template <typename SuccessType = void, typename FailureType = void, typename InfoType = void, typename MessagesType = Messages>
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 class Result;
 
+<<<<<<< HEAD
 //! Traits class that can be specialized to control the way result types are
 //! combined and constructed. Specializations can provide an update() method
 //! merging information from a source object to a destination object. They can
@@ -93,6 +132,50 @@ class Result;
 //! special arguments to the Result constructor, and a construct_error bool
 //! member indicating whether to construct error values instead of success
 //! values on use.
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//! Wrapper object to pass an error string to the Result constructor.
+struct Error {
+    bilingual_str message;
+};
+//! Wrapper object to pass a warning string to the Result constructor.
+struct Warning {
+    bilingual_str message;
+};
+
+//! Type trait that can be specialized to control the way SuccessType /
+//! FailureType / MessagesType values are combined. Default behavior
+//! is for new values to overwrite existing ones, but this can be specialized
+//! for custom behavior when Result::Update() method is called or << operator is
+//! used. For example, this is specialized for Messages struct below to append
+//! error and warning messages instead of overwriting them. It can also be used,
+//! for example, to merge FailureType values when a function can return multiple
+//! failures.
+=======
+//! Wrapper object to pass an error string to the Result constructor.
+struct Error {
+    bilingual_str message;
+};
+//! Wrapper object to pass a warning string to the Result constructor.
+struct Warning {
+    bilingual_str message;
+};
+
+//! Wrapper object to pass an InfoType object to the result constructor.
+template <typename T>
+struct Info {
+    Info(T&& obj) : m_obj(obj) {}
+    T& m_obj;
+};
+
+//! Type trait that can be specialized to control the way SuccessType /
+//! FailureType / InfoType / MessagesType values are combined. Default behavior
+//! is for new values to overwrite existing ones, but this can be specialized
+//! for custom behavior when Result::Update() method is called or << operator is
+//! used. For example, this is specialized for Messages struct below to append
+//! error and warning messages instead of overwriting them. It can also be used,
+//! for example, to merge FailureType values when a function can return multiple
+//! failures.
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 template<typename T>
 struct ResultTraits {};
 
@@ -115,10 +198,52 @@ void ResultUpdate(auto&& dst_fn, T& src)
 //! Substitute for std::monostate that doesn't depend on std::variant.
 struct Monostate{};
 
+<<<<<<< HEAD
 //! Container for ErrorType and MessagesType, providing public operator
 //! bool(), error(), messages_ptr(), and messages() methods.
 template <typename ErrorType, typename MessagesType>
 class FailDataHolder
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//! Implementation note: Result class inherits from a FailDataHolder class holding
+//! a unique_ptr to FailureType and MessagesTypes values, and a SuccessHolder
+//! class holding a SuccessType value in an anonymous union.
+//! @{
+//! Container for FailureType and MessagesType, providing public operator
+//! bool(), GetFailure(), GetMessages(), and EnsureMessages() methods.
+template <typename FailureType, typename MessagesType>
+class FailDataHolder
+=======
+//! Implementation note: Result class inherits from an InfoHolder class holding an
+//! IntoType value, a FailDataHolder class holding a unique_ptr to FailureType
+//! and MessagesTypes values, and a SuccessHolder class holding a SuccessType
+//! value in an anonymous union.
+//!
+//! To take advantage of the Empty Base Optimization, inheritance is linear with
+//! FailDataHolder inheriting from InfoHolder, SuccessHolder inheriting from
+//! FailDataHolder, and Holder classes specializing for void so no space is used
+//! when void types are specified.
+//! @{
+//! Container for InfoType, providing public GetInfo() method.
+template <typename InfoType>
+class InfoHolder
+{
+protected:
+    InfoType m_info{};
+public:
+    // Public accessors.
+    const InfoType& GetInfo() const LIFETIMEBOUND { return m_info; }
+    InfoType& GetInfo() LIFETIMEBOUND { return m_info; }
+};
+
+//! Specialization of InfoHolder when InfoType is void.
+template <>
+class InfoHolder<void> {};
+
+//! Container for FailureType and MessagesType, providing public operator
+//! bool(), GetFailure(), GetMessages(), and EnsureMessages() methods.
+template <typename FailureType, typename InfoType, typename MessagesType>
+class FailDataHolder : public InfoHolder<InfoType>
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 {
 protected:
     struct FailData {
@@ -145,10 +270,20 @@ public:
 };
 
 //! Container for SuccessType, providing public accessor methods similar to
+<<<<<<< HEAD
 //! std::optional methods to access the success value. There is a specialization
 //! of this class for the void success type.
 template <typename SuccessType, typename ErrorType, typename MessagesType>
 class SuccessHolder : public FailDataHolder<ErrorType, MessagesType>
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//! std::optional methods to access the success value.
+template <typename SuccessType, typename FailureType, typename MessagesType>
+class SuccessHolder : public FailDataHolder<FailureType, MessagesType>
+=======
+//! std::optional methods to access the success value.
+template <typename SuccessType, typename FailureType, typename InfoType, typename MessagesType>
+class SuccessHolder : public FailDataHolder<FailureType, InfoType, MessagesType>
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 {
 protected:
     //! Success value embedded in an anonymous union so it doesn't need to be
@@ -181,20 +316,43 @@ public:
 };
 
 //! Specialization of SuccessHolder when SuccessType is void.
+<<<<<<< HEAD
 template <typename ErrorType, typename MessagesType>
 class SuccessHolder<void, ErrorType, MessagesType> : public FailDataHolder<ErrorType, MessagesType>
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+template <typename FailureType, typename MessagesType>
+class SuccessHolder<void, FailureType, MessagesType> : public FailDataHolder<FailureType, MessagesType>
+=======
+template <typename FailureType, typename InfoType, typename MessagesType>
+class SuccessHolder<void, FailureType, InfoType, MessagesType> : public FailDataHolder<FailureType, InfoType, MessagesType>
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 {
 };
 //! @}
 } // namespace detail
 
 // Result type class, documented at the top of this file.
+<<<<<<< HEAD
 template <typename SuccessType_, typename ErrorType_, typename MessagesType_>
 class Result : public detail::SuccessHolder<SuccessType_, ErrorType_, MessagesType_>
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+template <typename SuccessType_, typename FailureType_, typename MessagesType_>
+class Result : public detail::SuccessHolder<SuccessType_, FailureType_, MessagesType_>
+=======
+template <typename SuccessType_, typename FailureType_, typename InfoType_, typename MessagesType_>
+class Result : public detail::SuccessHolder<SuccessType_, FailureType_, InfoType_, MessagesType_>
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 {
 public:
     using SuccessType = SuccessType_;
+<<<<<<< HEAD
     using ErrorType = ErrorType_;
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+    using FailureType = FailureType_;
+=======
+    using FailureType = FailureType_;
+    using InfoType = InfoType_;
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
     using MessagesType = MessagesType_;
     static constexpr bool is_result{true};
 
@@ -219,10 +377,22 @@ public:
     }
 
     //! Update this result by moving from another result object. Existing
+<<<<<<< HEAD
     //! success, failure, and messages values are updated using
     //! ResultTraits::update calls so state can be combined instead of
     //! overwritten.
     Result& update(Result&& other) LIFETIMEBOUND
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+    //! success, failure, and messages values are updated (using
+    //! ResultTraits::Update specializations), so errors and warning messages
+    //! get appended instead of overwriting existing ones.
+    Result& Update(Result&& other) LIFETIMEBOUND
+=======
+    //! success, failure, info, and messages values are updated (using
+    //! ResultTraits::Update specializations), so errors and warning messages
+    //! get appended instead of overwriting existing ones.
+    Result& Update(Result&& other) LIFETIMEBOUND
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
     {
         move</*DstConstructed=*/true>(*this, other);
         return *this;
@@ -233,7 +403,7 @@ public:
     Result& operator=(Result&&) = delete;
 
 protected:
-    template <typename, typename, typename>
+    template <typename, typename, typename, typename>
     friend class Result;
 
     //! Helper function to construct a new success or failure value using the
@@ -267,6 +437,7 @@ protected:
         construct<construct_error>(result, std::forward<Args>(args)...);
     }
 
+<<<<<<< HEAD
     //! Move success, failure, and message values from source Result object to
     //! destination object. Existing values are updated using
     //! ResultTraits::update calls so state can be combined instead of
@@ -276,10 +447,61 @@ protected:
     //! allowed, since no source information is lost. But assigning non-void
     //! source types to void destination types is not allowed, since this would
     //! discard source information.
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+    //! Construct() overload peeling off a util::Warning constructor argument.
+    template <bool Failure, typename Result, typename... Args>
+    static void Construct(Result& result, util::Warning warning, Args&&... args)
+    {
+        result.AddWarning(std::move(warning.message));
+        Construct<Failure>(result, std::forward<Args>(args)...);
+    }
+
+    //! Move success, failure, and messages from source Result object to
+    //! destination object. Existing values are updated (using
+    //! ResultTraits::Update specializations), so destination errors and warning
+    //! messages get appended to instead of overwritten. The source and
+    //! destination results are not required to have the same types, and
+    //! assigning void source types to non-void destinations type is allowed,
+    //! since no source information is lost. But assigning non-void source types
+    //! to void destination types is not allowed, since this would discard
+    //! source information.
+=======
+    //! Construct() overload peeling off a util::Warning constructor argument.
+    template <bool Failure, typename Result, typename... Args>
+    static void Construct(Result& result, util::Warning warning, Args&&... args)
+    {
+        result.AddWarning(std::move(warning.message));
+        Construct<Failure>(result, std::forward<Args>(args)...);
+    }
+
+    //! Construct() overload peeling off a util::Info constructor argument.
+    template <bool Failure, typename Result, typename T, typename... Args>
+    static void Construct(Result& result, util::Info<T> info, Args&&... args)
+    {
+        ResultTraits<InfoType>::Update(result.GetInfo(), info.m_obj);
+        Construct<Failure>(result, std::forward<Args>(args)...);
+    }
+
+    //! Move success, failure, info, and messages from source Result object to
+    //! destination object. Existing values are updated (using
+    //! ResultTraits::Update specializations), so destination errors and warning
+    //! messages get appended to instead of overwritten. The source and
+    //! destination results are not required to have the same types, and
+    //! assigning void source types to non-void destinations type is allowed,
+    //! since no source information is lost. But assigning non-void source types
+    //! to void destination types is not allowed, since this would discard
+    //! source information.
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
     template <bool DstConstructed, typename DstResult, typename SrcResult>
     static void move(DstResult& dst, SrcResult& src)
     {
+<<<<<<< HEAD
         // Use operator>> to move messages values first, then move
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+        // Use operator>> to move messages value first, then move
+=======
+        // Use operator>> to move info and messages values first, then move
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
         // success or failure value below.
         src >> dst;
         // If DstConstructed is true, it means dst has either a success value or
@@ -338,15 +560,54 @@ protected:
 };
 
 //! Move information from a source Result object to a destination object. It
+<<<<<<< HEAD
 //! only moves InfoType and MessagesType values without affecting SuccessType or
 //! ErrorType values of either Result object.
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+//! only moves MessagesType values without affecting SuccessType or
+//! FailureType values of either Result object.
+//!
+//! This is useful for combining error and warning messages from multiple result
+//! objects into a single object, e.g.:
+//!
+//!    util::Result<void> result;
+//!    auto r1 = DoSomething() >> result;
+//!    auto r2 = DoSomethingElse() >> result;
+//!    ...
+//!    return result;
+//!
+=======
+//! only moves InfoType and MessagesType values without affecting SuccessType or
+//! FailureType values of either Result object.
+//!
+//! This is useful for combining error and warning messages from multiple result
+//! objects into a single object, e.g.:
+//!
+//!    util::Result<void> result;
+//!    auto r1 = DoSomething() >> result;
+//!    auto r2 = DoSomethingElse() >> result;
+//!    ...
+//!    return result;
+//!
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
 template <typename SrcResult, typename DstResult>
 requires (std::decay_t<SrcResult>::is_result)
 decltype(auto) operator>>(SrcResult&& src LIFETIMEBOUND, DstResult&& dst)
 {
     using SrcType = std::decay_t<SrcResult>;
+<<<<<<< HEAD
     if (src.messages_ptr()) {
         detail::ResultUpdate([&]()->auto& { return dst.messages(); }, src.messages());
+||||||| parent of 0b5fd365e378 (refactor: Add InfoType field to util::Result)
+    if (src.GetMessages() && MessagesTraits<typename SrcType::MessagesType>::HasMessages(*src.GetMessages())) {
+        ResultTraits<typename SrcType::MessagesType>::Update(dst.EnsureMessages(), *src.GetMessages());
+=======
+    if constexpr (!std::is_same_v<typename SrcType::InfoType, void>) {
+        ResultTraits<typename SrcType::InfoType>::Update(dst.GetInfo(), src.GetInfo());
+    }
+    if (src.GetMessages() && MessagesTraits<typename SrcType::MessagesType>::HasMessages(*src.GetMessages())) {
+        ResultTraits<typename SrcType::MessagesType>::Update(dst.EnsureMessages(), *src.GetMessages());
+>>>>>>> 0b5fd365e378 (refactor: Add InfoType field to util::Result)
     }
     return static_cast<SrcType&&>(src);
 }
