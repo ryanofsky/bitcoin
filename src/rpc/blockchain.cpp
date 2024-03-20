@@ -968,7 +968,7 @@ static RPCMethod pruneblockchain()
         height = chainHeight - MIN_BLOCKS_TO_KEEP;
     }
 
-    PruneBlockFilesManual(active_chainstate, height);
+    (void)PruneBlockFilesManual(active_chainstate, height);
     return GetPruneHeight(chainman.m_blockman, active_chain).value_or(-1);
 },
     };
@@ -1081,7 +1081,7 @@ static RPCMethod gettxoutsetinfo()
     NodeContext& node = EnsureAnyNodeContext(request.context);
     ChainstateManager& chainman = EnsureChainman(node);
     Chainstate& active_chainstate = chainman.ActiveChainstate();
-    active_chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+    (void)active_chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
 
     const CCoinsViewDB& coins_view{WITH_LOCK(::cs_main, return active_chainstate.CoinsDB())};
     BlockManager& blockman{active_chainstate.m_blockman};
@@ -2440,8 +2440,16 @@ static RPCMethod scantxoutset()
             ChainstateManager& chainman = EnsureChainman(node);
             LOCK(cs_main);
             Chainstate& active_chainstate = chainman.ActiveChainstate();
+<<<<<<< HEAD
             active_chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
             pcursor = active_chainstate.CoinsDB().Cursor();
+||||||| parent of 4ec2fa5394e (refactor, validation: Return fatal errors from FlushStateToDisk)
+            active_chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+            pcursor = CHECK_NONFATAL(active_chainstate.CoinsDB().Cursor());
+=======
+            (void)active_chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+            pcursor = CHECK_NONFATAL(active_chainstate.CoinsDB().Cursor());
+>>>>>>> 4ec2fa5394e (refactor, validation: Return fatal errors from FlushStateToDisk)
             tip = CHECK_NONFATAL(active_chainstate.m_chain.Tip());
         }
         bool res = FindScriptPubKey(g_scan_progress, g_should_abort_scan, count, pcursor.get(), needles, coins, node.rpc_interruption_point);
@@ -3246,7 +3254,7 @@ UniValue CreateRolledBackUTXOSnapshot(
         {
             LOCK(::cs_main);
             tip = chainstate.m_chain.Tip();
-            chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+            (void)chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
             cursor = chainstate.CoinsDB().Cursor();
         }
         temp_cache.SetBestBlock(tip->GetBlockHash());
@@ -3364,7 +3372,7 @@ PrepareUTXOSnapshot(
         //
         AssertLockHeld(::cs_main);
 
-        chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
+        (void)chainstate.ForceFlushStateToDisk(/*wipe_cache=*/false);
 
         maybe_stats = GetUTXOStats(chainstate.CoinsDB(), chainstate.m_blockman, CoinStatsHashType::HASH_SERIALIZED, interruption_point);
         if (!maybe_stats) {
