@@ -128,7 +128,7 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_rebalance_caches, TestChain100Setup)
     {
         LOCK(::cs_main);
         c1.InitCoinsCache(1 << 23);
-        manager.MaybeRebalanceCaches();
+        BOOST_CHECK(manager.MaybeRebalanceCaches());
     }
 
     BOOST_CHECK_EQUAL(c1.m_coinstip_cache_size_bytes, max_cache);
@@ -154,7 +154,7 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_rebalance_caches, TestChain100Setup)
     {
         LOCK(::cs_main);
         c2.InitCoinsCache(1 << 23);
-        manager.MaybeRebalanceCaches();
+        BOOST_CHECK(manager.MaybeRebalanceCaches());
     }
 
     BOOST_CHECK_CLOSE(double(c1.m_coinstip_cache_size_bytes), max_cache * 0.05, 1);
@@ -369,9 +369,19 @@ struct SnapshotTestSetup : TestChain100Setup {
 
         BOOST_TEST_MESSAGE("Simulating node restart");
         {
+<<<<<<< HEAD
             LOCK(chainman.GetMutex());
             for (const auto& cs : chainman.m_chainstates) {
                 if (cs->CanFlushToDisk()) cs->ForceFlushStateToDisk();
+||||||| parent of dbd3b6f98aa (refactor, validation: Return fatal errors from FlushStateToDisk)
+            for (Chainstate* cs : chainman.GetAll()) {
+                LOCK(::cs_main);
+                cs->ForceFlushStateToDisk();
+=======
+            for (Chainstate* cs : chainman.GetAll()) {
+                LOCK(::cs_main);
+                BOOST_CHECK(cs->ForceFlushStateToDisk());
+>>>>>>> dbd3b6f98aa (refactor, validation: Return fatal errors from FlushStateToDisk)
             }
         }
         {
