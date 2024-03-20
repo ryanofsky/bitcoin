@@ -19,6 +19,7 @@
 #include <uint256.h>
 #include <util/fs.h>
 #include <util/hasher.h>
+#include <util/result.h>
 
 #include <array>
 #include <atomic>
@@ -46,6 +47,29 @@ class SignalInterrupt;
 } // namespace util
 
 namespace kernel {
+enum class FlushStatus { SKIPPED, SUCCESS, FAILURE };
+
+inline FlushStatus Max(FlushStatus a, FlushStatus b)
+{
+   if (a == FlushStatus::FAILURE || b == FlushStatus::FAILURE) return FlushStatus::FAILURE;
+   if (a == FlushStatus::SUCCESS || b == FlushStatus::SUCCESS) return FlushStatus::SUCCESS;
+   return FlushStatus::SKIPPED;
+}
+
+template<typename T = void, typename F = void>
+struct FlushResult : util::Result<T, F>
+{
+    FlushStatus flush_status{};
+
+    template<typename O>
+    [[nodiscard]] bool MergeFrom(O&& other)
+    {
+        this->MoveMessages(other);
+        flush_status = Max(other.flush_status, flush_status);
+        return bool{other};
+    }
+};
+
 /** Access to the block database (blocks/index/) */
 class BlockTreeDB : public CDBWrapper
 {
@@ -146,18 +170,18 @@ private:
      * per index entry (nStatus, nChainWork, nTimeMax, etc.) as well as peripheral
      * collections like m_dirty_blockindex.
      */
-    bool LoadBlockIndex(const std::optional<uint256>& snapshot_blockhash)
+    [[nodiscard]] util::Result<void, kernel::InterruptResult> LoadBlockIndex(const std::optional<uint256>& snapshot_blockhash)
         EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     /** Return false if block file or undo file flushing fails. */
-    [[nodiscard]] bool FlushBlockFile(int blockfile_num, bool fFinalize, bool finalize_undo);
+    [[nodiscard]] kernel::FlushResult<> FlushBlockFile(int blockfile_num, bool fFinalize, bool finalize_undo);
 
     /** Return false if undo file flushing fails. */
-    [[nodiscard]] bool FlushUndoFile(int block_file, bool finalize = false);
+    [[nodiscard]] kernel::FlushResult<> FlushUndoFile(int block_file, bool finalize = false);
 
-    [[nodiscard]] bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown);
-    [[nodiscard]] bool FlushChainstateBlockFile(int tip_height);
-    bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
+    [[nodiscard]] kernel::FlushResult<> FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown);
+    [[nodiscard]] kernel::FlushResult<> FlushChainstateBlockFile(int tip_height);
+    [[nodiscard]] util::Result<void> FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
 
     FlatFileSeq BlockFileSeq() const;
     FlatFileSeq UndoFileSeq() const;
@@ -309,11 +333,11 @@ public:
     /** Get block file info entry for one block file */
     CBlockFileInfo* GetBlockFileInfo(size_t n);
 
-    bool WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex& block)
+    [[nodiscard]] kernel::FlushResult<> WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex& block)
         EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     /** Store block on disk. If dbp is not nullptr, then it provides the known position of the block within a block file on disk. */
-    FlatFilePos SaveBlockToDisk(const CBlock& block, int nHeight, const FlatFilePos* dbp);
+    [[nodiscard]] kernel::FlushResult<FlatFilePos> SaveBlockToDisk(const CBlock& block, int nHeight, const FlatFilePos* dbp);
 
     /** Whether running in -prune mode. */
     [[nodiscard]] bool IsPruneMode() const { return m_prune_mode; }
@@ -370,7 +394,7 @@ public:
     void CleanupBlockRevFiles() const;
 };
 
-void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles);
+[[nodiscard]] kernel::FlushResult<kernel::InterruptResult> ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles);
 } // namespace node
 
 #endif // BITCOIN_NODE_BLOCKSTORAGE_H
