@@ -18,7 +18,13 @@ static FlatFilePos WriteBlockToDisk(ChainstateManager& chainman)
     CBlock block;
     stream >> TX_WITH_WITNESS(block);
 
+<<<<<<< HEAD
     return chainman.m_blockman.SaveBlockToDisk(block, 0);
+||||||| parent of abd7d3622abc (refactor, blockstorage: Return fatal errors from block writes)
+    return chainman.m_blockman.SaveBlockToDisk(block, 0, nullptr);
+=======
+    return *Assert(chainman.m_blockman.SaveBlockToDisk(block, 0, nullptr));
+>>>>>>> abd7d3622abc (refactor, blockstorage: Return fatal errors from block writes)
 }
 
 static void ReadBlockFromDiskTest(benchmark::Bench& bench)
