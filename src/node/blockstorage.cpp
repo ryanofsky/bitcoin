@@ -1266,6 +1266,7 @@ public:
 
 void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles)
 {
+    FlushResult<InterruptResult> result;
     ScheduleBatchPriority();
 
     {
@@ -1323,8 +1324,16 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
         // the relevant pointers before the ABC call.
         for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
             BlockValidationState state;
+<<<<<<< HEAD
             if (!chainstate->ActivateBestChain(state, nullptr)) {
                 chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
+||||||| parent of e4ba7f063ee7 (refactor, validation: Return fatal errors from activate best chain functions)
+            if (!chainstate->ActivateBestChain(state, nullptr)) {
+                chainman.GetNotifications().fatalError(strprintf("Failed to connect best block (%s)", state.ToString()));
+=======
+            if (!result.MergeFrom(chainstate->ActivateBestChain(state, nullptr))) {
+                chainman.GetNotifications().fatalError(strprintf("Failed to connect best block (%s)", state.ToString()));
+>>>>>>> e4ba7f063ee7 (refactor, validation: Return fatal errors from activate best chain functions)
                 return;
             }
         }
