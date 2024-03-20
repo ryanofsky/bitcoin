@@ -126,7 +126,7 @@ BOOST_FIXTURE_TEST_CASE(invalidate_block, TestChain100Setup)
     auto* orig_tip = active.Tip();
     int height_to_invalidate = orig_tip->nHeight - 10;
     auto* tip_to_invalidate = active[height_to_invalidate];
-    m_node.chainman->ActiveChainstate().InvalidateBlock(state, tip_to_invalidate);
+    BOOST_CHECK(m_node.chainman->ActiveChainstate().InvalidateBlock(state, tip_to_invalidate));
 
     // tip_to_invalidate just got invalidated, so it's BLOCK_FAILED_VALID
     WITH_LOCK(::cs_main, assert(tip_to_invalidate->nStatus & BLOCK_FAILED_VALID));
@@ -145,6 +145,20 @@ BOOST_FIXTURE_TEST_CASE(invalidate_block, TestChain100Setup)
         WITH_LOCK(::cs_main, assert(pindex->nStatus & BLOCK_FAILED_VALID));
         pindex = pindex->pprev;
     }
+<<<<<<< HEAD
+||||||| parent of dcd3c7058ca (refactor, validation: Return fatal errors from block connect functions)
+
+    // don't mark already invalidated block (orig_tip is BLOCK_FAILED_CHILD) with BLOCK_FAILED_VALID again
+    m_node.chainman->ActiveChainstate().InvalidateBlock(state, orig_tip);
+    WITH_LOCK(::cs_main, assert(orig_tip->nStatus & BLOCK_FAILED_CHILD));
+    WITH_LOCK(::cs_main, assert((orig_tip->nStatus & BLOCK_FAILED_VALID) == 0));
+=======
+
+    // don't mark already invalidated block (orig_tip is BLOCK_FAILED_CHILD) with BLOCK_FAILED_VALID again
+    BOOST_CHECK(m_node.chainman->ActiveChainstate().InvalidateBlock(state, orig_tip));
+    WITH_LOCK(::cs_main, assert(orig_tip->nStatus & BLOCK_FAILED_CHILD));
+    WITH_LOCK(::cs_main, assert((orig_tip->nStatus & BLOCK_FAILED_VALID) == 0));
+>>>>>>> dcd3c7058ca (refactor, validation: Return fatal errors from block connect functions)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
