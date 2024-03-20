@@ -876,7 +876,7 @@ fs::path BlockManager::GetBlockPosFilename(const FlatFilePos& pos) const
     return BlockFileSeq().FileName(pos);
 }
 
-bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown)
+FlushResult<> BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown)
 {
     FlushResult result;
     LOCK(cs_LastBlockFile);
@@ -966,8 +966,18 @@ bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigne
         bool out_of_space;
         size_t bytes_allocated = BlockFileSeq().Allocate(pos, nAddSize, out_of_space);
         if (out_of_space) {
+<<<<<<< HEAD
             m_opts.notifications.fatalError(_("Disk space is too low!"));
             return false;
+||||||| parent of f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
+            m_opts.notifications.fatalError("Disk space is too low!", _("Disk space is too low!"));
+            return false;
+=======
+            auto error{_("Disk space is too low!")};
+            m_opts.notifications.fatalError(error.original, error);
+            result.Set(util::Error{std::move(error)});
+            return result;
+>>>>>>> f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
         }
         if (bytes_allocated != 0 && IsPruneMode()) {
             m_check_for_pruning = true;
@@ -975,10 +985,10 @@ bool BlockManager::FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigne
     }
 
     m_dirty_fileinfo.insert(nFile);
-    return true;
+    return result;
 }
 
-bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize)
+util::Result<void> BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize)
 {
     pos.nFile = nFile;
 
@@ -991,13 +1001,21 @@ bool BlockManager::FindUndoPos(BlockValidationState& state, int nFile, FlatFileP
     bool out_of_space;
     size_t bytes_allocated = UndoFileSeq().Allocate(pos, nAddSize, out_of_space);
     if (out_of_space) {
+<<<<<<< HEAD
         return FatalError(m_opts.notifications, state, _("Disk space is too low!"));
+||||||| parent of f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
+        return FatalError(m_opts.notifications, state, "Disk space is too low!", _("Disk space is too low!"));
+=======
+        auto error{_("Disk space is too low!")};
+        FatalError(m_opts.notifications, state, error.original, error);
+        return util::Error(std::move(error));
+>>>>>>> f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
     }
     if (bytes_allocated != 0 && IsPruneMode()) {
         m_check_for_pruning = true;
     }
 
-    return true;
+    return {};
 }
 
 bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
@@ -1025,7 +1043,7 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
     return true;
 }
 
-bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex& block)
+FlushResult<> BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex& block)
 {
     FlushResult result;
     AssertLockHeld(::cs_main);
@@ -1035,12 +1053,23 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
     // Write undo information to disk
     if (block.GetUndoPos().IsNull()) {
         FlatFilePos _pos;
-        if (!FindUndoPos(state, block.nFile, _pos, ::GetSerializeSize(blockundo) + 40)) {
-            LogError("ConnectBlock(): FindUndoPos failed\n");
-            return false;
+        if (!(FindUndoPos(state, block.nFile, _pos, ::GetSerializeSize(blockundo) + 40) >> result)) {
+            auto error{Untranslated("FindUndoPos failed")};
+            LogError("ConnectBlock(): %s\n", error.original);
+            result.Set(util::Error{std::move(error)});
+            return result;
         }
         if (!UndoWriteToDisk(blockundo, _pos, block.pprev->GetBlockHash())) {
+<<<<<<< HEAD
             return FatalError(m_opts.notifications, state, _("Failed to write undo data."));
+||||||| parent of f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
+            return FatalError(m_opts.notifications, state, "Failed to write undo data");
+=======
+            auto error{Untranslated("Failed to write undo data")};
+            FatalError(m_opts.notifications, state, error.original);
+            result.Set(util::Error{std::move(error)});
+            return result;
+>>>>>>> f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
         }
         // rev files are written in block height order, whereas blk files are written as blocks come in (often out of order)
         // we want to flush the rev (undo) file once we've written the last block, which is indicated by the last height
@@ -1067,7 +1096,7 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
         m_dirty_blockindex.insert(&block);
     }
 
-    return true;
+    return result;
 }
 
 bool BlockManager::ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos) const
@@ -1164,30 +1193,44 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
     return true;
 }
 
-FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight, const FlatFilePos* dbp)
+FlushResult<FlatFilePos> BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight, const FlatFilePos* dbp)
 {
+    FlushResult<FlatFilePos> result;
     unsigned int nBlockSize = ::GetSerializeSize(TX_WITH_WITNESS(block));
-    FlatFilePos blockPos;
     const auto position_known {dbp != nullptr};
     if (position_known) {
-        blockPos = *dbp;
+        *result = *dbp;
     } else {
         // when known, blockPos.nPos points at the offset of the block data in the blk file. that already accounts for
         // the serialization header present in the file (the 4 magic message start bytes + the 4 length bytes = 8 bytes = BLOCK_SERIALIZATION_HEADER_SIZE).
         // we add BLOCK_SERIALIZATION_HEADER_SIZE only for new blocks since they will have the serialization header added when written to disk.
         nBlockSize += static_cast<unsigned int>(BLOCK_SERIALIZATION_HEADER_SIZE);
     }
-    if (!FindBlockPos(blockPos, nBlockSize, nHeight, block.GetBlockTime(), position_known)) {
-        LogError("%s: FindBlockPos failed\n", __func__);
-        return FlatFilePos();
+    if (!result.MergeFrom(FindBlockPos(*result, nBlockSize, nHeight, block.GetBlockTime(), position_known))) {
+        auto error{Untranslated("FindBlockPos failed")};
+        LogError("%s: %s\n", __func__, error.original);
+        result.Set(util::Error{std::move(error)});
+        return result;
     }
     if (!position_known) {
+<<<<<<< HEAD
         if (!WriteBlockToDisk(block, blockPos)) {
             m_opts.notifications.fatalError(_("Failed to write block."));
             return FlatFilePos();
+||||||| parent of f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
+        if (!WriteBlockToDisk(block, blockPos)) {
+            m_opts.notifications.fatalError("Failed to write block");
+            return FlatFilePos();
+=======
+        if (!WriteBlockToDisk(block, *result)) {
+            auto error{Untranslated("Failed to write block")};
+            m_opts.notifications.fatalError(error.original);
+            result.Set(util::Error{std::move(error)});
+            return result;
+>>>>>>> f0acd00b4ada (refactor, blockstorage: Return fatal errors from block writes)
         }
     }
-    return blockPos;
+    return result;
 }
 
 class ImportingNow
