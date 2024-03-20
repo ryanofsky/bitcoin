@@ -181,9 +181,22 @@ static RPCHelpMan testmempoolaccept()
             Chainstate& chainstate = chainman.ActiveChainstate();
             const PackageMempoolAcceptResult package_result = [&] {
                 LOCK(::cs_main);
+<<<<<<< HEAD
                 if (txns.size() > 1) return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/true, /*client_maxfeerate=*/{});
                 return PackageMempoolAcceptResult(txns[0]->GetWitnessHash(),
                                                   chainman.ProcessTransaction(txns[0], /*test_accept=*/true));
+||||||| parent of 01de47e9869e (refactor, validation: Return fatal errors from mempool accept functions)
+                if (txns.size() > 1) return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/true, /*max_sane_feerate=*/{});
+                return PackageMempoolAcceptResult(txns[0]->GetWitnessHash(),
+                                                  chainman.ProcessTransaction(txns[0], /*test_accept=*/true));
+=======
+                if (txns.size() > 1) {
+                    auto [mempool_accept, flush_result]{ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/true, /*max_sane_feerate=*/{})};
+                    return mempool_accept;
+                }
+                auto [mempool_accept, flush_result]{chainman.ProcessTransaction(txns[0], /*test_accept=*/true)};
+                return PackageMempoolAcceptResult(txns[0]->GetWitnessHash(), mempool_accept);
+>>>>>>> 01de47e9869e (refactor, validation: Return fatal errors from mempool accept functions)
             }();
 
             UniValue rpc_result(UniValue::VARR);
@@ -906,7 +919,13 @@ static RPCHelpMan submitpackage()
             NodeContext& node = EnsureAnyNodeContext(request.context);
             CTxMemPool& mempool = EnsureMemPool(node);
             Chainstate& chainstate = EnsureChainman(node).ActiveChainstate();
+<<<<<<< HEAD
             const auto package_result = WITH_LOCK(::cs_main, return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/ false, client_maxfeerate));
+||||||| parent of 01de47e9869e (refactor, validation: Return fatal errors from mempool accept functions)
+            const auto package_result = WITH_LOCK(::cs_main, return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/ false, max_sane_feerate));
+=======
+            auto [package_result, flush_result]{WITH_LOCK(::cs_main, return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/ false, max_sane_feerate))};
+>>>>>>> 01de47e9869e (refactor, validation: Return fatal errors from mempool accept functions)
 
             std::string package_msg = "success";
 
