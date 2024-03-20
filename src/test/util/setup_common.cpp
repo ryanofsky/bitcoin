@@ -68,7 +68,9 @@
 #include <functional>
 #include <stdexcept>
 
+using kernel::AbortFailure;
 using kernel::BlockTreeDB;
+using kernel::FlushResult;
 using kernel::ValidationCacheSizes;
 using node::ApplyArgsManOptions;
 using node::BlockAssembler;
@@ -393,7 +395,9 @@ CBlock TestChain100Setup::CreateAndProcessBlock(
 
     CBlock block = this->CreateBlock(txns, scriptPubKey, *chainstate);
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
-    Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr);
+    FlushResult<void, AbortFailure> process_result;
+    (void)Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr, process_result);
+    Assert(process_result);
 
     return block;
 }
