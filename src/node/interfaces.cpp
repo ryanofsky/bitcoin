@@ -81,6 +81,8 @@ using interfaces::MakeSignalHandler;
 using interfaces::Mining;
 using interfaces::Node;
 using interfaces::WalletLoader;
+using kernel::AbortFailure;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using util::Join;
 
@@ -939,7 +941,8 @@ public:
         block.hashMerkleRoot = BlockMerkleRoot(block);
 
         auto block_ptr = std::make_shared<const CBlock>(block);
-        return chainman().ProcessNewBlock(block_ptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/nullptr);
+        kernel::FlushResult<void, kernel::AbortFailure> process_result;
+        return chainman().ProcessNewBlock(block_ptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/nullptr, process_result);
     }
 
     const std::unique_ptr<CBlockTemplate> m_block_template;
@@ -987,7 +990,61 @@ public:
         return BlockRef{chainman().ActiveChain().Tip()->GetBlockHash(), chainman().ActiveChain().Tip()->nHeight};
     }
 
+<<<<<<< HEAD
     std::unique_ptr<BlockTemplate> createNewBlock(const BlockCreateOptions& options) override
+||||||| parent of eba59b3ee921 (refactor, validation: Return fatal errors from new block functions)
+    bool processNewBlock(const std::shared_ptr<const CBlock>& block, bool* new_block) override
+    {
+        return chainman().ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/new_block);
+    }
+
+    unsigned int getTransactionsUpdated() override
+    {
+        return context()->mempool->GetTransactionsUpdated();
+    }
+
+    bool testBlockValidity(const CBlock& block, bool check_merkle_root, BlockValidationState& state) override
+    {
+        LOCK(cs_main);
+        CBlockIndex* tip{chainman().ActiveChain().Tip()};
+        // Fail if the tip updated before the lock was taken
+        if (block.hashPrevBlock != tip->GetBlockHash()) {
+            state.Error("Block does not connect to current chain tip.");
+            return false;
+        }
+
+        return TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, tip, /*fCheckPOW=*/false, check_merkle_root);
+    }
+
+    std::unique_ptr<BlockTemplate> createNewBlock(const CScript& script_pub_key, const BlockCreateOptions& options) override
+=======
+    bool processNewBlock(const std::shared_ptr<const CBlock>& block, bool* new_block) override
+    {
+        FlushResult<void, AbortFailure> process_result; // Ignore flush and fatal error information, only care whether block is accepted.
+        return chainman().ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/new_block, process_result);
+    }
+
+    unsigned int getTransactionsUpdated() override
+    {
+        return context()->mempool->GetTransactionsUpdated();
+    }
+
+    bool testBlockValidity(const CBlock& block, bool check_merkle_root, BlockValidationState& state) override
+    {
+        LOCK(cs_main);
+        CBlockIndex* tip{chainman().ActiveChain().Tip()};
+        // Fail if the tip updated before the lock was taken
+        if (block.hashPrevBlock != tip->GetBlockHash()) {
+            state.Error("Block does not connect to current chain tip.");
+            return false;
+        }
+
+        FlushResult<> result{TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, tip, /*fCheckPOW=*/false, check_merkle_root)};
+        return bool{result}; // Ignore any flush warnings in the result and just return success or failure.
+    }
+
+    std::unique_ptr<BlockTemplate> createNewBlock(const CScript& script_pub_key, const BlockCreateOptions& options) override
+>>>>>>> eba59b3ee921 (refactor, validation: Return fatal errors from new block functions)
     {
         BlockAssembler::Options assemble_options{options};
         ApplyArgsManOptions(*Assert(m_node.args), assemble_options);

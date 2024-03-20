@@ -31,8 +31,14 @@
 #include <boost/test/unit_test.hpp>
 
 using namespace util::hex_literals;
+<<<<<<< HEAD
 using interfaces::BlockTemplate;
 using interfaces::Mining;
+||||||| parent of eba59b3ee921 (refactor, validation: Return fatal errors from new block functions)
+=======
+using kernel::AbortFailure;
+using kernel::FlushResult;
+>>>>>>> eba59b3ee921 (refactor, validation: Return fatal errors from new block functions)
 using node::BlockAssembler;
 
 namespace miner_tests {
@@ -693,6 +699,7 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
             block.hashMerkleRoot = BlockMerkleRoot(block);
             block.nNonce = bi.nonce;
         }
+<<<<<<< HEAD
         std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
         // Alternate calls between Chainman's ProcessNewBlock and submitSolution
         // via the Mining interface. The former is used by net_processing as well
@@ -711,6 +718,17 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
         }
         // This just adds coverage
         mining->waitTipChanged(block.hashPrevBlock);
+||||||| parent of eba59b3ee921 (refactor, validation: Return fatal errors from new block functions)
+        std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
+        BOOST_CHECK(Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr));
+        pblock->hashPrevBlock = pblock->GetHash();
+=======
+        std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(*pblock);
+        FlushResult<void, AbortFailure> process_result;
+        BOOST_CHECK(Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr, process_result));
+        BOOST_CHECK(process_result);
+        pblock->hashPrevBlock = pblock->GetHash();
+>>>>>>> eba59b3ee921 (refactor, validation: Return fatal errors from new block functions)
     }
 
     LOCK(cs_main);
