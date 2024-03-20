@@ -1305,8 +1305,17 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
             if (file.IsNull()) {
                 break; // This error is logged in OpenBlockFile
             }
+<<<<<<< HEAD
             LogInfo("Reindexing block file blk%05u.dat (%d%% complete)...", (unsigned int)nFile, nFile * 100 / total_files);
             chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+||||||| parent of 54da9b8f4cd (refactor, validation: Return fatal errors from new block functions)
+            LogInfo("Reindexing block file blk%05u.dat...", (unsigned int)nFile);
+            chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+=======
+            LogInfo("Reindexing block file blk%05u.dat...", (unsigned int)nFile);
+            // Ignore failure value, do not treat flush error as failure.
+            chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent) >> result;
+>>>>>>> 54da9b8f4cd (refactor, validation: Return fatal errors from new block functions)
             if (chainman.m_interrupt) {
                 LogInfo("Interrupt requested. Exit reindexing.");
                 return;
@@ -1316,7 +1325,8 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
         chainman.m_blockman.m_blockfiles_indexed = true;
         LogInfo("Reindexing finished");
         // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
-        chainman.ActiveChainstate().LoadGenesisBlock();
+        // Ignore failure value, do not treat flush error as failure.
+        chainman.ActiveChainstate().LoadGenesisBlock() >> result;
     }
 
     // -loadblock=
@@ -1324,7 +1334,8 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
         AutoFile file{fsbridge::fopen(path, "rb")};
         if (!file.IsNull()) {
             LogInfo("Importing blocks file %s...", fs::PathToString(path));
-            chainman.LoadExternalBlockFile(file);
+            // Ignore failure value, do not treat flush error as failure.
+            chainman.LoadExternalBlockFile(file) >> result;
             if (chainman.m_interrupt) {
                 LogInfo("Interrupt requested. Exit block importing.");
                 return;

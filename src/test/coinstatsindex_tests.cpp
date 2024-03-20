@@ -13,8 +13,15 @@
 
 #include <boost/test/unit_test.hpp>
 
+<<<<<<< HEAD
 using kernel::ChainstateRole;
 
+||||||| parent of 54da9b8f4cd (refactor, validation: Return fatal errors from new block functions)
+=======
+using kernel::AbortFailure;
+using kernel::FlushResult;
+
+>>>>>>> 54da9b8f4cd (refactor, validation: Return fatal errors from new block functions)
 BOOST_AUTO_TEST_SUITE(coinstatsindex_tests)
 
 BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
@@ -97,7 +104,9 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_unclean_shutdown, TestChain100Setup)
             LOCK(cs_main);
             BlockValidationState state;
             BOOST_CHECK(CheckBlock(block, state, params.GetConsensus()));
-            BOOST_CHECK(m_node.chainman->AcceptBlock(new_block, state, &new_block_index, true, nullptr, nullptr, true));
+            FlushResult<void, AbortFailure> accept_result;
+            BOOST_CHECK(m_node.chainman->AcceptBlock(new_block, accept_result, state, &new_block_index, true, nullptr, nullptr, true));
+            BOOST_CHECK(accept_result);
             CCoinsViewCache view(&chainstate.CoinsTip());
             BOOST_CHECK(chainstate.ConnectBlock(block, state, new_block_index, view));
         }
