@@ -1331,7 +1331,14 @@ public:
 
 void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles)
 {
+<<<<<<< HEAD
     ImportingNow imp{chainman.m_blockman.m_importing};
+||||||| parent of 901ccdc42910 (refactor, validation: Return fatal errors from activate best chain functions)
+    ScheduleBatchPriority();
+=======
+    FlushResult<InterruptResult, AbortFailure> result;
+    ScheduleBatchPriority();
+>>>>>>> 901ccdc42910 (refactor, validation: Return fatal errors from activate best chain functions)
 
     // -reindex
     if (!chainman.m_blockman.m_blockfiles_indexed) {
@@ -1348,10 +1355,36 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
             if (file.IsNull()) {
                 break; // This error is logged in OpenBlockFile
             }
+<<<<<<< HEAD
             LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
             chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
             if (chainman.m_interrupt) {
                 LogPrintf("Interrupt requested. Exit %s\n", __func__);
+||||||| parent of 901ccdc42910 (refactor, validation: Return fatal errors from activate best chain functions)
+        }
+
+        // scan for better chains in the block chain database, that are not yet connected in the active best chain
+
+        // We can't hold cs_main during ActivateBestChain even though we're accessing
+        // the chainman unique_ptrs since ABC requires us not to be holding cs_main, so retrieve
+        // the relevant pointers before the ABC call.
+        for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+            BlockValidationState state;
+            if (!chainstate->ActivateBestChain(state, nullptr)) {
+                chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
+=======
+        }
+
+        // scan for better chains in the block chain database, that are not yet connected in the active best chain
+
+        // We can't hold cs_main during ActivateBestChain even though we're accessing
+        // the chainman unique_ptrs since ABC requires us not to be holding cs_main, so retrieve
+        // the relevant pointers before the ABC call.
+        for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+            BlockValidationState state;
+            if (!(chainstate->ActivateBestChain(state, nullptr) >> result)) {
+                chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
+>>>>>>> 901ccdc42910 (refactor, validation: Return fatal errors from activate best chain functions)
                 return;
             }
             nFile++;
