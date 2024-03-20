@@ -1347,8 +1347,17 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
             if (file.IsNull()) {
                 break; // This error is logged in OpenBlockFile
             }
+<<<<<<< HEAD
             LogInfo("Reindexing block file blk%05u.dat...", (unsigned int)nFile);
             chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+||||||| parent of cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
+            LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
+            chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+=======
+            LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
+            // Ignore failure value, do not treat flush error as failure.
+            chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent) >> result;
+>>>>>>> cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
             if (chainman.m_interrupt) {
                 LogInfo("Interrupt requested. Exit reindexing.");
                 return;
@@ -1359,15 +1368,25 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
         chainman.m_blockman.m_blockfiles_indexed = true;
         LogInfo("Reindexing finished");
         // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
-        chainman.ActiveChainstate().LoadGenesisBlock();
+        // Ignore failure value, do not treat flush error as failure.
+        chainman.ActiveChainstate().LoadGenesisBlock() >> result;
     }
 
     // -loadblock=
     for (const fs::path& path : import_paths) {
         AutoFile file{fsbridge::fopen(path, "rb")};
         if (!file.IsNull()) {
+<<<<<<< HEAD
             LogInfo("Importing blocks file %s...", fs::PathToString(path));
             chainman.LoadExternalBlockFile(file);
+||||||| parent of cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
+            LogPrintf("Importing blocks file %s...\n", fs::PathToString(path));
+            chainman.LoadExternalBlockFile(file);
+=======
+            LogPrintf("Importing blocks file %s...\n", fs::PathToString(path));
+            // Ignore failure value, do not treat flush error as failure.
+            chainman.LoadExternalBlockFile(file) >> result;
+>>>>>>> cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
             if (chainman.m_interrupt) {
                 LogInfo("Interrupt requested. Exit block importing.");
                 return;

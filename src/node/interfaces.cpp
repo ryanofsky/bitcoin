@@ -81,6 +81,8 @@ using interfaces::MakeSignalHandler;
 using interfaces::Mining;
 using interfaces::Node;
 using interfaces::WalletLoader;
+using kernel::AbortFailure;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using node::BlockWaitOptions;
 using util::Join;
@@ -923,8 +925,45 @@ public:
 
     bool submitSolution(uint32_t version, uint32_t timestamp, uint32_t nonce, CTransactionRef coinbase) override
     {
+<<<<<<< HEAD
         AddMerkleRootAndCoinbase(m_block_template->block, std::move(coinbase), version, timestamp, nonce);
         return chainman().ProcessNewBlock(std::make_shared<const CBlock>(m_block_template->block), /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/nullptr);
+||||||| parent of cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
+        CBlock block{m_block_template->block};
+
+        if (block.vtx.size() == 0) {
+            block.vtx.push_back(coinbase);
+        } else {
+            block.vtx[0] = coinbase;
+        }
+
+        block.nVersion = version;
+        block.nTime = timestamp;
+        block.nNonce = nonce;
+
+        block.hashMerkleRoot = BlockMerkleRoot(block);
+
+        auto block_ptr = std::make_shared<const CBlock>(block);
+        return chainman().ProcessNewBlock(block_ptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/nullptr);
+=======
+        CBlock block{m_block_template->block};
+
+        if (block.vtx.size() == 0) {
+            block.vtx.push_back(coinbase);
+        } else {
+            block.vtx[0] = coinbase;
+        }
+
+        block.nVersion = version;
+        block.nTime = timestamp;
+        block.nNonce = nonce;
+
+        block.hashMerkleRoot = BlockMerkleRoot(block);
+
+        auto block_ptr = std::make_shared<const CBlock>(block);
+        FlushResult<void, AbortFailure> process_result; // Ignore flush and fatal error information, only care whether block is accepted.
+        return chainman().ProcessNewBlock(block_ptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/nullptr, process_result);
+>>>>>>> cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
     }
 
     std::unique_ptr<BlockTemplate> waitNext(BlockWaitOptions options) override

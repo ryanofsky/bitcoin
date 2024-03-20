@@ -17,8 +17,14 @@
 #include <validationinterface.h>
 #include <versionbits.h>
 
+<<<<<<< HEAD
 #include <algorithm>
 
+||||||| parent of cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
+=======
+using kernel::AbortFailure;
+using kernel::FlushResult;
+>>>>>>> cd5b36714bcd (refactor, validation: Return fatal errors from new block functions)
 using node::BlockAssembler;
 using node::NodeContext;
 
@@ -107,7 +113,9 @@ COutPoint ProcessBlock(const NodeContext& node, const std::shared_ptr<CBlock>& b
     bool new_block;
     BlockValidationStateCatcher bvsc{block->GetHash()};
     node.validation_signals->RegisterValidationInterface(&bvsc);
-    const bool processed{chainman.ProcessNewBlock(block, true, true, &new_block)};
+    FlushResult<void, AbortFailure> process_result;
+    const bool processed{chainman.ProcessNewBlock(block, true, true, &new_block, process_result)};
+    assert(process_result);
     const bool duplicate{!new_block && processed};
     assert(!duplicate);
     node.validation_signals->UnregisterValidationInterface(&bvsc);
