@@ -1264,7 +1264,7 @@ public:
     }
 };
 
-void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles)
+FlushResult<InterruptResult> ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles)
 {
     FlushResult<InterruptResult> result;
     ScheduleBatchPriority();
@@ -1292,7 +1292,8 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
                 (void)result.MergeFrom(chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent));
                 if (chainman.m_interrupt) {
                     LogPrintf("Interrupt requested. Exit %s\n", __func__);
-                    return;
+                    result.Set(Interrupted{});
+                    return result;
                 }
                 nFile++;
             }
@@ -1313,7 +1314,8 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
                 (void)result.MergeFrom(chainman.LoadExternalBlockFile(file));
                 if (chainman.m_interrupt) {
                     LogPrintf("Interrupt requested. Exit %s\n", __func__);
-                    return;
+                    result.Set(Interrupted{});
+                    return result;
                 }
             } else {
                 LogPrintf("Warning: Could not open blocks file %s\n", fs::PathToString(path));
@@ -1335,12 +1337,23 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
                 chainman.GetNotifications().fatalError(strprintf("Failed to connect best block (%s)", state.ToString()));
 =======
             if (!result.MergeFrom(chainstate->ActivateBestChain(state, nullptr))) {
+<<<<<<< HEAD
                 chainman.GetNotifications().fatalError(strprintf("Failed to connect best block (%s)", state.ToString()));
 >>>>>>> e4ba7f063ee7 (refactor, validation: Return fatal errors from activate best chain functions)
                 return;
+||||||| parent of c2ae3ec2c859 (refactor, blockstorage: Return fatal error from ImportBlocks)
+                chainman.GetNotifications().fatalError(strprintf("Failed to connect best block (%s)", state.ToString()));
+                return;
+=======
+                auto error{Untranslated(strprintf("Failed to connect best block (%s)", state.ToString()))};;
+                chainman.GetNotifications().fatalError(error.original);
+                result.Set(util::Error{std::move(error)});
+                return result;
+>>>>>>> c2ae3ec2c859 (refactor, blockstorage: Return fatal error from ImportBlocks)
             }
         }
     } // End scope of ImportingNow
+    return result;
 }
 
 std::ostream& operator<<(std::ostream& os, const BlockfileType& type) {
