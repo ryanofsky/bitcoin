@@ -68,6 +68,7 @@ BOOST_AUTO_TEST_SUITE(baseindex_tests)
 BOOST_FIXTURE_TEST_CASE(baseindex_no_commit_ahead_of_flush, TestChain100Setup)
 {
     Chainstate& chainstate = Assert(m_node.chainman)->ActiveChainstate();
+<<<<<<< HEAD
     for (const auto& [index_name, make_index] : INDEX_FACTORIES) {
         BOOST_TEST_INFO_SCOPE(index_name);
         const int tip_height{WITH_LOCK(cs_main, return m_node.chainman->ActiveChain().Tip()->nHeight)};
@@ -203,6 +204,23 @@ BOOST_FIXTURE_TEST_CASE(index_reorg_crash, TestChain100Setup)
                 return;
             }
             std::this_thread::sleep_for(100ms);
+||||||| parent of 6dc2c1376a7 (refactor, validation: Return fatal errors from FlushStateToDisk)
+    auto sync_index = [&](bool do_flush, int expected_sync_height, int expected_commit_height) {
+        CoinStatsIndex index{interfaces::MakeChain(m_node), /*n_cache_size=*/1_MiB};
+        BOOST_REQUIRE(index.Init());
+        index.Sync();
+        if (do_flush) {
+            chainstate.ForceFlushStateToDisk();
+            m_node.chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
+=======
+    auto sync_index = [&](bool do_flush, int expected_sync_height, int expected_commit_height) {
+        CoinStatsIndex index{interfaces::MakeChain(m_node), /*n_cache_size=*/1_MiB};
+        BOOST_REQUIRE(index.Init());
+        index.Sync();
+        if (do_flush) {
+            BOOST_CHECK(chainstate.ForceFlushStateToDisk());
+            m_node.chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
+>>>>>>> 6dc2c1376a7 (refactor, validation: Return fatal errors from FlushStateToDisk)
         }
     };
 
