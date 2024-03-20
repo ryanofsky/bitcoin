@@ -770,7 +770,7 @@ public:
      *
      * @returns true unless a system error occurred
      */
-    bool ActivateBestChain(
+    [[nodiscard]] kernel::FlushResult<> ActivateBestChain(
         BlockValidationState& state,
         std::shared_ptr<const CBlock> pblock = nullptr)
         EXCLUSIVE_LOCKS_REQUIRED(!m_chainstate_mutex)
@@ -790,7 +790,7 @@ public:
      *
      * May not be called in a validationinterface callback.
      */
-    bool PreciousBlock(BlockValidationState& state, CBlockIndex* pindex)
+    [[nodiscard]] kernel::FlushResult<> PreciousBlock(BlockValidationState& state, CBlockIndex* pindex)
         EXCLUSIVE_LOCKS_REQUIRED(!m_chainstate_mutex)
         LOCKS_EXCLUDED(::cs_main);
 
@@ -853,6 +853,7 @@ public:
 
 protected:
 <<<<<<< HEAD
+<<<<<<< HEAD
     bool ActivateBestChainStep(BlockValidationState& state, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, std::vector<ConnectedBlock>& connected_blocks) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_mempool->cs);
     bool ConnectTip(
 ||||||| parent of 7636dc1201d (refactor, validation: Return fatal errors from block connect functions)
@@ -860,6 +861,11 @@ protected:
     bool ConnectTip(
 =======
     bool ActivateBestChainStep(BlockValidationState& state, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_mempool->cs);
+||||||| parent of 8f440a77502 (refactor, validation: Return fatal errors from activate best chain functions)
+    bool ActivateBestChainStep(BlockValidationState& state, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_mempool->cs);
+=======
+    [[nodiscard]] kernel::FlushResult<void, kernel::AbortFailure> ActivateBestChainStep(BlockValidationState& state, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_mempool->cs);
+>>>>>>> 8f440a77502 (refactor, validation: Return fatal errors from activate best chain functions)
     [[nodiscard]] kernel::FlushResult<void, kernel::AbortFailure> ConnectTip(
 >>>>>>> 7636dc1201d (refactor, validation: Return fatal errors from block connect functions)
         BlockValidationState& state,
