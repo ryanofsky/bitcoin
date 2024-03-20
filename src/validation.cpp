@@ -79,6 +79,9 @@ using kernel::CCoinsStats;
 using kernel::CoinStatsHashType;
 using kernel::ComputeUTXOStats;
 using kernel::FlushResult;
+using kernel::Interrupted;
+using kernel::InterruptResult;
+using kernel::IsInterrupted;
 using kernel::Notifications;
 
 using fsbridge::FopenFn;
@@ -4783,14 +4786,15 @@ void Chainstate::ClearBlockIndexCandidates()
     setBlockIndexCandidates.clear();
 }
 
-bool ChainstateManager::LoadBlockIndex()
+util::Result<InterruptResult> ChainstateManager::LoadBlockIndex()
 {
     AssertLockHeld(cs_main);
+    util::Result<InterruptResult> result;
     // Load block index from databases
     bool needs_init = fReindex;
     if (!fReindex) {
-        bool ret{m_blockman.LoadBlockIndexDB(SnapshotBlockhash())};
-        if (!ret) return false;
+        result.Set(m_blockman.LoadBlockIndexDB(SnapshotBlockhash()));
+        if (!result || IsInterrupted(*result)) return result;
 
         m_blockman.ScanAndUnlinkAlreadyPrunedFiles();
 
@@ -4799,7 +4803,10 @@ bool ChainstateManager::LoadBlockIndex()
                   CBlockIndexHeightOnlyComparator());
 
         for (CBlockIndex* pindex : vSortedByHeight) {
-            if (m_interrupt) return false;
+            if (m_interrupt) {
+                result.Set(Interrupted{});
+                return result;
+            }
             // If we have an assumeutxo-based chainstate, then the snapshot
             // block will be a candidate for the tip, but it may not be
             // VALID_TRANSACTIONS (eg if we haven't yet downloaded the block),
@@ -4832,7 +4839,7 @@ bool ChainstateManager::LoadBlockIndex()
 
         LogPrintf("Initializing databases...\n");
     }
-    return true;
+    return result;
 }
 
 bool Chainstate::LoadGenesisBlock()
