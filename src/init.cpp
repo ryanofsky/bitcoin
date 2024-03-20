@@ -2051,6 +2051,7 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     node.background_init_thread = std::thread(&util::TraceThread, "initload", [=, &chainman, &args, &kernel_notifications, &node] {
         ScheduleBatchPriority();
         // Import blocks and ActivateBestChain()
+<<<<<<< HEAD
         ImportBlocks(chainman, vImportFiles);
         // An interrupted import may return without activating genesis. Wake
         // the init thread's genesis wait, which is otherwise only notified
@@ -2058,6 +2059,11 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         // before activating genesis. This wakeup lets the wait observe the
         // shutdown request.
         WITH_LOCK(kernel_notifications.m_tip_block_mutex, kernel_notifications.m_tip_block_cv.notify_all());
+||||||| parent of 94174cfeda6 (refactor, blockstorage: Return fatal error from ImportBlocks)
+        ImportBlocks(chainman, vImportFiles);
+=======
+        (void)ImportBlocks(chainman, vImportFiles);
+>>>>>>> 94174cfeda6 (refactor, blockstorage: Return fatal error from ImportBlocks)
         WITH_LOCK(::cs_main, chainman.UpdateIBDStatus());
         if (args.GetBoolArg("-stopafterblockimport", DEFAULT_STOPAFTERBLOCKIMPORT)) {
             LogInfo("Stopping after block import");
