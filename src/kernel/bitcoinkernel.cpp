@@ -1006,9 +1006,28 @@ btck_ChainstateManager* btck_chainstate_manager_create(
             LogError("Failed to verify loaded chain state from your datadir: %s", util::ErrorString(load_result).original);
             return nullptr;
         }
+<<<<<<< HEAD
         if (auto result = chainman->ActivateBestChains(); !result) {
             LogError("%s", util::ErrorString(result).original);
             return nullptr;
+||||||| parent of 495eb44f8a8 (refactor, validation: Return fatal errors from activate best chain functions)
+
+        for (Chainstate* chainstate : WITH_LOCK(chainman->GetMutex(), return chainman->GetAll())) {
+            BlockValidationState state;
+            if (!chainstate->ActivateBestChain(state, nullptr)) {
+                LogError("Failed to connect best block: %s", state.ToString());
+                return nullptr;
+            }
+=======
+
+        for (Chainstate* chainstate : WITH_LOCK(chainman->GetMutex(), return chainman->GetAll())) {
+            BlockValidationState state;
+            auto activate_result{chainstate->ActivateBestChain(state, nullptr)};
+            if (!activate_result) {
+                LogError("Failed to connect best block: %s", state.ToString());
+                return nullptr;
+            }
+>>>>>>> 495eb44f8a8 (refactor, validation: Return fatal errors from activate best chain functions)
         }
     } catch (const std::exception& e) {
         LogError("Failed to load chainstate: %s", e.what());

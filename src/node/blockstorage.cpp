@@ -1285,6 +1285,7 @@ public:
 
 void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_paths)
 {
+    FlushResult<InterruptResult, AbortFailure> result; // TODO Return this result!
     ImportingNow imp{chainman.m_blockman.m_importing};
 
     // -reindex
@@ -1334,8 +1335,32 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
     }
 
     // scan for better chains in the block chain database, that are not yet connected in the active best chain
+<<<<<<< HEAD
     if (auto result = chainman.ActivateBestChains(); !result) {
         chainman.GetNotifications().fatalError(util::ErrorString(result));
+||||||| parent of 495eb44f8a8 (refactor, validation: Return fatal errors from activate best chain functions)
+
+    // We can't hold cs_main during ActivateBestChain even though we're accessing
+    // the chainman unique_ptrs since ABC requires us not to be holding cs_main, so retrieve
+    // the relevant pointers before the ABC call.
+    for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+        BlockValidationState state;
+        if (!chainstate->ActivateBestChain(state, nullptr)) {
+            chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
+            return;
+        }
+=======
+
+    // We can't hold cs_main during ActivateBestChain even though we're accessing
+    // the chainman unique_ptrs since ABC requires us not to be holding cs_main, so retrieve
+    // the relevant pointers before the ABC call.
+    for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+        BlockValidationState state;
+        if (!(chainstate->ActivateBestChain(state, nullptr) >> result)) {
+            chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
+            return;
+        }
+>>>>>>> 495eb44f8a8 (refactor, validation: Return fatal errors from activate best chain functions)
     }
     // End scope of ImportingNow
 }
