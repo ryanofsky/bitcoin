@@ -180,7 +180,7 @@ private:
      * per index entry (nStatus, nChainWork, nTimeMax, etc.) as well as peripheral
      * collections like m_dirty_blockindex.
      */
-    bool LoadBlockIndex(const std::optional<uint256>& snapshot_blockhash)
+    [[nodiscard]] util::Result<kernel::InterruptResult> LoadBlockIndexData(const std::optional<uint256>& snapshot_blockhash)
         EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     /** Return false if block file or undo file flushing fails. */
@@ -320,7 +320,7 @@ public:
     std::unique_ptr<BlockTreeDB> m_block_tree_db GUARDED_BY(::cs_main);
 
     bool WriteBlockIndexDB() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
-    bool LoadBlockIndexDB(const std::optional<uint256>& snapshot_blockhash)
+    [[nodiscard]] util::Result<kernel::InterruptResult> LoadBlockIndexDB(const std::optional<uint256>& snapshot_blockhash)
         EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     /**

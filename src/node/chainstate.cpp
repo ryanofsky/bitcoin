@@ -69,6 +69,7 @@ static util::Result<InterruptResult, ChainstateLoadError> CompleteChainstateInit
     // block file from disk.
     // Note that it also sets fReindex global based on the disk flag!
     // From here on, fReindex and options.reindex values may be different!
+<<<<<<< HEAD
     if (!chainman.LoadBlockIndex()) {
         if (chainman.m_interrupt) {
             result.Update(Interrupted{});
@@ -76,6 +77,17 @@ static util::Result<InterruptResult, ChainstateLoadError> CompleteChainstateInit
             result.Update({util::Error{_("Error loading block database")}, ChainstateLoadError::FAILURE});
         }
         return result;
+||||||| parent of a94681d1da23 (refactor, blockstorage: Return fatal error from LoadBlockIndex)
+    if (!chainman.LoadBlockIndex()) {
+        if (chainman.m_interrupt) return {util::Error{}, ChainstateLoadError::INTERRUPTED};
+        return {util::Error{_("Error loading block database")}, ChainstateLoadError::FAILURE};
+=======
+    auto load_result{chainman.LoadBlockIndex()};
+    if (!load_result) {
+        return {util::Error{_("Error loading block database")}, ChainstateLoadError::FAILURE};
+    } else if (IsInterrupted(*load_result) || chainman.m_interrupt) {
+        return {util::Error{}, ChainstateLoadError::INTERRUPTED};
+>>>>>>> a94681d1da23 (refactor, blockstorage: Return fatal error from LoadBlockIndex)
     }
 
     if (!chainman.BlockIndex().empty() &&
