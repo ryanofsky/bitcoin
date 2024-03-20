@@ -54,6 +54,13 @@
 using namespace util::hex_literals;
 using interfaces::BlockTemplate;
 using interfaces::Mining;
+<<<<<<< HEAD
+||||||| parent of d555f9b1278 (refactor, validation: Return fatal errors from new block functions)
+using node::BlockAssembler;
+=======
+using kernel::FlushResult;
+using node::BlockAssembler;
+>>>>>>> d555f9b1278 (refactor, validation: Return fatal errors from new block functions)
 using node::BlockCreateOptions;
 
 namespace miner_tests {

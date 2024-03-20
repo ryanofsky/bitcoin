@@ -25,6 +25,7 @@
 #include <interfaces/rpc.h>
 #include <interfaces/types.h>
 #include <kernel/context.h>
+#include <kernel/result.h>
 #include <key.h>
 #include <logging.h>
 #include <mapport.h>
@@ -97,6 +98,13 @@ using interfaces::Node;
 using interfaces::Rpc;
 using interfaces::WalletLoader;
 using kernel::ChainstateRole;
+<<<<<<< HEAD
+||||||| parent of d555f9b1278 (refactor, validation: Return fatal errors from new block functions)
+using node::BlockAssembler;
+=======
+using kernel::FlushResult;
+using node::BlockAssembler;
+>>>>>>> d555f9b1278 (refactor, validation: Return fatal errors from new block functions)
 using node::BlockCreateOptions;
 using node::BlockWaitOptions;
 using node::CoinbaseTx;
@@ -1001,7 +1009,10 @@ public:
     bool checkBlock(const CBlock& block, const node::BlockCheckOptions& options, std::string& reason, std::string& debug) override
     {
         LOCK(chainman().GetMutex());
-        BlockValidationState state{TestBlockValidity(chainman().ActiveChainstate(), block, /*check_pow=*/options.check_pow, /*check_merkle_root=*/options.check_merkle_root)};
+        BlockValidationState state;
+        if (auto result{TestBlockValidity(chainman().ActiveChainstate(), block, /*check_pow=*/options.check_pow, /*check_merkle_root=*/options.check_merkle_root)}; !result) {
+            state = std::move(result.error());
+        }
         reason = state.GetRejectReason();
         debug = state.GetDebugMessage();
         return state.IsValid();
