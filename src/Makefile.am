@@ -195,6 +195,13 @@ BITCOIN_CORE_H = \
   kernel/mempool_removal_reason.h \
   kernel/messagestartchars.h \
   kernel/notifications_interface.h \
+<<<<<<< HEAD
+||||||| parent of 0cc7f1f51f07 (refactor, kernel: Add FlushStatus / FlushResult types)
+  kernel/validation_cache_sizes.h \
+=======
+  kernel/result.h \
+  kernel/validation_cache_sizes.h \
+>>>>>>> 0cc7f1f51f07 (refactor, kernel: Add FlushStatus / FlushResult types)
   kernel/warning.h \
   key.h \
   key_io.h \
