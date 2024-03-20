@@ -64,7 +64,15 @@
 #include <functional>
 #include <stdexcept>
 
+using kernel::AbortFailure;
 using kernel::BlockTreeDB;
+<<<<<<< HEAD
+||||||| parent of 812922d81d3a (refactor, validation: Return fatal errors from new block functions)
+using kernel::ValidationCacheSizes;
+=======
+using kernel::FlushResult;
+using kernel::ValidationCacheSizes;
+>>>>>>> 812922d81d3a (refactor, validation: Return fatal errors from new block functions)
 using node::ApplyArgsManOptions;
 using node::BlockAssembler;
 using node::BlockManager;
@@ -394,7 +402,9 @@ CBlock TestChain100Setup::CreateAndProcessBlock(
 
     CBlock block = this->CreateBlock(txns, scriptPubKey, *chainstate);
     std::shared_ptr<const CBlock> shared_pblock = std::make_shared<const CBlock>(block);
-    Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr);
+    FlushResult<void, AbortFailure> process_result;
+    (void)Assert(m_node.chainman)->ProcessNewBlock(shared_pblock, true, true, nullptr, process_result);
+    Assert(process_result);
 
     return block;
 }

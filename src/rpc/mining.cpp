@@ -44,6 +44,8 @@
 #include <memory>
 #include <stdint.h>
 
+using kernel::AbortFailure;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using node::CBlockTemplate;
 using interfaces::Mining;
@@ -149,7 +151,14 @@ static bool GenerateBlock(ChainstateManager& chainman, Mining& miner, CBlock& bl
 
     if (!process_new_block) return true;
 
+<<<<<<< HEAD
     if (!miner.processNewBlock(block_out, nullptr)) {
+||||||| parent of 812922d81d3a (refactor, validation: Return fatal errors from new block functions)
+    if (!chainman.ProcessNewBlock(block_out, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr)) {
+=======
+    FlushResult<void, AbortFailure> process_result;
+    if (!chainman.ProcessNewBlock(block_out, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr, process_result)) {
+>>>>>>> 812922d81d3a (refactor, validation: Return fatal errors from new block functions)
         throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
     }
 
@@ -1056,7 +1065,14 @@ static RPCHelpMan submitblock()
     bool new_block;
     auto sc = std::make_shared<submitblock_StateCatcher>(block.GetHash());
     CHECK_NONFATAL(chainman.m_options.signals)->RegisterSharedValidationInterface(sc);
+<<<<<<< HEAD
     bool accepted = miner.processNewBlock(blockptr, /*new_block=*/&new_block);
+||||||| parent of 812922d81d3a (refactor, validation: Return fatal errors from new block functions)
+    bool accepted = chainman.ProcessNewBlock(blockptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/&new_block);
+=======
+    FlushResult<void, AbortFailure> process_result;
+    bool accepted = chainman.ProcessNewBlock(blockptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/&new_block, process_result);
+>>>>>>> 812922d81d3a (refactor, validation: Return fatal errors from new block functions)
     CHECK_NONFATAL(chainman.m_options.signals)->UnregisterSharedValidationInterface(sc);
     if (!new_block && accepted) {
         return "duplicate";
