@@ -431,7 +431,13 @@ public:
     void CleanupBlockRevFiles() const;
 };
 
+<<<<<<< HEAD
 void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_paths);
+||||||| parent of c5db278e19e2 (refactor, blockstorage: Return fatal error from ImportBlocks)
+void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles);
+=======
+[[nodiscard]] kernel::FlushResult<kernel::InterruptResult, kernel::AbortFailure> ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFiles);
+>>>>>>> c5db278e19e2 (refactor, blockstorage: Return fatal error from ImportBlocks)
 } // namespace node
 
 #endif // BITCOIN_NODE_BLOCKSTORAGE_H
