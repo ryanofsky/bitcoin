@@ -52,6 +52,8 @@
 using namespace util::hex_literals;
 using interfaces::BlockTemplate;
 using interfaces::Mining;
+using kernel::AbortFailure;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using node::BlockCreateOptions;
 

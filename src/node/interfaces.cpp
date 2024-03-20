@@ -94,7 +94,9 @@ using interfaces::Mining;
 using interfaces::Node;
 using interfaces::Rpc;
 using interfaces::WalletLoader;
+using kernel::AbortFailure;
 using kernel::ChainstateRole;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using node::BlockCreateOptions;
 using node::BlockWaitOptions;
@@ -1017,7 +1019,10 @@ public:
     bool checkBlock(const CBlock& block, const node::BlockCheckOptions& options, std::string& reason, std::string& debug) override
     {
         LOCK(chainman().GetMutex());
-        BlockValidationState state{TestBlockValidity(chainman().ActiveChainstate(), block, /*check_pow=*/options.check_pow, /*check_merkle_root=*/options.check_merkle_root)};
+        BlockValidationState state;
+        if (auto result{TestBlockValidity(chainman().ActiveChainstate(), block, /*check_pow=*/options.check_pow, /*check_merkle_root=*/options.check_merkle_root)}; !result) {
+            state = std::move(result.error());
+        }
         reason = state.GetRejectReason();
         debug = state.GetDebugMessage();
         return state.IsValid();

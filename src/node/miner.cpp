@@ -229,8 +229,8 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     pblock->nNonce         = 0;
 
     if (m_options.test_block_validity) {
-        if (BlockValidationState state{TestBlockValidity(m_chainstate, *pblock, /*check_pow=*/false, /*check_merkle_root=*/false)}; !state.IsValid()) {
-            throw std::runtime_error(strprintf("TestBlockValidity failed: %s", state.ToString()));
+        if (auto result{TestBlockValidity(m_chainstate, *pblock, /*check_pow=*/false, /*check_merkle_root=*/false)}; !result) {
+            throw std::runtime_error(strprintf("TestBlockValidity failed: %s", result.error().ToString()));
         }
     }
     const auto time_2{SteadyClock::now()};
@@ -395,7 +395,8 @@ bool SubmitBlock(ChainstateManager& chainman, const std::shared_ptr<const CBlock
     // behavior.
     auto sc = std::make_shared<SubmitBlockStateCatcher>(block->GetHash());
     CHECK_NONFATAL(chainman.m_options.signals)->RegisterSharedValidationInterface(sc);
-    bool accepted = chainman.ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/new_block);
+    kernel::FlushResult<void, kernel::AbortFailure> process_result; // Ignore flush and fatal error information, only care whether block is accepted.
+    bool accepted = chainman.ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/new_block, process_result);
     CHECK_NONFATAL(chainman.m_options.signals)->UnregisterSharedValidationInterface(sc);
 
     if (new_block && !*new_block && accepted) {
