@@ -22,6 +22,10 @@
 #include <cstdint>
 #include <memory>
 
+using kernel::AbortFailure;
+using kernel::FlushResult;
+
+
 BOOST_FIXTURE_TEST_SUITE(peerman_tests, RegTestingSetup)
 
 /** Window, in blocks, for connecting to NODE_NETWORK_LIMITED peers */
@@ -37,8 +41,18 @@ static void mineBlock(node::NodeContext& node, FakeNodeClock& clock, std::chrono
     CBlock block{block_template->getBlock()};
     while (!CheckProofOfWork(block.GetHash(), block.nBits, node.chainman->GetConsensus())) ++block.nNonce;
     block.fChecked = true; // little speedup
+<<<<<<< HEAD
     clock.set(curr_time); // process block at current time
     Assert(node.chainman->ProcessNewBlock(std::make_shared<const CBlock>(block), /*force_processing=*/true, /*min_pow_checked=*/true, nullptr));
+||||||| parent of 400d6e8de16 (refactor, validation: Return fatal errors from new block functions)
+    SetMockTime(curr_time); // process block at current time
+    Assert(node.chainman->ProcessNewBlock(std::make_shared<const CBlock>(block), /*force_processing=*/true, /*min_pow_checked=*/true, nullptr));
+=======
+    SetMockTime(curr_time); // process block at current time
+    FlushResult<void, AbortFailure> process_result;
+    Assert(node.chainman->ProcessNewBlock(std::make_shared<const CBlock>(block), /*force_processing=*/true, /*min_pow_checked=*/true, nullptr, process_result));
+    Assert(process_result);
+>>>>>>> 400d6e8de16 (refactor, validation: Return fatal errors from new block functions)
     node.validation_signals->SyncWithValidationInterfaceQueue(); // drain events queue
 }
 
