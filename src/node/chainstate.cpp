@@ -29,13 +29,25 @@
 #include <memory>
 #include <vector>
 
+<<<<<<< HEAD
 using kernel::Interrupted;
 using kernel::InterruptResult;
 
+||||||| parent of f84c73423f34 (refactor, validation: Return fatal errors from FlushStateToDisk)
+=======
+using kernel::FlushResult;
+
+>>>>>>> f84c73423f34 (refactor, validation: Return fatal errors from FlushStateToDisk)
 namespace node {
 // Complete initialization of chainstates after the initial call has been made
 // to ChainstateManager::InitializeChainstate().
+<<<<<<< HEAD
 static util::Result<InterruptResult, ChainstateLoadError> CompleteChainstateInitialization(
+||||||| parent of f84c73423f34 (refactor, validation: Return fatal errors from FlushStateToDisk)
+static util::Result<void, ChainstateLoadError> CompleteChainstateInitialization(
+=======
+static FlushResult<void, ChainstateLoadError> CompleteChainstateInitialization(
+>>>>>>> f84c73423f34 (refactor, validation: Return fatal errors from FlushStateToDisk)
     ChainstateManager& chainman,
     const CacheSizes& cache_sizes,
     const ChainstateLoadOptions& options) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
@@ -185,9 +197,20 @@ static util::Result<InterruptResult, ChainstateLoadError> CompleteChainstateInit
     // Now that chainstates are loaded and we're able to flush to
     // disk, rebalance the coins caches to desired levels based
     // on the condition of each chainstate.
+<<<<<<< HEAD
     chainman.MaybeRebalanceCaches();
 
     return result;
+||||||| parent of f84c73423f34 (refactor, validation: Return fatal errors from FlushStateToDisk)
+    chainman.MaybeRebalanceCaches();
+
+    return {};
+=======
+    FlushResult<void, ChainstateLoadError> result;
+    // Ignore failure value, do not treat flush error as failure.
+    (void)result.MergeFrom(chainman.MaybeRebalanceCaches());
+    return result;
+>>>>>>> f84c73423f34 (refactor, validation: Return fatal errors from FlushStateToDisk)
 }
 
 util::Result<InterruptResult, ChainstateLoadError> LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
