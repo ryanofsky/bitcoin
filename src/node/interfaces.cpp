@@ -75,6 +75,8 @@ using interfaces::MakeSignalHandler;
 using interfaces::Mining;
 using interfaces::Node;
 using interfaces::WalletLoader;
+using kernel::AbortFailure;
+using kernel::FlushResult;
 using node::BlockAssembler;
 using util::Join;
 
@@ -863,7 +865,8 @@ public:
 
     bool processNewBlock(const std::shared_ptr<const CBlock>& block, bool* new_block) override
     {
-        return chainman().ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/new_block);
+        FlushResult<void, AbortFailure> process_result; // Ignore flush and fatal error information, only care whether block is accepted.
+        return chainman().ProcessNewBlock(block, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/new_block, process_result);
     }
 
     unsigned int getTransactionsUpdated() override
@@ -881,7 +884,8 @@ public:
             return false;
         }
 
-        return TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, tip, /*fCheckPOW=*/false, check_merkle_root);
+        FlushResult<> result{TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, tip, /*fCheckPOW=*/false, check_merkle_root)};
+        return bool{result}; // Ignore any flush warnings in the result and just return success or failure.
     }
 
     std::unique_ptr<CBlockTemplate> createNewBlock(const CScript& script_pub_key, const BlockCreateOptions& options) override
