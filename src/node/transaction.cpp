@@ -77,13 +77,27 @@ TransactionError BroadcastTransaction(NodeContext& node,
             if (max_tx_fee > 0) {
                 // First, call ATMP with test_accept and check the fee. If ATMP
                 // fails here, return error immediately.
-                const MempoolAcceptResult result = node.chainman->ProcessTransaction(tx, /*test_accept=*/ true);
+                auto [result, flush_result]{node.chainman->ProcessTransaction(tx, /*test_accept=*/ true)};
                 if (result.m_result_type != MempoolAcceptResult::ResultType::VALID) {
                     return HandleATMPError(result.m_state, err_string);
                 } else if (result.m_base_fees.value() > max_tx_fee) {
                     return TransactionError::MAX_FEE_EXCEEDED;
                 }
             }
+<<<<<<< HEAD
+||||||| parent of 94749b1e36e2 (refactor, validation: Return fatal errors from mempool accept functions)
+            // Try to submit the transaction to the mempool.
+            const MempoolAcceptResult result = node.chainman->ProcessTransaction(tx, /*test_accept=*/ false);
+            if (result.m_result_type != MempoolAcceptResult::ResultType::VALID) {
+                return HandleATMPError(result.m_state, err_string);
+            }
+=======
+            // Try to submit the transaction to the mempool.
+            auto [result, flush_result]{node.chainman->ProcessTransaction(tx, /*test_accept=*/ false)};
+            if (result.m_result_type != MempoolAcceptResult::ResultType::VALID) {
+                return HandleATMPError(result.m_state, err_string);
+            }
+>>>>>>> 94749b1e36e2 (refactor, validation: Return fatal errors from mempool accept functions)
 
             switch (broadcast_method) {
             case TxBroadcast::MEMPOOL_NO_BROADCAST:
