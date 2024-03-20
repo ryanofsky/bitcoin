@@ -1340,6 +1340,7 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
     ScheduleBatchPriority();
 >>>>>>> 901ccdc42910 (refactor, validation: Return fatal errors from activate best chain functions)
 
+<<<<<<< HEAD
     // -reindex
     if (!chainman.m_blockman.m_blockfiles_indexed) {
         int nFile = 0;
@@ -1350,7 +1351,62 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
             FlatFilePos pos(nFile, 0);
             if (!fs::exists(chainman.m_blockman.GetBlockPosFilename(pos))) {
                 break; // No block files left to reindex
+||||||| parent of bbb8fec91d37 (refactor, validation: Return fatal errors from new block functions)
+    {
+        ImportingNow imp{chainman.m_blockman.m_importing};
+
+        // -reindex
+        if (fReindex) {
+            int nFile = 0;
+            // Map of disk positions for blocks with unknown parent (only used for reindex);
+            // parent hash -> child disk position, multiple children can have the same parent.
+            std::multimap<uint256, FlatFilePos> blocks_with_unknown_parent;
+            while (true) {
+                FlatFilePos pos(nFile, 0);
+                if (!fs::exists(chainman.m_blockman.GetBlockPosFilename(pos))) {
+                    break; // No block files left to reindex
+                }
+                AutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
+                if (file.IsNull()) {
+                    break; // This error is logged in OpenBlockFile
+                }
+                LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
+                chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+                if (chainman.m_interrupt) {
+                    LogPrintf("Interrupt requested. Exit %s\n", __func__);
+                    return;
+                }
+                nFile++;
+=======
+    {
+        ImportingNow imp{chainman.m_blockman.m_importing};
+
+        // -reindex
+        if (fReindex) {
+            int nFile = 0;
+            // Map of disk positions for blocks with unknown parent (only used for reindex);
+            // parent hash -> child disk position, multiple children can have the same parent.
+            std::multimap<uint256, FlatFilePos> blocks_with_unknown_parent;
+            while (true) {
+                FlatFilePos pos(nFile, 0);
+                if (!fs::exists(chainman.m_blockman.GetBlockPosFilename(pos))) {
+                    break; // No block files left to reindex
+                }
+                AutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
+                if (file.IsNull()) {
+                    break; // This error is logged in OpenBlockFile
+                }
+                LogPrintf("Reindexing block file blk%05u.dat...\n", (unsigned int)nFile);
+                // Ignore failure value, do not treat flush error as failure.
+                chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent) >> result;
+                if (chainman.m_interrupt) {
+                    LogPrintf("Interrupt requested. Exit %s\n", __func__);
+                    return;
+                }
+                nFile++;
+>>>>>>> bbb8fec91d37 (refactor, validation: Return fatal errors from new block functions)
             }
+<<<<<<< HEAD
             AutoFile file{chainman.m_blockman.OpenBlockFile(pos, true)};
             if (file.IsNull()) {
                 break; // This error is logged in OpenBlockFile
@@ -1361,8 +1417,23 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
             if (chainman.m_interrupt) {
                 LogPrintf("Interrupt requested. Exit %s\n", __func__);
 ||||||| parent of 901ccdc42910 (refactor, validation: Return fatal errors from activate best chain functions)
+||||||| parent of bbb8fec91d37 (refactor, validation: Return fatal errors from new block functions)
+            WITH_LOCK(::cs_main, chainman.m_blockman.m_block_tree_db->WriteReindexing(false));
+            fReindex = false;
+            LogPrintf("Reindexing finished\n");
+            // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
+            chainman.ActiveChainstate().LoadGenesisBlock();
+=======
+            WITH_LOCK(::cs_main, chainman.m_blockman.m_block_tree_db->WriteReindexing(false));
+            fReindex = false;
+            LogPrintf("Reindexing finished\n");
+            // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
+            // Ignore failure value, do not treat flush error as failure.
+            chainman.ActiveChainstate().LoadGenesisBlock() >> result;
+>>>>>>> bbb8fec91d37 (refactor, validation: Return fatal errors from new block functions)
         }
 
+<<<<<<< HEAD
         // scan for better chains in the block chain database, that are not yet connected in the active best chain
 
         // We can't hold cs_main during ActivateBestChain even though we're accessing
@@ -1373,6 +1444,36 @@ void ImportBlocks(ChainstateManager& chainman, std::vector<fs::path> vImportFile
             if (!chainstate->ActivateBestChain(state, nullptr)) {
                 chainman.GetNotifications().fatalError(strprintf(_("Failed to connect best block (%s)."), state.ToString()));
 =======
+||||||| parent of bbb8fec91d37 (refactor, validation: Return fatal errors from new block functions)
+        // -loadblock=
+        for (const fs::path& path : vImportFiles) {
+            AutoFile file{fsbridge::fopen(path, "rb")};
+            if (!file.IsNull()) {
+                LogPrintf("Importing blocks file %s...\n", fs::PathToString(path));
+                chainman.LoadExternalBlockFile(file);
+                if (chainman.m_interrupt) {
+                    LogPrintf("Interrupt requested. Exit %s\n", __func__);
+                    return;
+                }
+            } else {
+                LogPrintf("Warning: Could not open blocks file %s\n", fs::PathToString(path));
+            }
+=======
+        // -loadblock=
+        for (const fs::path& path : vImportFiles) {
+            AutoFile file{fsbridge::fopen(path, "rb")};
+            if (!file.IsNull()) {
+                LogPrintf("Importing blocks file %s...\n", fs::PathToString(path));
+                // Ignore failure value, do not treat flush error as failure.
+                chainman.LoadExternalBlockFile(file) >> result;
+                if (chainman.m_interrupt) {
+                    LogPrintf("Interrupt requested. Exit %s\n", __func__);
+                    return;
+                }
+            } else {
+                LogPrintf("Warning: Could not open blocks file %s\n", fs::PathToString(path));
+            }
+>>>>>>> bbb8fec91d37 (refactor, validation: Return fatal errors from new block functions)
         }
 
         // scan for better chains in the block chain database, that are not yet connected in the active best chain
