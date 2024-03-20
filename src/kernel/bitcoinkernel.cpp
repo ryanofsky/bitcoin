@@ -15,6 +15,7 @@
 #include <kernel/checks.h>
 #include <kernel/context.h>
 #include <kernel/notifications_interface.h>
+#include <kernel/result.h>
 #include <kernel/warning.h>
 #include <logging.h>
 #include <node/blockstorage.h>
@@ -46,8 +47,8 @@
 #include <span>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using kernel::ChainstateRole;
@@ -1056,7 +1057,8 @@ void btck_chainstate_manager_destroy(btck_ChainstateManager* chainman)
         LOCK(btck_ChainstateManager::get(chainman).m_chainman->GetMutex());
         for (const auto& chainstate : btck_ChainstateManager::get(chainman).m_chainman->m_chainstates) {
             if (chainstate->CanFlushToDisk()) {
-                chainstate->ForceFlushStateToDisk();
+                auto flush_result{chainstate->ForceFlushStateToDisk()};
+                if (!flush_result) LogError("%s", util::ErrorString(flush_result).original);
                 chainstate->ResetCoinsViews();
             }
         }
