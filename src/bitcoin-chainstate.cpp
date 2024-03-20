@@ -175,7 +175,62 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+<<<<<<< HEAD
     std::cout << "Enter the block you want to validate on the next line:" << std::endl;
+||||||| parent of f54b5dd9bfd5 (refactor, validation: Return fatal errors from activate best chain functions)
+    for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+        BlockValidationState state;
+        if (!chainstate->ActivateBestChain(state, nullptr)) {
+            std::cerr << "Failed to connect best block (" << state.ToString() << ")" << std::endl;
+            goto epilogue;
+        }
+    }
+
+    // Main program logic starts here
+    std::cout
+        << "Hello! I'm going to print out some information about your datadir." << std::endl
+        << "\t"
+        << "Path: " << abs_datadir << std::endl;
+    {
+        LOCK(chainman.GetMutex());
+        std::cout
+        << "\t" << "Blockfiles Indexed: " << std::boolalpha << chainman.m_blockman.m_blockfiles_indexed.load() << std::noboolalpha << std::endl
+        << "\t" << "Snapshot Active: " << std::boolalpha << chainman.IsSnapshotActive() << std::noboolalpha << std::endl
+        << "\t" << "Active Height: " << chainman.ActiveHeight() << std::endl
+        << "\t" << "Active IBD: " << std::boolalpha << chainman.IsInitialBlockDownload() << std::noboolalpha << std::endl;
+        CBlockIndex* tip = chainman.ActiveTip();
+        if (tip) {
+            std::cout << "\t" << tip->ToString() << std::endl;
+        }
+    }
+=======
+    for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+        BlockValidationState state;
+        auto activate_result{chainstate->ActivateBestChain(state, nullptr)};
+        if (!activate_result) {
+            std::cerr << "Failed to connect best block (" << state.ToString() << ")" << std::endl;
+            goto epilogue;
+        }
+    }
+
+    // Main program logic starts here
+    std::cout
+        << "Hello! I'm going to print out some information about your datadir." << std::endl
+        << "\t"
+        << "Path: " << abs_datadir << std::endl;
+    {
+        LOCK(chainman.GetMutex());
+        std::cout
+        << "\t" << "Blockfiles Indexed: " << std::boolalpha << chainman.m_blockman.m_blockfiles_indexed.load() << std::noboolalpha << std::endl
+        << "\t" << "Snapshot Active: " << std::boolalpha << chainman.IsSnapshotActive() << std::noboolalpha << std::endl
+        << "\t" << "Active Height: " << chainman.ActiveHeight() << std::endl
+        << "\t" << "Active IBD: " << std::boolalpha << chainman.IsInitialBlockDownload() << std::noboolalpha << std::endl;
+        CBlockIndex* tip = chainman.ActiveTip();
+        if (tip) {
+            std::cout << "\t" << tip->ToString() << std::endl;
+        }
+    }
+>>>>>>> f54b5dd9bfd5 (refactor, validation: Return fatal errors from activate best chain functions)
 
     for (std::string line; std::getline(std::cin, line);) {
         if (line.empty()) {
