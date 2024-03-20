@@ -124,7 +124,13 @@ CreateAndActivateUTXOSnapshot(
         new_active.m_chain.SetTip(*(tip->pprev));
     }
 
+<<<<<<< HEAD
     auto res = node.chainman->ActivateSnapshot(auto_infile, metadata, in_memory_chainstate);
+||||||| parent of 5eb06271657f (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    bool res = node.chainman->ActivateSnapshot(auto_infile, metadata, in_memory_chainstate);
+=======
+    bool res{node.chainman->ActivateSnapshot(auto_infile, metadata, in_memory_chainstate)};
+>>>>>>> 5eb06271657f (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 
     // Restore the old tip.
     new_active.m_chain.SetTip(*tip);

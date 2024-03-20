@@ -80,7 +80,13 @@ FUZZ_TARGET(utxo_snapshot, .init = initialize_chain)
         } catch (const std::ios_base::failure&) {
             return false;
         }
+<<<<<<< HEAD
         return !!chainman.ActivateSnapshot(infile, metadata, /*in_memory=*/true);
+||||||| parent of 5eb06271657f (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+        return chainman.ActivateSnapshot(infile, metadata, /*in_memory=*/true);
+=======
+        return bool{chainman.ActivateSnapshot(infile, metadata, /*in_memory=*/true)};
+>>>>>>> 5eb06271657f (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
     }};
 
     if (fuzzed_data_provider.ConsumeBool()) {
