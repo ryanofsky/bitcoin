@@ -181,9 +181,12 @@ static RPCHelpMan testmempoolaccept()
             Chainstate& chainstate = chainman.ActiveChainstate();
             const PackageMempoolAcceptResult package_result = [&] {
                 LOCK(::cs_main);
-                if (txns.size() > 1) return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/true, /*max_sane_feerate=*/{});
-                return PackageMempoolAcceptResult(txns[0]->GetWitnessHash(),
-                                                  chainman.ProcessTransaction(txns[0], /*test_accept=*/true));
+                if (txns.size() > 1) {
+                    auto [mempool_accept, flush_result]{ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/true, /*max_sane_feerate=*/{})};
+                    return mempool_accept;
+                }
+                auto [mempool_accept, flush_result]{chainman.ProcessTransaction(txns[0], /*test_accept=*/true)};
+                return PackageMempoolAcceptResult(txns[0]->GetWitnessHash(), mempool_accept);
             }();
 
             UniValue rpc_result(UniValue::VARR);
@@ -906,7 +909,7 @@ static RPCHelpMan submitpackage()
             NodeContext& node = EnsureAnyNodeContext(request.context);
             CTxMemPool& mempool = EnsureMemPool(node);
             Chainstate& chainstate = EnsureChainman(node).ActiveChainstate();
-            const auto package_result = WITH_LOCK(::cs_main, return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/ false, max_sane_feerate));
+            auto [package_result, flush_result]{WITH_LOCK(::cs_main, return ProcessNewPackage(chainstate, mempool, txns, /*test_accept=*/ false, max_sane_feerate))};
 
             std::string package_msg = "success";
 
