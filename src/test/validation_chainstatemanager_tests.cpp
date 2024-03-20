@@ -134,8 +134,16 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_rebalance_caches, TestChain100Setup)
     chainstates.push_back(&c1);
     {
         LOCK(::cs_main);
+<<<<<<< HEAD
         c1.InitCoinsCache(8_MiB);
         manager.MaybeRebalanceCaches();
+||||||| parent of 91e0101a451 (refactor, validation: Return fatal errors from FlushStateToDisk)
+        c1.InitCoinsCache(1 << 23);
+        manager.MaybeRebalanceCaches();
+=======
+        c1.InitCoinsCache(1 << 23);
+        BOOST_CHECK(manager.MaybeRebalanceCaches());
+>>>>>>> 91e0101a451 (refactor, validation: Return fatal errors from FlushStateToDisk)
     }
 
     BOOST_CHECK_EQUAL(c1.m_coinstip_cache_size_bytes, max_cache);
@@ -160,8 +168,16 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_rebalance_caches, TestChain100Setup)
 
     {
         LOCK(::cs_main);
+<<<<<<< HEAD
         c2.InitCoinsCache(8_MiB);
         manager.MaybeRebalanceCaches();
+||||||| parent of 91e0101a451 (refactor, validation: Return fatal errors from FlushStateToDisk)
+        c2.InitCoinsCache(1 << 23);
+        manager.MaybeRebalanceCaches();
+=======
+        c2.InitCoinsCache(1 << 23);
+        BOOST_CHECK(manager.MaybeRebalanceCaches());
+>>>>>>> 91e0101a451 (refactor, validation: Return fatal errors from FlushStateToDisk)
     }
 
     BOOST_CHECK_CLOSE(double(c1.m_coinstip_cache_size_bytes), max_cache * 0.05, 1);
@@ -416,7 +432,7 @@ struct SnapshotTestSetup : TestChain100Setup {
         {
             LOCK(chainman.GetMutex());
             for (const auto& cs : chainman.m_chainstates) {
-                if (cs->CanFlushToDisk()) cs->ForceFlushStateToDisk();
+                if (cs->CanFlushToDisk()) BOOST_CHECK(cs->ForceFlushStateToDisk());
             }
         }
         {
