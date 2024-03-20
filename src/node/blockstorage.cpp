@@ -1340,7 +1340,8 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
                 break; // This error is logged in OpenBlockFile
             }
             LogInfo("Reindexing block file blk%05u.dat (%d%% complete)...", (unsigned int)nFile, nFile * 100 / total_files);
-            chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent);
+            // Propagate flush messages to result, but do not treat flush failure as an ImportBlocks failure.
+            chainman.LoadExternalBlockFile(file, &pos, &blocks_with_unknown_parent) >> result;
             if (chainman.m_interrupt) {
                 LogInfo("Interrupt requested. Exit reindexing.");
                 return;
@@ -1350,7 +1351,14 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
         chainman.m_blockman.m_blockfiles_indexed = true;
         LogInfo("Reindexing finished");
         // To avoid ending up in a situation without genesis block, re-try initializing (no-op if reindexing worked):
+<<<<<<< HEAD
         (void)chainman.LoadGenesisBlock();
+||||||| parent of 4bc9fd0b008 (refactor, validation: Return fatal errors from new block functions)
+        chainman.ActiveChainstate().LoadGenesisBlock();
+=======
+        // Propagate flush messages to result, but do not treat flush failure as an ImportBlocks failure.
+        chainman.ActiveChainstate().LoadGenesisBlock() >> result;
+>>>>>>> 4bc9fd0b008 (refactor, validation: Return fatal errors from new block functions)
     }
 
     // -loadblock=
@@ -1358,7 +1366,8 @@ void ImportBlocks(ChainstateManager& chainman, std::span<const fs::path> import_
         AutoFile file{fsbridge::fopen(path, "rb")};
         if (!file.IsNull()) {
             LogInfo("Importing blocks file %s...", fs::PathToString(path));
-            chainman.LoadExternalBlockFile(file);
+            // Propagate flush messages to result, but do not treat flush failure as an ImportBlocks failure.
+            chainman.LoadExternalBlockFile(file) >> result;
             if (chainman.m_interrupt) {
                 LogInfo("Interrupt requested. Exit block importing.");
                 return;
