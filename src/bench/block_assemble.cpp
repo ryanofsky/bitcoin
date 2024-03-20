@@ -18,6 +18,13 @@
 #include <array>
 #include <cstddef>
 #include <memory>
+<<<<<<< HEAD
+||||||| parent of 83173034c35 (refactor, validation: Return fatal errors from mempool accept functions)
+#include <string>
+=======
+#include <string>
+#include <tuple>
+>>>>>>> 83173034c35 (refactor, validation: Return fatal errors from mempool accept functions)
 #include <vector>
 
 using node::BlockCreateOptions;
@@ -47,8 +54,9 @@ static void AssembleBlock(benchmark::Bench& bench)
         LOCK(::cs_main);
 
         for (const auto& txr : txs) {
-            const MempoolAcceptResult res = test_setup->m_node.chainman->ProcessTransaction(txr);
+            auto [res, flush_result]{test_setup->m_node.chainman->ProcessTransaction(txr)};
             assert(res.m_result_type == MempoolAcceptResult::ResultType::VALID);
+            assert(flush_result);
         }
     }
 
