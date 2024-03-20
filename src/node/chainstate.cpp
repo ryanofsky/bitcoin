@@ -19,6 +19,7 @@
 #include <util/fs.h>
 #include <util/signalinterrupt.h>
 #include <util/time.h>
+#include <util/overloaded.h>
 #include <util/translation.h>
 #include <validation.h>
 
@@ -336,6 +337,7 @@ util::Result<InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(Chains
     };
 
     LOCK(cs_main);
+    util::Result<void, ChainstateLoadError> result;
 
     util::Result<InterruptResult, ChainstateLoadError> result;
     for (Chainstate* chainstate : chainman.GetAll()) {
@@ -349,9 +351,16 @@ util::Result<InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(Chains
                 return result;
             }
 
+<<<<<<< HEAD
             VerifyDBResult verify_result = CVerifyDB(chainman.GetNotifications()).VerifyDB(
+||||||| parent of 69defe036c1a (refactor, validation: Return more errors from VerifyDB)
+            VerifyDBResult result = CVerifyDB(chainman.GetNotifications()).VerifyDB(
+=======
+            auto verify_result{CVerifyDB(chainman.GetNotifications()).VerifyDB(
+>>>>>>> 69defe036c1a (refactor, validation: Return more errors from VerifyDB)
                 *chainstate, chainman.GetConsensus(), chainstate->CoinsDB(),
                 options.check_level,
+<<<<<<< HEAD
                 options.check_blocks);
             switch (verify_result) {
             case VerifyDBResult::SUCCESS:
@@ -370,6 +379,40 @@ util::Result<InterruptResult, ChainstateLoadError> VerifyLoadedChainstate(Chains
                 }
                 break;
             } // no default case, so the compiler can warn about missing cases
+||||||| parent of 69defe036c1a (refactor, validation: Return more errors from VerifyDB)
+                options.check_blocks);
+            switch (result) {
+            case VerifyDBResult::SUCCESS:
+            case VerifyDBResult::SKIPPED_MISSING_BLOCKS:
+                break;
+            case VerifyDBResult::INTERRUPTED:
+                return {util::Error{_("Block verification was interrupted")}, ChainstateLoadError::INTERRUPTED};
+            case VerifyDBResult::CORRUPTED_BLOCK_DB:
+                return {util::Error{_("Corrupted block database detected")}, ChainstateLoadError::FAILURE};
+            case VerifyDBResult::SKIPPED_L3_CHECKS:
+                if (options.require_full_verification) {
+                    return {util::Error{_("Insufficient dbcache for block verification")}, ChainstateLoadError::FAILURE_INSUFFICIENT_DBCACHE};
+                }
+                break;
+            } // no default case, so the compiler can warn about missing cases
+=======
+                options.check_blocks) >> result};
+            if (!verify_result) {
+                std::visit(util::Overloaded{
+                    [&](Success) {},
+                    [&](SkippedMissingBlocks) {},
+                    [&](kernel::Interrupted) {
+                       result.Set({util::Error{_("Block verification was interrupted")}, ChainstateLoadError::INTERRUPTED});
+                    },
+                    [&](SkippedL3Checks) {
+                        if (options.require_full_verification) {
+                            result.Set({util::Error{_("Insufficient dbcache for block verification")}, ChainstateLoadError::FAILURE_INSUFFICIENT_DBCACHE});
+                        }
+                    },
+                }, *verify_result);
+                if (!result) return result;
+            }
+>>>>>>> 69defe036c1a (refactor, validation: Return more errors from VerifyDB)
         }
     }
 
