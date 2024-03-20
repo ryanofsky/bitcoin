@@ -2122,12 +2122,18 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         }
         // Load mempool from disk
         if (auto* pool{chainman.ActiveChainstate().GetMempool()}) {
+<<<<<<< HEAD
             const bool loaded{LoadMempool(*pool, ShouldPersistMempool(args) ? MempoolPath(args) : fs::path{}, chainman.ActiveChainstate(), {})};
             // A shutdown request sets m_interrupt and aborts the mempool load, which is not a
             // load failure, so only notify the fee estimator when the load actually failed.
             if (node.fee_estimator_man && !chainman.m_interrupt && !loaded) {
                 node.fee_estimator_man->MempoolLoadFailed();
             }
+||||||| parent of 2639ec156a7 (refactor, validation: Return fatal errors from mempool accept functions)
+            LoadMempool(*pool, ShouldPersistMempool(args) ? MempoolPath(args) : fs::path{}, chainman.ActiveChainstate(), {});
+=======
+            (void)LoadMempool(*pool, ShouldPersistMempool(args) ? MempoolPath(args) : fs::path{}, chainman.ActiveChainstate(), {});
+>>>>>>> 2639ec156a7 (refactor, validation: Return fatal errors from mempool accept functions)
             pool->SetLoadTried(!chainman.m_interrupt);
         }
     });
