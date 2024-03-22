@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(processnewblock_signals_ordering)
             for (int i = 0; i < 1000; i++) {
                 auto block = blocks[insecure.randrange(blocks.size() - 1)];
                 FlushResult process_result;
-                Assert(Assert(m_node.chainman)->ProcessNewBlock(block, true, true, &ignored, process_result));
+                (void)Assert(m_node.chainman)->ProcessNewBlock(block, true, true, &ignored, process_result);
                 BOOST_CHECK(process_result);
             }
 
