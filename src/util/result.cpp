@@ -23,10 +23,12 @@ bilingual_str JoinMessages(const std::vector<bilingual_str>& errors, const std::
     return result;
 }
 
-void MoveMessages(std::vector<bilingual_str>& src, std::vector<bilingual_str>& dest)
-{
-    dest.insert(dest.end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
-    src.clear();
+template<>
+void ResultTraits<Messages>::MergeInto(Messages& dst, Messages& src) {
+    dest.errors.insert(dest.errors.end(), std::make_move_iterator(src.errors.begin()), std::make_move_iterator(src.errors.end()));
+    dest.warnings.insert(dest.warnings.end(), std::make_move_iterator(src.warnings.begin()), std::make_move_iterator(src.warnings.end()));
+    src.errors.clear();
+    src.warnings.clear();
 }
 } // namespace detail
 } // namespace util

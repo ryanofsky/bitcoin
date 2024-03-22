@@ -47,39 +47,6 @@ class SignalInterrupt;
 } // namespace util
 
 namespace kernel {
-//! Return value indicating whether flush operations were performed as part of a
-//! call, and whether they all succeeded, if so.
-enum class FlushStatus { SKIPPED, SUCCESS, FAILURE };
-
-inline FlushStatus MaxStatus(FlushStatus a, FlushStatus b)
-{
-   if (a == FlushStatus::FAILURE || b == FlushStatus::FAILURE) return FlushStatus::FAILURE;
-   if (a == FlushStatus::SUCCESS || b == FlushStatus::SUCCESS) return FlushStatus::SUCCESS;
-   return FlushStatus::SKIPPED;
-}
-
-template<typename T = void, typename F = void>
-struct FlushResult : util::Result<T, F>
-{
-    FlushStatus flush_status{};
-
-    //! Inherit constructors
-    using util::Result<T, F>::Result;
-
-    //! Add warnings and errors and flush status from another result into this
-    //! result, and return a boolean indicating whether the other result has a
-    //! success or failure value, without changing the success or failure value
-    //! of either result. The return type is marked [[nodiscard]] so the caller
-    //! can decide how to merge success and failure values.
-    template<typename O>
-    [[nodiscard]] bool MergeFrom(O&& other)
-    {
-        this->MoveMessages(other);
-        flush_status = MaxStatus(other.flush_status, flush_status);
-        return bool{other};
-    }
-};
-
 /** Access to the block database (blocks/index/) */
 class BlockTreeDB : public CDBWrapper
 {

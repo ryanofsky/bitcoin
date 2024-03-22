@@ -65,7 +65,6 @@ static FlushResult<void, ChainstateLoadError> CompleteChainstateInitialization(
     // block file from disk.
     // Note that it also sets fReindex global based on the disk flag!
     // From here on, fReindex and options.reindex values may be different!
-    auto load_result{chainman.LoadBlockIndex()};
     if (!load_result) {
         return {util::Error{_("Error loading block database")}, ChainstateLoadError::FAILURE};
     } else if (IsInterrupted(*load_result) || chainman.m_interrupt) {
