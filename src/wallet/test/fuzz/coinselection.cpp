@@ -291,7 +291,9 @@ FUZZ_TARGET(coinselection)
     }
 
     std::vector<COutput> utxos;
-    std::vector<util::Result<SelectionResult>> results{result_srd, result_knapsack, result_bnb};
+    std::vector<util::Result<SelectionResult>> results{
+        std::move(result_srd), std::move(result_knapsack), std::move(result_bnb)
+    };
     CAmount new_total_balance{CreateCoins(fuzzed_data_provider, utxos, coin_params, next_locktime)};
     if (new_total_balance > 0) {
         std::set<std::shared_ptr<COutput>> new_utxo_pool;
