@@ -17,9 +17,15 @@
 #include <vector>
 
 namespace util {
+//! Default MessagesType, simple list of errors and warnings.
+struct Messages {
+    std::vector<bilingual_str> errors{};
+    std::vector<bilingual_str> warnings{};
+};
+
 //! The Result<SuccessType, FailureType, MessagesType> class provides an
 //! efficient way for functions to return structured result information, as well
-//! as descriptive error messages.
+//! as descriptive error and warning messages.
 //!
 //! Logically, a result object is equivalent to:
 //!
@@ -58,15 +64,78 @@ namespace util {
 //! return function results.
 //!
 //! Usage examples can be found in \example ../test/result_tests.cpp.
-template <typename SuccessType = void, typename FailureType = void, typename MessagesType = bilingual_str>
+template <typename SuccessType = void, typename FailureType = void, typename MessagesType = Messages>
 class Result;
 
 //! Wrapper object to pass an error string to the Result constructor.
 struct Error {
     bilingual_str message;
 };
+//! Wrapper object to pass a warning string to the Result constructor.
+struct Warning {
+    bilingual_str message;
+};
+
+//! Wrapper object to pass an existing Result object to the Result constructor,
+//! moving messages into the new object, like operator>> below. Passing
+//! MoveFrom(result) to the Result constructor is similar to passing
+//! std::move(result), except it doesn't require the two result objects to have
+//! compatible Success and Failure types, and it only moves message and info
+//! fields, leaving success and value fields alone. Like operator>>, it is
+//! useful for combining data from many result objects into a single result.
+template <typename Result>
+struct MoveFrom {
+    MoveFrom(Result&& result) : m_result(result) {}
+    Result& m_result;
+};
+
+//! Template deduction guide for MoveFrom class.
+template <class Result>
+MoveFrom(Result&& result) -> MoveFrom<Result>;
+
+//! Type trait that can be specialized to control the way SuccessType /
+//! FailureType / MessagesType values are combined.
+template<typename T>
+struct ResultTraits {
+    template<typename O>
+    static void MergeInto(O& dst, T& src)
+    {
+        dst = std::move(src);
+    }
+};
+
+//! Type trait that can be specialized to let the Result class work with custom
+//! MessagesType types holding error and warning messages.
+template<typename MessagesType>
+struct MessagesTraits;
+
+//! ResultTraits specialization for Messages struct.
+template<>
+struct ResultTraits<Messages> {
+    static void MergeInto(Messages& dst, Messages& src);
+};
+
+//! MessagesTraits specialization for Messages struct.
+template<>
+struct MessagesTraits<Messages> {
+    static void AddError(Messages& messages, bilingual_str error)
+    {
+        messages.errors.emplace_back(std::move(error));
+    }
+    static void AddWarning(Messages& messages, bilingual_str warning)
+    {
+        messages.warnings.emplace_back(std::move(warning));
+    }
+    static bool HasMessages(const Messages& messages)
+    {
+        return messages.errors.size() || messages.warnings.size();
+    }
+};
 
 namespace detail {
+//! Helper function to join messages in space separated string.
+bilingual_str JoinMessages(const Messages& messages);
+
 //! Substitute for std::monostate that doesn't depend on std::variant.
 struct Monostate{};
 
@@ -157,9 +226,10 @@ public:
     static constexpr bool is_result{true};
 
     //! Construct a Result object setting a success or failure value and
-    //! optional error messages. Initial util::Error arguments are processed
-    //! first to add error messages. Then, any remaining arguments are passed to
-    //! the SuccessType constructor and used to construct a success value in the
+    //! optional warning and error messages. Initial util::Error, util::Warning,
+    //! and util::MoveFrom arguments are processed first to add warning and
+    //! error messages. Then, any remaining arguments are passed to the
+    //! SuccessType constructor and used to construct a success value in the
     //! success case. In the failure case, if any util::Error arguments were
     //! passed, any remaining arguments are passed to the FailureType
     //! constructor and used to construct a failure value.
@@ -170,7 +240,7 @@ public:
     }
 
     //! Move-construct a Result object from another Result object, moving the
-    //! success or failure value and any error message.
+    //! success or failure value and any error or warning messages.
     template <typename O>
     requires (std::decay_t<O>::is_result)
     Result(O&& other)
@@ -178,7 +248,10 @@ public:
         Move</*Constructed=*/false>(*this, other);
     }
 
-    //! Update this result by moving from another result object.
+    //! Update this result by moving from another result object. Existing
+    //! success, failure, and messages values are merged (using
+    //! ResultTraits::MergeInto specializations), so errors and warning messages
+    //! get appended instead of overwriting existing ones.
     Result& Update(Result&& other) LIFETIMEBOUND
     {
         Move</*Constructed=*/true>(*this, other);
@@ -190,11 +263,18 @@ public:
     Result(const Result&) = delete;
 
     //! Disallow operator= and require explicit Result::Update() calls to avoid
-    //! confusion in the future when the Result class gains support for richer
-    //! error reporting, and callers should have ability to set a new result
-    //! value without clearing existing error messages.
+    //! accidentally clearing error and warning messages when combining results.
     template <typename Result>
     Result& operator=(Result&&) = delete;
+
+    void AddError(bilingual_str error)
+    {
+        if (!error.empty()) MessagesTraits<MessagesType>::AddError(this->EnsureFailData().messages, std::move(error));
+    }
+    void AddWarning(bilingual_str warning)
+    {
+        if (!warning.empty()) MessagesTraits<MessagesType>::AddWarning(this->EnsureFailData().messages, std::move(warning));
+    }
 
 protected:
     template <typename, typename, typename>
@@ -220,12 +300,31 @@ protected:
     template <bool Failure, typename Result, typename... Args>
     static void Construct(Result& result, util::Error error, Args&&... args)
     {
-        result.EnsureFailData().messages = std::move(error.message);
+        result.AddError(std::move(error.message));
         Construct</*Failure=*/true>(result, std::forward<Args>(args)...);
     }
 
+    //! Construct() overload peeling off a util::Warning constructor argument.
+    template <bool Failure, typename Result, typename... Args>
+    static void Construct(Result& result, util::Warning warning, Args&&... args)
+    {
+        result.AddWarning(std::move(warning.message));
+        Construct<Failure>(result, std::forward<Args>(args)...);
+    }
+
+    //! Construct() overload peeling off a util::MoveFrom constructor argument.
+    template <bool Failure, typename Result, typename R, typename... Args>
+    static void Construct(Result& result, MoveFrom<R> other, Args&&... args)
+    {
+        other.m_result >> result;
+        Construct<Failure>(result, std::forward<Args>(args)...);
+    }
+
     //! Move success, failure, and messages from source Result object to
-    //! destination object. The source and destination results are not required
+    //! destination object. Existing values are merged (using
+    //! ResultTraits::MergeInto specializations), so destination errors and
+    //! warning messages get appended to instead of overwritten.
+    //! The source and destination results are not required
     //! to have the same types, and assigning void source types to non-void
     //! destinations type is allowed, since no source information is lost. But
     //! assigning non-void source types to void destination types is not
@@ -233,16 +332,27 @@ protected:
     template <bool DstConstructed, typename DstResult, typename SrcResult>
     static void Move(DstResult& dst, SrcResult& src)
     {
-        // Move messages values first, then move success or failure value below.
-        if (src.GetMessages() && !src.GetMessages()->empty()) {
-            dst.EnsureMessages() = std::move(*src.GetMessages());
-        }
+        // Use operator>> to move messages values first, then move success or
+        // failure value below.
+        src >> dst;
         // If DstConstructed is true, it means dst has either a success value or
-        // a failure value set, which needs to be destroyed and replaced. If
+        // a failure value set, which needs to be merged or replaced. If
         // DstConstructed is false, then dst is being constructed now and has no
         // values set.
         if constexpr (DstConstructed) {
-            if (dst) {
+            if (dst && src) {
+                // dst and src both hold success values, so merge them and return
+                if constexpr (!std::is_same_v<typename SrcResult::SuccessType, void>) {
+                    ResultTraits<typename SrcResult::SuccessType>::MergeInto(*dst, *src);
+                }
+                return;
+            } else if (!dst && !src) {
+                // dst and src both hold failure values, so merge them and return
+                if constexpr (!std::is_same_v<typename SrcResult::FailureType, void>) {
+                    ResultTraits<typename SrcResult::FailureType>::MergeInto(dst.GetFailure(), src.GetFailure());
+                }
+                return;
+            } else if (dst) {
                 // dst has a success value, so destroy it before replacing it with src failure value
                 if constexpr (!std::is_same_v<typename DstResult::SuccessType, void>) {
                     using DstSuccess = typename DstResult::SuccessType;
@@ -280,10 +390,40 @@ protected:
     }
 };
 
+//! Move information from a source Result object to a destination object. It
+//! only moves MessagesType values without affecting SuccessType or FailureType
+//! values of either Result object.
+//!
+//! This is useful for combining error and warning messages from multiple
+//! result objects into a single object, e.g.:
+//!
+//!    util::Result<void> result;
+//!    auto r1 = DoSomething() >> result;
+//!    auto r2 = DoSomethingElse() >> result;
+//!    ...
+//!    return result;
+//!
+template <typename SrcResult, typename DstResult>
+requires (std::decay_t<SrcResult>::is_result)
+decltype(auto) operator>>(SrcResult&& src LIFETIMEBOUND, DstResult&& dst)
+{
+    using SrcType = std::decay_t<SrcResult>;
+    if (src.GetMessages() && MessagesTraits<typename SrcType::MessagesType>::HasMessages(*src.GetMessages())) {
+        ResultTraits<typename SrcType::MessagesType>::MergeInto(dst.EnsureMessages(), *src.GetMessages());
+    }
+    return static_cast<SrcType&&>(src);
+}
+
+//! Join error and warning messages in a space separated string. This is
+//! intended for simple applications where there's probably only one error or
+//! warning message to report, but multiple messages should not be lost if they
+//! are present. More complicated applications should use GetErrors() and
+//! GetWarning() methods directly.
 template <typename Result>
 bilingual_str ErrorString(const Result& result)
 {
-    return !result && result.GetMessages() ? *result.GetMessages() : bilingual_str{};
+    const auto* messages{result.GetMessages()};
+    return messages ? detail::JoinMessages(*messages) : bilingual_str{};
 }
 } // namespace util
 
