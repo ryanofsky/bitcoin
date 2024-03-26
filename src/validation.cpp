@@ -82,6 +82,7 @@ using kernel::CCoinsStats;
 using kernel::ChainstateRole;
 using kernel::CoinStatsHashType;
 using kernel::ComputeUTXOStats;
+using kernel::FlushResult;
 using kernel::Notifications;
 
 using fsbridge::FopenFn;
@@ -2778,6 +2779,7 @@ bool Chainstate::FlushStateToDisk(
 {
     LOCK(cs_main);
     assert(this->CanFlushToDisk());
+    FlushResult<> result; // TODO Return this result!
     std::set<int> setFilesToPrune;
     bool full_flush_completed = false;
 
@@ -2853,9 +2855,23 @@ bool Chainstate::FlushStateToDisk(
                 LOG_TIME_MILLIS_WITH_CATEGORY("write block and undo data to disk", BCLog::BENCH);
 
                 // First make sure all block and undo data is flushed to disk.
+<<<<<<< HEAD
                 if (!m_blockman.FlushChainstateBlockFile(m_chain.Height())) {
                     // FlushChainstateBlockFile() already reported the specific error through flushError()
                     return state.Error("Failed to flush block or undo file");
+||||||| parent of 27576e4e94a (refactor, blockstorage: Return FlushResult from flush methods)
+                // TODO: Handle return error, or add detailed comment why it is
+                // safe to not return an error upon failure.
+                if (!m_blockman.FlushChainstateBlockFile(m_chain.Height())) {
+                    LogWarning("%s: Failed to flush block file.\n", __func__);
+=======
+                // TODO: Handle return error, or add detailed comment why it is
+                // safe to not return an error upon failure.
+                if (!(m_blockman.FlushChainstateBlockFile(m_chain.Height()) >> result)) {
+                    auto warning{Untranslated({"Failed to flush block file."})};
+                    LogWarning("%s: %s\n", __func__, warning.original);
+                    result.messages().warnings.push_back(std::move(warning));
+>>>>>>> 27576e4e94a (refactor, blockstorage: Return FlushResult from flush methods)
                 }
             }
 
