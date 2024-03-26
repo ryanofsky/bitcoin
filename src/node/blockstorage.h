@@ -13,6 +13,7 @@
 #include <kernel/chainparams.h>
 #include <kernel/cs_main.h>
 #include <kernel/messagestartchars.h>
+#include <kernel/result.h>
 #include <primitives/block.h>
 #include <streams.h>
 #include <sync.h>
@@ -148,11 +149,12 @@ private:
         EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     /** Return false if block file or undo file flushing fails. */
-    [[nodiscard]] bool FlushBlockFile(int blockfile_num, bool fFinalize, bool finalize_undo);
+    [[nodiscard]] kernel::FlushResult<> FlushBlockFile(int blockfile_num, bool fFinalize, bool finalize_undo);
 
     /** Return false if undo file flushing fails. */
-    [[nodiscard]] bool FlushUndoFile(int block_file, bool finalize = false);
+    [[nodiscard]] kernel::FlushResult<> FlushUndoFile(int block_file, bool finalize = false);
 
+<<<<<<< HEAD
     /**
      * Helper function performing various preparations before a block can be saved to disk:
      * Returns the correct position for the block to be saved, which may be in the current or a new
@@ -164,6 +166,13 @@ private:
      */
     [[nodiscard]] FlatFilePos FindNextBlockPos(unsigned int nAddSize, unsigned int nHeight, uint64_t nTime);
     [[nodiscard]] bool FlushChainstateBlockFile(int tip_height);
+||||||| parent of e56a36cc7587 (refactor, blockstorage: Return FlushResult from flush methods)
+    [[nodiscard]] bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown);
+    [[nodiscard]] bool FlushChainstateBlockFile(int tip_height);
+=======
+    [[nodiscard]] bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, uint64_t nTime, bool fKnown);
+    [[nodiscard]] kernel::FlushResult<> FlushChainstateBlockFile(int tip_height);
+>>>>>>> e56a36cc7587 (refactor, blockstorage: Return FlushResult from flush methods)
     bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
 
     FlatFileSeq BlockFileSeq() const;
