@@ -7,6 +7,7 @@
 
 #include <rpc/util.h>
 #include <script/script.h>
+#include <util/result.h>
 #include <wallet/wallet.h>
 
 #include <any>
@@ -50,7 +51,15 @@ std::string LabelFromValue(const UniValue& value);
 //! Fetch parent descriptors of this scriptPubKey.
 void PushParentDescriptors(const CWallet& wallet, const CScript& script_pubkey, UniValue& entry);
 
+<<<<<<< HEAD
 void HandleWalletError(const std::shared_ptr<CWallet> wallet, DatabaseStatus& status, bilingual_str& error);
+||||||| parent of a7446db5026c (refactor: Use util::Result class in wallet/rpc)
+void HandleWalletError(const std::shared_ptr<CWallet> wallet, DatabaseStatus& status, bilingual_str& error);
+int64_t ParseISO8601DateTime(const std::string& str);
+=======
+void HandleWalletError(const util::ResultPtr<std::shared_ptr<CWallet>, DatabaseStatus>& wallet);
+int64_t ParseISO8601DateTime(const std::string& str);
+>>>>>>> a7446db5026c (refactor: Use util::Result class in wallet/rpc)
 void AppendLastProcessedBlock(UniValue& entry, const CWallet& wallet) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet);
 } //  namespace wallet
 
