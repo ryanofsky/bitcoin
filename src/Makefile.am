@@ -144,6 +144,7 @@ BITCOIN_CORE_H = \
   compat/cpuid.h \
   compat/endian.h \
   common/settings.h \
+  common/signmessage.h \
   common/system.h \
   compressor.h \
   consensus/consensus.h \
@@ -308,7 +309,6 @@ BITCOIN_CORE_H = \
   util/hasher.h \
   util/insert.h \
   util/macros.h \
-  util/message.h \
   util/moneystr.h \
   util/overflow.h \
   util/overloaded.h \
@@ -682,6 +682,7 @@ libbitcoin_common_a_SOURCES = \
   common/interfaces.cpp \
   common/run_command.cpp \
   common/settings.cpp \
+  common/signmessage.cpp \
   common/system.cpp \
   common/url.cpp \
   compressor.cpp \
@@ -744,7 +745,6 @@ libbitcoin_util_a_SOURCES = \
   util/hasher.cpp \
   util/sock.cpp \
   util/syserror.cpp \
-  util/message.cpp \
   util/moneystr.cpp \
   util/rbf.cpp \
   util/readwritefile.cpp \
