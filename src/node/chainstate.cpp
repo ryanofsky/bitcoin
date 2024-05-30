@@ -213,8 +213,16 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     if (snapshot_completion == SnapshotCompletionResult::SKIPPED) {
         // do nothing; expected case
     } else if (snapshot_completion == SnapshotCompletionResult::SUCCESS) {
+<<<<<<< HEAD
         LogInfo("[snapshot] cleaning up unneeded background chainstate, then reinitializing");
         if (!chainman.ValidatedSnapshotCleanup()) {
+||||||| parent of 152ac8c885e0 (refactor: Add Chainstate::StoragePath() method)
+        LogPrintf("[snapshot] cleaning up unneeded background chainstate, then reinitializing\n");
+        if (!chainman.ValidatedSnapshotCleanup()) {
+=======
+        LogPrintf("[snapshot] cleaning up unneeded background chainstate, then reinitializing\n");
+        if (!chainman.ValidatedSnapshotCleanup(validated_cs, *unvalidated_cs)) {
+>>>>>>> 152ac8c885e0 (refactor: Add Chainstate::StoragePath() method)
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Background chainstate cleanup failed unexpectedly.")};
         }
 
