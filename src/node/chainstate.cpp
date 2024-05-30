@@ -204,7 +204,7 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
         validated_chainstate.SetTargetBlock(nullptr);
 >>>>>>> c09d0d1e4846 (refactor: Add Chainstate::m_target_blockhash member)
         LogPrintf("[snapshot] deleting snapshot chainstate due to reindexing\n");
-        if (!chainman.DeleteSnapshotChainstate()) {
+        if (!chainman.DeleteChainstate(*from_snapshot_chainstate)) {
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Couldn't remove snapshot chainstate.")};
         }
         from_snapshot_chainstate = nullptr;
