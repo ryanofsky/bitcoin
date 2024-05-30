@@ -200,6 +200,7 @@ private:
 
     std::vector<unsigned char> CreateObfuscateKey() const;
 
+<<<<<<< HEAD
     //! path to filesystem storage
     const fs::path m_path;
 
@@ -209,6 +210,21 @@ private:
     std::optional<std::string> ReadImpl(std::span<const std::byte> key) const;
     bool ExistsImpl(std::span<const std::byte> key) const;
     size_t EstimateSizeImpl(std::span<const std::byte> key1, std::span<const std::byte> key2) const;
+||||||| parent of e611640abd8f (refactor: Add Chainstate::StoragePath() method)
+    //! path to filesystem storage
+    const fs::path m_path;
+
+    //! whether or not the database resides in memory
+    bool m_is_memory;
+
+    std::optional<std::string> ReadImpl(Span<const std::byte> key) const;
+    bool ExistsImpl(Span<const std::byte> key) const;
+    size_t EstimateSizeImpl(Span<const std::byte> key1, Span<const std::byte> key2) const;
+=======
+    std::optional<std::string> ReadImpl(Span<const std::byte> key) const;
+    bool ExistsImpl(Span<const std::byte> key) const;
+    size_t EstimateSizeImpl(Span<const std::byte> key1, Span<const std::byte> key2) const;
+>>>>>>> e611640abd8f (refactor: Add Chainstate::StoragePath() method)
     auto& DBContext() const LIFETIMEBOUND { return *Assert(m_db_context); }
 
 public:
@@ -244,14 +260,6 @@ public:
         CDBBatch batch(*this);
         batch.Write(key, value);
         return WriteBatch(batch, fSync);
-    }
-
-    //! @returns filesystem path to the on-disk data.
-    std::optional<fs::path> StoragePath() {
-        if (m_is_memory) {
-            return {};
-        }
-        return m_path;
     }
 
     template <typename K>
