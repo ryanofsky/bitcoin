@@ -1183,8 +1183,6 @@ public:
      */
     mutable VersionBitsCache m_versionbitscache;
 
-    std::optional<uint256> SnapshotBlockhash() const;
-
     /** Check whether we are doing an initial block download (synchronizing from disk or network) */
     bool IsInitialBlockDownload() const;
 
