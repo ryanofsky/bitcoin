@@ -4972,7 +4972,7 @@ bool ChainstateManager::LoadBlockIndex()
     AssertLockHeld(cs_main);
     // Load block index from databases
     if (m_blockman.m_blockfiles_indexed) {
-        bool ret{m_blockman.LoadBlockIndexDB(SnapshotBlockhash())};
+        bool ret{m_blockman.LoadBlockIndexDB(CurrentChainstate().m_from_snapshot_blockhash)};
         if (!ret) return false;
 
         m_blockman.ScanAndUnlinkAlreadyPrunedFiles();
@@ -5598,16 +5598,6 @@ double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex *pin
     return std::min<double>(pindex->nChainTx / fTxTotal, 1.0);
 }
 
-std::optional<uint256> ChainstateManager::SnapshotBlockhash() const
-{
-    LOCK(::cs_main);
-    if (m_active_chainstate && m_active_chainstate->m_from_snapshot_blockhash) {
-        // If a snapshot chainstate exists, it will always be our active.
-        return m_active_chainstate->m_from_snapshot_blockhash;
-    }
-    return std::nullopt;
-}
-
 std::vector<Chainstate*> ChainstateManager::GetAll()
 {
     LOCK(::cs_main);
@@ -5679,13 +5669,12 @@ util::Result<void> ChainstateManager::ActivateSnapshot(
     uint256 base_blockhash = metadata.m_base_blockhash;
     int base_blockheight = metadata.m_base_blockheight;
 
-    if (this->SnapshotBlockhash()) {
-        return util::Error{Untranslated("Can't activate a snapshot-based chainstate more than once")};
-    }
-
     {
         LOCK(::cs_main);
 
+        if (this->CurrentChainstate().m_from_snapshot_blockhash) {
+            return util::Error{Untranslated("Can't activate a snapshot-based chainstate more than once")};
+        }
         if (!GetParams().AssumeutxoForBlockhash(base_blockhash).has_value()) {
             auto available_heights = GetParams().GetAvailableSnapshotHeights();
             std::string heights_formatted = util::Join(available_heights, ", ", [&](const auto& i) { return util::ToString(i); });
