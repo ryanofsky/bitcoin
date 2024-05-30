@@ -1357,7 +1357,13 @@ public:
     //! Get range of historical blocks to download.
     std::optional<std::pair<const CBlockIndex*, const CBlockIndex*>> GetHistoricalBlockRange() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
+<<<<<<< HEAD
 >>>>>>> ccfeb047b3b7 (refactor: Add Chainstate::m_target_blockhash member)
+||||||| parent of c4ab2c6cbd41 (refactor: Add ChainstateManager::ActivateBestChains() method)
+=======
+    util::Result<void> ActivateBestChains() const LOCKS_EXCLUDED(::cs_main);
+
+>>>>>>> c4ab2c6cbd41 (refactor: Add ChainstateManager::ActivateBestChains() method)
     CCheckQueue<CScriptCheck>& GetCheckQueue() { return m_script_check_queue; }
 
     ~ChainstateManager();
