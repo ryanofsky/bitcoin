@@ -43,7 +43,7 @@ FUZZ_TARGET(utxo_snapshot, .init = initialize_chain)
 
     const auto snapshot_path = gArgs.GetDataDirNet() / "fuzzed_snapshot.dat";
 
-    Assert(!chainman.SnapshotBlockhash());
+    Assert(!chainman.ActiveChainstate().m_from_snapshot_blockhash);
 
     {
         AutoFile outfile{fsbridge::fopen(snapshot_path, "wb")};
@@ -102,8 +102,6 @@ FUZZ_TARGET(utxo_snapshot, .init = initialize_chain)
     if (ActivateFuzzedSnapshot()) {
         LOCK(::cs_main);
         Assert(!chainman.ActiveChainstate().m_from_snapshot_blockhash->IsNull());
-        Assert(*chainman.ActiveChainstate().m_from_snapshot_blockhash ==
-               *chainman.SnapshotBlockhash());
         const auto& coinscache{chainman.ActiveChainstate().CoinsTip()};
         for (const auto& block : *g_chain) {
             Assert(coinscache.HaveCoin(COutPoint{block->vtx.at(0)->GetHash(), 0}));
@@ -120,7 +118,6 @@ FUZZ_TARGET(utxo_snapshot, .init = initialize_chain)
         }
         Assert(g_chain->size() == coinscache.GetCacheSize());
     } else {
-        Assert(!chainman.SnapshotBlockhash());
         Assert(!chainman.ActiveChainstate().m_from_snapshot_blockhash);
     }
     // Snapshot should refuse to load a second time regardless of validity
