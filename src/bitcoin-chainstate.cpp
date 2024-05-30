@@ -266,8 +266,166 @@ int main(int argc, char* argv[])
         } else {
             std::cerr << "Block was not accepted" << std::endl;
         }
+<<<<<<< HEAD
         if (!new_block) {
             std::cerr << "Block is a duplicate" << std::endl;
+||||||| parent of e322ad94f365 (refactor: Delete ChainstateManager::GetAll() method)
+
+        // Adapted from rpc/mining.cpp
+        class submitblock_StateCatcher final : public CValidationInterface
+        {
+        public:
+            uint256 hash;
+            bool found;
+            BlockValidationState state;
+
+            explicit submitblock_StateCatcher(const uint256& hashIn) : hash(hashIn), found(false), state() {}
+
+        protected:
+            void BlockChecked(const std::shared_ptr<const CBlock>& block, const BlockValidationState& stateIn) override
+            {
+                if (block->GetHash() != hash)
+                    return;
+                found = true;
+                state = stateIn;
+            }
+        };
+
+        bool new_block;
+        auto sc = std::make_shared<submitblock_StateCatcher>(block.GetHash());
+        validation_signals.RegisterSharedValidationInterface(sc);
+        bool accepted = chainman.ProcessNewBlock(blockptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/&new_block);
+        validation_signals.UnregisterSharedValidationInterface(sc);
+        if (!new_block && accepted) {
+            std::cerr << "duplicate" << std::endl;
+            break;
+        }
+        if (!sc->found) {
+            std::cerr << "inconclusive" << std::endl;
+            break;
+        }
+        std::cout << sc->state.ToString() << std::endl;
+        switch (sc->state.GetResult()) {
+        case BlockValidationResult::BLOCK_RESULT_UNSET:
+            std::cerr << "initial value. Block has not yet been rejected" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_HEADER_LOW_WORK:
+            std::cerr << "the block header may be on a too-little-work chain" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_CONSENSUS:
+            std::cerr << "invalid by consensus rules (excluding any below reasons)" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_CACHED_INVALID:
+            std::cerr << "this block was cached as being invalid and we didn't store the reason why" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_INVALID_HEADER:
+            std::cerr << "invalid proof of work or time too old" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_MUTATED:
+            std::cerr << "the block's data didn't match the data committed to by the PoW" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_MISSING_PREV:
+            std::cerr << "We don't have the previous block the checked one is built on" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_INVALID_PREV:
+            std::cerr << "A block this one builds on is invalid" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_TIME_FUTURE:
+            std::cerr << "block timestamp was > 2 hours in the future (or our clock is bad)" << std::endl;
+            break;
+        }
+    }
+
+epilogue:
+    // Without this precise shutdown sequence, there will be a lot of nullptr
+    // dereferencing and UB.
+    validation_signals.FlushBackgroundCallbacks();
+    {
+        LOCK(cs_main);
+        for (Chainstate* chainstate : chainman.GetAll()) {
+            if (chainstate->CanFlushToDisk()) {
+                chainstate->ForceFlushStateToDisk();
+                chainstate->ResetCoinsViews();
+            }
+=======
+
+        // Adapted from rpc/mining.cpp
+        class submitblock_StateCatcher final : public CValidationInterface
+        {
+        public:
+            uint256 hash;
+            bool found;
+            BlockValidationState state;
+
+            explicit submitblock_StateCatcher(const uint256& hashIn) : hash(hashIn), found(false), state() {}
+
+        protected:
+            void BlockChecked(const std::shared_ptr<const CBlock>& block, const BlockValidationState& stateIn) override
+            {
+                if (block->GetHash() != hash)
+                    return;
+                found = true;
+                state = stateIn;
+            }
+        };
+
+        bool new_block;
+        auto sc = std::make_shared<submitblock_StateCatcher>(block.GetHash());
+        validation_signals.RegisterSharedValidationInterface(sc);
+        bool accepted = chainman.ProcessNewBlock(blockptr, /*force_processing=*/true, /*min_pow_checked=*/true, /*new_block=*/&new_block);
+        validation_signals.UnregisterSharedValidationInterface(sc);
+        if (!new_block && accepted) {
+            std::cerr << "duplicate" << std::endl;
+            break;
+        }
+        if (!sc->found) {
+            std::cerr << "inconclusive" << std::endl;
+            break;
+        }
+        std::cout << sc->state.ToString() << std::endl;
+        switch (sc->state.GetResult()) {
+        case BlockValidationResult::BLOCK_RESULT_UNSET:
+            std::cerr << "initial value. Block has not yet been rejected" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_HEADER_LOW_WORK:
+            std::cerr << "the block header may be on a too-little-work chain" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_CONSENSUS:
+            std::cerr << "invalid by consensus rules (excluding any below reasons)" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_CACHED_INVALID:
+            std::cerr << "this block was cached as being invalid and we didn't store the reason why" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_INVALID_HEADER:
+            std::cerr << "invalid proof of work or time too old" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_MUTATED:
+            std::cerr << "the block's data didn't match the data committed to by the PoW" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_MISSING_PREV:
+            std::cerr << "We don't have the previous block the checked one is built on" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_INVALID_PREV:
+            std::cerr << "A block this one builds on is invalid" << std::endl;
+            break;
+        case BlockValidationResult::BLOCK_TIME_FUTURE:
+            std::cerr << "block timestamp was > 2 hours in the future (or our clock is bad)" << std::endl;
+            break;
+        }
+    }
+
+epilogue:
+    // Without this precise shutdown sequence, there will be a lot of nullptr
+    // dereferencing and UB.
+    validation_signals.FlushBackgroundCallbacks();
+    {
+        LOCK(cs_main);
+        for (auto& chainstate : chainman.m_chainstates) {
+            if (chainstate->CanFlushToDisk()) {
+                chainstate->ForceFlushStateToDisk();
+                chainstate->ResetCoinsViews();
+            }
+>>>>>>> e322ad94f365 (refactor: Delete ChainstateManager::GetAll() method)
         }
     }
 }
