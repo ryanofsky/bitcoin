@@ -4960,7 +4960,7 @@ bool ChainstateManager::LoadBlockIndex()
     AssertLockHeld(cs_main);
     // Load block index from databases
     if (m_blockman.m_blockfiles_indexed) {
-        bool ret{m_blockman.LoadBlockIndexDB(SnapshotBlockhash())};
+        bool ret{m_blockman.LoadBlockIndexDB(CurrentChainstate().m_from_snapshot_blockhash)};
         if (!ret) return false;
 
         m_blockman.ScanAndUnlinkAlreadyPrunedFiles();
@@ -5586,16 +5586,6 @@ double GuessVerificationProgress(const ChainTxData& data, const CBlockIndex *pin
     return std::min<double>(pindex->nChainTx / fTxTotal, 1.0);
 }
 
-std::optional<uint256> ChainstateManager::SnapshotBlockhash() const
-{
-    LOCK(::cs_main);
-    if (m_active_chainstate && m_active_chainstate->m_from_snapshot_blockhash) {
-        // If a snapshot chainstate exists, it will always be our active.
-        return m_active_chainstate->m_from_snapshot_blockhash;
-    }
-    return std::nullopt;
-}
-
 std::vector<Chainstate*> ChainstateManager::GetAll()
 {
     LOCK(::cs_main);
@@ -5665,14 +5655,25 @@ util::Result<void> ChainstateManager::ActivateSnapshot(
         bool in_memory)
 {
     uint256 base_blockhash = metadata.m_base_blockhash;
+<<<<<<< HEAD
     int base_blockheight = metadata.m_base_blockheight;
 
     if (this->SnapshotBlockhash()) {
         return util::Error{Untranslated("Can't activate a snapshot-based chainstate more than once")};
     }
 
+||||||| parent of ca2c7e840631 (refactor: Delete ChainstateManager::SnapshotBlockhash() method)
+
+    if (this->SnapshotBlockhash()) {
+        LogPrintf("[snapshot] can't activate a snapshot-based chainstate more than once\n");
+        return false;
+    }
+
+=======
+>>>>>>> ca2c7e840631 (refactor: Delete ChainstateManager::SnapshotBlockhash() method)
     {
         LOCK(::cs_main);
+<<<<<<< HEAD
 
         if (!GetParams().AssumeutxoForBlockhash(base_blockhash).has_value()) {
             auto available_heights = GetParams().GetAvailableSnapshotHeights();
@@ -5701,6 +5702,19 @@ util::Result<void> ChainstateManager::ActivateSnapshot(
         auto mempool{m_active_chainstate->GetMempool()};
         if (mempool && mempool->size() > 0) {
             return util::Error{Untranslated("Can't activate a snapshot when mempool not empty")};
+||||||| parent of ca2c7e840631 (refactor: Delete ChainstateManager::SnapshotBlockhash() method)
+        if (Assert(m_active_chainstate->GetMempool())->size() > 0) {
+            LogPrintf("[snapshot] can't activate a snapshot when mempool not empty\n");
+            return false;
+=======
+        if (this->CurrentChainstate().m_from_snapshot_blockhash) {
+            LogPrintf("[snapshot] can't activate a snapshot-based chainstate more than once\n");
+            return false;
+        }
+        if (Assert(m_active_chainstate->GetMempool())->size() > 0) {
+            LogPrintf("[snapshot] can't activate a snapshot when mempool not empty\n");
+            return false;
+>>>>>>> ca2c7e840631 (refactor: Delete ChainstateManager::SnapshotBlockhash() method)
         }
     }
 
