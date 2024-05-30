@@ -6250,18 +6250,33 @@ bool PeerManagerImpl::SendMessages(CNode* pto)
                 return std::max(0, MAX_BLOCKS_IN_TRANSIT_PER_PEER - static_cast<int>(state.vBlocksInFlight.size()));
             };
 
-            // If a snapshot chainstate is in use, we want to find its next blocks
-            // before the background chainstate to prioritize getting to network tip.
+            // If there are multiple chainstates, download blocks for the
+            // current chainstate first, to prioritize getting to network tip
+            // before downloading historical blocks.
             FindNextBlocksToDownload(*peer, get_inflight_budget(), vToDownload, staller);
+<<<<<<< HEAD
             if (m_chainman.BackgroundSyncInProgress() && !IsLimitedPeer(*peer)) {
                 // If the background tip is not an ancestor of the snapshot block,
                 // we need to start requesting blocks from their last common ancestor.
                 const CBlockIndex *from_tip = LastCommonAncestor(m_chainman.GetBackgroundSyncTip(), m_chainman.GetSnapshotBaseBlock());
+||||||| parent of b8fa4bae495a (refactor: Add Chainstate::m_target_blockhash member)
+            if (m_chainman.BackgroundSyncInProgress() && !IsLimitedPeer(*peer)) {
+=======
+            auto historical_blocks{m_chainman.GetHistoricalBlockRange()};
+            if (historical_blocks && !IsLimitedPeer(*peer)) {
+>>>>>>> b8fa4bae495a (refactor: Add Chainstate::m_target_blockhash member)
                 TryDownloadingHistoricalBlocks(
                     *peer,
                     get_inflight_budget(),
+<<<<<<< HEAD
                     vToDownload, from_tip,
                     Assert(m_chainman.GetSnapshotBaseBlock()));
+||||||| parent of b8fa4bae495a (refactor: Add Chainstate::m_target_blockhash member)
+                    vToDownload, m_chainman.GetBackgroundSyncTip(),
+                    Assert(m_chainman.GetSnapshotBaseBlock()));
+=======
+                    vToDownload, historical_blocks->first, historical_blocks->second);
+>>>>>>> b8fa4bae495a (refactor: Add Chainstate::m_target_blockhash member)
             }
             for (const CBlockIndex *pindex : vToDownload) {
                 uint32_t nFetchFlags = GetFetchFlags(*peer);
