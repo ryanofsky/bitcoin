@@ -186,6 +186,7 @@ int main(int argc, char* argv[])
         }
     }
 
+<<<<<<< HEAD
     // Main program logic starts here
     std::cout
         << "Hello! I'm going to print out some information about your datadir." << std::endl
@@ -210,6 +211,18 @@ int main(int argc, char* argv[])
             std::cerr << "Failed to connect best block (" << state.ToString() << ")" << std::endl;
             goto epilogue;
         }
+||||||| parent of 2dfaca5dfa3b (refactor: Add ChainstateManager::ActivateBestChains() method)
+    for (Chainstate* chainstate : WITH_LOCK(::cs_main, return chainman.GetAll())) {
+        BlockValidationState state;
+        if (!chainstate->ActivateBestChain(state, nullptr)) {
+            std::cerr << "Failed to connect best block (" << state.ToString() << ")" << std::endl;
+            goto epilogue;
+        }
+=======
+    if (auto result = chainman.ActivateBestChains(); !result) {
+        std::cerr << util::ErrorString(result).original << std::endl;
+        goto epilogue;
+>>>>>>> 2dfaca5dfa3b (refactor: Add ChainstateManager::ActivateBestChains() method)
     }
 
     // Main program logic starts here
