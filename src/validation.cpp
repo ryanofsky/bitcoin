@@ -6490,7 +6490,7 @@ bool ChainstateManager::ValidatedSnapshotCleanup(Chainstate& validated_chainstat
 >>>>>>> f36304ed8aac (refactor: Add Chainstate::StoragePath() method)
 {
     AssertLockHeld(::cs_main);
-    if (!this->IsSnapshotValidated()) {
+    if (from_snapshot_chainstate.Validity() != ChainValidity::VALIDATED) {
         // No need to clean up.
         return false;
     }
