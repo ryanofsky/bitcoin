@@ -1873,8 +1873,16 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         }
     } else {
         // Prior to setting NODE_NETWORK, check if we can provide historical blocks.
+<<<<<<< HEAD
         if (!WITH_LOCK(chainman.GetMutex(), return chainman.BackgroundSyncInProgress())) {
             LogInfo("Setting NODE_NETWORK on non-prune mode");
+||||||| parent of a78dc22fa448 (refactor: Add Chainstate::m_target_blockhash member)
+        if (!WITH_LOCK(chainman.GetMutex(), return chainman.BackgroundSyncInProgress())) {
+            LogPrintf("Setting NODE_NETWORK on non-prune mode\n");
+=======
+        if (!WITH_LOCK(chainman.GetMutex(), return chainman.HistoricalChainstate())) {
+            LogPrintf("Setting NODE_NETWORK on non-prune mode\n");
+>>>>>>> a78dc22fa448 (refactor: Add Chainstate::m_target_blockhash member)
             g_local_services = ServiceFlags(g_local_services | NODE_NETWORK);
         } else {
             LogInfo("Running node in NODE_NETWORK_LIMITED mode until snapshot background sync completes");
