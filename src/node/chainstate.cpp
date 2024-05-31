@@ -186,14 +186,20 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     Chainstate& validated_chainstate{chainman.InitializeChainstate(options.mempool)};
 
     // Load a chain created from a UTXO snapshot, if any exist.
-    bool has_snapshot = chainman.DetectSnapshotChainstate();
+    Chainstate* from_snapshot_chainstate{chainman.DetectSnapshotChainstate()};
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     if (has_snapshot && options.wipe_chainstate_db) {
 ||||||| parent of c09d0d1e4846 (refactor: Add Chainstate::m_target_blockhash member)
     if (has_snapshot && (options.reindex || options.reindex_chainstate)) {
 =======
     if (has_snapshot && (options.reindex || options.reindex_chainstate)) {
+||||||| parent of 6fc16b9936ae (refactor: Pass chainstate parameters to MaybeCompleteSnapshotValidation)
+    if (has_snapshot && (options.reindex || options.reindex_chainstate)) {
+=======
+    if (from_snapshot_chainstate && (options.reindex || options.reindex_chainstate)) {
+>>>>>>> 6fc16b9936ae (refactor: Pass chainstate parameters to MaybeCompleteSnapshotValidation)
         // Reset chainstate target to network tip instead of snapshot block.
         validated_chainstate.SetTargetBlock(nullptr);
 >>>>>>> c09d0d1e4846 (refactor: Add Chainstate::m_target_blockhash member)
@@ -201,6 +207,7 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
         if (!chainman.DeleteSnapshotChainstate()) {
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Couldn't remove snapshot chainstate.")};
         }
+        from_snapshot_chainstate = nullptr;
     }
 
     auto [init_status, init_error] = CompleteChainstateInitialization(chainman, cache_sizes, options);
@@ -216,7 +223,9 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     // snapshot is actually validated? Because this entails unusual
     // filesystem operations to move leveldb data directories around, and that seems
     // too risky to do in the middle of normal runtime.
-    auto snapshot_completion = chainman.MaybeCompleteSnapshotValidation();
+    auto snapshot_completion{from_snapshot_chainstate
+                             ? chainman.MaybeCompleteSnapshotValidation(validated_chainstate, *from_snapshot_chainstate)
+                             : SnapshotCompletionResult::SKIPPED};
 
     if (snapshot_completion == SnapshotCompletionResult::SKIPPED) {
         // do nothing; expected case
