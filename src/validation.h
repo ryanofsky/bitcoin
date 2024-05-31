@@ -1130,7 +1130,7 @@ public:
     //! If the coins match (expected), then mark the validation chainstate for
     //! deletion and continue using the snapshot chainstate as active.
     //! Otherwise, revert to using the ibd chainstate and shutdown.
-    SnapshotCompletionResult MaybeCompleteSnapshotValidation() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    SnapshotCompletionResult MaybeCompleteSnapshotValidation(Chainstate& validated_chainstate, Chainstate& from_snapshot_chainstate) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     //! Returns nullptr if no snapshot has been loaded.
     const CBlockIndex* GetSnapshotBaseBlock() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
@@ -1299,8 +1299,9 @@ public:
     void ReportHeadersPresync(const arith_uint256& work, int64_t height, int64_t timestamp);
 
     //! When starting up, search the datadir for a chainstate based on a UTXO
-    //! snapshot that is in the process of being validated.
-    bool DetectSnapshotChainstate() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    //! snapshot that is in the process of being validated and load it if found.
+    //! Return pointer to the Chainstate if it is loaded.
+    Chainstate* DetectSnapshotChainstate() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     //! Add new chainstate.
     Chainstate& AddChainstate(std::unique_ptr<Chainstate> chainstate) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
@@ -1338,6 +1339,7 @@ public:
     std::pair<int, int> GetPruneRange(
         const Chainstate& chainstate, int last_height_can_prune) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
+<<<<<<< HEAD
     //! Return the height of the base block of the snapshot in use, if one exists, else
     //! nullopt.
     std::optional<int> GetSnapshotBaseHeight() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
@@ -1350,6 +1352,13 @@ public:
 
 ||||||| parent of ccfeb047b3b7 (refactor: Add Chainstate::m_target_blockhash member)
 =======
+||||||| parent of 5f60910d8df1 (refactor: Pass chainstate parameters to MaybeCompleteSnapshotValidation)
+    //! Return the height of the base block of the snapshot in use, if one exists, else
+    //! nullopt.
+    std::optional<int> GetSnapshotBaseHeight() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+
+=======
+>>>>>>> 5f60910d8df1 (refactor: Pass chainstate parameters to MaybeCompleteSnapshotValidation)
     //! Get range of historical blocks to download.
     std::optional<std::pair<const CBlockIndex*, const CBlockIndex*>> GetHistoricalBlockRange() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
