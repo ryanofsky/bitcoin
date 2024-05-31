@@ -110,7 +110,7 @@ FUZZ_TARGET(utxo_snapshot, .init = initialize_chain)
             const auto* index{chainman.m_blockman.LookupBlockIndex(block->GetHash())};
             Assert(index);
             Assert(index->nTx == 0);
-            if (index->nHeight == chainman.GetSnapshotBaseHeight()) {
+            if (index->nHeight == chainman.CurrentChainstate().SnapshotBase()->nHeight) {
                 auto params{chainman.GetParams().AssumeutxoForHeight(index->nHeight)};
                 Assert(params.has_value());
                 Assert(params.value().m_chain_tx_count == index->m_chain_tx_count);
