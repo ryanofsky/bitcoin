@@ -591,9 +591,14 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_snapshot_init, SnapshotTestSetup)
     // This call reinitializes the chainstates.
     this->LoadVerifyActivateChainstate();
 
+    std::vector<Chainstate*> chainstates;
     {
         LOCK(chainman_restarted.GetMutex());
-        BOOST_CHECK_EQUAL(chainman_restarted.GetAll().size(), 2);
+        chainstates = chainman_restarted.GetAll();
+        BOOST_CHECK_EQUAL(chainstates.size(), 2);
+        BOOST_CHECK_EQUAL(chainstates[0]->m_chain.Height(), 109);
+        BOOST_CHECK_EQUAL(chainstates[1]->m_chain.Height(), 210);
+
         BOOST_CHECK(chainman_restarted.IsSnapshotActive());
         BOOST_CHECK(!chainman_restarted.IsSnapshotValidated());
 
@@ -610,11 +615,9 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_snapshot_init, SnapshotTestSetup)
 
         // Background chainstate should be unaware of new blocks on the snapshot
         // chainstate.
-        for (Chainstate* cs : chainman_restarted.GetAll()) {
-            if (cs != &chainman_restarted.ActiveChainstate()) {
-                BOOST_CHECK_EQUAL(cs->m_chain.Height(), 109);
-            }
-        }
+        BOOST_CHECK_EQUAL(chainstates[0]->m_chain.Height(), 110);
+        BOOST_CHECK_EQUAL(chainstates[1]->m_chain.Height(), 220);
+        BOOST_CHECK_EQUAL(chainman_restarted.GetAll().size(), 1);
     }
 }
 
