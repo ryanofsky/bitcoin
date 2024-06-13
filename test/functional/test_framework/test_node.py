@@ -14,6 +14,7 @@ import logging
 import os
 import platform
 import re
+import signal
 import subprocess
 import tempfile
 import time
@@ -839,6 +840,23 @@ class TestNode():
 
     def wait_until(self, test_function, timeout=60, check_interval=0.05):
         return wait_until_helper_internal(test_function, timeout=timeout, timeout_factor=self.timeout_factor, check_interval=check_interval)
+
+    def kill(self):
+        """Abruptly kill the node to test recovery from an unclean shutdown."""
+        # Before killing the node, check the log to see if it spawned a wallet
+        # process. If it did, we need to send a kill signal to the wallet
+        # process as well, so the wallet shutdown is unclean and the wallet
+        # databases are not flushed. If the wallet process were not killed here,
+        # it would shut down cleanly instead of uncleanly when it lost the
+        # connection to the node, which is not what we want for testing.
+        wallet_pid = None
+        with open(self.debug_log_path, encoding="utf-8", errors="replace") as dl:
+            for line in dl:
+                if m := re.search(r"\[spawnProcess\] \[ipc\] Process bitcoin-wallet pid ([0-9]+) launched", line):
+                    wallet_pid = int(m.group(1))
+        if wallet_pid is not None:
+            os.kill(wallet_pid, signal.SIGKILL)
+        self.process.kill()
 
 
 class TestNodeCLIAttr:
