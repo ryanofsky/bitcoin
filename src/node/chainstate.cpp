@@ -35,6 +35,7 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     ChainstateManager& chainman,
     const ChainstateLoadOptions& options) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
+    const BCLog::Context& log{chainman.m_log};
     if (chainman.m_interrupt) return {ChainstateLoadStatus::INTERRUPTED, {}};
 
     // LoadBlockIndex will load m_have_pruned if we've ever removed a
@@ -83,8 +84,16 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     // At this point we're either in reindex or we've loaded a useful
     // block tree into BlockIndex()!
 
+<<<<<<< HEAD
     for (const auto& chainstate : chainman.m_chainstates) {
         LogInfo("Initializing chainstate %s", chainstate->ToString());
+||||||| parent of 4332dcb2562 (refactor: Log kernel output to local log instances)
+    for (Chainstate* chainstate : chainman.GetAll()) {
+        LogInfo("Initializing chainstate %s", chainstate->ToString());
+=======
+    for (Chainstate* chainstate : chainman.GetAll()) {
+        LogInfo(log, "Initializing chainstate %s", chainstate->ToString());
+>>>>>>> 4332dcb2562 (refactor: Log kernel output to local log instances)
 
         try {
             chainstate->InitCoinsDB(
@@ -144,19 +153,20 @@ static ChainstateLoadResult CompleteChainstateInitialization(
 ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
                                     const ChainstateLoadOptions& options)
 {
+    const BCLog::Context& log{chainman.m_log};
     if (!chainman.AssumedValidBlock().IsNull()) {
-        LogInfo("Assuming ancestors of block %s have valid signatures.", chainman.AssumedValidBlock().GetHex());
+        LogInfo(log, "Assuming ancestors of block %s have valid signatures.", chainman.AssumedValidBlock().GetHex());
     } else {
-        LogInfo("Validating signatures for all blocks.");
+        LogInfo(log, "Validating signatures for all blocks.");
     }
-    LogInfo("Setting nMinimumChainWork=%s", chainman.MinimumChainWork().GetHex());
+    LogInfo(log, "Setting nMinimumChainWork=%s", chainman.MinimumChainWork().GetHex());
     if (chainman.MinimumChainWork() < UintToArith256(chainman.GetConsensus().nMinimumChainWork)) {
-        LogWarning("nMinimumChainWork set below default value of %s", chainman.GetConsensus().nMinimumChainWork.GetHex());
+        LogWarning(log, "nMinimumChainWork set below default value of %s", chainman.GetConsensus().nMinimumChainWork.GetHex());
     }
     if (chainman.m_blockman.GetPruneTarget() == BlockManager::PRUNE_TARGET_MANUAL) {
-        LogInfo("Block pruning enabled. Use RPC call pruneblockchain(height) to manually prune block and undo files.");
+        LogInfo(log, "Block pruning enabled. Use RPC call pruneblockchain(height) to manually prune block and undo files.");
     } else if (chainman.m_blockman.GetPruneTarget()) {
-        LogInfo("Prune configured to target %u MiB on disk for block and undo files.",
+        LogInfo(log, "Prune configured to target %u MiB on disk for block and undo files.",
                 chainman.m_blockman.GetPruneTarget() / 1024 / 1024);
     }
 
@@ -171,11 +181,21 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     // Load a chain created from a UTXO snapshot, if any exist.
     Chainstate* assumeutxo_cs{chainman.LoadAssumeutxoChainstate()};
 
+<<<<<<< HEAD
     if (assumeutxo_cs && options.wipe_chainstate_db) {
         // Reset chainstate target to network tip instead of snapshot block.
         validated_cs.SetTargetBlock(nullptr);
         LogInfo("[snapshot] deleting snapshot chainstate due to reindexing");
         if (!chainman.DeleteChainstate(*assumeutxo_cs)) {
+||||||| parent of 4332dcb2562 (refactor: Log kernel output to local log instances)
+    if (has_snapshot && options.wipe_chainstate_db) {
+        LogInfo("[snapshot] deleting snapshot chainstate due to reindexing");
+        if (!chainman.DeleteSnapshotChainstate()) {
+=======
+    if (has_snapshot && options.wipe_chainstate_db) {
+        LogInfo(log, "[snapshot] deleting snapshot chainstate due to reindexing");
+        if (!chainman.DeleteSnapshotChainstate()) {
+>>>>>>> 4332dcb2562 (refactor: Log kernel output to local log instances)
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Couldn't remove snapshot chainstate.")};
         }
         assumeutxo_cs = nullptr;
@@ -201,8 +221,16 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     if (snapshot_completion == SnapshotCompletionResult::SKIPPED) {
         // do nothing; expected case
     } else if (snapshot_completion == SnapshotCompletionResult::SUCCESS) {
+<<<<<<< HEAD
         LogInfo("[snapshot] cleaning up unneeded background chainstate, then reinitializing");
         if (!chainman.ValidatedSnapshotCleanup(validated_cs, *assumeutxo_cs)) {
+||||||| parent of 4332dcb2562 (refactor: Log kernel output to local log instances)
+        LogInfo("[snapshot] cleaning up unneeded background chainstate, then reinitializing");
+        if (!chainman.ValidatedSnapshotCleanup()) {
+=======
+        LogInfo(log, "[snapshot] cleaning up unneeded background chainstate, then reinitializing");
+        if (!chainman.ValidatedSnapshotCleanup()) {
+>>>>>>> 4332dcb2562 (refactor: Log kernel output to local log instances)
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Background chainstate cleanup failed unexpectedly.")};
         }
 
