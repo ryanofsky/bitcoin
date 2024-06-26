@@ -14,6 +14,7 @@
 #include <uint256.h>
 #include <util/chaintype.h>
 #include <util/fs.h>
+#include <util/log.h>
 
 #include <algorithm>
 #include <array>
@@ -120,7 +121,7 @@ bool WriteSnapshotBaseBlockhash(Chainstate& snapshot_chainstate)
 
 //! Read the blockhash of the snapshot base block that was used to construct the
 //! chainstate.
-std::optional<uint256> ReadSnapshotBaseBlockhash(fs::path chaindir)
+std::optional<uint256> ReadSnapshotBaseBlockhash(util::log::Logger* logger, fs::path chaindir)
     EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
 //! Suffix appended to the chainstate (leveldb) dir when created based upon
