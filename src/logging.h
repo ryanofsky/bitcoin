@@ -244,7 +244,16 @@ namespace BCLog {
         Logger& logger;
         LogFlags category;
 
+<<<<<<< HEAD
         explicit Context(Logger& logger, LogFlags category = LogFlags::ALL) : logger{logger}, category{category} {}
+||||||| parent of 4ccfaaba732f (refactor: Pass Logger instances to kernel objects)
+        //! Constructor. Implicit so can be constructed from category constants passed to Log macros below.
+        Context(LogFlags category = LogFlags::ALL, Logger& logger = LogInstance()) : category{category}, logger{logger} {}
+=======
+        //! Constructor. Implicit so can be constructed from category constants passed to Log macros below.
+        Context(LogFlags category = LogFlags::ALL, Logger& logger = LogInstance()) : category{category}, logger{logger} {}
+        Context(Logger& logger) : category{LogFlags::ALL}, logger{logger} {}
+>>>>>>> 4ccfaaba732f (refactor: Pass Logger instances to kernel objects)
 
         template <typename... Args>
         std::string Format(util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args) const
