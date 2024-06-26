@@ -130,6 +130,23 @@ public:
 
 int main(int argc, char* argv[])
 {
+<<<<<<< HEAD
+||||||| parent of 8656985439a5 (refactor: Pass Logger instances to kernel objects)
+    // We do not enable logging for this app, so explicitly disable it.
+    // To enable logging instead, replace with:
+    //    LogInstance().m_print_to_console = true;
+    //    LogInstance().StartLogging();
+    LogInstance().DisableLogging();
+
+=======
+    BCLog::Logger& logger{LogInstance()};
+    // We do not enable logging for this app, so explicitly disable it.
+    // To enable logging instead, replace with:
+    //    logger.m_print_to_console = true;
+    //    logger.StartLogging();
+    logger.DisableLogging();
+
+>>>>>>> 8656985439a5 (refactor: Pass Logger instances to kernel objects)
     // SETUP: Argument parsing and handling
     if (argc != 2) {
         std::cerr
@@ -154,10 +171,52 @@ int main(int argc, char* argv[])
     Logger logger{std::make_unique<KernelLog>()};
     logging_set_options(logger, logging_options);
 
+<<<<<<< HEAD
     ContextOptions options{};
     ChainParams params{ChainType::MAINNET};
     options.SetLogger(logger);
     options.SetChainParams(params);
+||||||| parent of 8656985439a5 (refactor: Pass Logger instances to kernel objects)
+    // SETUP: Chainstate
+    auto chainparams = CChainParams::Main();
+    const ChainstateManager::Options chainman_opts{
+        .chainparams = *chainparams,
+        .datadir = abs_datadir,
+        .notifications = *notifications,
+        .signals = &validation_signals,
+    };
+    const node::BlockManager::Options blockman_opts{
+        .chainparams = chainman_opts.chainparams,
+        .blocks_dir = abs_datadir / "blocks",
+        .notifications = chainman_opts.notifications,
+        .block_tree_db_params = DBParams{
+            .path = abs_datadir / "blocks" / "index",
+            .cache_bytes = cache_sizes.block_tree_db,
+        },
+    };
+    util::SignalInterrupt interrupt;
+    ChainstateManager chainman{interrupt, chainman_opts, blockman_opts};
+=======
+    // SETUP: Chainstate
+    auto chainparams = CChainParams::Main();
+    const ChainstateManager::Options chainman_opts{
+        .chainparams = *chainparams,
+        .datadir = abs_datadir,
+        .notifications = *notifications,
+        .signals = &validation_signals,
+    };
+    const node::BlockManager::Options blockman_opts{
+        .chainparams = chainman_opts.chainparams,
+        .blocks_dir = abs_datadir / "blocks",
+        .notifications = chainman_opts.notifications,
+        .block_tree_db_params = DBParams{
+            .path = abs_datadir / "blocks" / "index",
+            .cache_bytes = cache_sizes.block_tree_db,
+        },
+    };
+    util::SignalInterrupt interrupt;
+    ChainstateManager chainman{logger, interrupt, chainman_opts, blockman_opts};
+>>>>>>> 8656985439a5 (refactor: Pass Logger instances to kernel objects)
 
     options.SetNotifications(std::make_shared<TestKernelNotifications>());
     options.SetValidationInterface(std::make_shared<TestValidationInterface>());
