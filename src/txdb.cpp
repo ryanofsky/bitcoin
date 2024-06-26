@@ -103,7 +103,7 @@ bool CCoinsViewDB::BatchWrite(CoinsViewCacheCursor& cursor, const uint256 &hashB
         std::vector<uint256> old_heads = GetHeadBlocks();
         if (old_heads.size() == 2) {
             if (old_heads[0] != hashBlock) {
-                LogPrintLevel(BCLog::COINDB, BCLog::Level::Error, "The coins database detected an inconsistent state, likely due to a previous crash or shutdown. You will need to restart bitcoind with the -reindex-chainstate or -reindex configuration option.\n");
+                LogError(m_log, "The coins database detected an inconsistent state, likely due to a previous crash or shutdown. You will need to restart bitcoind with the -reindex-chainstate or -reindex configuration option.\n");
             }
             assert(old_heads[0] == hashBlock);
             old_tip = old_heads[1];
@@ -129,13 +129,19 @@ bool CCoinsViewDB::BatchWrite(CoinsViewCacheCursor& cursor, const uint256 &hashB
         count++;
         it = cursor.NextAndMaybeErase(*it);
         if (batch.SizeEstimate() > m_options.batch_write_bytes) {
+<<<<<<< HEAD
             LogDebug(BCLog::COINDB, "Writing partial batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
+||||||| parent of aecba82de755 (refactor: Log kernel output to local log instances)
+            LogPrint(BCLog::COINDB, "Writing partial batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
+=======
+            LogDebug(m_log, "Writing partial batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
+>>>>>>> aecba82de755 (refactor: Log kernel output to local log instances)
             m_db->WriteBatch(batch);
             batch.Clear();
             if (m_options.simulate_crash_ratio) {
                 static FastRandomContext rng;
                 if (rng.randrange(m_options.simulate_crash_ratio) == 0) {
-                    LogPrintf("Simulating a crash. Goodbye.\n");
+                    LogInfo(m_log, "Simulating a crash. Goodbye.\n");
                     _Exit(0);
                 }
             }
@@ -146,9 +152,21 @@ bool CCoinsViewDB::BatchWrite(CoinsViewCacheCursor& cursor, const uint256 &hashB
     batch.Erase(DB_HEAD_BLOCKS);
     batch.Write(DB_BEST_BLOCK, hashBlock);
 
+<<<<<<< HEAD
     LogDebug(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
+||||||| parent of aecba82de755 (refactor: Log kernel output to local log instances)
+    LogPrint(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
+=======
+    LogDebug(m_log, "Writing final batch of %.2f MiB\n", batch.SizeEstimate() * (1.0 / 1048576.0));
+>>>>>>> aecba82de755 (refactor: Log kernel output to local log instances)
     bool ret = m_db->WriteBatch(batch);
+<<<<<<< HEAD
     LogDebug(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
+||||||| parent of aecba82de755 (refactor: Log kernel output to local log instances)
+    LogPrint(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
+=======
+    LogDebug(m_log, "Committed %u changed transaction outputs (out of %u) to coin database...\n", (unsigned int)changed, (unsigned int)count);
+>>>>>>> aecba82de755 (refactor: Log kernel output to local log instances)
     return ret;
 }
 
