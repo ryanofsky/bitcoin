@@ -286,6 +286,152 @@ namespace BCLog {
         bool DefaultShrinkDebugFile() const;
     };
 
+<<<<<<< HEAD
+||||||| parent of 75b104f23c8 (refactor: Log kernel output to local log instances)
+    //! Object representing a particular source of log messages. Holds a logging
+    //! category, a reference to the logger object to output to, and a
+    //! formatting hook.
+    struct Context {
+        static constexpr bool log_context{true};
+        Logger& logger;
+        LogFlags category;
+
+        explicit Context(Logger& logger, LogFlags category = LogFlags::ALL) : logger{logger}, category{category} {}
+
+        template <typename... Args>
+        std::string Format(util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args) const
+        {
+            std::string log_msg;
+            try {
+                log_msg = tfm::format(fmt, args...);
+            } catch (tinyformat::format_error& fmterr) {
+                log_msg = "Error \"" + std::string{fmterr.what()} + "\" while formatting log message: " + fmt.fmt;
+            }
+            return log_msg;
+        }
+    };
+
+namespace detail {
+//! Internal helper to get log context object from the first macro argument.
+template <bool take_category, typename Context>
+requires (Context::log_context)
+static const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
+
+template <bool take_category>
+static const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
+
+template <bool take_category>
+static Context GetContext(LogFlags category)
+{
+    //! Trigger compile error if caller tries to pass a category constant as a
+    //! first argument to a logging call that specifies take_category == false.
+    //! There is no technical reason why all logging calls could not accept
+    //! category arguments, but for various reasons, such as (1) not wanting to
+    //! allow users filter by category at high priority levels, and (2) wanting
+    //! to incentivize developers to use lower log levels to avoid log spam,
+    //! passing category constants at higher levels is forbidden.
+    static_assert(take_category, "Cannot pass BCLog::LogFlags category argument to Info/Warning/Error logging call. Please switch to Debug/Trace call, or drop the category argument!");
+    return Context{LogInstance(), category};
+}
+
+template <bool take_category>
+static Context GetContext(std::string_view fmt)
+{
+    //! Trigger compile error if caller does not pass a category constant as the
+    //! first argument to a logging call that specifies take_category == true.
+    //! There is no technical reason why category arguments need to be required,
+    //! but categories are useful for finding and filtering relevant messages
+    //! when debugging, so we want to encourage them.
+    static_assert(!take_category, "Missing required BCLog::LogFlags category argument for Debug/Trace logging call. Category can only be omitted for Info/Warning/Error calls.");
+    return Context{LogInstance()};
+}
+
+//! Internal helper to format log arguments and call a logging function.
+template <typename LogFn, typename Context, typename ContextArg, typename... Args>
+requires (!std::is_convertible_v<ContextArg, std::string_view>)
+void Format(LogFn&& log, Context&& ctx, ContextArg&&, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(ctx.Format(fmt, args...));
+}
+template <typename LogFn, typename Context, typename... Args>
+void Format(LogFn&& log, Context&& ctx, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(ctx.Format(fmt, args...));
+}
+} // namespace detail
+=======
+    //! Object representing a particular source of log messages. Holds a logging
+    //! category, a reference to the logger object to output to, and a
+    //! formatting hook.
+    struct Context {
+        static constexpr bool log_context{true};
+        Logger& logger;
+        LogFlags category;
+
+        explicit Context(Logger& logger, LogFlags category = LogFlags::ALL) : logger{logger}, category{category} {}
+
+        template <typename... Args>
+        std::string Format(util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args) const
+        {
+            std::string log_msg;
+            try {
+                log_msg = tfm::format(fmt, args...);
+            } catch (tinyformat::format_error& fmterr) {
+                log_msg = "Error \"" + std::string{fmterr.what()} + "\" while formatting log message: " + fmt.fmt;
+            }
+            return log_msg;
+        }
+    };
+
+namespace detail {
+//! Internal helper to get log context object from the first macro argument.
+template <bool take_category, typename Context>
+requires (Context::log_context)
+static const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
+
+template <bool take_category>
+static Context GetContext(Logger& logger) { return Context{logger}; }
+
+template <bool take_category>
+static Context GetContext(LogFlags category)
+{
+    //! Trigger compile error if caller tries to pass a category constant as a
+    //! first argument to a logging call that specifies take_category == false.
+    //! There is no technical reason why all logging calls could not accept
+    //! category arguments, but for various reasons, such as (1) not wanting to
+    //! allow users filter by category at high priority levels, and (2) wanting
+    //! to incentivize developers to use lower log levels to avoid log spam,
+    //! passing category constants at higher levels is forbidden.
+    static_assert(take_category, "Cannot pass BCLog::LogFlags category argument to Info/Warning/Error logging call. Please switch to Debug/Trace call, or drop the category argument!");
+    return Context{LogInstance(), category};
+}
+
+template <bool take_category>
+static Context GetContext(std::string_view fmt)
+{
+    //! Trigger compile error if caller does not pass a category constant as the
+    //! first argument to a logging call that specifies take_category == true.
+    //! There is no technical reason why category arguments need to be required,
+    //! but categories are useful for finding and filtering relevant messages
+    //! when debugging, so we want to encourage them.
+    static_assert(!take_category, "Missing required BCLog::LogFlags category argument for Debug/Trace logging call. Category can only be omitted for Info/Warning/Error calls.");
+    return Context{LogInstance()};
+}
+
+//! Internal helper to format log arguments and call a logging function.
+template <typename LogFn, typename Context, typename ContextArg, typename... Args>
+requires (!std::is_convertible_v<ContextArg, std::string_view>)
+void Format(LogFn&& log, Context&& ctx, ContextArg&&, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(ctx.Format(fmt, args...));
+}
+template <typename LogFn, typename Context, typename... Args>
+void Format(LogFn&& log, Context&& ctx, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
+{
+    log(ctx.Format(fmt, args...));
+}
+} // namespace detail
+>>>>>>> 75b104f23c8 (refactor: Log kernel output to local log instances)
 } // namespace BCLog
 
 BCLog::Logger& LogInstance();
