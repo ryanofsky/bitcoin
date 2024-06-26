@@ -14,6 +14,7 @@
 #include <uint256.h>
 #include <util/byte_units.h>
 #include <util/hasher.h>
+#include <util/log.h>
 
 #include <cstddef>
 #include <shared_mutex>
@@ -47,7 +48,7 @@ private:
     std::shared_mutex cs_sigcache;
 
 public:
-    SignatureCache(size_t max_size_bytes);
+    SignatureCache(util::log::Logger& logger, size_t max_size_bytes);
 
     SignatureCache(const SignatureCache&) = delete;
     SignatureCache& operator=(const SignatureCache&) = delete;
