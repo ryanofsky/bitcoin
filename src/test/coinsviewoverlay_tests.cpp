@@ -7,6 +7,7 @@
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <primitives/transaction_identifier.h>
+#include <test/util/setup_common.h>
 #include <txdb.h>
 #include <uint256.h>
 #include <util/byte_units.h>
@@ -21,6 +22,8 @@
 #include <ranges>
 #include <unordered_set>
 #include <vector>
+
+BOOST_FIXTURE_TEST_SUITE(coinsviewoverlay_tests, BasicTestingSetup)
 
 namespace {
 
@@ -104,7 +107,7 @@ BOOST_AUTO_TEST_SUITE(coinsviewoverlay_tests)
 BOOST_AUTO_TEST_CASE(fetch_inputs_from_db)
 {
     const auto block{CreateBlock()};
-    CCoinsViewDB db{{.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
+    CCoinsViewDB db{m_logger, {.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
     PopulateView(block, db);
     CCoinsViewCache main_cache{&db};
     CoinsViewOverlay view{&main_cache, MakeStartedThreadPool()};
@@ -132,7 +135,7 @@ BOOST_AUTO_TEST_CASE(fetch_inputs_from_db)
 BOOST_AUTO_TEST_CASE(fetch_inputs_from_cache)
 {
     const auto block{CreateBlock()};
-    CCoinsViewDB db{{.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
+    CCoinsViewDB db{m_logger, {.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
     CCoinsViewCache main_cache{&db};
     PopulateView(block, main_cache);
     CoinsViewOverlay view{&main_cache, MakeStartedThreadPool()};
@@ -151,7 +154,7 @@ BOOST_AUTO_TEST_CASE(fetch_inputs_from_cache)
 BOOST_AUTO_TEST_CASE(fetch_no_double_spend)
 {
     const auto block{CreateBlock()};
-    CCoinsViewDB db{{.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
+    CCoinsViewDB db{m_logger, {.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
     PopulateView(block, db);
     CCoinsViewCache main_cache{&db};
     // Add all inputs as spent already in cache
@@ -173,7 +176,7 @@ BOOST_AUTO_TEST_CASE(fetch_no_double_spend)
 BOOST_AUTO_TEST_CASE(fetch_no_inputs)
 {
     const auto block{CreateBlock()};
-    CCoinsViewDB db{{.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
+    CCoinsViewDB db{m_logger, {.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
     CCoinsViewCache main_cache{&db};
     CoinsViewOverlay view{&main_cache, MakeStartedThreadPool()};
     const auto reset_guard{view.StartFetching(block)};
