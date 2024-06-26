@@ -252,6 +252,7 @@ namespace BCLog {
 
         //! Implicitly constructible from LogFlag values so category constants can be passed to logging macros below.
         Source(LogFlags category = LogFlags::ALL, Logger& logger = LogInstance()) : category{category}, logger{logger} {}
+        Source(Logger& logger) : category{LogFlags::ALL}, logger{logger} {}
 
         template <typename... Args>
         std::string Format(const char* fmt, const Args&... args) const
