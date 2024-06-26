@@ -246,6 +246,7 @@ namespace BCLog {
 
         //! Constructor. Implicit so can be constructed from category constants passed to Log macros below.
         Context(LogFlags category = LogFlags::ALL, Logger& logger = LogInstance()) : category{category}, logger{logger} {}
+        Context(Logger& logger) : category{LogFlags::ALL}, logger{logger} {}
 
         template <typename... Args>
         std::string Format(util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args) const
