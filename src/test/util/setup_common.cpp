@@ -108,8 +108,16 @@ static void ExitFailure(std::string_view str_err)
     exit(EXIT_FAILURE);
 }
 
+<<<<<<< HEAD
 BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
     : m_args{}
+||||||| parent of c2429cea522d (refactor: Pass Logger instances to kernel objects)
+BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vector<const char*>& extra_args)
+    : m_args{}
+=======
+BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vector<const char*>& extra_args)
+    : m_logger{LogInstance()}, m_args{}
+>>>>>>> c2429cea522d (refactor: Pass Logger instances to kernel objects)
 {
     m_node.shutdown = &m_interrupt;
     m_node.args = &gArgs;
@@ -245,8 +253,8 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, TestOpts opts)
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = chainman_opts.notifications,
     };
-    m_node.chainman = std::make_unique<ChainstateManager>(*Assert(m_node.shutdown), chainman_opts, blockman_opts);
-    m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<BlockTreeDB>(DBParams{
+    m_node.chainman = std::make_unique<ChainstateManager>(m_logger, *Assert(m_node.shutdown), chainman_opts, blockman_opts);
+    m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<BlockTreeDB>(m_logger, DBParams{
         .path = m_args.GetDataDirNet() / "blocks" / "index",
         .cache_bytes = static_cast<size_t>(m_cache_sizes.block_tree_db),
         .memory_only = true});
