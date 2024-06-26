@@ -99,6 +99,9 @@ requires (Source::log_source)
 const Source& GetSource(const Source& source LIFETIMEBOUND) { return source; }
 
 template <bool take_category>
+Source GetSource(Logger& logger) { return Source{BCLog::LogFlags::ALL, &logger}; }
+
+template <bool take_category>
 Source GetSource(Category category)
 {
     //! Trigger compile error if caller tries to pass a category constant as a
