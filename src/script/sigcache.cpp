@@ -165,8 +165,14 @@ bool InitSignatureCache(BCLog::Logger& logger, size_t max_size_bytes)
     if (!setup_results) return false;
 
     const auto [num_elems, approx_size_bytes] = *setup_results;
+<<<<<<< HEAD
 >>>>>>> e9b91f5c5c92 (refactor: Pass Logger instances to kernel objects)
     LogPrintf("Using %zu MiB out of %zu MiB requested for signature cache, able to store %zu elements\n",
+||||||| parent of facc2d0edff9 (refactor: Log kernel output to local log instances)
+    LogPrintf("Using %zu MiB out of %zu MiB requested for signature cache, able to store %zu elements\n",
+=======
+    LogInfo(logger, "Using %zu MiB out of %zu MiB requested for signature cache, able to store %zu elements\n",
+>>>>>>> facc2d0edff9 (refactor: Log kernel output to local log instances)
               approx_size_bytes >> 20, max_size_bytes >> 20, num_elems);
 }
 
