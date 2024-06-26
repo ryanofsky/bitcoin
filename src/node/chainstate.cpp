@@ -36,6 +36,7 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     const ChainstateLoadOptions& options) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5584e6c005ca (refactor: Pass Logger instances to kernel objects)
     auto& pblocktree{chainman.m_blockman.m_block_tree_db};
     // new BlockTreeDB tries to delete the existing file, which
@@ -63,6 +64,10 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     }
 
 =======
+||||||| parent of b8ec1717a32a (refactor: Log kernel output to local log instances)
+=======
+    const BCLog::Source& log{chainman.m_log};
+>>>>>>> b8ec1717a32a (refactor: Log kernel output to local log instances)
     auto& pblocktree{chainman.m_blockman.m_block_tree_db};
     // new BlockTreeDB tries to delete the existing file, which
     // fails if it's still open from the previous loop. Close it first:
@@ -138,7 +143,7 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     // block tree into BlockIndex()!
 
     for (Chainstate* chainstate : chainman.GetAll()) {
-        LogPrintf("Initializing chainstate %s\n", chainstate->ToString());
+        LogInfo(log, "Initializing chainstate %s\n", chainstate->ToString());
 
         try {
             chainstate->InitCoinsDB(
@@ -198,19 +203,20 @@ static ChainstateLoadResult CompleteChainstateInitialization(
 ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
                                     const ChainstateLoadOptions& options)
 {
+    const BCLog::Source& log{chainman.m_log};
     if (!chainman.AssumedValidBlock().IsNull()) {
-        LogPrintf("Assuming ancestors of block %s have valid signatures.\n", chainman.AssumedValidBlock().GetHex());
+        LogInfo(log, "Assuming ancestors of block %s have valid signatures.\n", chainman.AssumedValidBlock().GetHex());
     } else {
-        LogPrintf("Validating signatures for all blocks.\n");
+        LogInfo(log, "Validating signatures for all blocks.\n");
     }
-    LogPrintf("Setting nMinimumChainWork=%s\n", chainman.MinimumChainWork().GetHex());
+    LogInfo(log, "Setting nMinimumChainWork=%s\n", chainman.MinimumChainWork().GetHex());
     if (chainman.MinimumChainWork() < UintToArith256(chainman.GetConsensus().nMinimumChainWork)) {
-        LogPrintf("Warning: nMinimumChainWork set below default value of %s\n", chainman.GetConsensus().nMinimumChainWork.GetHex());
+        LogInfo(log, "Warning: nMinimumChainWork set below default value of %s\n", chainman.GetConsensus().nMinimumChainWork.GetHex());
     }
     if (chainman.m_blockman.GetPruneTarget() == BlockManager::PRUNE_TARGET_MANUAL) {
-        LogPrintf("Block pruning enabled.  Use RPC call pruneblockchain(height) to manually prune block and undo files.\n");
+        LogInfo(log, "Block pruning enabled.  Use RPC call pruneblockchain(height) to manually prune block and undo files.\n");
     } else if (chainman.m_blockman.GetPruneTarget()) {
-        LogPrintf("Prune configured to target %u MiB on disk for block and undo files.\n", chainman.m_blockman.GetPruneTarget() / 1024 / 1024);
+        LogInfo(log, "Prune configured to target %u MiB on disk for block and undo files.\n", chainman.m_blockman.GetPruneTarget() / 1024 / 1024);
     }
 
     LOCK(cs_main);
@@ -225,7 +231,7 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     bool has_snapshot = chainman.DetectSnapshotChainstate();
 
     if (has_snapshot && options.wipe_chainstate_db) {
-        LogPrintf("[snapshot] deleting snapshot chainstate due to reindexing\n");
+        LogInfo(log, "[snapshot] deleting snapshot chainstate due to reindexing\n");
         if (!chainman.DeleteSnapshotChainstate()) {
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Couldn't remove snapshot chainstate.")};
         }
@@ -249,7 +255,7 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     if (snapshot_completion == SnapshotCompletionResult::SKIPPED) {
         // do nothing; expected case
     } else if (snapshot_completion == SnapshotCompletionResult::SUCCESS) {
-        LogPrintf("[snapshot] cleaning up unneeded background chainstate, then reinitializing\n");
+        LogInfo(log, "[snapshot] cleaning up unneeded background chainstate, then reinitializing\n");
         if (!chainman.ValidatedSnapshotCleanup()) {
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Background chainstate cleanup failed unexpectedly.")};
         }
