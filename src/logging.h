@@ -245,7 +245,14 @@ namespace BCLog {
         Logger& logger;
 
         //! Constructor. Implicit so can be constructed from category constants passed to Log macros below.
+<<<<<<< HEAD
         Context(LogFlags category = LogFlags::ALL, Logger& logger = LogInstance()) : category{category}, logger{logger} {}
+||||||| parent of 6974fdb8c7e7 (refactor: Pass Logger instances to kernel objects)
+        Source(LogFlags category = LogFlags::ALL, Logger& logger = LogInstance()) : category{category}, logger{logger} {}
+=======
+        Source(LogFlags category = LogFlags::ALL, Logger& logger = LogInstance()) : category{category}, logger{logger} {}
+        Source(Logger& logger) : category{LogFlags::ALL}, logger{logger} {}
+>>>>>>> 6974fdb8c7e7 (refactor: Pass Logger instances to kernel objects)
 
         template <typename... Args>
         std::string Format(util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args) const
