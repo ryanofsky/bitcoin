@@ -35,6 +35,7 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     ChainstateManager& chainman,
     const ChainstateLoadOptions& options) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
+    const BCLog::Context& log{chainman.m_log};
     if (chainman.m_interrupt) return {ChainstateLoadStatus::INTERRUPTED, {}};
 
     // LoadBlockIndex will load m_have_pruned if we've ever removed a
@@ -84,7 +85,13 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     // block tree into BlockIndex()!
 
     for (Chainstate* chainstate : chainman.GetAll()) {
+<<<<<<< HEAD
         LogInfo("Initializing chainstate %s", chainstate->ToString());
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+        LogPrintf("Initializing chainstate %s\n", chainstate->ToString());
+=======
+        LogInfo(log, "Initializing chainstate %s\n", chainstate->ToString());
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
 
         try {
             chainstate->InitCoinsDB(
@@ -144,20 +151,51 @@ static ChainstateLoadResult CompleteChainstateInitialization(
 ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSizes& cache_sizes,
                                     const ChainstateLoadOptions& options)
 {
+    const BCLog::Context& log{chainman.m_log};
     if (!chainman.AssumedValidBlock().IsNull()) {
+<<<<<<< HEAD
         LogInfo("Assuming ancestors of block %s have valid signatures.", chainman.AssumedValidBlock().GetHex());
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+        LogPrintf("Assuming ancestors of block %s have valid signatures.\n", chainman.AssumedValidBlock().GetHex());
+=======
+        LogInfo(log, "Assuming ancestors of block %s have valid signatures.\n", chainman.AssumedValidBlock().GetHex());
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
     } else {
+<<<<<<< HEAD
         LogInfo("Validating signatures for all blocks.");
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+        LogPrintf("Validating signatures for all blocks.\n");
+=======
+        LogInfo(log, "Validating signatures for all blocks.\n");
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
     }
+<<<<<<< HEAD
     LogInfo("Setting nMinimumChainWork=%s", chainman.MinimumChainWork().GetHex());
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+    LogPrintf("Setting nMinimumChainWork=%s\n", chainman.MinimumChainWork().GetHex());
+=======
+    LogInfo(log, "Setting nMinimumChainWork=%s\n", chainman.MinimumChainWork().GetHex());
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
     if (chainman.MinimumChainWork() < UintToArith256(chainman.GetConsensus().nMinimumChainWork)) {
-        LogPrintf("Warning: nMinimumChainWork set below default value of %s\n", chainman.GetConsensus().nMinimumChainWork.GetHex());
+        LogInfo(log, "Warning: nMinimumChainWork set below default value of %s\n", chainman.GetConsensus().nMinimumChainWork.GetHex());
     }
     if (chainman.m_blockman.GetPruneTarget() == BlockManager::PRUNE_TARGET_MANUAL) {
+<<<<<<< HEAD
         LogInfo("Block pruning enabled. Use RPC call pruneblockchain(height) to manually prune block and undo files.");
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+        LogPrintf("Block pruning enabled.  Use RPC call pruneblockchain(height) to manually prune block and undo files.\n");
+=======
+        LogInfo(log, "Block pruning enabled.  Use RPC call pruneblockchain(height) to manually prune block and undo files.\n");
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
     } else if (chainman.m_blockman.GetPruneTarget()) {
+<<<<<<< HEAD
         LogInfo("Prune configured to target %u MiB on disk for block and undo files.",
                 chainman.m_blockman.GetPruneTarget() / 1024 / 1024);
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+        LogPrintf("Prune configured to target %u MiB on disk for block and undo files.\n", chainman.m_blockman.GetPruneTarget() / 1024 / 1024);
+=======
+        LogInfo(log, "Prune configured to target %u MiB on disk for block and undo files.\n", chainman.m_blockman.GetPruneTarget() / 1024 / 1024);
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
     }
 
     LOCK(cs_main);
@@ -172,7 +210,13 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     bool has_snapshot = chainman.DetectSnapshotChainstate();
 
     if (has_snapshot && options.wipe_chainstate_db) {
+<<<<<<< HEAD
         LogInfo("[snapshot] deleting snapshot chainstate due to reindexing");
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+        LogPrintf("[snapshot] deleting snapshot chainstate due to reindexing\n");
+=======
+        LogInfo(log, "[snapshot] deleting snapshot chainstate due to reindexing\n");
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
         if (!chainman.DeleteSnapshotChainstate()) {
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Couldn't remove snapshot chainstate.")};
         }
@@ -196,7 +240,13 @@ ChainstateLoadResult LoadChainstate(ChainstateManager& chainman, const CacheSize
     if (snapshot_completion == SnapshotCompletionResult::SKIPPED) {
         // do nothing; expected case
     } else if (snapshot_completion == SnapshotCompletionResult::SUCCESS) {
+<<<<<<< HEAD
         LogInfo("[snapshot] cleaning up unneeded background chainstate, then reinitializing");
+||||||| parent of 8517d317c235 (refactor: Log kernel output to local log instances)
+        LogPrintf("[snapshot] cleaning up unneeded background chainstate, then reinitializing\n");
+=======
+        LogInfo(log, "[snapshot] cleaning up unneeded background chainstate, then reinitializing\n");
+>>>>>>> 8517d317c235 (refactor: Log kernel output to local log instances)
         if (!chainman.ValidatedSnapshotCleanup()) {
             return {ChainstateLoadStatus::FAILURE_FATAL, Untranslated("Background chainstate cleanup failed unexpectedly.")};
         }
