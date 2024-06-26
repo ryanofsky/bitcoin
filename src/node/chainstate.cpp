@@ -41,6 +41,7 @@ static ChainstateLoadResult CompleteChainstateInitialization(
     // new BlockTreeDB tries to delete the existing file, which
     // fails if it's still open from the previous loop. Close it first:
     pblocktree.reset();
+<<<<<<< HEAD
     try {
         pblocktree = std::make_unique<BlockTreeDB>(DBParams{
             .path = chainman.m_options.datadir / "blocks" / "index",
@@ -52,6 +53,21 @@ static ChainstateLoadResult CompleteChainstateInitialization(
         LogError("%s\n", err.what());
         return {ChainstateLoadStatus::FAILURE, _("Error opening block database")};
     }
+||||||| parent of 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
+    pblocktree = std::make_unique<BlockTreeDB>(DBParams{
+        .path = chainman.m_options.datadir / "blocks" / "index",
+        .cache_bytes = static_cast<size_t>(cache_sizes.block_tree_db),
+        .memory_only = options.block_tree_db_in_memory,
+        .wipe_data = options.wipe_block_tree_db,
+        .options = chainman.m_options.block_tree_db});
+=======
+    pblocktree = std::make_unique<BlockTreeDB>(chainman.m_log.logger, DBParams{
+        .path = chainman.m_options.datadir / "blocks" / "index",
+        .cache_bytes = static_cast<size_t>(cache_sizes.block_tree_db),
+        .memory_only = options.block_tree_db_in_memory,
+        .wipe_data = options.wipe_block_tree_db,
+        .options = chainman.m_options.block_tree_db});
+>>>>>>> 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
 
     if (options.wipe_block_tree_db) {
         pblocktree->WriteReindexing(true);

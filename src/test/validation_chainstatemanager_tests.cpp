@@ -397,7 +397,13 @@ struct SnapshotTestSetup : TestChain100Setup {
             // For robustness, ensure the old manager is destroyed before creating a
             // new one.
             m_node.chainman.reset();
+<<<<<<< HEAD
             m_node.chainman = std::make_unique<ChainstateManager>(*Assert(m_node.shutdown_signal), chainman_opts, blockman_opts);
+||||||| parent of 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
+            m_node.chainman = std::make_unique<ChainstateManager>(*Assert(m_node.shutdown), chainman_opts, blockman_opts);
+=======
+            m_node.chainman = std::make_unique<ChainstateManager>(m_logger, *Assert(m_node.shutdown), chainman_opts, blockman_opts);
+>>>>>>> 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
         }
         return *Assert(m_node.chainman);
     }

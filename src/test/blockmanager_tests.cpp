@@ -34,7 +34,13 @@ BOOST_AUTO_TEST_CASE(blockmanager_find_block_pos)
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = notifications,
     };
+<<<<<<< HEAD
     BlockManager blockman{*Assert(m_node.shutdown_signal), blockman_opts};
+||||||| parent of 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
+    BlockManager blockman{*Assert(m_node.shutdown), blockman_opts};
+=======
+    BlockManager blockman{m_logger, *Assert(m_node.shutdown), blockman_opts};
+>>>>>>> 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
     // simulate adding a genesis block normally
     BOOST_CHECK_EQUAL(blockman.SaveBlockToDisk(params->GenesisBlock(), 0).nPos, BLOCK_SERIALIZATION_HEADER_SIZE);
     // simulate what happens during reindex
@@ -141,7 +147,13 @@ BOOST_AUTO_TEST_CASE(blockmanager_flush_block_file)
         .blocks_dir = m_args.GetBlocksDirPath(),
         .notifications = notifications,
     };
+<<<<<<< HEAD
     BlockManager blockman{*Assert(m_node.shutdown_signal), blockman_opts};
+||||||| parent of 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
+    BlockManager blockman{*Assert(m_node.shutdown), blockman_opts};
+=======
+    BlockManager blockman{m_logger, *Assert(m_node.shutdown), blockman_opts};
+>>>>>>> 90e941d3db8d (refactor: Pass Logger instances to kernel objects)
 
     // Test blocks with no transactions, not even a coinbase
     CBlock block1;
