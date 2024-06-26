@@ -21,6 +21,8 @@
 #include <iterator>
 #include <utility>
 
+#define LOG_REQUIRE_CONTEXT true
+
 static constexpr uint8_t DB_COIN{'C'};
 static constexpr uint8_t DB_BEST_BLOCK{'B'};
 static constexpr uint8_t DB_HEAD_BLOCKS{'H'};
@@ -118,14 +120,14 @@ void CCoinsViewDB::BatchWrite(CoinsViewCacheCursor& cursor, const uint256& block
         std::vector<uint256> old_heads = GetHeadBlocks();
         if (old_heads.size() == 2) {
             if (old_heads[0] != block_hash) {
-                LogError("The coins database detected an inconsistent state, likely due to a previous crash or shutdown. You will need to restart bitcoind with the -reindex-chainstate or -reindex configuration option.\n");
+                LogError(m_log, "The coins database detected an inconsistent state, likely due to a previous crash or shutdown. You will need to restart bitcoind with the -reindex-chainstate or -reindex configuration option.\n");
             }
             assert(old_heads[0] == block_hash);
             old_tip = old_heads[1];
         }
     }
 
-    if (dirty_count > WARN_FLUSH_COINS_COUNT) LogWarning("Flushing large (%d entries) UTXO set to disk, it may take several minutes", dirty_count);
+    if (dirty_count > WARN_FLUSH_COINS_COUNT) LogWarning(m_log, "Flushing large (%d entries) UTXO set to disk, it may take several minutes", dirty_count);
     LOG_TIME_MILLIS_WITH_CATEGORY(strprintf("write coins cache to disk (%d out of %d cached coins)",
         dirty_count, cursor.GetTotalCount()), BCLog::BENCH);
 
@@ -148,14 +150,14 @@ void CCoinsViewDB::BatchWrite(CoinsViewCacheCursor& cursor, const uint256& block
         count++;
         it = cursor.NextAndMaybeErase(*it);
         if (batch.ApproximateSize() > m_options.batch_write_bytes) {
-            LogDebug(BCLog::COINDB, "Writing partial batch of %.2f MiB\n", batch.ApproximateSize() / double(1_MiB));
+            LogDebug(m_log, "Writing partial batch of %.2f MiB\n", batch.ApproximateSize() / double(1_MiB));
 
             m_db->WriteBatch(batch);
             batch.Clear();
             if (m_options.simulate_crash_ratio) {
                 static FastRandomContext rng;
                 if (rng.randrange(m_options.simulate_crash_ratio) == 0) {
-                    LogError("Simulating a crash. Goodbye.");
+                    LogError(m_log, "Simulating a crash. Goodbye.");
                     _Exit(0);
                 }
             }
@@ -166,9 +168,9 @@ void CCoinsViewDB::BatchWrite(CoinsViewCacheCursor& cursor, const uint256& block
     batch.Erase(DB_HEAD_BLOCKS);
     batch.Write(DB_BEST_BLOCK, block_hash);
 
-    LogDebug(BCLog::COINDB, "Writing final batch of %.2f MiB\n", batch.ApproximateSize() / double(1_MiB));
+    LogDebug(m_log, "Writing final batch of %.2f MiB\n", batch.ApproximateSize() / double(1_MiB));
     m_db->WriteBatch(batch);
-    LogDebug(BCLog::COINDB, "Committed %u changed transaction outputs (out of %u) to coin database...", (unsigned int)dirty_count, (unsigned int)count);
+    LogDebug(m_log, "Committed %u changed transaction outputs (out of %u) to coin database...", (unsigned int)dirty_count, (unsigned int)count);
 }
 
 size_t CCoinsViewDB::EstimateSize() const
