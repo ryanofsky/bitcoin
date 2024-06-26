@@ -12,6 +12,7 @@
 #include <kernel/cs_main.h>
 #include <sync.h>
 #include <util/fs.h>
+#include <util/log.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -36,6 +37,7 @@ struct CoinsViewOptions {
 class CCoinsViewDB final : public CCoinsView
 {
 protected:
+    const util::log::Context m_log;
     DBParams m_db_params;
     CoinsViewOptions m_options;
     //! Prevents CompactFull() from using m_db while ResizeCache() replaces it.
@@ -43,8 +45,14 @@ protected:
     std::unique_ptr<CDBWrapper> m_db;
     std::shared_future<void> m_compaction;
 public:
+<<<<<<< HEAD
     explicit CCoinsViewDB(DBParams db_params, CoinsViewOptions options);
     ~CCoinsViewDB() override;
+||||||| parent of 0f5ede67c3a (refactor: Pass Logger instances to kernel objects)
+    explicit CCoinsViewDB(DBParams db_params, CoinsViewOptions options);
+=======
+    explicit CCoinsViewDB(util::log::Logger& logger, DBParams db_params, CoinsViewOptions options);
+>>>>>>> 0f5ede67c3a (refactor: Pass Logger instances to kernel objects)
 
     std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
     std::optional<Coin> PeekCoin(const COutPoint& outpoint) const override;
