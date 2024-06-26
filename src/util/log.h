@@ -110,6 +110,7 @@ struct Context {
 };
 
 namespace detail {
+<<<<<<< HEAD
 //! Internal helper to get Context from the first macro argument. Overloaded to
 //! detect case where first macro argument is a string literal and context has
 //! been omitted.
@@ -118,6 +119,26 @@ requires (Context::log_context)
 Context& GetContext(Context& context LIFETIMEBOUND) { return context; }
 template <Options options>
 Context GetContext(std::string_view fmt)
+||||||| parent of 507be73175b (refactor: Log kernel output to local log instances)
+//! Internal helper to get log source object from the first macro argument.
+template <bool take_category, typename Source>
+requires (Source::log_source)
+const Source& GetSource(const Source& source LIFETIMEBOUND) { return source; }
+
+template <bool take_category>
+Source GetSource(Category category)
+=======
+//! Internal helper to get log source object from the first macro argument.
+template <bool take_category, typename Source>
+requires (Source::log_source)
+const Source& GetSource(const Source& source LIFETIMEBOUND) { return source; }
+
+template <bool take_category>
+Source GetSource(Logger& logger) { return Source{BCLog::LogFlags::ALL, &logger}; }
+
+template <bool take_category>
+Source GetSource(Category category)
+>>>>>>> 507be73175b (refactor: Log kernel output to local log instances)
 {
     // Trigger compile error if caller does not pass a category constant as the
     // first argument to a logging call at Info level or higher. There is no
