@@ -27,6 +27,13 @@
 #include <vector>
 
 namespace {
+BasicTestingSetup* g_setup;
+
+void initialize()
+{
+    static const auto testing_setup = MakeNoLogFileContext<BasicTestingSetup>();
+    g_setup = testing_setup.get();
+}
 
 /**
  * A leveldb::Env that wraps a memenv and captures scheduled background
@@ -164,7 +171,7 @@ void TestDbWrapper(FuzzedDataProvider& provider,
     const bool obfuscate{provider.ConsumeBool()};
 
     const auto make_db{[&](DBOptions options = {}) {
-        return std::make_unique<CDBWrapper>(DBParams{
+        return std::make_unique<CDBWrapper>(g_setup->m_logger, DBParams{
             .path = "dbwrapper_fuzz",
             .cache_bytes = provider.ConsumeIntegralInRange<size_t>(64 << 10, 1_MiB),
             .obfuscate = obfuscate,
@@ -312,7 +319,7 @@ FUZZ_TARGET(dbwrapper, .init = [] { static auto setup{MakeNoLogFileContext<>()};
         /*allow_force_compact=*/false);
 }
 
-FUZZ_TARGET(dbwrapper_threaded, .init = [] { static auto setup{MakeNoLogFileContext<>()}; })
+FUZZ_TARGET(dbwrapper_threaded, .init = initialize)
 {
     FuzzedDataProvider provider{buffer.data(), buffer.size()};
 
