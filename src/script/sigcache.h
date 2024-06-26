@@ -6,9 +6,14 @@
 #ifndef BITCOIN_SCRIPT_SIGCACHE_H
 #define BITCOIN_SCRIPT_SIGCACHE_H
 
+<<<<<<< HEAD
 #include <consensus/amount.h>
 #include <crypto/sha256.h>
 #include <cuckoocache.h>
+||||||| parent of e9b91f5c5c92 (refactor: Pass Logger instances to kernel objects)
+=======
+#include <logging.h>
+>>>>>>> e9b91f5c5c92 (refactor: Pass Logger instances to kernel objects)
 #include <script/interpreter.h>
 #include <span.h>
 #include <uint256.h>
@@ -73,4 +78,12 @@ public:
     bool VerifySchnorrSignature(Span<const unsigned char> sig, const XOnlyPubKey& pubkey, const uint256& sighash) const override;
 };
 
+<<<<<<< HEAD
+||||||| parent of e9b91f5c5c92 (refactor: Pass Logger instances to kernel objects)
+[[nodiscard]] bool InitSignatureCache(size_t max_size_bytes);
+
+=======
+[[nodiscard]] bool InitSignatureCache(BCLog::Logger& logger, size_t max_size_bytes);
+
+>>>>>>> e9b91f5c5c92 (refactor: Pass Logger instances to kernel objects)
 #endif // BITCOIN_SCRIPT_SIGCACHE_H
