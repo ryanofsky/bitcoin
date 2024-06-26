@@ -1619,6 +1619,29 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
     assert(!node.mempool);
     assert(!node.chainman);
 
+<<<<<<< HEAD
+||||||| parent of 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
+    CTxMemPool::Options mempool_opts{
+        .check_ratio = chainparams.DefaultConsistencyChecks() ? 1 : 0,
+        .signals = &validation_signals,
+    };
+    auto result{ApplyArgsManOptions(args, chainparams, mempool_opts)};
+    if (!result) {
+        return InitError(util::ErrorString(result));
+    }
+
+=======
+    CTxMemPool::Options mempool_opts{
+        .check_ratio = chainparams.DefaultConsistencyChecks() ? 1 : 0,
+        .logger = &LogInstance(),
+        .signals = &validation_signals,
+    };
+    auto result{ApplyArgsManOptions(args, chainparams, mempool_opts)};
+    if (!result) {
+        return InitError(util::ErrorString(result));
+    }
+
+>>>>>>> 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
     bool do_reindex{args.GetBoolArg("-reindex", false)};
     const bool do_reindex_chainstate{args.GetBoolArg("-reindex-chainstate", false)};
 

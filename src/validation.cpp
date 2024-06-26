@@ -282,7 +282,13 @@ static void LimitMempoolSize(CTxMemPool& pool, CCoinsViewCache& coins_cache)
     AssertLockHeld(pool.cs);
     int expired = pool.Expire(GetTime<std::chrono::seconds>() - pool.m_opts.expiry);
     if (expired != 0) {
+<<<<<<< HEAD
         LogDebug(BCLog::MEMPOOL, "Expired %i transactions from the memory pool\n", expired);
+||||||| parent of 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
+        LogPrint(BCLog::MEMPOOL, "Expired %i transactions from the memory pool\n", expired);
+=======
+        LogDebug(pool.m_log, "Expired %i transactions from the memory pool\n", expired);
+>>>>>>> 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
     }
 
     std::vector<COutPoint> vNoSpendsRemaining;
@@ -1150,6 +1156,7 @@ bool MemPoolAccept::PackageMempoolChecks(const std::vector<CTransactionRef>& txn
 
     assert(txns.size() == workspaces.size());
 
+    const BCLog::Source& log_packages{BCLog::TXPACKAGES, m_pool.m_log.logger};
     auto result = m_pool.CheckPackageLimits(txns, total_vsize);
     if (!result) {
         // This is a package-wide error, separate from an individual transaction error.
@@ -1227,7 +1234,13 @@ bool MemPoolAccept::PackageMempoolChecks(const std::vector<CTransactionRef>& txn
                                      "package RBF failed: " + err_tup.value().second, "");
     }
 
+<<<<<<< HEAD
     LogDebug(BCLog::TXPACKAGES, "package RBF checks passed: parent %s (wtxid=%s), child %s (wtxid=%s), package hash (%s)\n",
+||||||| parent of 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
+    LogPrint(BCLog::TXPACKAGES, "package RBF checks passed: parent %s (wtxid=%s), child %s (wtxid=%s)\n",
+=======
+    LogDebug(log_packages, "package RBF checks passed: parent %s (wtxid=%s), child %s (wtxid=%s)\n",
+>>>>>>> 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
         txns.front()->GetHash().ToString(), txns.front()->GetWitnessHash().ToString(),
         txns.back()->GetHash().ToString(), txns.back()->GetWitnessHash().ToString(),
         GetPackageHash(txns).ToString());
@@ -1290,7 +1303,7 @@ bool MemPoolAccept::ConsensusScriptChecks(const ATMPArgs& args, Workspace& ws)
     unsigned int currentBlockScriptVerifyFlags{GetBlockScriptFlags(*m_active_chainstate.m_chain.Tip(), m_active_chainstate.m_chainman)};
     if (!CheckInputsFromMempoolAndCache(tx, state, m_view, m_pool, currentBlockScriptVerifyFlags,
                                         ws.m_precomputed_txdata, m_active_chainstate.CoinsTip(), GetValidationCache())) {
-        LogPrintf("BUG! PLEASE REPORT THIS! CheckInputScripts failed against latest-block but not STANDARD flags %s, %s\n", hash.ToString(), state.ToString());
+        LogInfo(m_pool.m_log, "BUG! PLEASE REPORT THIS! CheckInputScripts failed against latest-block but not STANDARD flags %s, %s\n", hash.ToString(), state.ToString());
         return Assume(false);
     }
 
@@ -1306,6 +1319,7 @@ void MemPoolAccept::FinalizeSubpackage(const ATMPArgs& args)
     // Remove conflicting transactions from the mempool
     for (CTxMemPool::txiter it : m_subpackage.m_changeset->GetRemovals())
     {
+<<<<<<< HEAD
         std::string log_string = strprintf("replacing mempool tx %s (wtxid=%s, fees=%s, vsize=%s). ",
                                       it->GetTx().GetHash().ToString(),
                                       it->GetTx().GetWitnessHash().ToString(),
@@ -1333,6 +1347,29 @@ void MemPoolAccept::FinalizeSubpackage(const ATMPArgs& args)
         }
         LogDebug(BCLog::MEMPOOL, "%s\n", log_string);
         TRACEPOINT(mempool, replaced,
+||||||| parent of 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
+        LogPrint(BCLog::MEMPOOL, "replacing mempool tx %s (wtxid=%s, fees=%s, vsize=%s). New tx %s (wtxid=%s, fees=%s, vsize=%s)\n",
+                it->GetTx().GetHash().ToString(),
+                it->GetTx().GetWitnessHash().ToString(),
+                it->GetFee(),
+                it->GetTxSize(),
+                hash.ToString(),
+                tx.GetWitnessHash().ToString(),
+                entry->GetFee(),
+                entry->GetTxSize());
+        TRACE7(mempool, replaced,
+=======
+        LogDebug(m_pool.m_log, "replacing mempool tx %s (wtxid=%s, fees=%s, vsize=%s). New tx %s (wtxid=%s, fees=%s, vsize=%s)\n",
+                it->GetTx().GetHash().ToString(),
+                it->GetTx().GetWitnessHash().ToString(),
+                it->GetFee(),
+                it->GetTxSize(),
+                hash.ToString(),
+                tx.GetWitnessHash().ToString(),
+                entry->GetFee(),
+                entry->GetTxSize());
+        TRACE7(mempool, replaced,
+>>>>>>> 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
                 it->GetTx().GetHash().data(),
                 it->GetTxSize(),
                 it->GetFee(),
@@ -1395,7 +1432,13 @@ bool MemPoolAccept::SubmitPackage(const ATMPArgs& args, std::vector<Workspace>& 
                    [](const auto& ws) { return ws.m_ptx->GetWitnessHash(); });
 
     if (!m_subpackage.m_replaced_transactions.empty()) {
+<<<<<<< HEAD
         LogDebug(BCLog::MEMPOOL, "replaced %u mempool transactions with %u new one(s) for %s additional fees, %d delta bytes\n",
+||||||| parent of 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
+        LogPrint(BCLog::MEMPOOL, "replaced %u mempool transactions with %u new one(s) for %s additional fees, %d delta bytes\n",
+=======
+        LogDebug(m_pool.m_log, "replaced %u mempool transactions with %u new one(s) for %s additional fees, %d delta bytes\n",
+>>>>>>> 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
                  m_subpackage.m_replaced_transactions.size(), workspaces.size(),
                  m_subpackage.m_total_modified_fees - m_subpackage.m_conflicting_fees,
                  m_subpackage.m_total_vsize - static_cast<int>(m_subpackage.m_conflicting_size));
@@ -1502,7 +1545,13 @@ MempoolAcceptResult MemPoolAccept::AcceptSingleTransaction(const CTransactionRef
     }
 
     if (!m_subpackage.m_replaced_transactions.empty()) {
+<<<<<<< HEAD
         LogDebug(BCLog::MEMPOOL, "replaced %u mempool transactions with 1 new transaction for %s additional fees, %d delta bytes\n",
+||||||| parent of 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
+        LogPrint(BCLog::MEMPOOL, "replaced %u mempool transactions with 1 new transaction for %s additional fees, %d delta bytes\n",
+=======
+        LogDebug(m_pool.m_log, "replaced %u mempool transactions with 1 new transaction for %s additional fees, %d delta bytes\n",
+>>>>>>> 4b6e43275bc1 (refactor: Pass Logger instance to CTxMemPool)
                  m_subpackage.m_replaced_transactions.size(),
                  ws.m_modified_fees - m_subpackage.m_conflicting_fees,
                  ws.m_vsize - static_cast<int>(m_subpackage.m_conflicting_size));
