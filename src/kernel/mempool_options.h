@@ -8,7 +8,12 @@
 
 #include <policy/feerate.h>
 #include <policy/policy.h>
+<<<<<<< HEAD
 #include <util/time.h>
+||||||| parent of 4c740d3d458 (refactor: Pass Logger instances to kernel objects)
+=======
+#include <util/log.h>
+>>>>>>> 4c740d3d458 (refactor: Pass Logger instances to kernel objects)
 
 #include <cstdint>
 #include <optional>
@@ -56,6 +61,7 @@ struct MemPoolOptions {
     bool persist_v1_dat{DEFAULT_PERSIST_V1_DAT};
     MemPoolLimits limits{};
 
+    util::log::Logger* logger{nullptr};
     ValidationSignals* signals{nullptr};
 };
 } // namespace kernel
