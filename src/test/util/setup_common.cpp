@@ -106,7 +106,7 @@ static void ExitFailure(std::string_view str_err)
 }
 
 BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
-    : m_args{}
+    : m_logger{LogInstance()}, m_args{}
 {
     if constexpr (!G_FUZZING) {
         SeedRandomForTest(SeedRand::FIXED_SEED);
@@ -258,7 +258,25 @@ ChainTestingSetup::ChainTestingSetup(const ChainType chainType, TestOpts opts)
                 .wipe_data = m_args.GetBoolArg("-reindex", false),
             },
         };
+<<<<<<< HEAD
         m_node.chainman = std::make_unique<ChainstateManager>(*Assert(m_node.shutdown_signal), chainman_opts, blockman_opts);
+||||||| parent of 5584e6c005ca (refactor: Pass Logger instances to kernel objects)
+        m_node.chainman = std::make_unique<ChainstateManager>(*Assert(m_node.shutdown_signal), chainman_opts, blockman_opts);
+        LOCK(m_node.chainman->GetMutex());
+        m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<BlockTreeDB>(DBParams{
+            .path = m_args.GetDataDirNet() / "blocks" / "index",
+            .cache_bytes = static_cast<size_t>(m_cache_sizes.block_tree_db),
+            .memory_only = true,
+        });
+=======
+        m_node.chainman = std::make_unique<ChainstateManager>(m_logger, *Assert(m_node.shutdown_signal), chainman_opts, blockman_opts);
+        LOCK(m_node.chainman->GetMutex());
+        m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<BlockTreeDB>(m_logger, DBParams{
+            .path = m_args.GetDataDirNet() / "blocks" / "index",
+            .cache_bytes = static_cast<size_t>(m_cache_sizes.block_tree_db),
+            .memory_only = true,
+        });
+>>>>>>> 5584e6c005ca (refactor: Pass Logger instances to kernel objects)
     };
     m_make_chainman();
 }
