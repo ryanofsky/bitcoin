@@ -35,6 +35,13 @@
 #include <vector>
 
 namespace {
+BasicTestingSetup* g_setup;
+
+void initialize()
+{
+    static const auto testing_setup = MakeNoLogFileContext<BasicTestingSetup>();
+    g_setup = testing_setup.get();
+}
 
 /**
  * A leveldb::Env that wraps a memenv and captures scheduled background
@@ -230,7 +237,31 @@ void TestDbWrapper(FuzzedDataProvider& provider,
     const bool obfuscate{provider.ConsumeBool()};
 
     const auto make_db{[&](DBOptions options = {}) {
+<<<<<<< HEAD
         return std::make_unique<CDBWrapper>(ConsumeDBParams(provider, testing_env, obfuscate, options));
+||||||| parent of 9f87fb66ffc (refactor: Pass Logger instances to kernel objects)
+        return std::make_unique<CDBWrapper>(DBParams{
+            .path = "dbwrapper_fuzz",
+            .cache_bytes = provider.ConsumeIntegralInRange<size_t>(64 << 10, 1_MiB),
+            .obfuscate = obfuscate,
+            .options = options,
+            .testing_env = testing_env,
+            .max_file_size = provider.ConsumeBool()
+                ? DBWRAPPER_MAX_FILE_SIZE
+                : provider.ConsumeIntegralInRange<size_t>(1_MiB, 4_MiB),
+        });
+=======
+        return std::make_unique<CDBWrapper>(g_setup->m_logger, DBParams{
+            .path = "dbwrapper_fuzz",
+            .cache_bytes = provider.ConsumeIntegralInRange<size_t>(64 << 10, 1_MiB),
+            .obfuscate = obfuscate,
+            .options = options,
+            .testing_env = testing_env,
+            .max_file_size = provider.ConsumeBool()
+                ? DBWRAPPER_MAX_FILE_SIZE
+                : provider.ConsumeIntegralInRange<size_t>(1_MiB, 4_MiB),
+        });
+>>>>>>> 9f87fb66ffc (refactor: Pass Logger instances to kernel objects)
     }};
     std::unique_ptr<CDBWrapper> dbw{make_db()};
 
@@ -356,7 +387,7 @@ void TestDbWrapper(FuzzedDataProvider& provider,
 
 } // namespace
 
-FUZZ_TARGET(dbwrapper, .init = [] { static auto setup{MakeNoLogFileContext<>()}; })
+FUZZ_TARGET(dbwrapper, .init = initialize)
 {
     FuzzedDataProvider provider{buffer.data(), buffer.size()};
 
@@ -369,7 +400,7 @@ FUZZ_TARGET(dbwrapper, .init = [] { static auto setup{MakeNoLogFileContext<>()};
         /*allow_force_compact=*/false);
 }
 
-FUZZ_TARGET(dbwrapper_threaded, .init = [] { static auto setup{MakeNoLogFileContext<>()}; })
+FUZZ_TARGET(dbwrapper_threaded, .init = initialize)
 {
     FuzzedDataProvider provider{buffer.data(), buffer.size()};
 
