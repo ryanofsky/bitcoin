@@ -13,7 +13,12 @@
 #include <util/check.h>
 #include <util/expected.h>
 #include <util/fs.h>
+<<<<<<< HEAD
 #include <util/not_null.h>
+||||||| parent of 2a7dcb3f4ce (refactor: Pass Logger instances to kernel objects)
+=======
+#include <util/log.h>
+>>>>>>> 2a7dcb3f4ce (refactor: Pass Logger instances to kernel objects)
 #include <util/obfuscation.h>
 
 #include <cstddef>
@@ -193,6 +198,10 @@ struct LevelDBContext;
 class CDBWrapper
 {
     friend const Obfuscation& dbwrapper_private::GetObfuscation(const CDBWrapper&);
+protected:
+    //! log object
+    util::log::Context m_log;
+
 private:
     //! holds all leveldb-specific fields of this class
     util::NotNullUniquePtr<LevelDBContext> m_db_context;
@@ -212,7 +221,7 @@ private:
     auto& DBContext() const LIFETIMEBOUND { return *m_db_context; }
 
 public:
-    CDBWrapper(const DBParams& params);
+    CDBWrapper(util::log::Logger& logger, const DBParams& params);
     ~CDBWrapper();
 
     CDBWrapper(const CDBWrapper&) = delete;
