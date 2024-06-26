@@ -31,6 +31,7 @@
 #include <vector>
 
 namespace {
+BasicTestingSetup* g_setup;
 const Coin EMPTY_COIN{};
 
 bool operator==(const Coin& a, const Coin& b)
@@ -87,7 +88,8 @@ public:
 
 void initialize_coins_view()
 {
-    static const auto testing_setup = MakeNoLogFileContext<>();
+    static const auto testing_setup = MakeNoLogFileContext<BasicTestingSetup>();
+    g_setup = testing_setup.get();
 }
 
 void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& coins_view_cache, CCoinsView& backend_coins_view, bool is_db)
@@ -358,6 +360,7 @@ FUZZ_TARGET(coins_view_db, .init = initialize_coins_view)
         .cache_bytes = 1_MiB,
         .memory_only = true,
     };
+<<<<<<< HEAD
     CCoinsViewDB backend_coins_view{std::move(db_params), CoinsViewOptions{}};
     CCoinsViewCache coins_view_cache{&backend_coins_view, /*deterministic=*/true};
     TestCoinsView(fuzzed_data_provider, coins_view_cache, backend_coins_view, /*is_db=*/true);
@@ -374,4 +377,11 @@ FUZZ_TARGET(coins_view_overlay, .init = initialize_coins_view)
     MutationGuardCoinsViewCache backend_cache{&backend_base_coins_view, /*deterministic=*/true};
     CoinsViewOverlay coins_view_cache{&backend_cache, /*deterministic=*/true};
     TestCoinsView(fuzzed_data_provider, coins_view_cache, backend_cache, /*is_db=*/false);
+||||||| parent of bb99c4103d7 (refactor: Pass Logger instances to kernel objects)
+    CCoinsViewDB coins_db{std::move(db_params), CoinsViewOptions{}};
+    TestCoinsView(fuzzed_data_provider, coins_db, /*is_db=*/true);
+=======
+    CCoinsViewDB coins_db{g_setup->m_logger, std::move(db_params), CoinsViewOptions{}};
+    TestCoinsView(fuzzed_data_provider, coins_db, /*is_db=*/true);
+>>>>>>> bb99c4103d7 (refactor: Pass Logger instances to kernel objects)
 }
