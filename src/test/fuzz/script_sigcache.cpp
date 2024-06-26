@@ -21,6 +21,16 @@
 void initialize_script_sigcache()
 {
     static const auto testing_setup = MakeNoLogFileContext<>();
+<<<<<<< HEAD
+||||||| parent of d0fca16bf077 (refactor: Pass Logger instances to kernel objects)
+    static SignatureCache signature_cache{DEFAULT_SIGNATURE_CACHE_BYTES};
+    g_setup = testing_setup.get();
+    g_signature_cache = &signature_cache;
+=======
+    static SignatureCache signature_cache{testing_setup->m_logger, DEFAULT_SIGNATURE_CACHE_BYTES};
+    g_setup = testing_setup.get();
+    g_signature_cache = &signature_cache;
+>>>>>>> d0fca16bf077 (refactor: Pass Logger instances to kernel objects)
 }
 
 FUZZ_TARGET(script_sigcache, .init = initialize_script_sigcache)
