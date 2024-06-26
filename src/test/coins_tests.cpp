@@ -1070,7 +1070,7 @@ BOOST_FIXTURE_TEST_CASE(coins_db_leveldb_layout, FlushTest)
     const Coin coin{MakeCoin()};
     const uint256 block_hash{m_rng.rand256()};
 
-    CCoinsViewDB base{{.path = m_args.GetDataDirBase() / "coins_db_leveldb_layout", .cache_bytes = 1_MiB, .wipe_data = true}, {}};
+    CCoinsViewDB base{m_logger, {.path = m_args.GetDataDirBase() / "coins_db_leveldb_layout", .cache_bytes = 1_MiB, .wipe_data = true}, {}};
     CCoinsViewCache cache{&base};
 
     cache.EmplaceCoinInternalDANGER(COutPoint{outpoint}, Coin{coin});
