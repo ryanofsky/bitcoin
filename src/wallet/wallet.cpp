@@ -3888,13 +3888,14 @@ util::Result<std::reference_wrapper<DescriptorScriptPubKeyMan>> CWallet::AddWall
     }
 =======
     if (!IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS)) {
-        LogInfo(m_log, "Cannot add WalletDescriptor to a non-descriptor wallet\n");
+        LogError(m_log, "Cannot add WalletDescriptor to a non-descriptor wallet\n");
         return nullptr;
     }
 >>>>>>> fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
     auto spk_man = GetDescriptorScriptPubKeyMan(desc);
     if (spk_man) {
+<<<<<<< HEAD
 <<<<<<< HEAD
         WalletLogPrintf("Update existing descriptor: %s\n", desc.descriptor->ToString());
         if (auto spkm_res = spk_man->UpdateWalletDescriptor(desc); !spkm_res) {
@@ -3905,6 +3906,11 @@ util::Result<std::reference_wrapper<DescriptorScriptPubKeyMan>> CWallet::AddWall
         spk_man->UpdateWalletDescriptor(desc);
 =======
         LogInfo(m_log, "Update existing descriptor: %s\n", desc.descriptor->ToString());
+||||||| parent of 2e4d0c3b51e2 (wallet, logging: Switch LogInfo to LogError in AddWalletDescriptor)
+        LogInfo(m_log, "Update existing descriptor: %s\n", desc.descriptor->ToString());
+=======
+        LogError(m_log, "Update existing descriptor: %s\n", desc.descriptor->ToString());
+>>>>>>> 2e4d0c3b51e2 (wallet, logging: Switch LogInfo to LogError in AddWalletDescriptor)
         spk_man->UpdateWalletDescriptor(desc);
 >>>>>>> fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
     } else {
@@ -3925,12 +3931,18 @@ util::Result<std::reference_wrapper<DescriptorScriptPubKeyMan>> CWallet::AddWall
     // Top up key pool, the manager will generate new scriptPubKeys internally
     if (!spk_man->TopUp()) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         return util::Error{_("Could not top up scriptPubKeys")};
 ||||||| parent of fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         WalletLogPrintf("Could not top up scriptPubKeys\n");
         return nullptr;
 =======
         LogInfo(m_log, "Could not top up scriptPubKeys\n");
+||||||| parent of 2e4d0c3b51e2 (wallet, logging: Switch LogInfo to LogError in AddWalletDescriptor)
+        LogInfo(m_log, "Could not top up scriptPubKeys\n");
+=======
+        LogError(m_log, "Could not top up scriptPubKeys\n");
+>>>>>>> 2e4d0c3b51e2 (wallet, logging: Switch LogInfo to LogError in AddWalletDescriptor)
         return nullptr;
 >>>>>>> fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
     }
@@ -3941,12 +3953,18 @@ util::Result<std::reference_wrapper<DescriptorScriptPubKeyMan>> CWallet::AddWall
         auto script_pub_keys = spk_man->GetScriptPubKeys();
         if (script_pub_keys.empty()) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             return util::Error{_("Could not generate scriptPubKeys (cache is empty)")};
 ||||||| parent of fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             WalletLogPrintf("Could not generate scriptPubKeys (cache is empty)\n");
             return nullptr;
 =======
             LogInfo(m_log, "Could not generate scriptPubKeys (cache is empty)\n");
+||||||| parent of 2e4d0c3b51e2 (wallet, logging: Switch LogInfo to LogError in AddWalletDescriptor)
+            LogInfo(m_log, "Could not generate scriptPubKeys (cache is empty)\n");
+=======
+            LogError(m_log, "Could not generate scriptPubKeys (cache is empty)\n");
+>>>>>>> 2e4d0c3b51e2 (wallet, logging: Switch LogInfo to LogError in AddWalletDescriptor)
             return nullptr;
 >>>>>>> fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         }
