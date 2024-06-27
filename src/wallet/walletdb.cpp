@@ -461,12 +461,18 @@ static DBErrors LoadWalletFlags(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIV
     if (batch.Read(DBKeys::FLAGS, flags)) {
         if (!pwallet->LoadWalletFlags(flags)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error reading wallet database: Unknown non-tolerable wallet flags found");
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             pwallet->WalletLogPrintf("Error reading wallet database: Unknown non-tolerable wallet flags found\n");
 =======
             LogInfo(log, "Error reading wallet database: Unknown non-tolerable wallet flags found\n");
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(log, "Error reading wallet database: Unknown non-tolerable wallet flags found\n");
+=======
+            LogError(log, "Error reading wallet database: Unknown non-tolerable wallet flags found\n");
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
             return DBErrors::TOO_NEW;
         }
         // All wallets must be descriptor wallets unless opened with a bdb_ro db
@@ -496,12 +502,18 @@ static LoadResult LoadRecords(CWallet* pwallet, DatabaseBatch& batch, const std:
     std::unique_ptr<DatabaseCursor> cursor = batch.GetNewPrefixCursor(prefix);
     if (!cursor) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         pwallet->WalletLogPrintf("Error getting database cursor for '%s' records", key);
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         pwallet->WalletLogPrintf("Error getting database cursor for '%s' records\n", key);
 =======
         LogInfo(log, "Error getting database cursor for '%s' records\n", key);
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+        LogInfo(log, "Error getting database cursor for '%s' records\n", key);
+=======
+        LogError(log, "Error getting database cursor for '%s' records\n", key);
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
         result.m_result = DBErrors::CORRUPT;
         return result;
     }
@@ -512,12 +524,18 @@ static LoadResult LoadRecords(CWallet* pwallet, DatabaseBatch& batch, const std:
             break;
         } else if (status == DatabaseCursor::Status::FAIL) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error reading next '%s' record for wallet database", key);
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             pwallet->WalletLogPrintf("Error reading next '%s' record for wallet database\n", key);
 =======
             LogInfo(log, "Error reading next '%s' record for wallet database\n", key);
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(log, "Error reading next '%s' record for wallet database\n", key);
+=======
+            LogError(log, "Error reading next '%s' record for wallet database\n", key);
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
             result.m_result = DBErrors::CORRUPT;
             return result;
         }
@@ -528,12 +546,18 @@ static LoadResult LoadRecords(CWallet* pwallet, DatabaseBatch& batch, const std:
         DBErrors record_res = load_func(pwallet, ssKey, ssValue, error);
         if (record_res != DBErrors::LOAD_OK) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("%s", error);
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             pwallet->WalletLogPrintf("%s\n", error);
 =======
             LogInfo(log, "%s\n", error);
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(log, "%s\n", error);
+=======
+            LogError(log, "%s\n", error);
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
         }
         result.m_result = std::max(result.m_result, record_res);
         ++result.m_records;
@@ -586,12 +610,18 @@ static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, 
     if (pwallet->IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS)) {
         if (HasLegacyRecords(*pwallet, batch)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.", pwallet->GetName());
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             pwallet->WalletLogPrintf("Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.\n", pwallet->GetName());
 =======
             LogInfo(log, "Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.\n", pwallet->GetName());
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(log, "Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.\n", pwallet->GetName());
+=======
+            LogError(log, "Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.\n", pwallet->GetName());
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
             return DBErrors::UNEXPECTED_LEGACY_ENTRY;
         }
 
@@ -1019,12 +1049,18 @@ static DBErrors LoadAddressBookRecords(CWallet* pwallet, DatabaseBatch& batch) E
         std::optional<AddressPurpose> purpose{PurposeFromString(purpose_str)};
         if (!purpose) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Warning: nonstandard purpose string '%s' for address '%s'", purpose_str, strAddress);
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             pwallet->WalletLogPrintf("Warning: nonstandard purpose string '%s' for address '%s'\n", purpose_str, strAddress);
 =======
             LogInfo(log, "Warning: nonstandard purpose string '%s' for address '%s'\n", purpose_str, strAddress);
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(log, "Warning: nonstandard purpose string '%s' for address '%s'\n", purpose_str, strAddress);
+=======
+            LogWarning(log, "Warning: nonstandard purpose string '%s' for address '%s'\n", purpose_str, strAddress);
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
         }
         pwallet->m_address_book[DecodeDestination(strAddress)].purpose = purpose;
         return DBErrors::LOAD_OK;
@@ -1245,12 +1281,18 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
 #ifndef ENABLE_EXTERNAL_SIGNER
         if (pwallet->IsWalletFlagSet(WALLET_FLAG_EXTERNAL_SIGNER)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error: External signer wallet being loaded without external signer support compiled");
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             pwallet->WalletLogPrintf("Error: External signer wallet being loaded without external signer support compiled\n");
 =======
             LogInfo(log, "Error: External signer wallet being loaded without external signer support compiled\n");
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(log, "Error: External signer wallet being loaded without external signer support compiled\n");
+=======
+            LogError(log, "Error: External signer wallet being loaded without external signer support compiled\n");
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
             return DBErrors::EXTERNAL_SIGNER_SUPPORT_REQUIRED;
         }
 #endif

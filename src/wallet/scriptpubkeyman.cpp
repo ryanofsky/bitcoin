@@ -296,12 +296,18 @@ bool LegacyDataSPKM::LoadCScript(const CScript& redeemScript)
     {
         std::string strAddr = EncodeDestination(ScriptHash(redeemScript));
 <<<<<<< HEAD
+<<<<<<< HEAD
         WalletLogPrintf("%s: Warning: This wallet contains a redeemScript of size %i which exceeds maximum size %i thus can never be redeemed. Do not use address %s.", __func__, redeemScript.size(), MAX_SCRIPT_ELEMENT_SIZE, strAddr);
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         WalletLogPrintf("%s: Warning: This wallet contains a redeemScript of size %i which exceeds maximum size %i thus can never be redeemed. Do not use address %s.\n", __func__, redeemScript.size(), MAX_SCRIPT_ELEMENT_SIZE, strAddr);
 =======
         LogInfo(m_log, "%s: Warning: This wallet contains a redeemScript of size %i which exceeds maximum size %i thus can never be redeemed. Do not use address %s.\n", __func__, redeemScript.size(), MAX_SCRIPT_ELEMENT_SIZE, strAddr);
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+        LogInfo(m_log, "%s: Warning: This wallet contains a redeemScript of size %i which exceeds maximum size %i thus can never be redeemed. Do not use address %s.\n", __func__, redeemScript.size(), MAX_SCRIPT_ELEMENT_SIZE, strAddr);
+=======
+        LogWarning(m_log, "%s: Warning: This wallet contains a redeemScript of size %i which exceeds maximum size %i thus can never be redeemed. Do not use address %s.\n", __func__, redeemScript.size(), MAX_SCRIPT_ELEMENT_SIZE, strAddr);
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
         return true;
     }
 

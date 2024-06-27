@@ -2380,15 +2380,22 @@ bool CWallet::SetAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
     const std::string& encoded_dest = EncodeDestination(address);
     if (new_purpose && !batch.WritePurpose(encoded_dest, PurposeToString(*new_purpose))) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         WalletLogPrintf("Error: fail to write address book 'purpose' entry");
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         WalletLogPrintf("Error: fail to write address book 'purpose' entry\n");
 =======
         LogInfo(m_log, "Error: fail to write address book 'purpose' entry\n");
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+        LogInfo(m_log, "Error: fail to write address book 'purpose' entry\n");
+=======
+        LogError(m_log, "Error: fail to write address book 'purpose' entry\n");
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
         return false;
     }
     if (!batch.WriteName(encoded_dest, strName)) {
+<<<<<<< HEAD
 <<<<<<< HEAD
         WalletLogPrintf("Error: fail to write address book 'name' entry");
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
@@ -2396,6 +2403,11 @@ bool CWallet::SetAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
 =======
         LogInfo(m_log, "Error: fail to write address book 'name' entry\n");
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+        LogInfo(m_log, "Error: fail to write address book 'name' entry\n");
+=======
+        LogError(m_log, "Error: fail to write address book 'name' entry\n");
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
         return false;
     }
 
@@ -2440,17 +2452,24 @@ bool CWallet::DelAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
         // Delete data rows associated with this address
         if (!batch.EraseAddressData(address)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             WalletLogPrintf("Error: cannot erase address book entry data");
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             WalletLogPrintf("Error: cannot erase address book entry data\n");
 =======
             LogInfo(m_log, "Error: cannot erase address book entry data\n");
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(m_log, "Error: cannot erase address book entry data\n");
+=======
+            LogError(m_log, "Error: cannot erase address book entry data\n");
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
             return false;
         }
 
         // Delete purpose entry
         if (!batch.ErasePurpose(dest)) {
+<<<<<<< HEAD
 <<<<<<< HEAD
             WalletLogPrintf("Error: cannot erase address book entry purpose");
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
@@ -2458,11 +2477,17 @@ bool CWallet::DelAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
 =======
             LogInfo(m_log, "Error: cannot erase address book entry purpose\n");
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(m_log, "Error: cannot erase address book entry purpose\n");
+=======
+            LogError(m_log, "Error: cannot erase address book entry purpose\n");
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
             return false;
         }
 
         // Delete name entry
         if (!batch.EraseName(dest)) {
+<<<<<<< HEAD
 <<<<<<< HEAD
             WalletLogPrintf("Error: cannot erase address book entry name");
 ||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
@@ -2470,6 +2495,11 @@ bool CWallet::DelAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
 =======
             LogInfo(m_log, "Error: cannot erase address book entry name\n");
 >>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+||||||| parent of 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
+            LogInfo(m_log, "Error: cannot erase address book entry name\n");
+=======
+            LogError(m_log, "Error: cannot erase address book entry name\n");
+>>>>>>> 2ce0c90ee61 (wallet, logging: Switch LogInfo to LogWarning/LogError)
             return false;
         }
 
