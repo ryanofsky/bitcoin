@@ -200,18 +200,16 @@ BOOST_AUTO_TEST_CASE(logging_timer)
     BOOST_CHECK_EQUAL(micro_timer.LogMsg("msg").substr(0, result_prefix.size()), result_prefix);
 }
 
-BOOST_FIXTURE_TEST_CASE(logging_LogPrintf_, LogSetup)
+BOOST_FIXTURE_TEST_CASE(logging_LogPrintStr, LogSetup)
 {
-    LogInstance().m_log_sourcelocations = true;
-    auto LogPrintf_ = [](const std::string&fun, const std::string&file, int line, BCLog::LogFlags category, BCLog::Level level, const auto&... args) {
-        LogInstance().LogPrintStr(strprintf(args...), fun, file, line, category, level);
-    };
-    LogPrintf_("fn1", "src1", 1, BCLog::LogFlags::NET, BCLog::Level::Debug, "foo1: %s\n", "bar1");
-    LogPrintf_("fn2", "src2", 2, BCLog::LogFlags::NET, BCLog::Level::Info, "foo2: %s\n", "bar2");
-    LogPrintf_("fn3", "src3", 3, BCLog::LogFlags::ALL, BCLog::Level::Debug, "foo3: %s\n", "bar3");
-    LogPrintf_("fn4", "src4", 4, BCLog::LogFlags::ALL, BCLog::Level::Info, "foo4: %s\n", "bar4");
-    LogPrintf_("fn5", "src5", 5, BCLog::LogFlags::NONE, BCLog::Level::Debug, "foo5: %s\n", "bar5");
-    LogPrintf_("fn6", "src6", 6, BCLog::LogFlags::NONE, BCLog::Level::Info, "foo6: %s\n", "bar6");
+    BCLog::Logger& logger{LogInstance()};
+    logger.m_log_sourcelocations = true;
+    logger.LogPrintStr(strprintf("foo1: %s\n", "bar1"), "fn1", "src1", 1, BCLog::LogFlags::NET, BCLog::Level::Debug);
+    logger.LogPrintStr(strprintf("foo2: %s\n", "bar2"), "fn2", "src2", 2, BCLog::LogFlags::NET, BCLog::Level::Info);
+    logger.LogPrintStr(strprintf("foo3: %s\n", "bar3"), "fn3", "src3", 3, BCLog::LogFlags::ALL, BCLog::Level::Debug);
+    logger.LogPrintStr(strprintf("foo4: %s\n", "bar4"), "fn4", "src4", 4, BCLog::LogFlags::ALL, BCLog::Level::Info);
+    logger.LogPrintStr(strprintf("foo5: %s\n", "bar5"), "fn5", "src5", 5, BCLog::LogFlags::NONE, BCLog::Level::Debug);
+    logger.LogPrintStr(strprintf("foo6: %s\n", "bar6"), "fn6", "src6", 6, BCLog::LogFlags::NONE, BCLog::Level::Info);
     std::ifstream file{tmp_log_path};
     std::vector<std::string> log_lines;
     for (std::string log; std::getline(file, log);) {
