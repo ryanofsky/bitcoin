@@ -280,11 +280,27 @@ bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 //! Internal helper to get log source object from macro argument, if argument is
 //! BCLog::Source object or a category constant that BCLog::Source can be
 //! constructed from.
+template <bool forbid_category>
 static inline const BCLog::Source& _LogSource(const BCLog::Source& source LIFETIMEBOUND) { return source; }
 
 //! Internal helper to get log source object from macro argument, if argument is
 //! just a format string and no source or category was provided.
+template <bool forbid_category>
 static inline BCLog::Source _LogSource(std::string_view fmt) { return {}; }
+
+//! Internal helper to trigger a compile error if a caller tries to pass a
+//! category constant as a source argument to a logging macro that specifies
+//! forbid_category == true. There is no technical reason why all logging
+//! macros cannot accept category arguments, but for various reasons, such as
+//! (1) not wanting to allow users filter by category at high priority levels,
+//! and (2) wanting to incentivize developers to use lower log levels to avoid
+//! log spam, passing category constants at higher levels is forbidden.
+template <bool forbid_category>
+requires (forbid_category)
+static inline BCLog::Source _LogSource(BCLog::LogFlags category)
+{
+    static_assert(false, "Cannot pass BCLog::LogFlags category argument to high level Info/Warning/Error logging macros. Please use lower level Debug/Trace macro, or drop the category argument!");
+}
 
 //! Internal helper to format log arguments and call a logging function.
 template <typename LogFn, typename Source, typename SourceArg, typename... Args>
@@ -306,15 +322,15 @@ void _LogFormat(LogFn&& log, Source&& source, util::ConstevalFormatString<sizeof
 #define _FirstArg(args) _FirstArgImpl args
 
 //! Internal helper to check level and log. Avoids evaluating arguments if not logging.
-#define _LogPrint(level, ...)                                             \
-    do {                                                                  \
-        if (LogEnabled(_LogSource(_FirstArg((__VA_ARGS__))), (level))) {  \
-            constexpr auto& func = __func__;                              \
-            _LogFormat([&](auto&& source, auto&& message) {               \
-                source.logger.LogPrintStr(message, func, __FILE__,        \
-                    __LINE__, source.category, (level));                  \
-            }, _LogSource(_FirstArg((__VA_ARGS__))), __VA_ARGS__);        \
-        }                                                                 \
+#define _LogPrint(level, forbid_category, ...)                              \
+    do {                                                                    \
+        if (LogEnabled(_LogSource<forbid_category>(_FirstArg((__VA_ARGS__))), (level))) { \
+            constexpr auto& func = __func__;                                \
+            _LogFormat([&](auto&& source, auto&& message) {                 \
+                source.logger.LogPrintStr(message, func, __FILE__,          \
+                    __LINE__, source.category, (level));                    \
+            }, _LogSource<forbid_category>(_FirstArg((__VA_ARGS__))), __VA_ARGS__); \
+        }                                                                   \
     } while (0)
 
 //! Logging macros which output log messages at the specified levels, and avoid
@@ -349,12 +365,12 @@ void _LogFormat(LogFn&& log, Source&& source, util::ConstevalFormatString<sizeof
 //!
 //! Using source objects also allows diverting log messages to a local logger
 //! instead of the global logging instance.
-#define LogError(...) _LogPrint(BCLog::Level::Error, __VA_ARGS__)
-#define LogWarning(...) _LogPrint(BCLog::Level::Warning, __VA_ARGS__)
-#define LogInfo(...) _LogPrint(BCLog::Level::Info, __VA_ARGS__)
-#define LogDebug(...) _LogPrint(BCLog::Level::Debug, __VA_ARGS__)
-#define LogTrace(...) _LogPrint(BCLog::Level::Trace, __VA_ARGS__)
-#define LogPrintLevel(source, level, ...) _LogPrint(level, source, __VA_ARGS__)
+#define LogError(...) _LogPrint(BCLog::Level::Error, true, __VA_ARGS__)
+#define LogWarning(...) _LogPrint(BCLog::Level::Warning, true, __VA_ARGS__)
+#define LogInfo(...) _LogPrint(BCLog::Level::Info, true, __VA_ARGS__)
+#define LogDebug(...) _LogPrint(BCLog::Level::Debug, false, __VA_ARGS__)
+#define LogTrace(...) _LogPrint(BCLog::Level::Trace, false, __VA_ARGS__)
+#define LogPrintLevel(source, level, ...) _LogPrint(level, false, source, __VA_ARGS__)
 
 //! Deprecated macros.
 #define LogPrintf(...) LogInfo(__VA_ARGS__)
