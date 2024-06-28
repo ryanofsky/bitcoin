@@ -124,14 +124,14 @@ BOOST_FIXTURE_TEST_CASE(logging_source_args, LogSetup)
     LogTrace("trace %s\n", "arg");
 
     // Test logging with category arguments.
-    LogError(BCLog::NET, "error\n");
-    LogWarning(BCLog::NET, "warning\n");
-    LogInfo(BCLog::NET, "info\n");
+    // LogError(BCLog::NET, "error\n"); // Not allowed because of forbid_category!
+    // LogWarning(BCLog::NET, "warning\n"); // Not allowed because of forbid_category!
+    // LogInfo(BCLog::NET, "info\n"); // Not allowed because of forbid_category!
     LogDebug(BCLog::NET, "debug\n");
     LogTrace(BCLog::NET, "trace\n");
-    LogError(BCLog::NET, "error %s\n", "arg");
-    LogWarning(BCLog::NET, "warning %s\n", "arg");
-    LogInfo(BCLog::NET, "info %s\n", "arg");
+    // LogError(BCLog::NET, "error %s\n", "arg"); // Not allowed because of forbid_category!
+    // LogWarning(BCLog::NET, "warning %s\n", "arg"); // Not allowed because of forbid_category!
+    // LogInfo(BCLog::NET, "info %s\n", "arg"); // Not allowed because of forbid_category!
     LogDebug(BCLog::NET, "debug %s\n", "arg");
     LogTrace(BCLog::NET, "trace %s\n", "arg");
 
@@ -161,15 +161,9 @@ BOOST_FIXTURE_TEST_CASE(logging_source_args, LogSetup)
         "[debug] debug arg",
         "[trace] trace arg",
 
-        "[net:error] error",
-        "[net:warning] warning",
-        "[net:info] info",
         "[net] debug",
         "[net:trace] trace",
 
-        "[net:error] error arg",
-        "[net:warning] warning arg",
-        "[net:info] info arg",
         "[net] debug arg",
         "[net:trace] trace arg",
 
