@@ -95,11 +95,35 @@ struct Context {
 
 namespace detail {
 //! Internal helper to get log context object from the first macro argument.
-template <typename Context>
+template <bool take_category, typename Context>
 requires (Context::log_context)
 Context& GetContext(Context& context LIFETIMEBOUND) { return context; }
-inline Context GetContext(Category category) { return Context{category}; }
-inline Context GetContext(std::string_view fmt) { return Context{}; }
+
+template <bool take_category>
+Context GetContext(Category category)
+{
+    //! Trigger compile error if caller tries to pass a category constant as a
+    //! first argument to a logging call that specifies take_category == false.
+    //! There is no technical reason why all logging calls could not accept
+    //! category arguments, but for various reasons, such as (1) not wanting to
+    //! allow users to filter by category at high priority levels, and (2)
+    //! wanting to incentivize developers to use lower log levels to avoid log
+    //! spam, passing category constants at higher levels is forbidden.
+    static_assert(take_category, "Cannot pass category argument to Info/Warning/Error logging call. Please switch to Debug/Trace call, or drop the category argument!");
+    return Context{category};
+}
+
+template <bool take_category>
+Context GetContext(std::string_view fmt)
+{
+    //! Trigger compile error if caller does not pass a category constant as the
+    //! first argument to a logging call that specifies take_category == true.
+    //! There is no technical reason why category arguments need to be required,
+    //! but categories are useful for finding and filtering relevant messages
+    //! when debugging, so we want to encourage them.
+    static_assert(!take_category, "Missing required category argument for Debug/Trace logging call. Category can only be omitted for Info/Warning/Error calls.");
+    return Context{};
+}
 
 //! Internal helper to format log arguments and call a logging function.
 //! Overloaded to detect case where first macro argument is a string literal and
@@ -132,9 +156,9 @@ void Log(Level level, bool should_ratelimit, SourceLocation&& source_loc, Contex
 //! Internal helper to conditionally log. Only evaluates arguments when needed.
 // Allow __func__ to be used in any context without warnings:
 // NOLINTBEGIN(bugprone-lambda-function-name)
-#define LogPrint_(level, should_ratelimit, ...)                                                    \
+#define LogPrint_(level, should_ratelimit, take_category, ...)                                     \
     do {                                                                                           \
-        auto&& _context{util::log::detail::GetContext(FirstArg_((__VA_ARGS__)))};                  \
+        auto&& _context{util::log::detail::GetContext<take_category>(FirstArg_((__VA_ARGS__)))};   \
         if (util::log::ShouldLog(_context.logger, _context.category, (level))) {                   \
             util::log::detail::Log((level), (should_ratelimit), SourceLocation{__func__},          \
                                    _context, __VA_ARGS__);                                         \
@@ -183,12 +207,12 @@ void Log(Level level, bool should_ratelimit, SourceLocation&& source_loc, Contex
 //! disk filling attacks. Users enabling logging at Debug and lower levels are
 //! assumed to be developers or power users who are aware that -debug may cause
 //! excessive disk usage due to logging.
-#define LogError(...) LogPrint_(util::log::Level::Error, /*should_ratelimit=*/true, __VA_ARGS__)
-#define LogWarning(...) LogPrint_(util::log::Level::Warning, /*should_ratelimit=*/true, __VA_ARGS__)
-#define LogInfo(...) LogPrint_(util::log::Level::Info, /*should_ratelimit=*/true, __VA_ARGS__)
-#define LogDebug(...) LogPrint_(util::log::Level::Debug, /*should_ratelimit=*/false, __VA_ARGS__)
-#define LogTrace(...) LogPrint_(util::log::Level::Trace, /*should_ratelimit=*/false, __VA_ARGS__)
-#define LogPrintLevel_(context, level, should_ratelimit, ...) LogPrint_((level), (should_ratelimit), (context), __VA_ARGS__)
+#define LogError(...) LogPrint_(util::log::Level::Error, /*should_ratelimit=*/true, /*take_category=*/false, __VA_ARGS__)
+#define LogWarning(...) LogPrint_(util::log::Level::Warning, /*should_ratelimit=*/true, /*take_category=*/false, __VA_ARGS__)
+#define LogInfo(...) LogPrint_(util::log::Level::Info, /*should_ratelimit=*/true, /*take_category=*/false, __VA_ARGS__)
+#define LogDebug(...) LogPrint_(util::log::Level::Debug, /*should_ratelimit=*/false, /*take_category=*/true, __VA_ARGS__)
+#define LogTrace(...) LogPrint_(util::log::Level::Trace, /*should_ratelimit=*/false, /*take_category=*/true, __VA_ARGS__)
+#define LogPrintLevel_(context, level, should_ratelimit, ...) LogPrint_((level), (should_ratelimit), /*take_category=*/true, (context), __VA_ARGS__)
 
 namespace BCLog {
 //! Alias for compatibility. Prefer util::log::Level over BCLog::Level in new code.
