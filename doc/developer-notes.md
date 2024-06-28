@@ -26,6 +26,7 @@ Developer Notes
     - [Ignoring IDE/editor files](#ignoring-ideeditor-files)
 - [Development guidelines](#development-guidelines)
     - [General Bitcoin Core](#general-bitcoin-core)
+    - [Logging](#logging)
     - [Wallet](#wallet)
     - [General C++](#general-c)
     - [C++ data structures](#c-data-structures)
@@ -743,13 +744,10 @@ logging messages. They should be used as follows:
   a deprecated alias for `LogInfo`.
 
 - `LogError(fmt, params...)` should be used in place of `LogInfo` for
-  severe problems that require the node (or a subsystem) to shut down
-  entirely (e.g., insufficient storage space).
+  severe failures the node admin will need to address.
 
 - `LogWarning(fmt, params...)` should be used in place of `LogInfo` for
-  severe problems that the node admin should address, but are not
-  severe enough to warrant shutting down the node (e.g., system time
-  appears to be wrong, unknown soft fork appears to have activated).
+  potential problems the node admin may need to address.
 
 - `LogTrace(BCLog::CATEGORY, fmt, params...)` should be used in place of
   `LogDebug` for log messages that would be unusable on a production
