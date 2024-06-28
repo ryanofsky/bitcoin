@@ -1,6 +1,111 @@
 # Developer Notes
 
+<<<<<<< HEAD
 ## Coding Style (General)
+||||||| parent of b7aae361b273 (doc: Drop description of LogError messages as fatal)
+<!-- markdown-toc start -->
+**Table of Contents**
+
+- [Developer Notes](#developer-notes)
+    - [Coding Style (General)](#coding-style-general)
+    - [Coding Style (C++)](#coding-style-c)
+    - [Coding Style (Python)](#coding-style-python)
+    - [Coding Style (Doxygen-compatible comments)](#coding-style-doxygen-compatible-comments)
+      - [Generating Documentation](#generating-documentation)
+    - [Development tips and tricks](#development-tips-and-tricks)
+        - [Compiling for debugging](#compiling-for-debugging)
+        - [Show sources in debugging](#show-sources-in-debugging)
+        - [`debug.log`](#debuglog)
+        - [Signet, testnet, and regtest modes](#signet-testnet-and-regtest-modes)
+        - [DEBUG_LOCKORDER](#debug_lockorder)
+        - [DEBUG_LOCKCONTENTION](#debug_lockcontention)
+        - [Valgrind suppressions file](#valgrind-suppressions-file)
+        - [Compiling for test coverage](#compiling-for-test-coverage)
+        - [Performance profiling with perf](#performance-profiling-with-perf)
+        - [Sanitizers](#sanitizers)
+    - [Locking/mutex usage notes](#lockingmutex-usage-notes)
+    - [Threads](#threads)
+    - [Ignoring IDE/editor files](#ignoring-ideeditor-files)
+- [Development guidelines](#development-guidelines)
+    - [General Bitcoin Core](#general-bitcoin-core)
+    - [Wallet](#wallet)
+    - [General C++](#general-c)
+    - [C++ data structures](#c-data-structures)
+    - [Strings and formatting](#strings-and-formatting)
+    - [Shadowing](#shadowing)
+    - [Lifetimebound](#lifetimebound)
+    - [Threads and synchronization](#threads-and-synchronization)
+    - [Scripts](#scripts)
+        - [Shebang](#shebang)
+    - [Source code organization](#source-code-organization)
+    - [GUI](#gui)
+    - [Subtrees](#subtrees)
+    - [Upgrading LevelDB](#upgrading-leveldb)
+      - [File Descriptor Counts](#file-descriptor-counts)
+      - [Consensus Compatibility](#consensus-compatibility)
+    - [Scripted diffs](#scripted-diffs)
+        - [Suggestions and examples](#suggestions-and-examples)
+    - [Release notes](#release-notes)
+    - [RPC interface guidelines](#rpc-interface-guidelines)
+    - [Internal interface guidelines](#internal-interface-guidelines)
+
+<!-- markdown-toc end -->
+
+Coding Style (General)
+----------------------
+=======
+<!-- markdown-toc start -->
+**Table of Contents**
+
+- [Developer Notes](#developer-notes)
+    - [Coding Style (General)](#coding-style-general)
+    - [Coding Style (C++)](#coding-style-c)
+    - [Coding Style (Python)](#coding-style-python)
+    - [Coding Style (Doxygen-compatible comments)](#coding-style-doxygen-compatible-comments)
+      - [Generating Documentation](#generating-documentation)
+    - [Development tips and tricks](#development-tips-and-tricks)
+        - [Compiling for debugging](#compiling-for-debugging)
+        - [Show sources in debugging](#show-sources-in-debugging)
+        - [`debug.log`](#debuglog)
+        - [Signet, testnet, and regtest modes](#signet-testnet-and-regtest-modes)
+        - [DEBUG_LOCKORDER](#debug_lockorder)
+        - [DEBUG_LOCKCONTENTION](#debug_lockcontention)
+        - [Valgrind suppressions file](#valgrind-suppressions-file)
+        - [Compiling for test coverage](#compiling-for-test-coverage)
+        - [Performance profiling with perf](#performance-profiling-with-perf)
+        - [Sanitizers](#sanitizers)
+    - [Locking/mutex usage notes](#lockingmutex-usage-notes)
+    - [Threads](#threads)
+    - [Ignoring IDE/editor files](#ignoring-ideeditor-files)
+- [Development guidelines](#development-guidelines)
+    - [General Bitcoin Core](#general-bitcoin-core)
+    - [Logging](#logging)
+    - [Wallet](#wallet)
+    - [General C++](#general-c)
+    - [C++ data structures](#c-data-structures)
+    - [Strings and formatting](#strings-and-formatting)
+    - [Shadowing](#shadowing)
+    - [Lifetimebound](#lifetimebound)
+    - [Threads and synchronization](#threads-and-synchronization)
+    - [Scripts](#scripts)
+        - [Shebang](#shebang)
+    - [Source code organization](#source-code-organization)
+    - [GUI](#gui)
+    - [Subtrees](#subtrees)
+    - [Upgrading LevelDB](#upgrading-leveldb)
+      - [File Descriptor Counts](#file-descriptor-counts)
+      - [Consensus Compatibility](#consensus-compatibility)
+    - [Scripted diffs](#scripted-diffs)
+        - [Suggestions and examples](#suggestions-and-examples)
+    - [Release notes](#release-notes)
+    - [RPC interface guidelines](#rpc-interface-guidelines)
+    - [Internal interface guidelines](#internal-interface-guidelines)
+
+<!-- markdown-toc end -->
+
+Coding Style (General)
+----------------------
+>>>>>>> b7aae361b273 (doc: Drop description of LogError messages as fatal)
 
 Various coding styles have been used during the history of the codebase,
 and the result is not very consistent. However, we're now trying to converge to
@@ -755,14 +860,13 @@ logging messages. They should be used as follows:
   attacker to fill up storage. Note that `LogPrintf(fmt, params...)` is
   a deprecated alias for `LogInfo`.
 
-- `LogError(fmt, params...)` should be used in place of `LogInfo` for
-  severe problems that require the node (or a subsystem) to shut down
-  entirely (e.g., insufficient storage space).
+- `LogError(fmt, params...)` should be used in place of `LogInfo` for severe
+  errors the node admin will need to address (e.g., failure to write data).
 
 - `LogWarning(fmt, params...)` should be used in place of `LogInfo` for
-  severe problems that the node admin should address, but are not
-  severe enough to warrant shutting down the node (e.g., system time
-  appears to be wrong, unknown soft fork appears to have activated).
+  unexpected conditions indicating potentially severe problems the node admin
+  should address (e.g. system time appears to be wrong, unknown soft fork
+  appears to have activated).
 
 - `LogTrace(BCLog::CATEGORY, fmt, params...)` should be used in place of
   `LogDebug` for log messages that would be unusable on a production
