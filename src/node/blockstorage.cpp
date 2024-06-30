@@ -131,13 +131,13 @@ bool BlockTreeDB::LoadBlockIndexGuts(const Consensus::Params& consensusParams, s
                 pindexNew->nTx            = diskindex.nTx;
 
                 if (!CheckProofOfWork(pindexNew->GetBlockHash(), pindexNew->nBits, consensusParams)) {
-                    LogError("%s: CheckProofOfWork failed: %s\n", __func__, pindexNew->ToString());
+                    LogAlert("%s: CheckProofOfWork failed: %s\n", __func__, pindexNew->ToString());
                     return false;
                 }
 
                 pcursor->Next();
             } else {
-                LogError("%s: failed to read value\n", __func__);
+                LogAlert("%s: failed to read value\n", __func__);
                 return false;
             }
         } else {
@@ -433,7 +433,7 @@ bool BlockManager::LoadBlockIndex(const std::optional<uint256>& snapshot_blockha
     for (CBlockIndex* pindex : vSortedByHeight) {
         if (m_interrupt) return false;
         if (previous_index && pindex->nHeight > previous_index->nHeight + 1) {
-            LogError("%s: block index is non-contiguous, index of height %d missing\n", __func__, previous_index->nHeight + 1);
+            LogAlert("%s: block index is non-contiguous, index of height %d missing\n", __func__, previous_index->nHeight + 1);
             return false;
         }
         previous_index = pindex;
@@ -673,7 +673,7 @@ bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos
     // Open history file to append
     AutoFile fileout{OpenUndoFile(pos)};
     if (fileout.IsNull()) {
-        LogError("%s: OpenUndoFile failed\n", __func__);
+        LogAlert("%s: OpenUndoFile failed\n", __func__);
         return false;
     }
 
@@ -684,7 +684,7 @@ bool BlockManager::UndoWriteToDisk(const CBlockUndo& blockundo, FlatFilePos& pos
     // Write undo data
     long fileOutPos = ftell(fileout.Get());
     if (fileOutPos < 0) {
-        LogError("%s: ftell failed\n", __func__);
+        LogAlert("%s: ftell failed\n", __func__);
         return false;
     }
     pos.nPos = (unsigned int)fileOutPos;
@@ -703,10 +703,30 @@ bool BlockManager::UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex& in
 {
     const FlatFilePos pos{WITH_LOCK(::cs_main, return index.GetUndoPos())};
 
+<<<<<<< HEAD
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+    if (pos.IsNull()) {
+        LogError("%s: no undo data available\n", __func__);
+        return false;
+    }
+
+=======
+    if (pos.IsNull()) {
+        LogAlert("%s: no undo data available\n", __func__);
+        return false;
+    }
+
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
     // Open history file to read
     AutoFile filein{OpenUndoFile(pos, true)};
     if (filein.IsNull()) {
+<<<<<<< HEAD
         LogError("%s: OpenUndoFile failed for %s\n", __func__, pos.ToString());
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("%s: OpenUndoFile failed\n", __func__);
+=======
+        LogAlert("%s: OpenUndoFile failed\n", __func__);
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
 
@@ -718,13 +738,25 @@ bool BlockManager::UndoReadFromDisk(CBlockUndo& blockundo, const CBlockIndex& in
         verifier >> blockundo;
         filein >> hashChecksum;
     } catch (const std::exception& e) {
+<<<<<<< HEAD
         LogError("%s: Deserialize or I/O error - %s at %s\n", __func__, e.what(), pos.ToString());
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("%s: Deserialize or I/O error - %s\n", __func__, e.what());
+=======
+        LogAlert("%s: Deserialize or I/O error - %s\n", __func__, e.what());
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
 
     // Verify checksum
     if (hashChecksum != verifier.GetHash()) {
+<<<<<<< HEAD
         LogError("%s: Checksum mismatch at %s\n", __func__, pos.ToString());
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("%s: Checksum mismatch\n", __func__);
+=======
+        LogAlert("%s: Checksum mismatch\n", __func__);
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
 
@@ -907,7 +939,7 @@ FlatFilePos BlockManager::FindNextBlockPos(unsigned int nAddSize, unsigned int n
         // a reindex. A flush error might also leave some of the data files
         // untrimmed.
         if (!FlushBlockFile(last_blockfile, /*fFinalize=*/true, finalize_undo)) {
-            LogPrintLevel(BCLog::BLOCKSTORAGE, BCLog::Level::Warning,
+            LogPrintLevel(BCLog::BLOCKSTORAGE, BCLog::Level::Alert,
                           "Warning: Failed to flush previous block file %05i (finalize=1, finalize_undo=%i) before opening new block file %05i\n",
                           last_blockfile, finalize_undo, nFile);
         }
@@ -981,7 +1013,13 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
     // Open history file to append
     AutoFile fileout{OpenBlockFile(pos)};
     if (fileout.IsNull()) {
+<<<<<<< HEAD
         LogError("%s: OpenBlockFile failed\n", __func__);
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("WriteBlockToDisk: OpenBlockFile failed\n");
+=======
+        LogAlert("WriteBlockToDisk: OpenBlockFile failed\n");
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
 
@@ -992,7 +1030,13 @@ bool BlockManager::WriteBlockToDisk(const CBlock& block, FlatFilePos& pos) const
     // Write block
     long fileOutPos = ftell(fileout.Get());
     if (fileOutPos < 0) {
+<<<<<<< HEAD
         LogError("%s: ftell failed\n", __func__);
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("WriteBlockToDisk: ftell failed\n");
+=======
+        LogAlert("WriteBlockToDisk: ftell failed\n");
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
     pos.nPos = (unsigned int)fileOutPos;
@@ -1011,7 +1055,13 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
     if (block.GetUndoPos().IsNull()) {
         FlatFilePos _pos;
         if (!FindUndoPos(state, block.nFile, _pos, ::GetSerializeSize(blockundo) + 40)) {
+<<<<<<< HEAD
             LogError("%s: FindUndoPos failed\n", __func__);
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+            LogError("ConnectBlock(): FindUndoPos failed\n");
+=======
+            LogAlert("ConnectBlock(): FindUndoPos failed\n");
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
             return false;
         }
         if (!UndoWriteToDisk(blockundo, _pos, block.pprev->GetBlockHash())) {
@@ -1029,7 +1079,7 @@ bool BlockManager::WriteUndoDataForBlock(const CBlockUndo& blockundo, BlockValid
             // fact it is. Note though, that a failed flush might leave the data
             // file untrimmed.
             if (!FlushUndoFile(_pos.nFile, true)) {
-                LogPrintLevel(BCLog::BLOCKSTORAGE, BCLog::Level::Warning, "Failed to flush undo file %05i\n", _pos.nFile);
+                LogPrintLevel(BCLog::BLOCKSTORAGE, BCLog::Level::Alert, "Failed to flush undo file %05i\n", _pos.nFile);
             }
         } else if (_pos.nFile == cursor.file_num && block.nHeight > cursor.undo_height) {
             cursor.undo_height = block.nHeight;
@@ -1050,7 +1100,13 @@ bool BlockManager::ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos) cons
     // Open history file to read
     AutoFile filein{OpenBlockFile(pos, true)};
     if (filein.IsNull()) {
+<<<<<<< HEAD
         LogError("%s: OpenBlockFile failed for %s\n", __func__, pos.ToString());
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("ReadBlockFromDisk: OpenBlockFile failed for %s\n", pos.ToString());
+=======
+        LogAlert("ReadBlockFromDisk: OpenBlockFile failed for %s\n", pos.ToString());
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
 
@@ -1058,19 +1114,31 @@ bool BlockManager::ReadBlockFromDisk(CBlock& block, const FlatFilePos& pos) cons
     try {
         filein >> TX_WITH_WITNESS(block);
     } catch (const std::exception& e) {
-        LogError("%s: Deserialize or I/O error - %s at %s\n", __func__, e.what(), pos.ToString());
+        LogAlert("%s: Deserialize or I/O error - %s at %s\n", __func__, e.what(), pos.ToString());
         return false;
     }
 
     // Check the header
     if (!CheckProofOfWork(block.GetHash(), block.nBits, GetConsensus())) {
+<<<<<<< HEAD
         LogError("%s: Errors in block header at %s\n", __func__, pos.ToString());
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("ReadBlockFromDisk: Errors in block header at %s\n", pos.ToString());
+=======
+        LogAlert("ReadBlockFromDisk: Errors in block header at %s\n", pos.ToString());
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
 
     // Signet only: check block solution
     if (GetConsensus().signet_blocks && !CheckSignetBlockSolution(block, GetConsensus())) {
+<<<<<<< HEAD
         LogError("%s: Errors in block solution at %s\n", __func__, pos.ToString());
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("ReadBlockFromDisk: Errors in block solution at %s\n", pos.ToString());
+=======
+        LogAlert("ReadBlockFromDisk: Errors in block solution at %s\n", pos.ToString());
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
 
@@ -1085,7 +1153,15 @@ bool BlockManager::ReadBlockFromDisk(CBlock& block, const CBlockIndex& index) co
         return false;
     }
     if (block.GetHash() != index.GetBlockHash()) {
+<<<<<<< HEAD
         LogError("%s: GetHash() doesn't match index for %s at %s\n", __func__, index.ToString(), block_pos.ToString());
+||||||| parent of d34b529ed104 (scripted-diff: Replace log error and warning with alert)
+        LogError("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s\n",
+                     index.ToString(), block_pos.ToString());
+=======
+        LogAlert("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() doesn't match index for %s at %s\n",
+                     index.ToString(), block_pos.ToString());
+>>>>>>> d34b529ed104 (scripted-diff: Replace log error and warning with alert)
         return false;
     }
     return true;
@@ -1097,13 +1173,13 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
     // If nPos is less than 8 the pos is null and we don't have the block data
     // Return early to prevent undefined behavior of unsigned int underflow
     if (hpos.nPos < 8) {
-        LogError("%s: OpenBlockFile failed for %s\n", __func__, pos.ToString());
+        LogAlert("%s: OpenBlockFile failed for %s\n", __func__, pos.ToString());
         return false;
     }
     hpos.nPos -= 8; // Seek back 8 bytes for meta header
     AutoFile filein{OpenBlockFile(hpos, true)};
     if (filein.IsNull()) {
-        LogError("%s: OpenBlockFile failed for %s\n", __func__, pos.ToString());
+        LogAlert("%s: OpenBlockFile failed for %s\n", __func__, pos.ToString());
         return false;
     }
 
@@ -1114,14 +1190,14 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
         filein >> blk_start >> blk_size;
 
         if (blk_start != GetParams().MessageStart()) {
-            LogError("%s: Block magic mismatch for %s: %s versus expected %s\n", __func__, pos.ToString(),
+            LogAlert("%s: Block magic mismatch for %s: %s versus expected %s\n", __func__, pos.ToString(),
                          HexStr(blk_start),
                          HexStr(GetParams().MessageStart()));
             return false;
         }
 
         if (blk_size > MAX_SIZE) {
-            LogError("%s: Block data is larger than maximum deserialization size for %s: %s versus %s\n", __func__, pos.ToString(),
+            LogAlert("%s: Block data is larger than maximum deserialization size for %s: %s versus %s\n", __func__, pos.ToString(),
                          blk_size, MAX_SIZE);
             return false;
         }
@@ -1129,7 +1205,7 @@ bool BlockManager::ReadRawBlockFromDisk(std::vector<uint8_t>& block, const FlatF
         block.resize(blk_size); // Zeroing of memory is intentional here
         filein.read(MakeWritableByteSpan(block));
     } catch (const std::exception& e) {
-        LogError("%s: Read from block file failed: %s for %s\n", __func__, e.what(), pos.ToString());
+        LogAlert("%s: Read from block file failed: %s for %s\n", __func__, e.what(), pos.ToString());
         return false;
     }
 
@@ -1144,7 +1220,7 @@ FlatFilePos BlockManager::SaveBlockToDisk(const CBlock& block, int nHeight)
     nBlockSize += static_cast<unsigned int>(BLOCK_SERIALIZATION_HEADER_SIZE);
     FlatFilePos blockPos{FindNextBlockPos(nBlockSize, nHeight, block.GetBlockTime())};
     if (blockPos.IsNull()) {
-        LogError("%s: FindNextBlockPos failed\n", __func__);
+        LogAlert("%s: FindNextBlockPos failed\n", __func__);
         return FlatFilePos();
     }
     if (!WriteBlockToDisk(block, blockPos)) {
