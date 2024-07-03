@@ -213,9 +213,22 @@ void StartPoolIfNeeded()
     if (!g_thread_pool->WorkersCount()) g_thread_pool->Start(DEFAULT_PREVOUTFETCH_THREADS);
 }
 
+static void cleanup_coinscache_sim() EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
+{
+    // Stop worker threads before logger is destroyed because they log when exiting.
+    LOCK(g_thread_pool_mutex);
+    g_thread_pool->Stop();
+}
+
 } // namespace
 
+<<<<<<< HEAD
 FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<>()}; })
+||||||| parent of d62ba526841 (kernel: Drop global Logger instance)
+FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<>()}; }) EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
+=======
+FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<>()}; }, .cleanup = cleanup_coinscache_sim) EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
+>>>>>>> d62ba526841 (kernel: Drop global Logger instance)
 {
     SeedRandomStateForTest(SeedRand::ZEROS);
     StartPoolIfNeeded();
