@@ -14,6 +14,7 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+#include <logging.h>
 #include <kernel/context.h>
 #include <node/context.h>
 #include <node/interface_ui.h>
@@ -259,6 +260,23 @@ static bool AppInit(NodeContext& node)
 
 MAIN_FUNCTION
 {
+<<<<<<< HEAD
+||||||| parent of d0e2944bb18e (kernel: Drop global Logger instance)
+#ifdef WIN32
+    common::WinCmdLineArgs winArgs;
+    std::tie(argc, argv) = winArgs.get();
+#endif
+
+=======
+#ifdef WIN32
+    common::WinCmdLineArgs winArgs;
+    std::tie(argc, argv) = winArgs.get();
+#endif
+
+    // Intentionally leaked! See BCLog::g_logger description for rationale.
+    new BCLog::Logger;
+
+>>>>>>> d0e2944bb18e (kernel: Drop global Logger instance)
     NodeContext node;
     int exit_status;
     std::unique_ptr<interfaces::Init> init = interfaces::MakeNodeInit(node, argc, argv, exit_status);

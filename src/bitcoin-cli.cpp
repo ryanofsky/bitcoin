@@ -11,6 +11,7 @@
 #include <common/system.h>
 #include <compat/compat.h>
 #include <compat/stdin.h>
+#include <logging.h>
 #include <policy/feerate.h>
 #include <rpc/client.h>
 #include <rpc/mining.h>
@@ -1328,6 +1329,19 @@ static int CommandLineRPC(int argc, char *argv[])
 
 MAIN_FUNCTION
 {
+<<<<<<< HEAD
+||||||| parent of d0e2944bb18e (kernel: Drop global Logger instance)
+#ifdef WIN32
+    common::WinCmdLineArgs winArgs;
+    std::tie(argc, argv) = winArgs.get();
+#endif
+=======
+#ifdef WIN32
+    common::WinCmdLineArgs winArgs;
+    std::tie(argc, argv) = winArgs.get();
+#endif
+    BCLog::Logger logger;
+>>>>>>> d0e2944bb18e (kernel: Drop global Logger instance)
     SetupEnvironment();
     if (!SetupNetworking()) {
         tfm::format(std::cerr, "Error: Initializing networking failed\n");

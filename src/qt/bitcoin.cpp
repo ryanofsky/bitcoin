@@ -478,6 +478,23 @@ static void SetupUIArgs(ArgsManager& argsman)
 
 int GuiMain(int argc, char* argv[])
 {
+<<<<<<< HEAD
+||||||| parent of d0e2944bb18e (kernel: Drop global Logger instance)
+#ifdef WIN32
+    common::WinCmdLineArgs winArgs;
+    std::tie(argc, argv) = winArgs.get();
+#endif
+
+=======
+#ifdef WIN32
+    common::WinCmdLineArgs winArgs;
+    std::tie(argc, argv) = winArgs.get();
+#endif
+
+    // Intentionally leaked! See BCLog::g_logger description for rationale.
+    new BCLog::Logger;
+
+>>>>>>> d0e2944bb18e (kernel: Drop global Logger instance)
     std::unique_ptr<interfaces::Init> init = interfaces::MakeGuiInit(argc, argv);
 
     SetupEnvironment();

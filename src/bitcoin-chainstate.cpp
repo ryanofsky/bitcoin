@@ -131,6 +131,7 @@ public:
 int main(int argc, char* argv[])
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 8656985439a5 (refactor: Pass Logger instances to kernel objects)
     // We do not enable logging for this app, so explicitly disable it.
     // To enable logging instead, replace with:
@@ -140,6 +141,11 @@ int main(int argc, char* argv[])
 
 =======
     BCLog::Logger& logger{LogInstance()};
+||||||| parent of d0e2944bb18e (kernel: Drop global Logger instance)
+    BCLog::Logger& logger{LogInstance()};
+=======
+    BCLog::Logger logger;
+>>>>>>> d0e2944bb18e (kernel: Drop global Logger instance)
     // We do not enable logging for this app, so explicitly disable it.
     // To enable logging instead, replace with:
     //    logger.m_print_to_console = true;
