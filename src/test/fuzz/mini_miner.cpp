@@ -27,10 +27,24 @@
 
 namespace {
 
+<<<<<<< HEAD
+||||||| parent of 71e2a726cb8 (kernel: Drop global Logger instance)
+const TestingSetup* g_setup;
+=======
+TestingSetup* g_setup;
+>>>>>>> 71e2a726cb8 (kernel: Drop global Logger instance)
 std::deque<COutPoint> g_available_coins;
 void initialize_miner()
 {
+<<<<<<< HEAD
     static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+||||||| parent of 71e2a726cb8 (kernel: Drop global Logger instance)
+    static const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
+    g_setup = testing_setup.get();
+=======
+    static const auto testing_setup = MakeNoLogFileContext<TestingSetup>();
+    g_setup = testing_setup.get();
+>>>>>>> 71e2a726cb8 (kernel: Drop global Logger instance)
     for (uint32_t i = 0; i < uint32_t{100}; ++i) {
         g_available_coins.emplace_back(Txid::FromUint256(uint256::ZERO), i);
     }

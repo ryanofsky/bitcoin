@@ -11,9 +11,14 @@
 #include <common/system.h>
 #include <compat/compat.h>
 #include <compat/stdin.h>
+<<<<<<< HEAD
 #include <interfaces/init.h>
 #include <interfaces/ipc.h>
 #include <interfaces/rpc.h>
+||||||| parent of 71e2a726cb8 (kernel: Drop global Logger instance)
+=======
+#include <logging.h>
+>>>>>>> 71e2a726cb8 (kernel: Drop global Logger instance)
 #include <policy/feerate.h>
 #include <rpc/client.h>
 #include <rpc/mining.h>
@@ -1369,6 +1374,7 @@ static int CommandLineRPC(int argc, char *argv[])
 
 MAIN_FUNCTION
 {
+    BCLog::Logger logger;
     SetupEnvironment();
     if (!SetupNetworking()) {
         tfm::format(std::cerr, "Error: Initializing networking failed\n");
