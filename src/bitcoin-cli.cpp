@@ -1280,6 +1280,7 @@ MAIN_FUNCTION
     common::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();
 #endif
+    BCLog::Logger logger;
     SetupEnvironment();
     if (!SetupNetworking()) {
         tfm::format(std::cerr, "Error: Initializing networking failed\n");

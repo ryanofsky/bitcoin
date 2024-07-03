@@ -149,6 +149,7 @@ static int Grind(const std::vector<std::string>& args, std::string& strPrint)
 MAIN_FUNCTION
 {
     ArgsManager& args = gArgs;
+    BCLog::Logger logger;
     SetupEnvironment();
 
     try {

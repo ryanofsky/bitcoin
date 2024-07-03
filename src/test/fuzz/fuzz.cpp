@@ -102,6 +102,9 @@ void ResetCoverageCounters() {}
 
 void initialize()
 {
+    // Initialize logger first because RNG startup uses it.
+    static BCLog::Logger g_logger;
+
     // By default, make the RNG deterministic with a fixed seed. This will affect all
     // randomness during the fuzz test, except:
     // - GetStrongRandBytes(), which is used for the creation of private key material.

@@ -861,6 +861,7 @@ static int CommandLineRawTx(int argc, char* argv[])
 
 MAIN_FUNCTION
 {
+    BCLog::Logger logger;
     SetupEnvironment();
 
     try {
