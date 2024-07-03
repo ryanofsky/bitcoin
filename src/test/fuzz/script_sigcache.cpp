@@ -20,6 +20,7 @@
 
 void initialize_script_sigcache()
 {
+<<<<<<< HEAD
     static const auto testing_setup = MakeNoLogFileContext<>();
 <<<<<<< HEAD
 ||||||| parent of d0fca16bf077 (refactor: Pass Logger instances to kernel objects)
@@ -27,6 +28,11 @@ void initialize_script_sigcache()
     g_setup = testing_setup.get();
     g_signature_cache = &signature_cache;
 =======
+||||||| parent of dcd055ecf9c2 (kernel: Drop global Logger instance)
+    static const auto testing_setup = MakeNoLogFileContext<>();
+=======
+    static const auto testing_setup = MakeNoLogFileContext<BasicTestingSetup>();
+>>>>>>> dcd055ecf9c2 (kernel: Drop global Logger instance)
     static SignatureCache signature_cache{testing_setup->m_logger, DEFAULT_SIGNATURE_CACHE_BYTES};
     g_setup = testing_setup.get();
     g_signature_cache = &signature_cache;

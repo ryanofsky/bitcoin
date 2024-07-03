@@ -159,6 +159,17 @@ namespace BCLog {
         fs::path m_file_path;
         std::atomic<bool> m_reopen_file{false};
 
+<<<<<<< HEAD
+||||||| parent of dcd055ecf9c2 (kernel: Drop global Logger instance)
+        std::string GetLogPrefix(LogFlags category, Level level) const;
+
+=======
+        Logger();
+        ~Logger();
+
+        std::string GetLogPrefix(LogFlags category, Level level) const;
+
+>>>>>>> dcd055ecf9c2 (kernel: Drop global Logger instance)
         /** Send a string to the log output */
         void LogPrintStr(std::string_view str, std::string_view logging_function, std::string_view source_file, int source_line, BCLog::LogFlags category, BCLog::Level level)
             EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
