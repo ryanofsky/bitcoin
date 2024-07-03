@@ -177,8 +177,21 @@ namespace BCLog {
         fs::path m_file_path;
         std::atomic<bool> m_reopen_file{false};
 
+<<<<<<< HEAD
         /** Send an entry to the log output */
         void LogPrint(const util::log::Options& options, util::log::Entry entry) EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
+||||||| parent of f3a87a203f8 (kernel: Drop global Logger instance)
+        /** Send a string to the log output */
+        void LogPrintStr(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
+            EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
+=======
+        Logger();
+        ~Logger();
+
+        /** Send a string to the log output */
+        void LogPrintStr(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
+            EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
+>>>>>>> f3a87a203f8 (kernel: Drop global Logger instance)
 
         /** Returns whether logs will be written to any output */
         bool Enabled() const EXCLUSIVE_LOCKS_REQUIRED(!m_cs)
