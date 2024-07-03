@@ -660,6 +660,7 @@ BOOST_AUTO_TEST_CASE(btck_context_tests)
 
 BOOST_AUTO_TEST_CASE(btck_block_header_tests)
 {
+    Logger logger{std::make_unique<TestLog>()};
     // Block header format: version(4) + prev_hash(32) + merkle_root(32) + timestamp(4) + bits(4) + nonce(4) = 80 bytes
     BlockHeader header_0{hex_string_to_byte_vec("00e07a26beaaeee2e71d7eb19279545edbaf15de0999983626ec00000000000000000000579cf78b65229bfb93f4a11463af2eaa5ad91780f27f5d147a423bea5f7e4cdf2a47e268b4dd01173a9662ee")};
     BOOST_CHECK_EQUAL(byte_span_to_hex_string_reversed(header_0.Hash().ToBytes()), "00000000000000000000325c7e14a4ee3b4fcb2343089a839287308a0ddbee4f");
@@ -693,6 +694,7 @@ BOOST_AUTO_TEST_CASE(btck_block_header_tests)
 
 BOOST_AUTO_TEST_CASE(btck_block)
 {
+    Logger logger{std::make_unique<TestLog>()};
     Block block{hex_string_to_byte_vec(REGTEST_BLOCK_DATA[0])};
     Block block_100{hex_string_to_byte_vec(REGTEST_BLOCK_DATA[100])};
     CheckHandle(block, block_100);
