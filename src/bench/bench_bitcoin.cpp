@@ -5,7 +5,12 @@
 #include <bench/bench.h>
 #include <common/args.h>
 #include <crypto/sha256.h>
+<<<<<<< HEAD
 #include <tinyformat.h>
+||||||| parent of 10c275342dca (kernel: Drop global Logger instance)
+=======
+#include <logging.h>
+>>>>>>> 10c275342dca (kernel: Drop global Logger instance)
 #include <util/fs.h>
 #include <util/string.h>
 #include <test/util/setup_common.h>
@@ -76,6 +81,7 @@ static std::vector<std::string> parseTestSetupArgs(const ArgsManager& argsman)
 
 int main(int argc, char** argv)
 {
+    BCLog::Logger logger;
     ArgsManager argsman;
     SetupBenchArgs(argsman);
     SHA256AutoDetect();

@@ -4,8 +4,13 @@
 
 #include <ipc/process.h>
 #include <test/ipc_test.h>
+<<<<<<< HEAD
 
 #include <test/util/setup_common.h>
+||||||| parent of 10c275342dca (kernel: Drop global Logger instance)
+=======
+#include <test/util/setup_common.h>
+>>>>>>> 10c275342dca (kernel: Drop global Logger instance)
 #include <boost/test/unit_test.hpp>
 
 BOOST_FIXTURE_TEST_SUITE(ipc_tests, BasicTestingSetup)

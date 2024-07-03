@@ -106,7 +106,7 @@ static void ExitFailure(std::string_view str_err)
 }
 
 BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
-    : m_logger{LogInstance()}, m_args{}
+    : m_args{}
 {
     m_node.shutdown_signal = &m_interrupt;
     m_node.shutdown_request = [this]{ return m_interrupt(); };
