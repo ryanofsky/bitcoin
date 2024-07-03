@@ -15,6 +15,7 @@
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
+#include <logging.h>
 #include <kernel/context.h>
 #include <logging.h>
 #include <node/context.h>
@@ -261,6 +262,9 @@ static bool AppInit(NodeContext& node)
 
 MAIN_FUNCTION
 {
+    // Intentionally leaked! See BCLog::g_logger description for rationale.
+    new BCLog::Logger;
+
     NodeContext node;
     int exit_status;
     std::unique_ptr<interfaces::Init> init = interfaces::MakeNodeInit(node, argc, argv, exit_status);
