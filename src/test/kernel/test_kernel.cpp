@@ -107,6 +107,10 @@ public:
     }
 };
 
+struct KernelTestFixture {
+    Logger<TestLog> m_logger{std::make_unique<TestLog>()};
+};
+
 struct TestDirectory {
     fs::path m_directory;
     TestDirectory(std::string directory_name)
@@ -397,6 +401,8 @@ void CheckRange(const RangeType& range, size_t expected_size)
     auto it2 = 1 + it;
     BOOST_CHECK(it2 == it + 1);
 }
+
+BOOST_FIXTURE_TEST_SUITE(test_kernel, KernelTestFixture)
 
 BOOST_AUTO_TEST_CASE(btck_transaction_tests)
 {
@@ -706,6 +712,7 @@ class CountingLog
     std::map<std::string, int>& m_messages;
     int& m_destroyed;
 
+<<<<<<< HEAD
 public:
     CountingLog(std::map<std::string, int>& messages, int& destroyed)
         : m_messages{messages}, m_destroyed{destroyed} {}
@@ -720,6 +727,20 @@ BOOST_AUTO_TEST_CASE(logging_connection_tests)
     std::map<std::string, int> messages;
     std::map<std::string, int> messages_2;
     int destroyed{0};
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+    Logger logger{std::make_unique<TestLog>()};
+    logging_set_options(logger, logging_options);
+    logging_set_level_category(logger, LogCategory::BENCH, LogLevel::TRACE_LEVEL);
+    logging_disable_category(logger, LogCategory::BENCH);
+    logging_enable_category(logger, LogCategory::VALIDATION);
+    logging_disable_category(logger, LogCategory::VALIDATION);
+=======
+    logging_set_options(m_logger, logging_options);
+    logging_set_level_category(m_logger, LogCategory::BENCH, LogLevel::TRACE_LEVEL);
+    logging_disable_category(m_logger, LogCategory::BENCH);
+    logging_enable_category(m_logger, LogCategory::VALIDATION);
+    logging_disable_category(m_logger, LogCategory::VALIDATION);
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
 
     {
         // A connection that is not the logger of any context receives nothing, even though creating
@@ -884,7 +905,6 @@ Context create_context(std::shared_ptr<TestKernelNotifications> notifications, C
 
 BOOST_AUTO_TEST_CASE(btck_chainman_tests)
 {
-    Logger logger{std::make_unique<TestLog>()};
     auto test_directory{TestDirectory{"chainman_test_bitcoin_kernel"}};
 
     { // test with default context
@@ -1580,3 +1600,5 @@ BOOST_AUTO_TEST_CASE(btck_set_mock_time_tests)
     BOOST_CHECK(ok_state.GetValidationMode() == ValidationMode::VALID);
     BOOST_CHECK(ok_state.GetBlockValidationResult() == BlockValidationResult::UNSET);
 }
+
+BOOST_AUTO_TEST_SUITE_END()

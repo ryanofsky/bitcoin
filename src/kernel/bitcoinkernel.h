@@ -947,8 +947,16 @@ BITCOINKERNEL_API void btck_transaction_output_destroy(btck_TransactionOutput* t
 ///@{
 
 /**
+<<<<<<< HEAD
  * @brief Set the minimum log level of a logging connection. Entries below this
  * level are not delivered to the connection's callback. Defaults to Info.
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+ * @brief Set some options for the logger. Currently, this changes global
+ * settings and will override settings for all existing @ref
+ * btck_LoggingConnection instances.
+=======
+ * @brief Set some options for the logger.
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
  *
  * Only this connection is affected. Other connections keep their own levels.
  *
@@ -960,11 +968,105 @@ BITCOINKERNEL_API void btck_logging_set_min_level(
     btck_LogLevel level) BITCOINKERNEL_ARG_NONNULL(1);
 
 /**
+<<<<<<< HEAD
  * @brief Create a logging connection that delivers log entries through the
  * provided callback. The connection receives no entries until it is set as the
  * logger of a context with @ref btck_context_options_set_logger.
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+ * @brief Set the log level of the logger. This does not
+ * enable the selected categories. Use @ref btck_logging_enable_category to
+ * start logging from a specific, or all categories. Currently, this changes a global
+ * setting and will override settings for all existing
+ * @ref btck_LoggingConnection instances.
+=======
+ * @brief Set the log level of the logger. This does not
+ * enable the selected categories. Use @ref btck_logging_enable_category to
+ * start logging from a specific, or all categories.
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
  *
+<<<<<<< HEAD
  * @param[in] log_callback               Non-null, function through which log entries will be delivered.
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+ * @param[in] logger   Non-null.
+ * @param[in] category If btck_LogCategory_ALL is chosen, sets both the global fallback log level
+ *                     used by all categories that don't have a specific level set, and also
+ *                     sets the log level for messages logged with the btck_LogCategory_ALL category itself.
+ *                     For any other category, sets a category-specific log level that overrides
+ *                     the global fallback for that category only.
+
+ * @param[in] level    Log level at which the log category is set.
+ */
+BITCOINKERNEL_API void btck_logging_set_level_category(btck_LoggingConnection* logger, btck_LogCategory category, btck_LogLevel level) BITCOINKERNEL_ARG_NONNULL(1);
+
+/**
+ * @brief Enable a specific log category for the logger. Currently, this
+ * changes a global setting and will override settings for all existing @ref
+ * btck_LoggingConnection instances.
+ *
+ * @param[in] logger   Non-null.
+ * @param[in] category If btck_LogCategory_ALL is chosen, all categories will be enabled.
+ */
+BITCOINKERNEL_API void btck_logging_enable_category(btck_LoggingConnection* logger, btck_LogCategory category) BITCOINKERNEL_ARG_NONNULL(1);
+
+/**
+ * @brief Disable a specific log category for the logger. Currently, this
+ * changes a global setting and will override settings for all existing @ref
+ * btck_LoggingConnection instances.
+ *
+ * @param[in] logger   Non-null.
+ * @param[in] category If btck_LogCategory_ALL is chosen, all categories will be disabled.
+ */
+BITCOINKERNEL_API void btck_logging_disable_category(btck_LoggingConnection* logger, btck_LogCategory category) BITCOINKERNEL_ARG_NONNULL(1);
+
+/**
+ * @brief Register logging callback that can receive log messages and return new
+ * @ref btck_LoggingConnection instance representing a log stream. The returned
+ * handle can be passed to functions like @ref btck_logging_set_options to set
+ * log options and @ref btck_context_options_set_logger to receive log messages
+ * generated in a particular context.
+ *
+ * Currently, most log state is global, so log options applied to other streams
+ * may effect this stream, and if there are multiple contexts, log messages from
+ * other contexts may be received. These behaviors can be improved internally.
+ *
+ * @param[in] log_callback               Non-null, function through which messages will be logged.
+=======
+ * @param[in] logger   Non-null.
+ * @param[in] category If btck_LogCategory_ALL is chosen, sets both the global fallback log level
+ *                     used by all categories that don't have a specific level set, and also
+ *                     sets the log level for messages logged with the btck_LogCategory_ALL category itself.
+ *                     For any other category, sets a category-specific log level that overrides
+ *                     the global fallback for that category only.
+
+ * @param[in] level    Log level at which the log category is set.
+ */
+BITCOINKERNEL_API void btck_logging_set_level_category(btck_LoggingConnection* logger, btck_LogCategory category, btck_LogLevel level) BITCOINKERNEL_ARG_NONNULL(1);
+
+/**
+ * @brief Enable a specific log category for the logger.
+ *
+ * @param[in] logger   Non-null.
+ * @param[in] category If btck_LogCategory_ALL is chosen, all categories will be enabled.
+ */
+BITCOINKERNEL_API void btck_logging_enable_category(btck_LoggingConnection* logger, btck_LogCategory category) BITCOINKERNEL_ARG_NONNULL(1);
+
+/**
+ * @brief Disable a specific log category for the logger.
+ *
+ * @param[in] logger   Non-null.
+ * @param[in] category If btck_LogCategory_ALL is chosen, all categories will be disabled.
+ */
+BITCOINKERNEL_API void btck_logging_disable_category(btck_LoggingConnection* logger, btck_LogCategory category) BITCOINKERNEL_ARG_NONNULL(1);
+
+/**
+ * @brief Register logging callback that can receive log messages and return new
+ * @ref btck_LoggingConnection instance representing a log stream. The returned
+ * handle can be passed to functions like @ref btck_logging_set_options to set
+ * log options and @ref btck_context_options_set_logger to receive log messages
+ * generated in a particular context.
+ *
+ * @param[in] log_callback               Non-null, function through which messages will be logged.
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
  * @param[in] user_data                  Nullable, holds a user-defined opaque structure. Is passed back
  *                                       to the user through the callback. If the user_data_destroy_callback
  *                                       is also defined it is assumed that ownership of the user_data is passed

@@ -72,9 +72,15 @@ using util::ImmediateTaskRunner;
 // library aren't required to export this symbol
 extern const TranslateFn G_TRANSLATION_FUN{nullptr};
 
-static const kernel::Context btck_context_static{};
-
 namespace {
+
+// Log instance for kernel applications that don't create any logging
+// connections and don't have any logging.
+static BCLog::Logger& GlobalLogger()
+{
+    static BCLog::Logger g_logger;
+    return g_logger;
+}
 
 bool is_valid_flag_combination(script_verify_flags flags)
 {
@@ -207,11 +213,50 @@ btck_Warning cast_btck_warning(kernel::Warning warning)
     assert(false);
 }
 
+<<<<<<< HEAD
 constexpr btck_LogLevel to_btck(util::log::Level level)
 {
     switch (level) {
     case util::log::Level::Trace: {
         return btck_LogLevel_TRACE;
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+struct LoggingConnection {
+    // Reference to global log instance. This could be replaced with a
+    // per-connection instance (#30342) to give clients more granular control
+    // over logging.
+    BCLog::Logger& m_logger{LogInstance()};
+    std::unique_ptr<std::list<std::function<void(const std::string&)>>::iterator> m_connection;
+    void* m_user_data;
+    std::function<void(void* user_data)> m_deleter;
+
+    LoggingConnection(btck_LogCallback callback, void* user_data, btck_DestroyCallback user_data_destroy_callback)
+    {
+        LOCK(cs_main);
+
+        auto connection{m_logger.PushBackCallback([callback, user_data](const std::string& str) { callback(user_data, str.c_str(), str.length()); })};
+        m_connection = std::make_unique<std::list<std::function<void(const std::string&)>>::iterator>(connection);
+        m_user_data = user_data;
+        m_deleter = user_data_destroy_callback;
+
+        LogDebug(BCLog::KERNEL, "Logger connected.");
+=======
+struct LoggingConnection {
+    BCLog::Logger m_logger;
+    std::unique_ptr<std::list<std::function<void(const std::string&)>>::iterator> m_connection;
+    void* m_user_data;
+    std::function<void(void* user_data)> m_deleter;
+
+    LoggingConnection(btck_LogCallback callback, void* user_data, btck_DestroyCallback user_data_destroy_callback)
+    {
+        LOCK(cs_main);
+
+        auto connection{m_logger.PushBackCallback([callback, user_data](const std::string& str) { callback(user_data, str.c_str(), str.length()); })};
+        m_connection = std::make_unique<std::list<std::function<void(const std::string&)>>::iterator>(connection);
+        m_user_data = user_data;
+        m_deleter = user_data_destroy_callback;
+
+        LogDebug(BCLog::KERNEL, "Logger connected.");
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
     }
     case util::log::Level::Debug: {
         return btck_LogLevel_DEBUG;
@@ -403,6 +448,14 @@ struct ContextOptions {
 class Context
 {
 public:
+<<<<<<< HEAD
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+    BCLog::Logger* m_logger;
+
+=======
+    BCLog::Logger& m_logger;
+
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
     std::unique_ptr<kernel::Context> m_context;
 
     std::shared_ptr<KernelNotifications> m_notifications;
@@ -419,9 +472,39 @@ public:
     btck_LoggingConnection* m_log_connection{nullptr};
 
     Context(const ContextOptions* options, bool& sane)
+<<<<<<< HEAD
         : m_context{std::make_unique<kernel::Context>()},
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+        : m_logger{options && options->m_logger ? options->m_logger : nullptr},
+          m_context{std::make_unique<kernel::Context>()},
+=======
+        : m_logger{*(options && options->m_logger ? options->m_logger : &GlobalLogger())},
+          m_context{std::make_unique<kernel::Context>()},
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
           m_interrupt{std::make_unique<util::SignalInterrupt>()}
     {
+<<<<<<< HEAD
+||||||| parent of dbe85f39723 (kernel: Drop global Logger instance)
+        if (!m_logger) {
+            // For efficiency, disable logging globally instead of writing log
+            // messages to temporary buffer if no log callbacks are connected.
+            if (BCLog::Logger& logger{LogInstance()}; logger.NumConnections() == 0 && logger.Enabled()) {
+                logger.DisableLogging();
+            }
+        } else if (!m_logger->StartLogging()) {
+            throw std::runtime_error("Failed to start logging");
+        }
+
+=======
+        if (m_logger.NumConnections() > 0) {
+            if (!m_logger.StartLogging()) throw std::runtime_error("Failed to start logging");
+        } else if (m_logger.Enabled()) {
+            // For efficiency, disable logging instead of writing log messages
+            // to temporary buffer if no log callbacks are connected.
+            m_logger.DisableLogging();
+        }
+
+>>>>>>> dbe85f39723 (kernel: Drop global Logger instance)
         if (options) {
             LOCK(options->m_mutex);
             m_log_connection = options->m_log_connection;
