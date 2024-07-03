@@ -23,7 +23,7 @@ SignatureCache* g_signature_cache;
 
 void initialize_script_sigcache()
 {
-    static const auto testing_setup = MakeNoLogFileContext<>();
+    static const auto testing_setup = MakeNoLogFileContext<BasicTestingSetup>();
     static SignatureCache signature_cache{testing_setup->m_logger, DEFAULT_SIGNATURE_CACHE_BYTES};
     g_setup = testing_setup.get();
     g_signature_cache = &signature_cache;

@@ -116,8 +116,14 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vecto
     : m_args{}
 =======
 BasicTestingSetup::BasicTestingSetup(const ChainType chainType, const std::vector<const char*>& extra_args)
+<<<<<<< HEAD
     : m_logger{LogInstance()}, m_args{}
 >>>>>>> c2429cea522d (refactor: Pass Logger instances to kernel objects)
+||||||| parent of f005677f7627 (kernel: Drop global Logger instance)
+    : m_logger{LogInstance()}, m_args{}
+=======
+    : m_args{}
+>>>>>>> f005677f7627 (kernel: Drop global Logger instance)
 {
     m_node.shutdown = &m_interrupt;
     m_node.args = &gArgs;
