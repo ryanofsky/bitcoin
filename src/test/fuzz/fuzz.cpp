@@ -4,6 +4,7 @@
 
 #include <test/fuzz/fuzz.h>
 
+#include <logging.h>
 #include <netaddress.h>
 #include <netbase.h>
 #include <test/fuzz/util/check_globals.h>
@@ -94,7 +95,14 @@ const std::function<std::string()> G_TEST_GET_FULL_NAME{[]{
 
 static void initialize()
 {
+<<<<<<< HEAD
     CheckGlobals check{};
+||||||| parent of ec6d771d3b34 (kernel: Drop global Logger instance)
+=======
+    // Initialize logger first because RNG startup uses it.
+    static BCLog::Logger g_logger;
+
+>>>>>>> ec6d771d3b34 (kernel: Drop global Logger instance)
     // By default, make the RNG deterministic with a fixed seed. This will affect all
     // randomness during the fuzz test, except:
     // - GetStrongRandBytes(), which is used for the creation of private key material.
