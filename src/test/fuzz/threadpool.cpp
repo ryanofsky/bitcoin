@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <logging.h>
+#include <test/util/setup_common.h>
 #include <util/threadpool.h>
 
 #include <test/fuzz/FuzzedDataProvider.h>
@@ -11,6 +12,10 @@
 #include <atomic>
 #include <future>
 #include <queue>
+
+namespace {
+BasicTestingSetup* g_setup;
+} // namespace
 
 struct ExpectedException : std::runtime_error {
     explicit ExpectedException(const std::string& msg) : std::runtime_error(msg) {}
@@ -57,7 +62,9 @@ static void StartPoolIfNeeded() EXCLUSIVE_LOCKS_REQUIRED(!g_pool_mutex)
 static void setup_threadpool_test()
 {
     // Disable logging entirely. It seems to cause memory leaks.
-    LogInstance().DisableLogging();
+    static const auto testing_setup = MakeNoLogFileContext<BasicTestingSetup>();
+    g_setup = testing_setup.get();
+    g_setup->m_logger.DisableLogging();
 }
 
 FUZZ_TARGET(threadpool, .init = setup_threadpool_test) EXCLUSIVE_LOCKS_REQUIRED(!g_pool_mutex)
