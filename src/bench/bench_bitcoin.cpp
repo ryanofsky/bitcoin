@@ -4,7 +4,12 @@
 
 #include <bench/bench.h>
 #include <crypto/sha256.h>
+<<<<<<< HEAD
 #include <test/util/setup_common.h>
+||||||| parent of d70eae19a8b (kernel: Drop global Logger instance)
+=======
+#include <logging.h>
+>>>>>>> d70eae19a8b (kernel: Drop global Logger instance)
 #include <tinyformat.h>
 #include <util/fs.h>
 #include <util/time.h>
@@ -62,6 +67,7 @@ static std::vector<std::string> parseTestSetupArgs(const ArgsManager& argsman)
 
 int main(int argc, char** argv)
 {
+    BCLog::Logger logger;
     ArgsManager argsman;
     SetupBenchArgs(argsman);
     SHA256AutoDetect();
