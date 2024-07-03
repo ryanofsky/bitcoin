@@ -53,6 +53,7 @@ const std::function<std::string()> G_TEST_GET_FULL_NAME{};
 // This is all you need to run all the tests
 int main(int argc, char* argv[])
 {
+    BCLog::Logger logger;
     // Initialize persistent globals with the testing setup state for sanity.
     // E.g. -datadir in gArgs is set to a temp directory dummy value (instead
     // of defaulting to the default datadir), or globalChainParams is set to

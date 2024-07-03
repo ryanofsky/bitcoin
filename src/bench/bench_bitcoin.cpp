@@ -61,6 +61,7 @@ static uint8_t parsePriorityLevel(const std::string& str) {
 
 int main(int argc, char** argv)
 {
+    BCLog::Logger logger;
     ArgsManager argsman;
     SetupBenchArgs(argsman);
     SHA256AutoDetect();
