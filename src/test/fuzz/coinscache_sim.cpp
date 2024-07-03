@@ -215,9 +215,16 @@ void StartPoolIfNeeded() EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
     if (!g_thread_pool->WorkersCount()) g_thread_pool->Start(DEFAULT_PREVOUTFETCH_THREADS);
 }
 
+static void cleanup_coinscache_sim() EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
+{
+    // Stop worker threads before logger is destroyed because they log when exiting.
+    LOCK(g_thread_pool_mutex);
+    g_thread_pool->Stop();
+}
+
 } // namespace
 
-FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<>()}; }) EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
+FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<>()}; }, .cleanup = cleanup_coinscache_sim) EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
 {
     SeedRandomStateForTest(SeedRand::ZEROS);
     StartPoolIfNeeded();
