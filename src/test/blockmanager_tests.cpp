@@ -40,7 +40,13 @@ BOOST_AUTO_TEST_CASE(blockmanager_find_block_pos)
     };
     BlockManager blockman{*Assert(m_node.shutdown_signal), blockman_opts};
     // simulate adding a genesis block normally
+<<<<<<< HEAD
     BOOST_CHECK_EQUAL(blockman.WriteBlock(params->GenesisBlock(), 0).nPos, BLOCK_SERIALIZATION_HEADER_SIZE);
+||||||| parent of 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
+    BOOST_CHECK_EQUAL(blockman.SaveBlockToDisk(params->GenesisBlock(), 0).nPos, BLOCK_SERIALIZATION_HEADER_SIZE);
+=======
+    BOOST_CHECK_EQUAL(Assert(blockman.SaveBlockToDisk(params->GenesisBlock(), 0))->nPos, BLOCK_SERIALIZATION_HEADER_SIZE);
+>>>>>>> 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
     // simulate what happens during reindex
     // simulate a well-formed genesis block being found at offset 8 in the blk00000.dat file
     // the block is found at offset 8 because there is an 8 byte serialization header
@@ -53,7 +59,13 @@ BOOST_AUTO_TEST_CASE(blockmanager_find_block_pos)
     // this is a check to make sure that https://github.com/bitcoin/bitcoin/issues/21379 does not recur
     // 8 bytes (for serialization header) + 285 (for serialized genesis block) = 293
     // add another 8 bytes for the second block's serialization header and we get 293 + 8 = 301
+<<<<<<< HEAD
     FlatFilePos actual{blockman.WriteBlock(params->GenesisBlock(), 1)};
+||||||| parent of 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
+    FlatFilePos actual{blockman.SaveBlockToDisk(params->GenesisBlock(), 1)};
+=======
+    FlatFilePos actual{*Assert(blockman.SaveBlockToDisk(params->GenesisBlock(), 1))};
+>>>>>>> 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
     BOOST_CHECK_EQUAL(actual.nPos, BLOCK_SERIALIZATION_HEADER_SIZE + ::GetSerializeSize(TX_WITH_WITNESS(params->GenesisBlock())) + BLOCK_SERIALIZATION_HEADER_SIZE);
 }
 
@@ -166,10 +178,22 @@ BOOST_AUTO_TEST_CASE(blockmanager_flush_block_file)
     BOOST_CHECK_EQUAL(blockman.CalculateCurrentUsage(), 0);
 
     // Write the first block to a new location.
+<<<<<<< HEAD
     FlatFilePos pos1{blockman.WriteBlock(block1, /*nHeight=*/1)};
+||||||| parent of 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
+    FlatFilePos pos1{blockman.SaveBlockToDisk(block1, /*nHeight=*/1)};
+=======
+    FlatFilePos pos1{*Assert(blockman.SaveBlockToDisk(block1, /*nHeight=*/1))};
+>>>>>>> 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
 
     // Write second block
+<<<<<<< HEAD
     FlatFilePos pos2{blockman.WriteBlock(block2, /*nHeight=*/2)};
+||||||| parent of 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
+    FlatFilePos pos2{blockman.SaveBlockToDisk(block2, /*nHeight=*/2)};
+=======
+    FlatFilePos pos2{*Assert(blockman.SaveBlockToDisk(block2, /*nHeight=*/2))};
+>>>>>>> 1acd64b64334 (refactor, blockstorage: Return fatal errors from block writes)
 
     // Two blocks in the file
     BOOST_CHECK_EQUAL(blockman.CalculateCurrentUsage(), (TEST_BLOCK_SIZE + BLOCK_SERIALIZATION_HEADER_SIZE) * 2);
