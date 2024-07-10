@@ -1102,10 +1102,17 @@ public:
 =======
     //! - Move the new chainstate to `m_snapshot_chainstate` and make it our
     //!   ChainstateActive().
+<<<<<<< HEAD
     [[nodiscard]] kernel::FlushResult<CBlockIndex*> ActivateSnapshot(
 >>>>>>> dbd3b6f98aa (refactor, validation: Return fatal errors from FlushStateToDisk)
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    [[nodiscard]] kernel::FlushResult<CBlockIndex*> ActivateSnapshot(
+=======
+    [[nodiscard]] kernel::FlushResult<CBlockIndex*, kernel::AbortFailure> ActivateSnapshot(
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
         AutoFile& coins_file, const node::SnapshotMetadata& metadata, bool in_memory);
 
+<<<<<<< HEAD
     //! Try to validate an assumeutxo snapshot by using a validated historical
     //! chainstate targeted at the snapshot block. When the target block is
     //! reached, the UTXO hash is computed and saved to
@@ -1115,6 +1122,25 @@ public:
     //! because the software should refuse to load unrecognized snapshots, but
     //! if it does happen, it is a fatal error.
     SnapshotCompletionResult MaybeValidateSnapshot(Chainstate& validated_cs, Chainstate& unvalidated_cs) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    //! Once the background validation chainstate has reached the height which
+    //! is the base of the UTXO snapshot in use, compare its coins to ensure
+    //! they match those expected by the snapshot.
+    //!
+    //! If the coins match (expected), then mark the validation chainstate for
+    //! deletion and continue using the snapshot chainstate as active.
+    //! Otherwise, revert to using the ibd chainstate and shutdown.
+    SnapshotCompletionResult MaybeCompleteSnapshotValidation() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+=======
+    //! Once the background validation chainstate has reached the height which
+    //! is the base of the UTXO snapshot in use, compare its coins to ensure
+    //! they match those expected by the snapshot.
+    //!
+    //! If the coins match (expected), then mark the validation chainstate for
+    //! deletion and continue using the snapshot chainstate as active.
+    //! Otherwise, revert to using the ibd chainstate and shutdown.
+    [[nodiscard]] SnapshotCompletionResult MaybeCompleteSnapshotValidation(kernel::FlushResult<void, kernel::AbortFailure>& result) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 
     //! Return current chainstate targeting the most-work, network tip.
     Chainstate& CurrentChainstate() const EXCLUSIVE_LOCKS_REQUIRED(GetMutex())
@@ -1334,7 +1360,13 @@ public:
     //! directories are moved or deleted.
     //!
     //! @sa node/chainstate:LoadChainstate()
+<<<<<<< HEAD
     bool ValidatedSnapshotCleanup(Chainstate& validated_cs, Chainstate& unvalidated_cs) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    bool ValidatedSnapshotCleanup() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+=======
+    [[nodiscard]] util::Result<void, kernel::AbortFailure> ValidatedSnapshotCleanup() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 
     //! Get range of historical blocks to download.
     std::optional<std::pair<const CBlockIndex*, const CBlockIndex*>> GetHistoricalBlockRange() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);

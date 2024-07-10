@@ -3205,6 +3205,7 @@ bool Chainstate::ConnectTip(
              Ticks<SecondsDouble>(m_chainman.time_total),
              Ticks<MillisecondsDouble>(m_chainman.time_total) / m_chainman.num_blocks_total);
 
+<<<<<<< HEAD
     // See if this chainstate has reached a target block and can be used to
     // validate an assumeutxo snapshot. If it can, hashing the UTXO database
     // will be slow, and cs_main could remain locked here for several minutes.
@@ -3216,6 +3217,26 @@ bool Chainstate::ConnectTip(
     // blocks.
     Chainstate& current_cs{m_chainman.CurrentChainstate()};
     m_chainman.MaybeValidateSnapshot(*this, current_cs);
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    // If we are the background validation chainstate, check to see if we are done
+    // validating the snapshot (i.e. our tip has reached the snapshot's base block).
+    if (this != &m_chainman.ActiveChainstate()) {
+        // This call may set `m_disabled`, which is referenced immediately afterwards in
+        // ActivateBestChain, so that we stop connecting blocks past the snapshot base.
+        m_chainman.MaybeCompleteSnapshotValidation();
+    }
+=======
+    // If we are the background validation chainstate, check to see if we are done
+    // validating the snapshot (i.e. our tip has reached the snapshot's base block).
+    if (this != &m_chainman.ActiveChainstate()) {
+        // This call may set `m_disabled`, which is referenced immediately afterwards in
+        // ActivateBestChain, so that we stop connecting blocks past the snapshot base.
+        FlushResult<void, AbortFailure> snapshot_result;
+        // Ignore failure value, do not treat snapshot validation error as failure to connect the block.
+        (void)m_chainman.MaybeCompleteSnapshotValidation(snapshot_result);
+        snapshot_result >> result;
+    }
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 
     connectTrace.BlockConnected(pindexNew, std::move(block_to_connect));
     return true;
@@ -5733,12 +5754,12 @@ Chainstate& ChainstateManager::InitializeChainstate(CTxMemPool* mempool)
     return destroyed && !fs::exists(db_path);
 }
 
-FlushResult<CBlockIndex*> ChainstateManager::ActivateSnapshot(
+FlushResult<CBlockIndex*, AbortFailure> ChainstateManager::ActivateSnapshot(
         AutoFile& coins_file,
         const SnapshotMetadata& metadata,
         bool in_memory)
 {
-    FlushResult<CBlockIndex*> result;
+    FlushResult<CBlockIndex*, AbortFailure> result;
     uint256 base_blockhash = metadata.m_base_blockhash;
 
 <<<<<<< HEAD
@@ -5855,8 +5876,10 @@ FlushResult<CBlockIndex*> ChainstateManager::ActivateSnapshot(
             snapshot_chainstate.reset();
             bool removed = DeleteCoinsDBFromDisk(*snapshot_datadir, /*is_snapshot=*/true);
             if (!removed) {
-                GetNotifications().fatalError(strprintf(_("Failed to remove snapshot chainstate dir (%s). "
-                    "Manually remove it before restarting.\n"), fs::PathToString(*snapshot_datadir)));
+                auto error{strprintf(_("Failed to remove snapshot chainstate dir (%s). "
+                    "Manually remove it before restarting.\n"), fs::PathToString(*snapshot_datadir))};
+                GetNotifications().fatalError(error);
+                result.update({util::Error{std::move(error)}, AbortFailure{.fatal = true}});
             }
         }
     };
@@ -6135,13 +6158,32 @@ util::Result<void> ChainstateManager::PopulateAndValidateSnapshot(
 // releasing cs_main here would not be possible because this function is invoked
 // by ConnectTip within ActivateBestChain.
 //
+<<<<<<< HEAD
 // Eventually (TODO) it would be better to call this function outside of
 // ActivateBestChain, on a separate thread that should not require cs_main to
 // hash, because the UTXO set is only hashed after the historical chainstate
 // reaches its target block and is no longer changing.
 SnapshotCompletionResult ChainstateManager::MaybeValidateSnapshot(Chainstate& validated_cs, Chainstate& unvalidated_cs)
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+// Eventually (TODO), we could somehow separate this function's runtime from
+// maintenance of the active chain, but that will either require
+//
+//  (i) setting `m_disabled` immediately and ensuring all chainstate accesses go
+//      through IsUsable() checks, or
+//
+//  (ii) giving each chainstate its own lock instead of using cs_main for everything.
+SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation()
+=======
+// Eventually (TODO), we could somehow separate this function's runtime from
+// maintenance of the active chain, but that will either require
+//
+//  (i) setting `m_disabled` immediately and ensuring all chainstate accesses go
+//      through IsUsable() checks, or
+//
+//  (ii) giving each chainstate its own lock instead of using cs_main for everything.
+SnapshotCompletionResult ChainstateManager::MaybeCompleteSnapshotValidation(FlushResult<void, AbortFailure>& result)
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 {
-    FlushResult<> result; // TODO Return this result!
     AssertLockHeld(cs_main);
 
     // If the snapshot does not need to be validated...
@@ -6191,6 +6233,7 @@ SnapshotCompletionResult ChainstateManager::MaybeValidateSnapshot(Chainstate& va
         }
 
         GetNotifications().fatalError(user_error);
+        result.update({util::Error{std::move(user_error)}, AbortFailure{.fatal = true}});
     };
 
     CCoinsViewDB& validated_coins_db = validated_cs.CoinsDB();
@@ -6546,13 +6589,66 @@ void ChainstateManager::RecalculateBestHeader()
     }
 }
 
+<<<<<<< HEAD
 bool ChainstateManager::ValidatedSnapshotCleanup(Chainstate& validated_cs, Chainstate& unvalidated_cs)
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+bool ChainstateManager::ValidatedSnapshotCleanup()
+=======
+util::Result<void, AbortFailure> ChainstateManager::ValidatedSnapshotCleanup()
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 {
     AssertLockHeld(::cs_main);
+<<<<<<< HEAD
     if (unvalidated_cs.m_assumeutxo != Assumeutxo::VALIDATED) {
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    auto get_storage_path = [](auto& chainstate) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) -> std::optional<fs::path> {
+        if (!(chainstate && chainstate->HasCoinsViews())) {
+            return {};
+        }
+        return chainstate->CoinsDB().StoragePath();
+    };
+    std::optional<fs::path> ibd_chainstate_path_maybe = get_storage_path(m_ibd_chainstate);
+    std::optional<fs::path> snapshot_chainstate_path_maybe = get_storage_path(m_snapshot_chainstate);
+
+    if (!this->IsSnapshotValidated()) {
+=======
+    util::Result<void, AbortFailure> result;
+    auto get_storage_path = [](auto& chainstate) EXCLUSIVE_LOCKS_REQUIRED(::cs_main) -> std::optional<fs::path> {
+        if (!(chainstate && chainstate->HasCoinsViews())) {
+            return {};
+        }
+        return chainstate->CoinsDB().StoragePath();
+    };
+    std::optional<fs::path> ibd_chainstate_path_maybe = get_storage_path(m_ibd_chainstate);
+    std::optional<fs::path> snapshot_chainstate_path_maybe = get_storage_path(m_snapshot_chainstate);
+
+    if (!this->IsSnapshotValidated()) {
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
         // No need to clean up.
+        result.update(util::Error{});
+        return result;
+    }
+<<<<<<< HEAD
+||||||| parent of 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    // If either path doesn't exist, that means at least one of the chainstates
+    // is in-memory, in which case we can't do on-disk cleanup. You'd better be
+    // in a unittest!
+    if (!ibd_chainstate_path_maybe || !snapshot_chainstate_path_maybe) {
+        LogError("[snapshot] snapshot chainstate cleanup cannot happen with "
+                 "in-memory chainstates. You are testing, right?");
         return false;
     }
+=======
+    // If either path doesn't exist, that means at least one of the chainstates
+    // is in-memory, in which case we can't do on-disk cleanup. You'd better be
+    // in a unittest!
+    if (!ibd_chainstate_path_maybe || !snapshot_chainstate_path_maybe) {
+        LogError("[snapshot] snapshot chainstate cleanup cannot happen with "
+                 "in-memory chainstates. You are testing, right?");
+        result.update(util::Error{});
+        return result;
+    }
+>>>>>>> 3b73dd08516 (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
 
     const fs::path validated_path{validated_cs.StoragePath()};
     const fs::path assumed_valid_path{unvalidated_cs.StoragePath()};
@@ -6570,16 +6666,18 @@ bool ChainstateManager::ValidatedSnapshotCleanup(Chainstate& validated_cs, Chain
     LogInfo("[snapshot] deleting background chainstate directory (now unnecessary) (%s)",
               fs::PathToString(validated_path));
 
-    auto rename_failed_abort = [this](
+    auto rename_failed_abort = [&](
                                    fs::path p_old,
                                    fs::path p_new,
                                    const fs::filesystem_error& err) {
         LogError("[snapshot] Error renaming path (%s) -> (%s): %s\n",
                   fs::PathToString(p_old), fs::PathToString(p_new), err.what());
-        GetNotifications().fatalError(strprintf(_(
+        auto error{strprintf(_(
             "Rename of '%s' -> '%s' failed. "
             "Cannot clean up the background chainstate leveldb directory."),
-            fs::PathToString(p_old), fs::PathToString(p_new)));
+            fs::PathToString(p_old), fs::PathToString(p_new))};
+        GetNotifications().fatalError(error);
+        result.update({util::Error{std::move(error)}, AbortFailure{.fatal = true}});
     };
 
     try {
@@ -6610,7 +6708,7 @@ bool ChainstateManager::ValidatedSnapshotCleanup(Chainstate& validated_cs, Chain
         LogInfo("[snapshot] deleted background chainstate directory (%s)",
                 fs::PathToString(validated_path));
     }
-    return true;
+    return result;
 }
 
 std::pair<int, int> Chainstate::GetPruneRange(int last_height_can_prune) const
