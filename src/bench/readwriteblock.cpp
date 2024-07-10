@@ -34,7 +34,8 @@ static void WriteBlockBench(benchmark::Bench& bench)
     const CBlock block{CreateTestBlock()};
     bench.run([&] {
         const auto pos{blockman.WriteBlock(block, 413'567)};
-        assert(!pos.IsNull());
+        assert(pos);
+        assert(!pos->IsNull());
     });
 }
 
@@ -45,9 +46,10 @@ static void ReadBlockBench(benchmark::Bench& bench)
     const auto& test_block{CreateTestBlock()};
     const auto& expected_hash{test_block.GetHash()};
     const auto& pos{blockman.WriteBlock(test_block, 413'567)};
+    assert(pos);
     bench.run([&] {
         CBlock block;
-        const auto success{blockman.ReadBlock(block, pos, expected_hash)};
+        const auto success{blockman.ReadBlock(block, *pos, expected_hash)};
         assert(success);
     });
 }
@@ -57,9 +59,26 @@ static void ReadRawBlockBench(benchmark::Bench& bench)
     const auto testing_setup{MakeNoLogFileContext<const TestingSetup>(ChainType::MAIN)};
     auto& blockman{testing_setup->m_node.chainman->m_blockman};
     const auto pos{blockman.WriteBlock(CreateTestBlock(), 413'567)};
+<<<<<<< HEAD
+||||||| parent of 4866b03e8e00 (refactor, blockstorage: Return fatal errors from block writes)
+    std::vector<std::byte> block_data;
+    blockman.ReadRawBlock(block_data, pos); // warmup
+=======
+    assert(pos);
+    std::vector<std::byte> block_data;
+    blockman.ReadRawBlock(block_data, *pos); // warmup
+>>>>>>> 4866b03e8e00 (refactor, blockstorage: Return fatal errors from block writes)
     bench.run([&] {
+<<<<<<< HEAD
         const auto res{blockman.ReadRawBlock(pos)};
         assert(res);
+||||||| parent of 4866b03e8e00 (refactor, blockstorage: Return fatal errors from block writes)
+        const auto success{blockman.ReadRawBlock(block_data, pos)};
+        assert(success);
+=======
+        const auto success{blockman.ReadRawBlock(block_data, *pos)};
+        assert(success);
+>>>>>>> 4866b03e8e00 (refactor, blockstorage: Return fatal errors from block writes)
     });
 }
 
