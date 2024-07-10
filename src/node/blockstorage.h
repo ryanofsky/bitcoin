@@ -26,6 +26,7 @@
 #include <util/fs.h>
 #include <util/hasher.h>
 #include <util/obfuscation.h>
+#include <util/result.h>
 
 #include <algorithm>
 #include <array>
@@ -231,6 +232,7 @@ private:
      * separator fields (STORAGE_HEADER_BYTES).
      */
 <<<<<<< HEAD
+<<<<<<< HEAD
     [[nodiscard]] FlatFilePos FindNextBlockPos(unsigned int nAddSize, unsigned int nHeight, uint64_t nTime) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
     [[nodiscard]] bool FlushChainstateBlockFile(int tip_height) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
     [[nodiscard]] bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
@@ -240,9 +242,20 @@ private:
     bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
 =======
     [[nodiscard]] FlatFilePos FindNextBlockPos(unsigned int nAddSize, unsigned int nHeight, uint64_t nTime);
+||||||| parent of b45a81547b1 (refactor, blockstorage: Return fatal errors from block writes)
+    [[nodiscard]] FlatFilePos FindNextBlockPos(unsigned int nAddSize, unsigned int nHeight, uint64_t nTime);
+=======
+    [[nodiscard]] kernel::FlushResult<FlatFilePos, kernel::AbortFailure> FindNextBlockPos(unsigned int nAddSize, unsigned int nHeight, uint64_t nTime);
+>>>>>>> b45a81547b1 (refactor, blockstorage: Return fatal errors from block writes)
     [[nodiscard]] kernel::FlushResult<> FlushChainstateBlockFile(int tip_height);
+<<<<<<< HEAD
     bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
 >>>>>>> bf31a72c796 (refactor, blockstorage: Return FlushResult from flush methods)
+||||||| parent of b45a81547b1 (refactor, blockstorage: Return fatal errors from block writes)
+    bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
+=======
+    [[nodiscard]] util::Result<void, kernel::AbortFailure> FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
+>>>>>>> b45a81547b1 (refactor, blockstorage: Return fatal errors from block writes)
 
     AutoFile OpenUndoFile(const FlatFilePos& pos, bool fReadOnly = false) const;
 
@@ -399,7 +412,7 @@ public:
     /** Get block file info entry for one block file */
     CBlockFileInfo* GetBlockFileInfo(size_t n) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
-    bool WriteBlockUndo(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex& block)
+    [[nodiscard]] kernel::FlushResult<void, kernel::AbortFailure> WriteBlockUndo(const CBlockUndo& blockundo, BlockValidationState& state, CBlockIndex& block)
         EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     /** Store block on disk and update block file statistics.
@@ -410,7 +423,13 @@ public:
      * @returns in case of success, the position to which the block was written to
      *          in case of an error, an empty FlatFilePos
      */
+<<<<<<< HEAD
     FlatFilePos WriteBlock(const CBlock& block, int nHeight) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+||||||| parent of b45a81547b1 (refactor, blockstorage: Return fatal errors from block writes)
+    FlatFilePos WriteBlock(const CBlock& block, int nHeight);
+=======
+    [[nodiscard]] kernel::FlushResult<FlatFilePos, kernel::AbortFailure> WriteBlock(const CBlock& block, int nHeight);
+>>>>>>> b45a81547b1 (refactor, blockstorage: Return fatal errors from block writes)
 
     /** Update blockfile info while processing a block during reindex. The block must be available on disk.
      *
