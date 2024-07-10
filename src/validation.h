@@ -1093,12 +1093,18 @@ public:
     //! - Move the new chainstate to `m_snapshot_chainstate` and make it our
     //!   ChainstateActive().
 <<<<<<< HEAD
+<<<<<<< HEAD
     [[nodiscard]] util::Result<CBlockIndex*> ActivateSnapshot(
 ||||||| parent of 3d0a05e46d5d (refactor, validation: Return fatal errors from FlushStateToDisk)
     [[nodiscard]] util::Result<void> ActivateSnapshot(
 =======
     [[nodiscard]] kernel::FlushResult<> ActivateSnapshot(
 >>>>>>> 3d0a05e46d5d (refactor, validation: Return fatal errors from FlushStateToDisk)
+||||||| parent of 98ec565e4e5b (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
+    [[nodiscard]] kernel::FlushResult<> ActivateSnapshot(
+=======
+    [[nodiscard]] kernel::FlushResult<void, kernel::AbortFailure> ActivateSnapshot(
+>>>>>>> 98ec565e4e5b (refactor, validation: Return fatal errors from assumeutxo snapshot functions)
         AutoFile& coins_file, const node::SnapshotMetadata& metadata, bool in_memory);
 
     //! Once the background validation chainstate has reached the height which
@@ -1108,7 +1114,7 @@ public:
     //! If the coins match (expected), then mark the validation chainstate for
     //! deletion and continue using the snapshot chainstate as active.
     //! Otherwise, revert to using the ibd chainstate and shutdown.
-    SnapshotCompletionResult MaybeCompleteSnapshotValidation() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    [[nodiscard]] SnapshotCompletionResult MaybeCompleteSnapshotValidation(kernel::FlushResult<void, kernel::AbortFailure>& result) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     //! Returns nullptr if no snapshot has been loaded.
     const CBlockIndex* GetSnapshotBaseBlock() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
@@ -1299,7 +1305,7 @@ public:
     //! directories are moved or deleted.
     //!
     //! @sa node/chainstate:LoadChainstate()
-    bool ValidatedSnapshotCleanup() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+    [[nodiscard]] util::Result<void, kernel::AbortFailure> ValidatedSnapshotCleanup() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     //! @returns the chainstate that indexes should consult when ensuring that an
     //!   index is synced with a chain where we can expect block index entries to have
