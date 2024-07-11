@@ -9,6 +9,9 @@
 #include <optional>
 #include <uint256.h>
 
+namespace common {
+struct Settings;
+} // namespace common
 namespace node {
 struct CBlockTemplate;
 struct NodeContext;
@@ -27,6 +30,12 @@ class Mining
 {
 public:
     virtual ~Mining() = default;
+
+    //! Start node. Return false if node failed to start up or was already started.
+    virtual bool startNode(const common::Settings& settings, int argc, const char* const argv[]) = 0;
+
+    // Stop node. Return false if node was not started.
+    virtual bool stopNode(int& exit_status) = 0;
 
     //! If this chain is exclusively used for testing
     virtual bool isTestChain() = 0;
