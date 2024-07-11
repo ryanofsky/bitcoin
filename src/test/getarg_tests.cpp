@@ -37,6 +37,7 @@ void ResetArgs(ArgsManager& local_args, const std::string& strArg)
         vecChar.push_back(s.c_str());
 
     std::string error;
+    local_args.LockSettings([&](common::Settings& s) { s.command_line_options.clear(); });
     BOOST_CHECK(local_args.ParseParameters(vecChar.size(), vecChar.data(), error));
 }
 

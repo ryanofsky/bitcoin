@@ -52,6 +52,11 @@ BOOST_AUTO_TEST_CASE(util_datadir)
 struct TestArgsManager : public ArgsManager
 {
     TestArgsManager() { m_network_only_args.clear(); }
+    bool ParseCommandLine(int argc, const char* const argv[], std::string& error)
+    {
+        WITH_LOCK(cs_args, m_settings.command_line_options.clear());
+        return ParseParameters(argc, argv, error);
+    }
     void ReadConfigString(const std::string str_config)
     {
         std::istringstream streamConfig(str_config);
@@ -370,7 +375,7 @@ BOOST_AUTO_TEST_CASE(util_GetBoolArgEdgeCases)
     const char *argv_test[] = {"ignored", "-nofoo", "-foo", "-nobar=0"};
     testArgs.SetupArgs({foo, bar});
     std::string error;
-    BOOST_CHECK(testArgs.ParseParameters(4, argv_test, error));
+    BOOST_CHECK(testArgs.ParseCommandLine(4, argv_test, error));
 
     // This was passed twice, second one overrides the negative setting.
     BOOST_CHECK(!testArgs.IsArgNegated("-foo"));
@@ -382,7 +387,7 @@ BOOST_AUTO_TEST_CASE(util_GetBoolArgEdgeCases)
 
     // Config test
     const char *conf_test = "nofoo=1\nfoo=1\nnobar=0\n";
-    BOOST_CHECK(testArgs.ParseParameters(1, argv_test, error));
+    BOOST_CHECK(testArgs.ParseCommandLine(1, argv_test, error));
     testArgs.ReadConfigString(conf_test);
 
     // This was passed twice, second one overrides the negative setting,
@@ -397,7 +402,7 @@ BOOST_AUTO_TEST_CASE(util_GetBoolArgEdgeCases)
     // Combined test
     const char *combo_test_args[] = {"ignored", "-nofoo", "-bar"};
     const char *combo_test_conf = "foo=1\nnobar=1\n";
-    BOOST_CHECK(testArgs.ParseParameters(3, combo_test_args, error));
+    BOOST_CHECK(testArgs.ParseCommandLine(3, combo_test_args, error));
     testArgs.ReadConfigString(combo_test_conf);
 
     // Command line overrides, but doesn't erase old setting
@@ -657,38 +662,38 @@ BOOST_AUTO_TEST_CASE(util_GetChainTypeString)
     const char* testnetconf = "testnet=1\nregtest=0\n[test]\nregtest=1";
     std::string error;
 
-    BOOST_CHECK(test_args.ParseParameters(0, argv_testnet, error));
+    BOOST_CHECK(test_args.ParseCommandLine(0, argv_testnet, error));
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "main");
 
-    BOOST_CHECK(test_args.ParseParameters(2, argv_testnet, error));
+    BOOST_CHECK(test_args.ParseCommandLine(2, argv_testnet, error));
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(2, argv_regtest, error));
+    BOOST_CHECK(test_args.ParseCommandLine(2, argv_regtest, error));
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "regtest");
 
-    BOOST_CHECK(test_args.ParseParameters(3, argv_test_no_reg, error));
+    BOOST_CHECK(test_args.ParseCommandLine(3, argv_test_no_reg, error));
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(3, argv_both, error));
+    BOOST_CHECK(test_args.ParseCommandLine(3, argv_both, error));
     BOOST_CHECK_THROW(test_args.GetChainTypeString(), std::runtime_error);
 
-    BOOST_CHECK(test_args.ParseParameters(0, argv_testnet, error));
+    BOOST_CHECK(test_args.ParseCommandLine(0, argv_testnet, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(2, argv_testnet, error));
+    BOOST_CHECK(test_args.ParseCommandLine(2, argv_testnet, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(2, argv_regtest, error));
+    BOOST_CHECK(test_args.ParseCommandLine(2, argv_regtest, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_THROW(test_args.GetChainTypeString(), std::runtime_error);
 
-    BOOST_CHECK(test_args.ParseParameters(3, argv_test_no_reg, error));
+    BOOST_CHECK(test_args.ParseCommandLine(3, argv_test_no_reg, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(3, argv_both, error));
+    BOOST_CHECK(test_args.ParseCommandLine(3, argv_both, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_THROW(test_args.GetChainTypeString(), std::runtime_error);
 
@@ -696,23 +701,23 @@ BOOST_AUTO_TEST_CASE(util_GetChainTypeString)
     // [test] regtest=1 potentially relevant) doesn't break things
     test_args.SelectConfigNetwork("test");
 
-    BOOST_CHECK(test_args.ParseParameters(0, argv_testnet, error));
+    BOOST_CHECK(test_args.ParseCommandLine(0, argv_testnet, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(2, argv_testnet, error));
+    BOOST_CHECK(test_args.ParseCommandLine(2, argv_testnet, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(2, argv_regtest, error));
+    BOOST_CHECK(test_args.ParseCommandLine(2, argv_regtest, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_THROW(test_args.GetChainTypeString(), std::runtime_error);
 
-    BOOST_CHECK(test_args.ParseParameters(2, argv_test_no_reg, error));
+    BOOST_CHECK(test_args.ParseCommandLine(2, argv_test_no_reg, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_EQUAL(test_args.GetChainTypeString(), "test");
 
-    BOOST_CHECK(test_args.ParseParameters(3, argv_both, error));
+    BOOST_CHECK(test_args.ParseCommandLine(3, argv_both, error));
     test_args.ReadConfigString(testnetconf);
     BOOST_CHECK_THROW(test_args.GetChainTypeString(), std::runtime_error);
 }

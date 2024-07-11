@@ -177,7 +177,6 @@ void ArgsManager::SelectConfigNetwork(const std::string& network)
 bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::string& error)
 {
     LOCK(cs_args);
-    m_settings.command_line_options.clear();
 
     for (int i = 1; i < argc; i++) {
         std::string key(argv[i]);
