@@ -124,6 +124,7 @@ BITCOIN_CORE_H = \
   base58.h \
   bech32.h \
   bip324.h \
+  bitcoind.h \
   blockencodings.h \
   blockfilter.h \
   chain.h \
