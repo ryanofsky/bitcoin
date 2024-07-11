@@ -78,6 +78,8 @@ interface Mining $Proxy.wrap("interfaces::Mining") {
     waitTipChanged @8 (timeout: Float64) -> (result: BlockInfo);
     waitFeesChanged @9 (timeout: Float64, tip: Data, feeDelta: Int64, feesBefore: Int64) -> (result: Bool);
     createNewBlock2 @10 (scriptPubKey: Data, options: BlockCreateOptions) -> (result: BlockTemplate);
+    startNode @11 (context :Proxy.Context, settings: Common.Settings, argv: List(Text) $Proxy.count(2)) -> (result: Bool);
+    stopNode @12 (context :Proxy.Context) -> (exitStatus: Int32, result: Bool);
 }
 
 interface BlockTemplate $Proxy.wrap("interfaces::BlockTemplate") {

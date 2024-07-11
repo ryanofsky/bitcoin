@@ -128,6 +128,7 @@ BITCOIN_CORE_H = \
   base58.h \
   bech32.h \
   bip324.h \
+  bitcoind.h \
   blockencodings.h \
   blockfilter.h \
   chain.h \
@@ -393,6 +394,7 @@ libbitcoin_node_a_SOURCES = \
   addrman.cpp \
   banman.cpp \
   bip324.cpp \
+  bitcoind.cpp \
   blockencodings.cpp \
   blockfilter.cpp \
   chain.cpp \
@@ -779,7 +781,7 @@ nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
 # bitcoind & bitcoin-node binaries #
-bitcoin_daemon_sources = bitcoind.cpp
+bitcoin_daemon_sources = main.cpp
 bitcoin_bin_cppflags = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
 bitcoin_bin_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
 bitcoin_bin_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS) $(PTHREAD_FLAGS)
