@@ -90,6 +90,10 @@ if BUILD_BITCOIN_NODE
   bin_PROGRAMS += bitcoin-node
 endif
 
+if BUILD_BITCOIN_MINE
+  bin_PROGRAMS += bitcoin-mine
+endif
+
 if BUILD_BITCOIN_CLI
   bin_PROGRAMS += bitcoin-cli
 endif
@@ -873,6 +877,23 @@ bitcoin_wallet_SOURCES += bitcoin-wallet-res.rc
 endif
 #
 
+# bitcoin-mine binary #
+bitcoin_mine_SOURCES = bitcoin-mine.cpp init/bitcoin-mine.cpp
+bitcoin_mine_CPPFLAGS = $(bitcoin_bin_cppflags)
+bitcoin_mine_CXXFLAGS = $(bitcoin_bin_cxxflags)
+bitcoin_mine_LDFLAGS = $(bitcoin_bin_ldflags)
+bitcoin_mine_LDADD = \
+  $(LIBBITCOIN_IPC) \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBBITCOIN_WALLET) \
+  $(LIBMULTIPROCESS_LIBS) \
+  $(LIBSECP256K1) \
+  $(LIBUNIVALUE)
+#
+
 # bitcoin-util binary #
 bitcoin_util_SOURCES = bitcoin-util.cpp
 bitcoin_util_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
@@ -1062,8 +1083,10 @@ if HARDEN
 endif
 
 libbitcoin_ipc_mpgen_input = \
+  ipc/capnp/common.capnp \
   ipc/capnp/echo.capnp \
-  ipc/capnp/init.capnp
+  ipc/capnp/init.capnp \
+  ipc/capnp/mining.capnp
 EXTRA_DIST += $(libbitcoin_ipc_mpgen_input)
 %.capnp:
 
@@ -1077,6 +1100,9 @@ libbitcoin_ipc_a_SOURCES = \
   ipc/capnp/common-types.h \
   ipc/capnp/context.h \
   ipc/capnp/init-types.h \
+  ipc/capnp/mining-types.h \
+  ipc/capnp/mining.cpp \
+  ipc/capnp/mining.h \
   ipc/capnp/protocol.cpp \
   ipc/capnp/protocol.h \
   ipc/context.h \
