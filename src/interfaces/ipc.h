@@ -52,7 +52,7 @@ public:
     virtual ~Ipc() = default;
 
     //! Spawn a child process returning pointer to its Init interface.
-    virtual std::unique_ptr<Init> spawnProcess(const char* exe_name) = 0;
+    virtual std::unique_ptr<Init> spawnProcess(const char* exe_name, bool detach=false) = 0;
 
     //! If this is a spawned process, block and handle requests from the parent
     //! process by forwarding them to this process's Init interface, then return
