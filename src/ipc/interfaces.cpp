@@ -34,16 +34,30 @@ public:
           m_protocol(ipc::capnp::MakeCapnpProtocol()), m_process(ipc::MakeProcess())
     {
     }
-    std::unique_ptr<interfaces::Init> spawnProcess(const char* new_exe_name) override
+    std::unique_ptr<interfaces::Init> spawnProcess(const char* new_exe_name, bool detach) override
     {
         int pid;
         int fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
         LogDebug(::BCLog::IPC, "Process %s pid %i launched\n", new_exe_name, pid);
         auto init = m_protocol->connect(fd, m_exe_name);
+<<<<<<< HEAD
         Ipc::addCleanup(*init, [this, new_exe_name, pid] {
             int status = m_process->waitSpawned(pid);
             LogDebug(::BCLog::IPC, "Process %s pid %i exited with status %i\n", new_exe_name, pid, status);
         });
+||||||| parent of 09621da38291 (multiprocess: Add IPC spawnProcess detach option)
+        Ipc::addCleanup(*init, [this, new_exe_name, pid] {
+            int status = m_process->waitSpawned(pid);
+            LogPrint(::BCLog::IPC, "Process %s pid %i exited with status %i\n", new_exe_name, pid, status);
+        });
+=======
+        if (!detach) {
+            Ipc::addCleanup(*init, [this, new_exe_name, pid] {
+                int status = m_process->waitSpawned(pid);
+                LogPrint(::BCLog::IPC, "Process %s pid %i exited with status %i\n", new_exe_name, pid, status);
+            });
+        }
+>>>>>>> 09621da38291 (multiprocess: Add IPC spawnProcess detach option)
         return init;
     }
     bool startSpawnedProcess(int argc, char* argv[], int& exit_status) override
