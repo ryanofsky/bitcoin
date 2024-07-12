@@ -43,6 +43,15 @@ public:
     {
         if (m_loop) {
             std::unique_lock<std::mutex> lock(m_loop->m_mutex);
+            if (m_attached) {
+                // Decrement refernce count added by attach() call.
+                m_loop->removeClient(lock);
+                m_attached = false;
+            }
+            // Decrement reference count added by connect/serve calls when
+            // running event loop on background thread. When running event loop
+            // in foreground inside serve() call, this should never run because
+            // serve() resets m_loop.
             m_loop->removeClient(lock);
         }
         if (m_loop_thread.joinable()) m_loop_thread.join();
@@ -74,6 +83,24 @@ public:
     {
         mp::ProxyTypeRegister::types().at(type)(iface).cleanup.emplace_back(std::move(cleanup));
     }
+    bool attach() override
+    {
+        assert(m_loop);
+        std::unique_lock<std::mutex> lock(m_loop->m_mutex);
+        if (m_attached) return false;
+        m_attached = true;
+        m_loop->addClient(lock);
+        return true;
+    }
+    bool detach() override
+    {
+        assert(m_loop);
+        std::unique_lock<std::mutex> lock(m_loop->m_mutex);
+        if (!m_attached) return false;
+        m_attached = false;
+        m_loop->removeClient(lock);
+        return true;
+    }
     Context& context() override { return m_context; }
     void startLoop(const char* exe_name)
     {
@@ -95,6 +122,7 @@ public:
     Context m_context;
     std::thread m_loop_thread;
     std::optional<mp::EventLoop> m_loop;
+    bool m_attached;
 };
 } // namespace
 
