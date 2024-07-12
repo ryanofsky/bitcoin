@@ -62,6 +62,25 @@ public:
     //! deleted.
     virtual void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) = 0;
 
+    //! Manually attach to event loop. This just increments a reference count
+    //! and prevents the event loop from exiting until detach is called. Returns
+    //! true if newly attached, false if already previously attached.
+    //!
+    //! It should only ever be necessary to call attach() when event loop
+    //! running on a foreground thread via the serve() method, as the default
+    //! serve() behavior is to exit the event loop and return from server()
+    //! after every connection, including the provided file descriptor
+    //! connection is closed. It is unnecessary (but harmless) to manually
+    //! attach() when the event loop is running an the background thread
+    //! triggered by listen() and serve() calls, because the background thread
+    //! just runs until the destructor is called.
+    virtual bool attach() = 0;
+
+    //! Manually detach from event loop. This just decrements a refernce count
+    //! so the event loop will exit when the last connection closes. Returns
+    //! true if was previously attached, false otherwise.
+    virtual bool detach() = 0;
+
     //! Context accessor.
     virtual Context& context() = 0;
 };
