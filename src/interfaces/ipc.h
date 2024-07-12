@@ -70,6 +70,12 @@ public:
     //! using provided callback.
     virtual bool listenAddress(std::string& address, std::string& error) = 0;
 
+    //! Attach to keep IPC active even when nothing is connected (see ipc::Protocol::attach).
+    virtual bool attach() = 0;
+
+    //! Dettach to shut down IPC after the last connection is closed (see ipc::Protocol::detach).
+    virtual bool detach() = 0;
+
     //! Add cleanup callback to remote interface that will run when the
     //! interface is deleted.
     template<typename Interface>
