@@ -129,7 +129,19 @@ public:
         m_protocol->listen(fd, m_exe_name, m_init);
         return true;
     }
+<<<<<<< HEAD
 >>>>>>> 9d732323d8d3 (multiprocess: Add IPC connectAddress and listenAddress methods)
+||||||| parent of 3d23332240f1 (multiprocess: Add IPC attach and detach methods)
+=======
+    bool attach() override
+    {
+        return m_protocol->attach();
+    }
+    bool detach() override
+    {
+        return m_protocol->detach();
+    }
+>>>>>>> 3d23332240f1 (multiprocess: Add IPC attach and detach methods)
     void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) override
     {
         m_protocol->addCleanup(type, iface, std::move(cleanup));

@@ -84,7 +84,17 @@ public:
     //! using provided callback.
     virtual bool listenAddress(std::string& address, std::string& error) = 0;
 
+<<<<<<< HEAD
 >>>>>>> 9d732323d8d3 (multiprocess: Add IPC connectAddress and listenAddress methods)
+||||||| parent of 3d23332240f1 (multiprocess: Add IPC attach and detach methods)
+=======
+    //! Attach to keep IPC active even when nothing is connected (see ipc::Protocol::attach).
+    virtual bool attach() = 0;
+
+    //! Dettach to shut down IPC after the last connection is closed (see ipc::Protocol::detach).
+    virtual bool detach() = 0;
+
+>>>>>>> 3d23332240f1 (multiprocess: Add IPC attach and detach methods)
     //! Add cleanup callback to remote interface that will run when the
     //! interface is deleted.
     template<typename Interface>
