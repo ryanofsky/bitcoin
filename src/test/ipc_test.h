@@ -7,6 +7,7 @@
 
 #include <primitives/transaction.h>
 #include <univalue.h>
+#include <validation.h>
 
 class FooImplementation
 {
@@ -15,6 +16,7 @@ public:
     COutPoint passOutPoint(COutPoint o) { return o; }
     UniValue passUniValue(UniValue v) { return v; }
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
+    BlockValidationState passBlockState(BlockValidationState s) { return s; }
 };
 
 void IpcTest();

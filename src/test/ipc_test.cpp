@@ -7,6 +7,7 @@
 #include <test/ipc_test.capnp.h>
 #include <test/ipc_test.capnp.proxy.h>
 #include <test/ipc_test.h>
+#include <validation.h>
 
 #include <future>
 #include <kj/common.h>
@@ -69,6 +70,25 @@ void IpcTest()
     CTransactionRef tx1{MakeTransactionRef(mtx)};
     CTransactionRef tx2{foo->passTransaction(tx1)};
     BOOST_CHECK(*Assert(tx1) == *Assert(tx2));
+
+    BlockValidationState bs1;
+    bs1.Invalid(BlockValidationResult::BLOCK_CHECKPOINT, "reject reason", "debug message");
+    BlockValidationState bs2{foo->passBlockState(bs1)};
+    BOOST_CHECK_EQUAL(bs1.IsValid(), bs2.IsValid());
+    BOOST_CHECK_EQUAL(bs1.IsError(), bs2.IsError());
+    BOOST_CHECK_EQUAL(bs1.IsInvalid(), bs2.IsInvalid());
+    BOOST_CHECK_EQUAL(static_cast<int>(bs1.GetResult()), static_cast<int>(bs2.GetResult()));
+    BOOST_CHECK_EQUAL(bs1.GetRejectReason(), bs2.GetRejectReason());
+    BOOST_CHECK_EQUAL(bs1.GetDebugMessage(), bs2.GetDebugMessage());
+
+    BlockValidationState bs3;
+    BlockValidationState bs4{foo->passBlockState(bs3)};
+    BOOST_CHECK_EQUAL(bs3.IsValid(), bs4.IsValid());
+    BOOST_CHECK_EQUAL(bs3.IsError(), bs4.IsError());
+    BOOST_CHECK_EQUAL(bs3.IsInvalid(), bs4.IsInvalid());
+    BOOST_CHECK_EQUAL(static_cast<int>(bs3.GetResult()), static_cast<int>(bs4.GetResult()));
+    BOOST_CHECK_EQUAL(bs3.GetRejectReason(), bs4.GetRejectReason());
+    BOOST_CHECK_EQUAL(bs3.GetDebugMessage(), bs4.GetDebugMessage());
 
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();

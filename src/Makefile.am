@@ -1077,6 +1077,7 @@ libbitcoin_ipc_a_SOURCES = \
   ipc/capnp/common-types.h \
   ipc/capnp/context.h \
   ipc/capnp/init-types.h \
+  ipc/capnp/mining.cpp \
   ipc/capnp/mining-types.h \
   ipc/capnp/protocol.cpp \
   ipc/capnp/protocol.h \
