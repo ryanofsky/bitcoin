@@ -5,6 +5,7 @@
 #ifndef BITCOIN_INTERFACES_MINING_H
 #define BITCOIN_INTERFACES_MINING_H
 
+<<<<<<< HEAD
 #include <consensus/amount.h>       // for CAmount
 #include <interfaces/types.h>       // for BlockRef
 #include <node/types.h>             // for BlockCreateOptions
@@ -17,6 +18,19 @@
 #include <memory>   // for unique_ptr, shared_ptr
 #include <optional> // for optional
 #include <vector>   // for vector
+||||||| parent of 4e1a4342f3b2 (multiprocess: Expand mining interface)
+#include <memory>
+#include <optional>
+#include <uint256.h>
+=======
+#include <node/types.h>
+#include <primitives/block.h>
+#include <util/time.h>
+
+#include <memory>
+#include <optional>
+#include <uint256.h>
+>>>>>>> 4e1a4342f3b2 (multiprocess: Expand mining interface)
 
 namespace node {
 struct NodeContext;
@@ -27,6 +41,7 @@ class CScript;
 
 namespace interfaces {
 
+<<<<<<< HEAD
 //! Block template interface
 class BlockTemplate
 {
@@ -44,6 +59,25 @@ public:
     virtual int getWitnessCommitmentIndex() = 0;
 };
 
+||||||| parent of 4e1a4342f3b2 (multiprocess: Expand mining interface)
+=======
+// Implemented in https://github.com/bitcoin/bitcoin/pull/30440
+class BlockTemplate
+{
+public:
+    virtual ~BlockTemplate() = default;
+    virtual CBlockHeader getBlockHeader() { return {}; }
+    virtual CBlock getBlock() { return {}; }
+    virtual std::vector<CAmount> getTxFees() { return {}; }
+    virtual std::vector<int64_t> getTxSigops() { return {}; }
+    virtual CTransactionRef getCoinbaseTx() { return {}; }
+    virtual std::vector<unsigned char> getCoinbaseCommitment() { return {}; }
+    virtual int getWitnessCommitmentIndex() { return {}; }
+    virtual std::vector<uint256> getCoinbaseMerklePath() { return {}; }
+    virtual bool submitSolution(uint32_t version, uint32_t timestamp, uint32_t nonce, CMutableTransaction coinbase) { return {}; }
+};
+
+>>>>>>> 4e1a4342f3b2 (multiprocess: Expand mining interface)
 //! Interface giving clients (RPC, Stratum v2 Template Provider in the future)
 //! ability to create block templates.
 class Mining
@@ -71,6 +105,12 @@ public:
      */
     virtual BlockRef waitTipChanged(uint256 current_tip, MillisecondsDouble timeout = MillisecondsDouble::max()) = 0;
 
+    // Implemented in https://github.com/bitcoin/bitcoin/pull/30409
+    virtual std::optional<int> getTipHeight() { return {}; }
+    virtual std::pair<uint256, int> waitTipChanged(MillisecondsDouble timeout = MillisecondsDouble::max()) { return {}; }
+    // Implemented in https://github.com/bitcoin/bitcoin/pull/30443
+    virtual bool waitFeesChanged(MillisecondsDouble timeout, uint256 tip, CAmount fee_delta = 0, CAmount fees_before = 0) { return {}; }
+
    /**
      * Construct a new block template
      *
@@ -79,6 +119,9 @@ public:
      * @returns a block template
      */
     virtual std::unique_ptr<BlockTemplate> createNewBlock(const CScript& script_pub_key, const node::BlockCreateOptions& options = {}) = 0;
+
+    // Implemented in https://github.com/bitcoin/bitcoin/pull/30356
+    virtual std::unique_ptr<BlockTemplate> createNewBlock2(const CScript& script_pub_key, const node::BlockCreateOptions& options={}) { return {}; }
 
     /**
      * Processes new block. A valid new block is automatically relayed to peers.

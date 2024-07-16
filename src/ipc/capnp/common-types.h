@@ -358,7 +358,29 @@ void CustomBuildField(
     auto result = output.init(data.size());
     memcpy(result.begin(), data.data(), data.size());
 }
+<<<<<<< HEAD
 >>>>>>> 8a20be71f07c (multiprocess: Add bitcoin-mine test program)
+||||||| parent of 4e1a4342f3b2 (multiprocess: Expand mining interface)
+=======
+
+//! Overload CustomBuildField and CustomReadField to serialize std::chrono
+//! parameters and return values as numbers.
+//! TODO: Could add compile time checks to make sure types are compatible and
+//! precision is not lost.
+template <class Rep, class Period, typename Value, typename Output>
+void CustomBuildField(TypeList<std::chrono::duration<Rep, Period>>, Priority<1>, InvokeContext& invoke_context, Value&& value,
+                      Output&& output)
+{
+    output.set(value.count());
+}
+
+template <class Rep, class Period, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<std::chrono::duration<Rep, Period>>, Priority<1>, InvokeContext& invoke_context,
+                               Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.construct(input.get());
+}
+>>>>>>> 4e1a4342f3b2 (multiprocess: Expand mining interface)
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_COMMON_TYPES_H
