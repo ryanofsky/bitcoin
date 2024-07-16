@@ -44,4 +44,21 @@ void CustomReadMessage(InvokeContext& invoke_context,
         assert(false);
     }
 }
+
+void CustomBuildMessage(InvokeContext& invoke_context,
+                        const std::unique_ptr<node::CBlockTemplate>& src,
+                        ipc::capnp::messages::CBlockTemplate::Builder&& builder)
+{
+    if (src) {
+        BuildField(TypeList<node::CBlockTemplate>(), invoke_context, ValueField(builder), *src);
+    }
+}
+
+void CustomReadMessage(InvokeContext& invoke_context,
+                       const ipc::capnp::messages::CBlockTemplate::Reader& reader,
+                       std::unique_ptr<node::CBlockTemplate>& dest)
+{
+    dest = std::make_unique<node::CBlockTemplate>();
+    ReadField(TypeList<node::CBlockTemplate>(), invoke_context, ValueField(reader), ReadDestValue(*dest));
+}
 } // namespace mp

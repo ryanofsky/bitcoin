@@ -20,6 +20,14 @@ void CustomBuildMessage(InvokeContext& invoke_context,
 void CustomReadMessage(InvokeContext& invoke_context,
                        const ipc::capnp::messages::BlockValidationState::Reader& reader,
                        BlockValidationState& dest);
+
+// Custom serialization for std::unique_ptr<CBlockTemplate>.
+void CustomBuildMessage(InvokeContext& invoke_context,
+                        const std::unique_ptr<node::CBlockTemplate>& src,
+                        ipc::capnp::messages::CBlockTemplate::Builder&& builder);
+void CustomReadMessage(InvokeContext& invoke_context,
+                       const ipc::capnp::messages::CBlockTemplate::Reader& reader,
+                       std::unique_ptr<node::CBlockTemplate>& dest);
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_MINING_TYPES_H
