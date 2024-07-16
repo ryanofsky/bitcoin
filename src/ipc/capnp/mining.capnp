@@ -27,8 +27,11 @@ struct BlockCreateOptions $Proxy.wrap("node::BlockCreateOptions") {
     coinbaseOutputMaxAdditionalSigops @2 :UInt64 $Proxy.name("coinbase_output_max_additional_sigops");
 }
 
-# TODO add fields to this struct
-struct BlockValidationState $Proxy.wrap("BlockValidationState") {
+struct BlockValidationState {
+    mode @0 :Int32;
+    result @1 :Int32;
+    rejectReason @2 :Text;
+    debugMessage @3 :Text;
 }
 
 # TODO add fields to this struct
