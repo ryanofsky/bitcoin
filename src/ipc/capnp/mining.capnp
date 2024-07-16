@@ -19,12 +19,30 @@ interface Mining $Proxy.wrap("interfaces::Mining") {
     processNewBlock @4 (context :Proxy.Context, block: Data) -> (newBlock: Bool, result: Bool);
     getTransactionsUpdated @5 (context :Proxy.Context) -> (result: UInt32);
     testBlockValidity @6 (context :Proxy.Context, block: Data, checkMerkleRoot: Bool) -> (state: BlockValidationState, result: Bool);
+    getTipHeight @7 (context :Proxy.Context) -> (hasResult: Bool, result: Int32);
+    waitTipChanged @8 (timeout: Float64) -> (result: BlockInfo);
+    createNewBlock2 @9 (scriptPubKey: Data, options: BlockCreateOptions) -> (result: BlockTemplate);
+}
+
+interface BlockTemplate $Proxy.wrap("interfaces::BlockTemplate") {
+    getBlockHeader @0 (context: Proxy.Context) -> (result: Data);
+    getBlock @1 (context: Proxy.Context) -> (result: Data);
+    getTxFees @2 (context: Proxy.Context) -> (result: List(Int64));
+    getTxSigops @3 (context: Proxy.Context) -> (result: List(Int64));
+    getCoinbaseTx @4 (context: Proxy.Context) -> (result: Data);
+    getCoinbaseCommitment @5 (context: Proxy.Context) -> (result: Data);
+    getWitnessCommitmentIndex @6 (context: Proxy.Context) -> (result: Int32);
 }
 
 struct BlockCreateOptions $Proxy.wrap("node::BlockCreateOptions") {
     useMempool @0 :Bool $Proxy.name("use_mempool");
     coinbaseMaxAdditionalWeight @1 :UInt64 $Proxy.name("coinbase_max_additional_weight");
     coinbaseOutputMaxAdditionalSigops @2 :UInt64 $Proxy.name("coinbase_output_max_additional_sigops");
+}
+
+struct BlockInfo {
+    hash @0 :Data;
+    height @1 :Int32;
 }
 
 struct BlockValidationState {
