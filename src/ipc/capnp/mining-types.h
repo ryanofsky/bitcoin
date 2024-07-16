@@ -21,6 +21,30 @@ void CustomBuildMessage(InvokeContext& invoke_context,
 void CustomReadMessage(InvokeContext& invoke_context,
                        const ipc::capnp::messages::BlockValidationState::Reader& reader,
                        BlockValidationState& dest);
+
+// Custom serialization for int argc, char** argv arguments.
+template <typename Argc, typename Argv, typename Output>
+void CustomBuildField(TypeList<int, const char* const*>, Priority<1>, InvokeContext& invoke_context, Argc&& argc, Argv&& argv, Output&& output)
+{
+    capnp::List<capnp::Text>::Builder args{output.init(argc)};
+    for (int i = 0; i < argc; ++i) {
+        args.set(i, argv[i]);
+    }
+}
+
+template <typename Accessor, typename ServerContext, typename Fn, typename... Args>
+auto CustomPassField(TypeList<int, const char* const*>, ServerContext& server_context, const Fn& fn, Args&&... args)
+{
+    const auto& params = server_context.call_context.getParams();
+    const auto& input = Make<StructField, Accessor>(params);
+    capnp::List<capnp::Text>::Reader argv = input.get();
+    std::vector<const char*> vec;
+    vec.reserve(argv.size());
+    for (auto arg : argv) {
+        vec.push_back(arg.cStr());
+    }
+    return fn.invoke(server_context, std::forward<Args>(args)..., argv.size(), vec.data());
+}
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_MINING_TYPES_H
