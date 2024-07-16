@@ -16,6 +16,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+using node::CBlockTemplate;
+
 //! Unit test that tests execution of IPC calls without actually creating a
 //! separate process. This test is primarily intended to verify behavior of type
 //! conversion code that converts C++ objects to Cap'n Proto messages and vice
@@ -93,6 +95,11 @@ void IpcTest()
     std::vector<char> vec1{'H', 'e', 'l', 'l', 'o'};
     std::vector<char> vec2{foo->passVectorChar(vec1)};
     BOOST_CHECK_EQUAL(std::string_view(vec1.begin(), vec1.end()), std::string_view(vec2.begin(), vec2.end()));
+
+    CBlockTemplate temp1;
+    temp1.block.nTime = 5;
+    CBlockTemplate temp2{foo->passBlockTemplate(temp1)};
+    BOOST_CHECK_EQUAL(temp1.block.nTime, temp2.block.nTime);
 
     // Test cleanup: disconnect pipe and join thread
     disconnect_client();

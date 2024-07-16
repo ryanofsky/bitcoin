@@ -5,6 +5,7 @@
 #ifndef BITCOIN_TEST_IPC_TEST_H
 #define BITCOIN_TEST_IPC_TEST_H
 
+#include <node/miner.h>
 #include <primitives/transaction.h>
 #include <univalue.h>
 #include <validation.h>
@@ -18,6 +19,7 @@ public:
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
     BlockValidationState passBlockState(BlockValidationState s) { return s; }
     std::vector<char> passVectorChar(std::vector<char> v) { return v; }
+    node::CBlockTemplate passBlockTemplate(node::CBlockTemplate t) { return t; }
 };
 
 void IpcTest();
