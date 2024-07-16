@@ -6,7 +6,9 @@
 #define BITCOIN_IPC_CAPNP_COMMON_TYPES_H
 
 #include <clientversion.h>
+#include <common/settings.h>
 #include <interfaces/types.h>
+#include <ipc/capnp/common.capnp.proxy.h>
 #include <primitives/transaction.h>
 #include <serialize.h>
 #include <streams.h>

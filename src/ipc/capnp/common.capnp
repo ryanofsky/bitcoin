@@ -14,3 +14,15 @@ struct BlockRef $Proxy.wrap("interfaces::BlockRef") {
     hash @0 :Data;
     height @1 :Int32;
 }
+
+struct Settings $Proxy.wrap("common::Settings") {
+   forcedSettings @0 :List(Pair(Text, Text)) $Proxy.name("forced_settings");
+   commandLineOptions @1 :List(Pair(Text, List(Text))) $Proxy.name("command_line_options");
+   rwSettings @2 :List(Pair(Text, Text)) $Proxy.name("rw_settings");
+   roConfig @3 :List(Pair(Text, List(Pair(Text, List(Text))))) $Proxy.name("ro_config");
+}
+
+struct Pair(Key, Value) {
+    key @0 :Key;
+    value @1 :Value;
+}
