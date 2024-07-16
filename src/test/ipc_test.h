@@ -7,6 +7,7 @@
 
 #include <primitives/transaction.h>
 #include <univalue.h>
+#include <validation.h>
 
 struct CustomStruct
 {
@@ -21,6 +22,7 @@ public:
     UniValue passUniValue(UniValue v) { return v; }
     CustomStruct passCustom(CustomStruct t) { return t; }
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
+    BlockValidationState passBlockState(BlockValidationState s) { return s; }
 };
 
 void IpcTest();
