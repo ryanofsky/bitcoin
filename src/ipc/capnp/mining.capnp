@@ -15,12 +15,29 @@ $Proxy.includeTypes("ipc/capnp/mining-types.h");
 interface Mining $Proxy.wrap("interfaces::Mining") {
     isTestChain @0 (context :Proxy.Context) -> (result: Bool);
     isInitialBlockDownload @1 (context :Proxy.Context) -> (result: Bool);
+<<<<<<< HEAD
     getTip @2 (context :Proxy.Context) -> (result: Common.BlockRef, hasResult: Bool);
     waitTipChanged @3 (context :Proxy.Context, currentTip: Data, timeout: Float64) -> (result: Common.BlockRef);
     createNewBlock @4 (scriptPubKey: Data, options: BlockCreateOptions) -> (result: BlockTemplate);
     processNewBlock @5 (context :Proxy.Context, block: Data) -> (newBlock: Bool, result: Bool);
     getTransactionsUpdated @6 (context :Proxy.Context) -> (result: UInt32);
     testBlockValidity @7 (context :Proxy.Context, block: Data, checkMerkleRoot: Bool) -> (state: BlockValidationState, result: Bool);
+||||||| parent of 7b9aa0b6eb11 (multiprocess: Expand mining interface (part 2))
+    getTipHash @2 (context :Proxy.Context) -> (result: Data);
+    createNewBlock @3 (scriptPubKey: Data, options: BlockCreateOptions) -> (result: BlockTemplate);
+    processNewBlock @4 (context :Proxy.Context, block: Data) -> (newBlock: Bool, result: Bool);
+    getTransactionsUpdated @5 (context :Proxy.Context) -> (result: UInt32);
+    testBlockValidity @6 (context :Proxy.Context, block: Data, checkMerkleRoot: Bool) -> (state: BlockValidationState, result: Bool);
+=======
+    getTipHash @2 (context :Proxy.Context) -> (result: Data);
+    createNewBlock @3 (scriptPubKey: Data, options: BlockCreateOptions) -> (result: BlockTemplate);
+    processNewBlock @4 (context :Proxy.Context, block: Data) -> (newBlock: Bool, result: Bool);
+    getTransactionsUpdated @5 (context :Proxy.Context) -> (result: UInt32);
+    testBlockValidity @6 (context :Proxy.Context, block: Data, checkMerkleRoot: Bool) -> (state: BlockValidationState, result: Bool);
+    getTipHeight @7 (context :Proxy.Context) -> (hasResult: Bool, result: Int32);
+    waitTipChanged @8 (timeout: Float64) -> (result: BlockInfo);
+    createNewBlock2 @9 (scriptPubKey: Data, options: BlockCreateOptions) -> (result: BlockTemplate);
+>>>>>>> 7b9aa0b6eb11 (multiprocess: Expand mining interface (part 2))
 }
 
 interface BlockTemplate $Proxy.wrap("interfaces::BlockTemplate") {
@@ -39,9 +56,18 @@ struct BlockCreateOptions $Proxy.wrap("node::BlockCreateOptions") {
     coinbaseOutputMaxAdditionalSigops @2 :UInt64 $Proxy.name("coinbase_output_max_additional_sigops");
 }
 
+<<<<<<< HEAD
 # Note: serialization of the BlockValidationState C++ type is somewhat fragile
 # and using the struct can be awkward. It would be good if testBlockValidity
 # method were changed to return validity information in a simpler format.
+||||||| parent of 7b9aa0b6eb11 (multiprocess: Expand mining interface (part 2))
+=======
+struct BlockInfo {
+    hash @0 :Data;
+    height @1 :Int32;
+}
+
+>>>>>>> 7b9aa0b6eb11 (multiprocess: Expand mining interface (part 2))
 struct BlockValidationState {
     mode @0 :Int32;
     result @1 :Int32;
