@@ -7,7 +7,12 @@
 
 #include <primitives/transaction.h>
 #include <univalue.h>
+<<<<<<< HEAD
 #include <util/fs.h>
+||||||| parent of 5487cf806859 (multiprocess: Add serialization code for BlockValidationState)
+=======
+#include <validation.h>
+>>>>>>> 5487cf806859 (multiprocess: Add serialization code for BlockValidationState)
 
 class FooImplementation
 {
@@ -16,6 +21,7 @@ public:
     COutPoint passOutPoint(COutPoint o) { return o; }
     UniValue passUniValue(UniValue v) { return v; }
     CTransactionRef passTransaction(CTransactionRef t) { return t; }
+    BlockValidationState passBlockState(BlockValidationState s) { return s; }
 };
 
 void IpcPipeTest();
