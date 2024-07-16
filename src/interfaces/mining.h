@@ -5,12 +5,22 @@
 #ifndef BITCOIN_INTERFACES_MINING_H
 #define BITCOIN_INTERFACES_MINING_H
 
+<<<<<<< HEAD
 #include <consensus/amount.h>       // for CAmount
 #include <node/types.h>             // for BlockCreateOptions
 #include <primitives/block.h>       // for CBlock, CBlockHeader
 #include <primitives/transaction.h> // for CTransactionRef
 #include <stdint.h>                 // for int64_t
 #include <uint256.h>                // for uint256
+||||||| parent of cdf59bbbecd1 (multiprocess: Expand mining interface (part 1))
+#include <node/types.h>
+#include <uint256.h>
+=======
+#include <node/types.h>
+#include <primitives/block.h>
+#include <uint256.h>
+#include <util/time.h>
+>>>>>>> cdf59bbbecd1 (multiprocess: Expand mining interface (part 1))
 
 #include <memory>   // for unique_ptr, shared_ptr
 #include <optional> // for optional
@@ -25,6 +35,7 @@ class CScript;
 
 namespace interfaces {
 
+<<<<<<< HEAD
 //! Block template interface
 class BlockTemplate
 {
@@ -42,6 +53,23 @@ public:
     virtual int getWitnessCommitmentIndex() = 0;
 };
 
+||||||| parent of cdf59bbbecd1 (multiprocess: Expand mining interface (part 1))
+=======
+// Implemented in https://github.com/bitcoin/bitcoin/pull/30440
+class BlockTemplate
+{
+public:
+    virtual ~BlockTemplate() = default;
+    virtual CBlockHeader getBlockHeader() { return {}; }
+    virtual CBlock getBlock() { return {}; }
+    virtual std::vector<CAmount> getTxFees() { return {}; }
+    virtual std::vector<int64_t> getTxSigops() { return {}; }
+    virtual CTransactionRef getCoinbaseTx() { return {}; }
+    virtual std::vector<unsigned char> getCoinbaseCommitment() { return {}; }
+    virtual int getWitnessCommitmentIndex() { return {}; }
+};
+
+>>>>>>> cdf59bbbecd1 (multiprocess: Expand mining interface (part 1))
 //! Interface giving clients (RPC, Stratum v2 Template Provider in the future)
 //! ability to create block templates.
 class Mining
@@ -58,7 +86,17 @@ public:
     //! Returns the hash for the tip of this chain
     virtual std::optional<uint256> getTipHash() = 0;
 
+<<<<<<< HEAD
     /**
+||||||| parent of cdf59bbbecd1 (multiprocess: Expand mining interface (part 1))
+   /**
+=======
+    // Implemented in https://github.com/bitcoin/bitcoin/pull/30409
+    virtual std::optional<int> getTipHeight() { return {}; }
+    virtual std::pair<uint256, int> waitTipChanged(MillisecondsDouble timeout = MillisecondsDouble::max()) { return {}; }
+
+   /**
+>>>>>>> cdf59bbbecd1 (multiprocess: Expand mining interface (part 1))
      * Construct a new block template
      *
      * @param[in] script_pub_key the coinbase output
@@ -66,6 +104,9 @@ public:
      * @returns a block template
      */
     virtual std::unique_ptr<BlockTemplate> createNewBlock(const CScript& script_pub_key, const node::BlockCreateOptions& options = {}) = 0;
+
+    // Implemented in https://github.com/bitcoin/bitcoin/pull/30440
+    virtual std::unique_ptr<BlockTemplate> createNewBlock2(const CScript& script_pub_key, const node::BlockCreateOptions& options={}) { return {}; }
 
     /**
      * Processes new block. A valid new block is automatically relayed to peers.
