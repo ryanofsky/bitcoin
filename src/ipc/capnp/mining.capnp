@@ -34,7 +34,10 @@ struct BlockValidationState {
     debugMessage @3 :Text;
 }
 
-# TODO add fields to this struct
-struct CBlockTemplate $Proxy.wrap("std::unique_ptr<node::CBlockTemplate>")
+struct CBlockTemplate $Proxy.wrap("node::CBlockTemplate")
 {
+    block @0 :Data;
+    vTxFees @1 :List(UInt64);
+    vTxSigOpsCost @2 :List(UInt64);
+    vchCoinbaseCommitment @3 :Data;
 }
