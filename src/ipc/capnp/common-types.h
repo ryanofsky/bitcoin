@@ -6,6 +6,8 @@
 #define BITCOIN_IPC_CAPNP_COMMON_TYPES_H
 
 #include <clientversion.h>
+#include <common/settings.h>
+#include <ipc/capnp/common.capnp.proxy.h>
 #include <primitives/transaction.h>
 #include <streams.h>
 #include <univalue.h>
@@ -142,6 +144,61 @@ decltype(auto) CustomReadField(TypeList<UniValue>, Priority<1>, InvokeContext& i
         auto data = input.get();
         value.read(std::string_view{data.begin(), data.size()});
     });
+}
+
+//! Overload CustomBuildField and CustomReadField to serialize other types of
+//! objects that have CustomBuildMessage and CustomReadMessage overloads.
+//! Defining BuildMessage and ReadMessage overloads is simpler than defining
+//! BuildField and ReadField overloads because these overloads can be normal
+//! functions instead of template functions, and defined in a .cpp file instead
+//! of a header.
+template <typename LocalType, typename Value, typename Output>
+void CustomBuildField(TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Value&& value, Output&& output,
+                      decltype(CustomBuildMessage(invoke_context, value, std::move(output.get())))* enable = nullptr)
+{
+    CustomBuildMessage(invoke_context, value, std::move(output.init()));
+}
+
+template <typename LocalType, typename Reader, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Reader&& reader,
+                               ReadDest&& read_dest,
+                               decltype(CustomReadMessage(invoke_context, reader.get(),
+                                                          std::declval<LocalType&>()))* enable = nullptr)
+{
+    return read_dest.update([&](auto& value) { if (reader.has()) CustomReadMessage(invoke_context, reader.get(), value); });
+}
+
+//! Generic ::capnp::Data field builder for any class that a Span can be
+//! constructed from, particularly BaseHash and base_blob classes and
+//! subclasses. It's also used to serialize vector<unsigned char> set elements
+//! in GCSFilter::ElementSet and CBlockTemplate::vchCoinbaseCommitment.
+//!
+//! There is currently no corresponding ::capnp::Data CustomReadField function
+//! that works using Spans, because the bitcoin classes in the codebase like
+//! BaseHash and blob_blob that can converted /to/ Span don't currently have
+//! Span constructors that allow them to be constructed /from/ Span. If they
+//! did, it would simplify things. For example, a generic CustomReadField
+//! function could be written that would allow dropping specialized
+//! CustomReadField functions for types like PKHash.
+//!
+//! For the LocalType = vector<unsigned char> case, it's also not necessary to
+//! have ::capnp::Data CustomReadField function corresponding to this
+//! CustomBuildField function because ::capnp::Data inherits from
+//! ::capnp::ArrayPtr, and libmultiprocess already provides a generic
+//! CustomReadField function that can read from ::capnp::ArrayPtr into
+//! std::vector.
+template <typename LocalType, typename Value, typename Output>
+void CustomBuildField(
+    TypeList<LocalType>, Priority<2>, InvokeContext& invoke_context, Value&& value, Output&& output,
+    typename std::enable_if_t<!ipc::capnp::Serializable<typename std::remove_cv<
+        typename std::remove_reference<Value>::type>::type>::value>* enable_not_serializable = nullptr,
+    typename std::enable_if_t<std::is_same_v<decltype(output.get()), ::capnp::Data::Builder>>* enable_output =
+        nullptr,
+    decltype(Span{value})* enable_value = nullptr)
+{
+    auto data = Span{value};
+    auto result = output.init(data.size());
+    memcpy(result.begin(), data.data(), data.size());
 }
 } // namespace mp
 
