@@ -90,6 +90,10 @@ if BUILD_BITCOIN_NODE
   bin_PROGRAMS += bitcoin-node
 endif
 
+if BUILD_BITCOIN_MINE
+  bin_PROGRAMS += bitcoin-mine
+endif
+
 if BUILD_BITCOIN_CLI
   bin_PROGRAMS += bitcoin-cli
 endif
@@ -870,6 +874,23 @@ bitcoin_wallet_LDADD = \
 if TARGET_WINDOWS
 bitcoin_wallet_SOURCES += bitcoin-wallet-res.rc
 endif
+#
+
+# bitcoin-mine binary #
+bitcoin_mine_SOURCES = bitcoin-mine.cpp init/bitcoin-mine.cpp
+bitcoin_mine_CPPFLAGS = $(bitcoin_bin_cppflags)
+bitcoin_mine_CXXFLAGS = $(bitcoin_bin_cxxflags)
+bitcoin_mine_LDFLAGS = $(bitcoin_bin_ldflags)
+bitcoin_mine_LDADD = \
+  $(LIBBITCOIN_IPC) \
+  $(LIBBITCOIN_COMMON) \
+  $(LIBBITCOIN_CONSENSUS) \
+  $(LIBBITCOIN_UTIL) \
+  $(LIBBITCOIN_CRYPTO) \
+  $(LIBBITCOIN_WALLET) \
+  $(LIBMULTIPROCESS_LIBS) \
+  $(LIBSECP256K1) \
+  $(LIBUNIVALUE)
 #
 
 # bitcoin-util binary #
