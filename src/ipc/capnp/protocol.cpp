@@ -53,20 +53,22 @@ public:
         startLoop(exe_name);
         return mp::ConnectStream<messages::Init>(*m_loop, fd);
     }
-    void listen(int listen_fd, const char* exe_name, interfaces::Init& init) override
+    void listen(int listen_fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn) override
     {
         startLoop(exe_name);
         if (::listen(listen_fd, 5 /* backlog */) != 0) {
             throw std::system_error(errno, std::system_category());
         }
+        if (ready_fn) ready_fn();
         mp::ListenConnections<messages::Init>(*m_loop, listen_fd, init);
     }
-    void serve(int fd, const char* exe_name, interfaces::Init& init) override
+    void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
     {
         assert(!m_loop);
         mp::g_thread_context.thread_name = mp::ThreadName(exe_name);
         m_loop.emplace(exe_name, &IpcLogFn, &m_context);
         mp::ServeStream<messages::Init>(*m_loop, fd, init);
+        if (ready_fn) ready_fn();
         m_loop->loop();
         m_loop.reset();
     }

@@ -37,7 +37,7 @@ public:
     //! Listen for connections on provided socket descriptor, accept them, and
     //! handle requests on accepted connections. This method doesn't block, and
     //! performs I/O on a background thread.
-    virtual void listen(int listen_fd, const char* exe_name, interfaces::Init& init) = 0;
+    virtual void listen(int listen_fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
 
     //! Handle requests on provided socket descriptor, forwarding them to the
     //! provided Init interface. Socket communication is handled on the
@@ -50,7 +50,7 @@ public:
     //! created by them. This isn't really a problem because serve() is only
     //! called by spawned child processes that call it immediately to
     //! communicate back with parent processes.
-    virtual void serve(int fd, const char* exe_name, interfaces::Init& init) = 0;
+    virtual void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
 
     //! Add cleanup callback to interface that will run when the interface is
     //! deleted.
