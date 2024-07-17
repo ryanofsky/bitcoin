@@ -8,8 +8,13 @@
 #include <node/miner.h>
 #include <primitives/transaction.h>
 #include <univalue.h>
+<<<<<<< HEAD
 #include <util/fs.h>
 #include <validation.h>
+||||||| parent of b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
+=======
+#include <util/fs.h>
+>>>>>>> b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
 
 class FooImplementation
 {

@@ -54,6 +54,7 @@ public:
         return mp::ConnectStream<messages::Init>(*m_loop, fd);
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
     void listen(int listen_fd, const char* exe_name, interfaces::Init& init) override
     {
         startLoop(exe_name);
@@ -67,21 +68,34 @@ public:
     void serve(int fd, const char* exe_name, interfaces::Init& init) override
 =======
     void listen(int listen_fd, const char* exe_name, interfaces::Init& init) override
+||||||| parent of b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
+    void listen(int listen_fd, const char* exe_name, interfaces::Init& init) override
+=======
+    void listen(int listen_fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn) override
+>>>>>>> b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
     {
         startLoop(exe_name);
         if (::listen(listen_fd, 5 /* backlog */) != 0) {
             throw std::system_error(errno, std::system_category());
         }
+        if (ready_fn) ready_fn();
         mp::ListenConnections<messages::Init>(*m_loop, listen_fd, init);
     }
+<<<<<<< HEAD
     void serve(int fd, const char* exe_name, interfaces::Init& init) override
 >>>>>>> 1e1e1bc44d4d (multiprocess: Add IPC connectAddress and listenAddress methods)
+||||||| parent of b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
+    void serve(int fd, const char* exe_name, interfaces::Init& init) override
+=======
+    void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
+>>>>>>> b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
     {
         assert(!m_loop);
         mp::g_thread_context.thread_name = mp::ThreadName(exe_name);
         m_loop.emplace(exe_name, &IpcLogFn, &m_context);
         if (ready_fn) ready_fn();
         mp::ServeStream<messages::Init>(*m_loop, fd, init);
+        if (ready_fn) ready_fn();
         m_loop->loop();
         m_loop.reset();
     }

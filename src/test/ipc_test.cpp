@@ -11,8 +11,13 @@
 #include <test/ipc_test.capnp.h>
 #include <test/ipc_test.capnp.proxy.h>
 #include <test/ipc_test.h>
+<<<<<<< HEAD
 #include <tinyformat.h>
 #include <validation.h>
+||||||| parent of b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
+=======
+#include <tinyformat.h>
+>>>>>>> b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
 
 #include <future>
 #include <thread>
@@ -22,6 +27,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+<<<<<<< HEAD
 using node::CBlockTemplate;
 
 //! Remote init class.
@@ -44,6 +50,29 @@ static std::string TempPath(std::string_view pattern)
     return temp;
 }
 
+||||||| parent of b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
+=======
+//! Remote init class.
+class TestInit : public interfaces::Init
+{
+public:
+    std::unique_ptr<interfaces::Echo> makeEcho() override { return interfaces::MakeEcho(); }
+};
+
+//! Generate a temporary path with temp_directory_path and mkstemp
+static std::string TempPath(std::string_view pattern)
+{
+    std::string temp{fs::PathToString(fs::path{fs::temp_directory_path()} / fs::PathFromString(std::string{pattern}))};
+    temp.push_back('\0');
+    int fd{mkstemp(temp.data())};
+    BOOST_CHECK_GE(fd, 0);
+    BOOST_CHECK_EQUAL(close(fd), 0);
+    temp.resize(temp.size() - 1);
+    fs::remove(fs::PathFromString(temp));
+    return temp;
+}
+
+>>>>>>> b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
 //! Unit test that tests execution of IPC calls without actually creating a
 //! separate process. This test is primarily intended to verify behavior of type
 //! conversion code that converts C++ objects to Cap'n Proto messages and vice
@@ -119,6 +148,7 @@ void IpcPipeTest()
     disconnect_client();
     thread.join();
 }
+<<<<<<< HEAD
 
 //! Test ipc::Protocol connect() and serve() methods connecting over a socketpair.
 void IpcSocketPairTest()
@@ -169,3 +199,59 @@ void IpcSocketTest(const fs::path& datadir)
     remote_echo.reset();
     remote_init.reset();
 }
+||||||| parent of b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
+=======
+
+//! Test ipc::Protocol connect() and serve() methods connecting over a socketpair.
+void IpcSocketPairTest()
+{
+    int fds[2];
+    BOOST_CHECK_EQUAL(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    std::unique_ptr<interfaces::Init> init{std::make_unique<TestInit>()};
+    std::unique_ptr<ipc::Protocol> protocol{ipc::capnp::MakeCapnpProtocol()};
+    std::promise<void> promise;
+    std::thread thread([&]() {
+        protocol->serve(fds[0], "test-serve", *init, [&] { promise.set_value(); });
+    });
+    promise.get_future().wait();
+    std::unique_ptr<interfaces::Init> remote_init{protocol->connect(fds[1], "test-connect")};
+    std::unique_ptr<interfaces::Echo> remote_echo{remote_init->makeEcho()};
+    BOOST_CHECK_EQUAL(remote_echo->echo("echo test"), "echo test");
+    remote_echo.reset();
+    remote_init.reset();
+    thread.join();
+}
+
+//! Test ipc::Process bind() and connect() methods connecting over a unix socket.
+void IpcSocketTest(const fs::path& datadir)
+{
+    // Need to specify a temporary socket address because default one leads to error:
+    //   Address 'unix' path '"/tmp/test_common_Bitcoin Core/ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff/sockets/test_bitcoin.sock"' exceeded maximum socket path length
+    const std::string bind_address{strprintf("unix:%s", TempPath("bitcoin_sock_XXXXXX"))};
+    std::unique_ptr<interfaces::Init> init{std::make_unique<TestInit>()};
+    std::unique_ptr<ipc::Protocol> protocol{ipc::capnp::MakeCapnpProtocol()};
+    std::unique_ptr<ipc::Process> process{ipc::MakeProcess()};
+    std::promise<void> promise;
+    std::thread thread([&]() {
+        std::string error;
+        std::string address{bind_address};
+        int serve_fd = process->bind(datadir, "test_bitcoin", address, error);
+        BOOST_CHECK_GE(serve_fd, 0);
+        BOOST_CHECK_EQUAL(address, bind_address);
+        BOOST_CHECK_EQUAL(error, "");
+        protocol->listen(serve_fd, "test-serve", *init, [&] { promise.set_value(); });
+    });
+    std::string address{bind_address};
+    std::string error;
+    promise.get_future().wait();
+    int connect_fd{process->connect(datadir, "test_bitcoin", address, error)};
+    BOOST_CHECK_EQUAL(address, bind_address);
+    BOOST_CHECK_EQUAL(error, "");
+    std::unique_ptr<interfaces::Init> remote_init{protocol->connect(connect_fd, "test-connect")};
+    std::unique_ptr<interfaces::Echo> remote_echo{remote_init->makeEcho()};
+    BOOST_CHECK_EQUAL(remote_echo->echo("echo test"), "echo test");
+    remote_echo.reset();
+    remote_init.reset();
+    thread.join();
+}
+>>>>>>> b697050bb6e7 (multiprocess: Add unit tests for connect, serve, and listen functions)
