@@ -7,9 +7,13 @@
 
 #include <chain.h>
 #include <consensus/validation.h>
-#include <kernel/chain.h>
 #include <kernel/mempool_entry.h>
+<<<<<<< HEAD
 #include <kernel/mempool_removal_reason.h>
+||||||| parent of 543fbc389393 (refactor: Convert ChainstateRole enum to struct)
+=======
+#include <kernel/types.h>
+>>>>>>> 543fbc389393 (refactor: Convert ChainstateRole enum to struct)
 #include <logging.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
@@ -20,6 +24,16 @@
 #include <unordered_map>
 #include <utility>
 
+<<<<<<< HEAD
+||||||| parent of 543fbc389393 (refactor: Convert ChainstateRole enum to struct)
+std::string RemovalReasonToString(const MemPoolRemovalReason& r) noexcept;
+
+=======
+using kernel::ChainstateRole;
+
+std::string RemovalReasonToString(const MemPoolRemovalReason& r) noexcept;
+
+>>>>>>> 543fbc389393 (refactor: Convert ChainstateRole enum to struct)
 /**
  * ValidationSignalsImpl manages a list of shared_ptr<CValidationInterface> callbacks.
  *
@@ -208,7 +222,7 @@ void ValidationSignals::TransactionRemovedFromMempool(const CTransactionRef& tx,
                           RemovalReasonToString(reason));
 }
 
-void ValidationSignals::BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock> &pblock, const CBlockIndex *pindex) {
+void ValidationSignals::BlockConnected(const ChainstateRole& role, const std::shared_ptr<const CBlock> &pblock, const CBlockIndex *pindex) {
     auto event = [role, pblock, pindex, this] {
         m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.BlockConnected(role, pblock, pindex); });
     };
@@ -237,7 +251,7 @@ void ValidationSignals::BlockDisconnected(const std::shared_ptr<const CBlock>& p
                           pindex->nHeight);
 }
 
-void ValidationSignals::ChainStateFlushed(ChainstateRole role, const CBlockLocator &locator) {
+void ValidationSignals::ChainStateFlushed(const ChainstateRole& role, const CBlockLocator &locator) {
     auto event = [role, locator, this] {
         m_internals->Iterate([&](CValidationInterface& callbacks) { callbacks.ChainStateFlushed(role, locator); });
     };
