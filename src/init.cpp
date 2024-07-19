@@ -1323,7 +1323,14 @@ bool AppInitMain(NodeContext& node, interfaces::BlockAndHeaderTipInfo* tip_info)
         {"-zmqpubrawtx",            true},
         {"-zmqpubsequence",         true},
     }) {
-        for (const std::string& socket_addr : args.GetArgs(arg)) {
+        std::vector<std::string> addrs;
+        std::optional<unsigned int> flags = args.GetArgFlags(arg);
+        if (!flags || *flags & ArgsManager::ALLOW_LIST) {
+            addrs = args.GetArgs(arg);
+        } else if (args.IsArgSet(arg) && !args.IsArgNegated(arg)) {
+            addrs.emplace_back(*args.GetArg(arg));
+        }
+        for (const std::string& socket_addr : addrs) {
             std::string host_out;
             uint16_t port_out{0};
             if (!SplitHostPort(socket_addr, port_out, host_out)) {

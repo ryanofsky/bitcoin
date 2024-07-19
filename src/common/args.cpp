@@ -372,13 +372,20 @@ bool ArgsManager::CheckArgFlags(const std::string& name,
     const char* context) const
 {
     std::optional<unsigned int> flags = GetArgFlags(name);
+<<<<<<< HEAD
     if (!flags || !IsTypedArg(*flags)) return false;
+||||||| parent of 21ba32ad0440 (refactor: Always enforce ALLOW_LIST in CheckArgFlags)
+    if (!flags || !TypedArg(*flags)) return false;
+=======
+    if (!flags) return false;
+    if (!TypedArg(*flags)) require &= ~(ALLOW_BOOL | ALLOW_INT | ALLOW_STRING);
+>>>>>>> 21ba32ad0440 (refactor: Always enforce ALLOW_LIST in CheckArgFlags)
     if ((*flags & require) != require || (*flags & forbid) != 0) {
         throw std::logic_error(
             strprintf("Bug: Can't call %s on arg %s registered with flags 0x%08x (requires 0x%x, disallows 0x%x)",
                 context, name, *flags, require, forbid));
     }
-    return true;
+    return TypedArg(*flags);
 }
 
 fs::path ArgsManager::GetPathArg(std::string arg, const fs::path& default_value) const
