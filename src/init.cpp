@@ -1194,7 +1194,14 @@ bool CheckHostPortOptions(const ArgsManager& args) {
         {"-zmqpubrawtx",     true,                false},
         {"-zmqpubsequence",  true,                false},
     }) {
-        for (const std::string& param_value : args.GetArgs(param_name)) {
+        std::vector<std::string> addrs;
+        std::optional<unsigned int> flags = args.GetArgFlags(param_name);
+        if (!flags || *flags & ArgsManager::ALLOW_LIST) {
+            addrs = args.GetArgs(param_name);
+        } else if (args.IsArgSet(param_name) && !args.IsArgNegated(param_name)) {
+            addrs.emplace_back(*args.GetArg(param_name));
+        }
+        for (const std::string& param_value : addrs) {
             const std::string param_value_hostport{
                 suffix_allowed ? param_value.substr(0, param_value.rfind('=')) : param_value};
             std::string host_out;
