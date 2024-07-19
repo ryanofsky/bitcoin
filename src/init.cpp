@@ -1212,9 +1212,22 @@ bool CheckHostPortOptions(const ArgsManager& args) {
         {"-zmqpubrawtx",     true,                false},
         {"-zmqpubsequence",  true,                false},
     }) {
+<<<<<<< HEAD
         for (const std::string& param_value : args.GetArgs(param_name)) {
             const std::string param_value_hostport{
                 suffix_allowed ? param_value.substr(0, param_value.rfind('=')) : param_value};
+||||||| parent of 077e20ffba77 (refactor: Always enforce ALLOW_LIST in CheckArgFlags)
+        for (const std::string& socket_addr : args.GetArgs(arg)) {
+=======
+        std::vector<std::string> addrs;
+        std::optional<unsigned int> flags = args.GetArgFlags(arg);
+        if (!flags || *flags & ArgsManager::ALLOW_LIST) {
+            addrs = args.GetArgs(arg);
+        } else if (args.IsArgSet(arg) && !args.IsArgNegated(arg)) {
+            addrs.emplace_back(*args.GetArg(arg));
+        }
+        for (const std::string& socket_addr : addrs) {
+>>>>>>> 077e20ffba77 (refactor: Always enforce ALLOW_LIST in CheckArgFlags)
             std::string host_out;
             uint16_t port_out{0};
             if (!SplitHostPort(param_value_hostport, port_out, host_out)) {
