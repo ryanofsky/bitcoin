@@ -5,6 +5,7 @@
 #include <bench/bench.h>
 #include <kernel/chain.h>
 #include <interfaces/chain.h>
+#include <kernel/types.h>
 #include <node/context.h>
 #include <test/util/mining.h>
 #include <test/util/setup_common.h>
@@ -15,6 +16,16 @@
 
 #include <optional>
 
+<<<<<<< HEAD
+||||||| parent of 7e9ee9345ad8 (refactor: Convert ChainstateRole enum to struct)
+#if defined(USE_SQLITE) // only enable benchmark when sqlite is enabled
+
+=======
+using kernel::ChainstateRole;
+
+#if defined(USE_SQLITE) // only enable benchmark when sqlite is enabled
+
+>>>>>>> 7e9ee9345ad8 (refactor: Convert ChainstateRole enum to struct)
 namespace wallet{
 
 static void WalletMigration(benchmark::Bench& bench)
@@ -30,7 +41,7 @@ static void WalletMigration(benchmark::Bench& bench)
 
     // Setup legacy wallet
     std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(test_setup->m_node.chain.get(), "", CreateMockableWalletDatabase());
-    wallet->chainStateFlushed(ChainstateRole::NORMAL, CBlockLocator{});
+    wallet->chainStateFlushed(ChainstateRole{}, CBlockLocator{});
     LegacyDataSPKM* legacy_spkm = wallet->GetOrCreateLegacyDataSPKM();
 
     // Add watch-only addresses
