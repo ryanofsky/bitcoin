@@ -4,8 +4,14 @@
 
 #include <bench/bench.h>
 #include <interfaces/chain.h>
+<<<<<<< HEAD
 #include <interfaces/wallet.h>
 #include <kernel/chain.h>
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+=======
+#include <kernel/chain.h>
+#include <kernel/types.h>
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
 #include <node/context.h>
 #include <test/util/mining.h>
 #include <test/util/setup_common.h>
@@ -15,6 +21,8 @@
 #include <wallet/wallet.h>
 
 #include <optional>
+
+using kernel::ChainstateRole;
 
 namespace wallet{
 
@@ -28,6 +36,12 @@ static void WalletMigration(benchmark::Bench& bench)
 
     // Setup legacy wallet
     std::unique_ptr<CWallet> wallet = std::make_unique<CWallet>(test_setup->m_node.chain.get(), "", CreateMockableWalletDatabase());
+<<<<<<< HEAD
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+    wallet->chainStateFlushed(ChainstateRole::NORMAL, CBlockLocator{});
+=======
+    wallet->chainStateFlushed(ChainstateRole{}, CBlockLocator{});
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
     LegacyDataSPKM* legacy_spkm = wallet->GetOrCreateLegacyDataSPKM();
     WalletBatch batch{wallet->GetDatabase()};
 

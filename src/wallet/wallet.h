@@ -609,7 +609,7 @@ public:
     CWalletTx* AddToWallet(CTransactionRef tx, const TxState& state, const UpdateWalletTxFn& update_wtx=nullptr, bool rescanning_old_block = false);
     bool LoadToWallet(const Txid& hash, const UpdateWalletTxFn& fill_wtx) EXCLUSIVE_LOCKS_REQUIRED(cs_wallet);
     void transactionAddedToMempool(const CTransactionRef& tx) override;
-    void blockConnected(ChainstateRole role, const interfaces::BlockInfo& block) override;
+    void blockConnected(const kernel::ChainstateRole& role, const interfaces::BlockInfo& block) override;
     void blockDisconnected(const interfaces::BlockInfo& block) override;
     void updatedBlockTip() override;
     int64_t RescanFromTime(int64_t startTime, const WalletRescanReserver& reserver, bool update);
@@ -780,6 +780,12 @@ public:
     /** should probably be renamed to IsRelevantToMe */
     bool IsFromMe(const CTransaction& tx) const;
     CAmount GetDebit(const CTransaction& tx, const isminefilter& filter) const;
+<<<<<<< HEAD
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+    void chainStateFlushed(ChainstateRole role, const CBlockLocator& loc) override;
+=======
+    void chainStateFlushed(const kernel::ChainstateRole& role, const CBlockLocator& loc) override;
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
 
     DBErrors LoadWallet();
 

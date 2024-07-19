@@ -22,8 +22,8 @@
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
 #include <interfaces/wallet.h>
-#include <kernel/chain.h>
 #include <kernel/mempool_removal_reason.h>
+#include <kernel/types.h>
 #include <key.h>
 #include <key_io.h>
 #include <logging.h>
@@ -86,6 +86,7 @@ using common::AmountErrMsg;
 using common::AmountHighWarn;
 using common::PSBTError;
 using interfaces::FoundBlock;
+using kernel::ChainstateRole;
 using util::ReplaceAll;
 using util::ToString;
 
@@ -623,8 +624,15 @@ bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase,
     return false;
 }
 
+<<<<<<< HEAD
 void CWallet::SetLastBlockProcessedInMem(int block_height, uint256 block_hash)
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+void CWallet::chainStateFlushed(ChainstateRole role, const CBlockLocator& loc)
+=======
+void CWallet::chainStateFlushed(const ChainstateRole& role, const CBlockLocator& loc)
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
 {
+<<<<<<< HEAD
     AssertLockHeld(cs_wallet);
 
     m_last_block_processed = block_hash;
@@ -637,6 +645,23 @@ void CWallet::SetLastBlockProcessed(int block_height, uint256 block_hash)
 
     SetLastBlockProcessedInMem(block_height, block_hash);
     WriteBestBlock();
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+    // Don't update the best block until the chain is attached so that in case of a shutdown,
+    // the rescan will be restarted at next startup.
+    if (m_attaching_chain || role == ChainstateRole::BACKGROUND) {
+        return;
+    }
+    WalletBatch batch(GetDatabase());
+    batch.WriteBestBlock(loc);
+=======
+    // Don't update the best block until the chain is attached so that in case of a shutdown,
+    // the rescan will be restarted at next startup.
+    if (m_attaching_chain || role.historical) {
+        return;
+    }
+    WalletBatch batch(GetDatabase());
+    batch.WriteBestBlock(loc);
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
 }
 
 void CWallet::SetMinVersion(enum WalletFeature nVersion, WalletBatch* batch_in)
@@ -1444,9 +1469,9 @@ void CWallet::transactionRemovedFromMempool(const CTransactionRef& tx, MemPoolRe
     }
 }
 
-void CWallet::blockConnected(ChainstateRole role, const interfaces::BlockInfo& block)
+void CWallet::blockConnected(const ChainstateRole& role, const interfaces::BlockInfo& block)
 {
-    if (role == ChainstateRole::BACKGROUND) {
+    if (role.historical) {
         return;
     }
     assert(block.data);
@@ -2874,10 +2899,16 @@ std::shared_ptr<CWallet> CWallet::Create(WalletContext& context, const std::stri
         }
 
         if (chain) {
+<<<<<<< HEAD
             std::optional<int> tip_height = chain->getHeight();
             if (tip_height) {
                 walletInstance->SetLastBlockProcessed(*tip_height, chain->getBlockHash(*tip_height));
             }
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+            walletInstance->chainStateFlushed(ChainstateRole::NORMAL, chain->getTipLocator());
+=======
+            walletInstance->chainStateFlushed(ChainstateRole{}, chain->getTipLocator());
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
         }
     } else if (wallet_creation_flags & WALLET_FLAG_DISABLE_PRIVATE_KEYS) {
         // Make it impossible to disable private keys after creation
@@ -3169,6 +3200,16 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
             // Also save the best block locator because rescanning only updates it intermittently.
             walletInstance->SetLastBlockProcessed(*scan_res.last_scanned_height, scan_res.last_scanned_block);
         }
+<<<<<<< HEAD
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+        walletInstance->m_attaching_chain = false;
+        walletInstance->chainStateFlushed(ChainstateRole::NORMAL, chain.getTipLocator());
+        walletInstance->GetDatabase().IncrementUpdateCounter();
+=======
+        walletInstance->m_attaching_chain = false;
+        walletInstance->chainStateFlushed(ChainstateRole{}, chain.getTipLocator());
+        walletInstance->GetDatabase().IncrementUpdateCounter();
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
     }
 
     return true;
@@ -4156,6 +4197,20 @@ util::Result<MigrationResult> MigrateLegacyToDescriptor(const std::string& walle
             return util::Error{_("Error: This wallet is already a descriptor wallet")};
         }
 
+<<<<<<< HEAD
+||||||| parent of 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
+        // Flush chain state before unloading wallet
+        CBlockLocator locator;
+        WITH_LOCK(wallet->cs_wallet, context.chain->findBlock(wallet->GetLastBlockHash(), FoundBlock().locator(locator)));
+        if (!locator.IsNull()) wallet->chainStateFlushed(ChainstateRole::NORMAL, locator);
+
+=======
+        // Flush chain state before unloading wallet
+        CBlockLocator locator;
+        WITH_LOCK(wallet->cs_wallet, context.chain->findBlock(wallet->GetLastBlockHash(), FoundBlock().locator(locator)));
+        if (!locator.IsNull()) wallet->chainStateFlushed(ChainstateRole{}, locator);
+
+>>>>>>> 8465a9503d03 (refactor: Convert ChainstateRole enum to struct)
         if (!RemoveWallet(context, wallet, /*load_on_start=*/std::nullopt, warnings)) {
             return util::Error{_("Unable to unload the wallet before migrating")};
         }
