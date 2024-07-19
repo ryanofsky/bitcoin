@@ -16,7 +16,7 @@
 #include <hash.h>
 #include <headerssync.h>
 #include <index/blockfilterindex.h>
-#include <kernel/chain.h>
+#include <kernel/types.h>
 #include <kernel/mempool_entry.h>
 #include <logging.h>
 #include <merkleblock.h>
@@ -53,6 +53,8 @@
 #include <optional>
 #include <typeinfo>
 #include <utility>
+
+using kernel::ChainstateRole;
 
 /** Headers download timeout.
  *  Timeout = base + per_header * (expected number of headers) */
@@ -489,10 +491,18 @@ public:
                     CTxMemPool& pool, node::Warnings& warnings, Options opts);
 
     /** Overridden from CValidationInterface. */
+<<<<<<< HEAD
     void ActiveTipChange(const CBlockIndex* new_tip, bool) override
         EXCLUSIVE_LOCKS_REQUIRED(!m_tx_download_mutex);
     void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected) override
         EXCLUSIVE_LOCKS_REQUIRED(!m_tx_download_mutex);
+||||||| parent of a702cf25885b (refactor: Convert ChainstateRole enum to struct)
+    void BlockConnected(ChainstateRole role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected) override
+        EXCLUSIVE_LOCKS_REQUIRED(!m_recent_confirmed_transactions_mutex);
+=======
+    void BlockConnected(const ChainstateRole& role, const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexConnected) override
+        EXCLUSIVE_LOCKS_REQUIRED(!m_recent_confirmed_transactions_mutex);
+>>>>>>> a702cf25885b (refactor: Convert ChainstateRole enum to struct)
     void BlockDisconnected(const std::shared_ptr<const CBlock> &block, const CBlockIndex* pindex) override
         EXCLUSIVE_LOCKS_REQUIRED(!m_tx_download_mutex);
     void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) override
@@ -2092,7 +2102,7 @@ void PeerManagerImpl::ActiveTipChange(const CBlockIndex* new_tip, bool is_ibd)
  * possibly reduce dynamic block stalling timeout.
  */
 void PeerManagerImpl::BlockConnected(
-    ChainstateRole role,
+    const ChainstateRole& role,
     const std::shared_ptr<const CBlock>& pblock,
     const CBlockIndex* pindex)
 {
@@ -2111,8 +2121,8 @@ void PeerManagerImpl::BlockConnected(
     }
 
     // The following task can be skipped since we don't maintain a mempool for
-    // the ibd/background chainstate.
-    if (role == ChainstateRole::BACKGROUND) {
+    // the historical chainstate.
+    if (role.historical) {
         return;
     }
     LOCK(m_tx_download_mutex);
