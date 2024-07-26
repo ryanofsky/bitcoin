@@ -6,17 +6,21 @@
 #define BITCOIN_IPC_CAPNP_COMMON_TYPES_H
 
 #include <clientversion.h>
-#include <primitives/transaction.h>
+#include <protocol.h>
 #include <streams.h>
 #include <univalue.h>
+#include <util/result.h>
+#include <util/translation.h>
 
 #include <cstddef>
 #include <mp/proxy-types.h>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 
 namespace ipc {
 namespace capnp {
+<<<<<<< HEAD
 <<<<<<< HEAD
 //! Construct a ParamStream wrapping a data stream with serialization parameters
 //! needed to pass transaction objects between bitcoin processes. In the future,
@@ -40,12 +44,50 @@ private:
     template <typename>
     static std::false_type test(...);
 =======
+||||||| parent of daf45b199d4d (Add capnp serialization code for bitcoin types)
+=======
+//! Convert kj::ArrayPtr to base_blob.
+template <typename T>
+inline T ToBlob(const kj::ArrayPtr<const kj::byte>& array)
+{
+    return T({array.begin(), array.begin() + array.size()});
+}
+
+//! Convert base_blob to kj::ArrayPtr.
+template <typename T>
+inline kj::ArrayPtr<const kj::byte> ToArray(const T& blob)
+{
+    return {reinterpret_cast<const kj::byte*>(blob.data()), blob.size()};
+}
+
+>>>>>>> daf45b199d4d (Add capnp serialization code for bitcoin types)
 //! Construct a ParamStream wrapping data stream with serialization parameters
-//! needed to pass transaction objects between bitcoin processes.
+//! needed to pass transaction and address objects between bitcoin processes.
 template<typename S>
 auto Wrap(S& s)
 {
-    return ParamsStream{s, TX_WITH_WITNESS};
+    return ParamsStream{s, TX_WITH_WITNESS, CAddress::V2_NETWORK};
+}
+
+//! Serialize bitcoin value.
+template <typename T>
+DataStream Serialize(const T& value)
+{
+    DataStream stream;
+    auto wrapper{Wrap(stream)};
+    value.Serialize(wrapper);
+    return stream;
+}
+
+//! Deserialize bitcoin value.
+template <typename T>
+T Unserialize(const kj::ArrayPtr<const kj::byte>& data)
+{
+    SpanReader stream{{data.begin(), data.end()}};
+    T value;
+    auto wrapper{Wrap(stream)};
+    value.Unserialize(wrapper);
+    return value;
 }
 
 //! Use SFINAE to define Serializeable<T> trait which is true if type T has a
@@ -179,6 +221,22 @@ CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context,
     return read_dest.construct(deserialize, wrapper);
 }
 
+//! Overload CustomBuildField and CustomReadField to serialize::chrono::seconds
+//! parameters and return values as integers.
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<std::chrono::seconds>, Priority<1>, InvokeContext& invoke_context, Value&& value,
+                      Output&& output)
+{
+    output.set(value.count());
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<std::chrono::seconds>, Priority<1>, InvokeContext& invoke_context,
+                               Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.construct(input.get());
+}
+
 //! Overload CustomBuildField and CustomReadField to serialize UniValue
 //! parameters and return values as JSON strings.
 >>>>>>> 42597e9fd788 (multiprocess: Add serialization code for CTransaction)
@@ -199,6 +257,7 @@ decltype(auto) CustomReadField(TypeList<UniValue>, Priority<1>, InvokeContext& i
         value.read(std::string_view{data.begin(), data.size()});
     });
 }
+<<<<<<< HEAD
 
 //! Generic ::capnp::Data field builder for any class that a Span can be
 //! constructed from, particularly BaseHash and base_blob classes and
@@ -229,6 +288,67 @@ requires requires(Value v) { Span{v}; } &&
     auto result = output.init(data.size());
     memcpy(result.begin(), data.data(), data.size());
 }
+||||||| parent of daf45b199d4d (Add capnp serialization code for bitcoin types)
+=======
+
+//! Overload CustomBuildField and CustomReadField to serialize
+//! UniValue::type_error exceptions as text strings.
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<UniValue::type_error>, Priority<1>, InvokeContext& invoke_context,
+                      Value&& value, Output&& output)
+{
+    BuildField(TypeList<std::string>(), invoke_context, output, std::string(value.what()));
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<UniValue::type_error>, Priority<1>, InvokeContext& invoke_context,
+                               Input&& input, ReadDest&& read_dest)
+{
+    read_dest.construct(ReadField(TypeList<std::string>(), invoke_context, input, mp::ReadDestTemp<std::string>()));
+}
+
+//! Overload CustomBuildField and CustomReadField to serialize util::Result
+//! return values as common.capnp Result and ResultVoid structs
+template <typename LocalType, typename Value, typename Output>
+void CustomBuildField(TypeList<util::Result<LocalType>>, Priority<1>, InvokeContext& invoke_context, Value&& value,
+                      Output&& output)
+{
+    auto result = output.init();
+    if (value) {
+        if constexpr (!std::is_same_v<LocalType, void>) {
+            using ValueAccessor = typename ProxyStruct<typename decltype(result)::Builds>::ValueAccessor;
+            BuildField(TypeList<LocalType>(), invoke_context, Make<StructField, ValueAccessor>(result), *value);
+        }
+    } else {
+        BuildField(TypeList<bilingual_str>(), invoke_context, Make<ValueField>(result.initError()),
+                   util::ErrorString(value));
+    }
+}
+
+template <typename LocalType, typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<util::Result<LocalType>>, Priority<1>, InvokeContext& invoke_context,
+                               Input&& input, ReadDest&& read_dest)
+{
+    auto result = input.get();
+    if (result.hasError()) {
+        bilingual_str error;
+        ReadField(mp::TypeList<bilingual_str>(), invoke_context, mp::Make<mp::ValueField>(result.getError()),
+                    mp::ReadDestValue(error));
+        read_dest.construct(util::Error{std::move(error)});
+    } else {
+        if constexpr (!std::is_same_v<LocalType, void>) {
+            assert (result.hasValue());
+            ReadField(mp::TypeList<LocalType>(), invoke_context, mp::Make<mp::ValueField>(result.getValue()),
+                mp::ReadDestEmplace(
+                    mp::TypeList<LocalType>(), [&](auto&&... args) -> auto& {
+                        return *read_dest.construct(LocalType{std::forward<decltype(args)>(args)...});
+                    }));
+        } else {
+            read_dest.construct();
+        }
+    }
+}
+>>>>>>> daf45b199d4d (Add capnp serialization code for bitcoin types)
 } // namespace mp
 
 #endif // BITCOIN_IPC_CAPNP_COMMON_TYPES_H
