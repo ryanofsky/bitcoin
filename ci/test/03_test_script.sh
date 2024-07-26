@@ -152,7 +152,7 @@ if [ -n "$USE_VALGRIND" ]; then
 fi
 
 if [ "$RUN_CHECK_DEPS" = "true" ]; then
-  "${BASE_ROOT_DIR}/contrib/devtools/check-deps.sh" src
+  bash -x "${BASE_ROOT_DIR}/contrib/devtools/check-deps.sh" src
 fi
 
 if [ "$RUN_UNIT_TESTS" = "true" ]; then
