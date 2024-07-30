@@ -43,6 +43,45 @@ extern const std::function<std::vector<const char*>()> G_TEST_COMMAND_LINE_ARGUM
 /** Retrieve the unit test name. */
 extern const std::function<std::string()> G_TEST_GET_FULL_NAME;
 
+<<<<<<< HEAD
+||||||| parent of 65f99b1ab001 (test: Add tests to demonstrate usage of ArgsManager flags)
+// Enable BOOST_CHECK_EQUAL for enum class types
+namespace std {
+template <typename T>
+std::ostream& operator<<(typename std::enable_if<std::is_enum<T>::value, std::ostream>::type& stream, const T& e)
+{
+    return stream << static_cast<typename std::underlying_type<T>::type>(e);
+}
+} // namespace std
+
+=======
+// Enable BOOST_CHECK_EQUAL for enum class types
+namespace std {
+template <typename T>
+std::ostream& operator<<(typename std::enable_if<std::is_enum<T>::value, std::ostream>::type& stream, const T& e)
+{
+    return stream << static_cast<typename std::underlying_type<T>::type>(e);
+}
+
+// Enable BOOST_CHECK_EQUAL for std::optional
+inline std::ostream& operator<<(std::ostream& os, const std::nullopt_t)
+{
+    return os << "std::nullopt";
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::optional<T>& v)
+{
+    if (v) {
+        os << *v;
+    } else {
+        os << std::nullopt;
+    }
+    return os;
+}
+} // namespace std
+
+>>>>>>> 65f99b1ab001 (test: Add tests to demonstrate usage of ArgsManager flags)
 static constexpr CAmount CENT{1000000};
 
 struct TestOpts {
