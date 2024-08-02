@@ -108,6 +108,7 @@ bool ArgsManager::ReadConfigStream(std::istream& stream, const std::string& file
             if (!value) {
                 return false;
             }
+            if (arg->m_process_fn && !arg->m_process_fn(*value, error)) return false;
             m_settings.ro_config[key.section][key.name].push_back(*value);
         } else {
             if (ignore_invalid_keys) {
