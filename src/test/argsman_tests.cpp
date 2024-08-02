@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <common/args.h>
+#include <common/setting.h>
 #include <sync.h>
 #include <test/util/logging.h>
 #include <test/util/setup_common.h>
@@ -20,9 +21,15 @@
 
 #include <boost/test/unit_test.hpp>
 
+using common::HelpArgs;
+using common::Setting;
 using util::ToString;
 
 BOOST_FIXTURE_TEST_SUITE(argsman_tests, BasicTestingSetup)
+
+using UpnpSetting = Setting<
+    "-upnp", "Use UPnP to map the listening port (default: %u)",
+    bool, OptionsCategory::CONNECTION>;
 
 //! Example code showing how to declare and parse options using ArgsManager flags.
 namespace example_options {
@@ -90,6 +97,7 @@ struct Options {
 
 void RegisterArgs(ArgsManager& args)
 {
+    UpnpSetting::Register(args, HelpArgs(Options{}.enable_upnp));
     args.AddArg("-upnp", "",          ArgsManager::ALLOW_BOOL, {});
     args.AddArg("-rpcserver", "",     ArgsManager::ALLOW_BOOL, {});
     args.AddArg("-dnsseed", "",       ArgsManager::ALLOW_BOOL, {});
@@ -106,7 +114,7 @@ void RegisterArgs(ArgsManager& args)
 
 void ReadOptions(const ArgsManager& args, Options& options)
 {
-    if (auto value = args.GetBoolArg("-upnp")) options.enable_upnp = *value;
+    UpnpSetting::Update(args, options.enable_upnp);
 
     if (auto value = args.GetBoolArg("-rpcserver")) options.enable_rpc_server = *value;
 
@@ -401,6 +409,27 @@ BOOST_FIXTURE_TEST_CASE(ExampleOptions, example_options::TestSetup)
     BOOST_CHECK_EXCEPTION(ParseOptions({"-listen"}), std::exception, HasReason{"Can not set -listen with no value. Please specify value with -listen=value. It must be set to a string."});
     BOOST_CHECK_EXCEPTION(ParseOptions({"-listen="}), std::exception, HasReason{"-listen address '' is not a valid host[:port]"});
 }
+
+BOOST_AUTO_TEST_CASE(setting_type_test)
+{
+    const bool DEFAULT_UPNP{false};
+
+    using UpnpSetting = Setting<
+        "-upnp", "Use UPnP to map the listening port (default: %u)",
+        bool, OptionsCategory::CONNECTION>::Default<DEFAULT_UPNP>;
+
+    ArgsManager args;
+    UpnpSetting::Register(args);
+    bool upnp{UpnpSetting::Get(args)};
+
+    BOOST_CHECK_EQUAL(args.GetHelpMessage(),
+        "Connection options:\n"
+        "\n"
+        "  -upnp\n"
+        "       Use UPnP to map the listening port (default: 0)\n\n");
+    BOOST_CHECK_EQUAL(upnp, DEFAULT_UPNP);
+}
+
 
 BOOST_AUTO_TEST_CASE(util_datadir)
 {
