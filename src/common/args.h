@@ -223,6 +223,9 @@ protected:
      */
     bool UseDefaultSection(const std::string& arg) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
 
+    /** Find argument in m_available_args */
+    const Arg* FindArg(const std::string& name) const EXCLUSIVE_LOCKS_REQUIRED(cs_args);
+
  public:
     ArgsManager();
     ~ArgsManager();
