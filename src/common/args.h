@@ -84,6 +84,10 @@ struct SectionInfo {
     int m_line;
 };
 
+std::optional<std::string> ConvertToString(const common::SettingsValue& value, bool typed_arg=false);
+std::optional<int64_t> ConvertToInt(const common::SettingsValue& value, bool typed_arg=false);
+std::optional<bool> ConvertToBool(const common::SettingsValue& value, bool typed_arg=false);
+
 std::string SettingToString(const common::SettingsValue&, const std::string&);
 int64_t SettingToInt(const common::SettingsValue&, int64_t);
 bool SettingToBool(const common::SettingsValue&, bool);
