@@ -318,17 +318,17 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
         // Transform -foo to foo
         key.erase(0, 1);
         KeyInfo keyinfo = InterpretKey(key);
-        std::optional<unsigned int> flags = GetArgFlags('-' + keyinfo.name);
+        const Arg* arg{FindArg('-' + keyinfo.name)};
 
         // Unknown command line options and command line options with dot
         // characters (which are returned from InterpretKey with nonempty
         // section strings) are not valid.
-        if (!flags || !keyinfo.section.empty()) {
+        if (!arg || !keyinfo.section.empty()) {
             error = strprintf("Invalid parameter %s", argv[i]);
             return false;
         }
 
-        std::optional<common::SettingsValue> value = InterpretValue(keyinfo, val ? &*val : nullptr, *flags, error);
+        std::optional<common::SettingsValue> value = InterpretValue(keyinfo, val ? &*val : nullptr, arg->m_flags, error);
         if (!value) return false;
 
         m_settings.command_line_options[keyinfo.name].push_back(*value);
@@ -346,16 +346,23 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
     return true;
 }
 
-std::optional<unsigned int> ArgsManager::GetArgFlags(const std::string& name) const
+const ArgsManager::Arg* ArgsManager::FindArg(const std::string& name) const
 {
-    LOCK(cs_args);
+    AssertLockHeld(cs_args);
     for (const auto& arg_map : m_available_args) {
         const auto search = arg_map.second.find(name);
         if (search != arg_map.second.end()) {
-            return search->second.m_flags;
+            return &search->second;
         }
     }
-    return std::nullopt;
+    return nullptr;
+}
+
+std::optional<unsigned int> ArgsManager::GetArgFlags(const std::string& name) const
+{
+    LOCK(cs_args);
+    if (const Arg* arg{FindArg(name)}) return arg->m_flags;
+    return {};
 }
 
 /**
