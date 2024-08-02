@@ -104,7 +104,7 @@ bool ArgsManager::ReadConfigStream(std::istream& stream, const std::string& file
                 error = strprintf("Multiple values specified for -%s in same section of config file.", key.name);
                 return false;
             }
-            std::optional<common::SettingsValue> value = InterpretValue(key, &option.second, arg->m_flags, error);
+            std::optional<common::SettingsValue> value = arg->m_parse_fn ? arg->m_parse_fn(key, &option.second, error) : InterpretValue(key, &option.second, arg->m_flags, error);
             if (!value) {
                 return false;
             }

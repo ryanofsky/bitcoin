@@ -330,7 +330,8 @@ bool ArgsManager::ParseParameters(int argc, const char* const argv[], std::strin
             return false;
         }
 
-        std::optional<common::SettingsValue> value = InterpretValue(keyinfo, val ? &*val : nullptr, arg->m_flags, error);
+        const std::string* val_ptr{val ? &*val : nullptr};
+        std::optional<common::SettingsValue> value = arg->m_parse_fn ? arg->m_parse_fn(keyinfo, val_ptr, error) : InterpretValue(keyinfo, val_ptr, arg->m_flags, error);
         if (!value) return false;
 
         m_settings.command_line_options[keyinfo.name].push_back(*value);
@@ -660,7 +661,7 @@ void ArgsManager::AddCommand(const std::string& cmd, const std::string& help)
     Assert(ret.second); // Fail on duplicate commands
 }
 
-void ArgsManager::AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat)
+void ArgsManager::AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat, ParseFn parse_fn)
 {
     Assert((flags & ArgsManager::COMMAND) == 0); // use AddCommand
 
@@ -673,7 +674,7 @@ void ArgsManager::AddArg(const std::string& name, const std::string& help, unsig
 
     LOCK(cs_args);
     std::map<std::string, Arg>& arg_map = m_available_args[cat];
-    auto ret = arg_map.emplace(arg_name, Arg{name.substr(eq_index, name.size() - eq_index), help, flags});
+    auto ret = arg_map.emplace(arg_name, Arg{name.substr(eq_index, name.size() - eq_index), help, flags, parse_fn});
     assert(ret.second); // Make sure an insertion actually happened
 
     if (flags & ArgsManager::NETWORK_ONLY) {

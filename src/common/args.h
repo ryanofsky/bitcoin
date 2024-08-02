@@ -194,12 +194,20 @@ public:
         COMMAND = 0x800,
     };
 
+    /**
+     * Callback to parse settings value, optionally rejecting it with an error.
+     * If specified, this function will be called instead of the default
+     * InterpretValue function.
+     */
+    using ParseFn = std::function<std::optional<common::SettingsValue>(const KeyInfo& key, const std::string* value, std::string& error)>;
+
 protected:
     struct Arg
     {
         std::string m_help_param;
         std::string m_help_text;
         unsigned int m_flags;
+        ParseFn m_parse_fn{};
     };
 
     mutable RecursiveMutex cs_args;
@@ -473,7 +481,7 @@ protected:
     /**
      * Add argument
      */
-    void AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat);
+    void AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat, ParseFn parse_fn = {});
 
     /**
      * Add subcommand
