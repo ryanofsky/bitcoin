@@ -186,7 +186,7 @@ std::optional<common::SettingsValue> InterpretValue(const KeyInfo& key, const st
 //! Return string if setting is a nonempty string or number (-setting=abc,
 //! -setting=123), "" if setting is false (-nosetting), otherwise return
 //! nullopt. For legacy untyped args, coerce bool settings to strings as well.
-static inline std::optional<std::string> ConvertToString(const common::SettingsValue& value, bool typed_arg)
+std::optional<std::string> ConvertToString(const common::SettingsValue& value, bool typed_arg)
 {
     if (value.isStr() && !value.get_str().empty()) return value.get_str();
     if (value.isNum()) return value.getValStr();
@@ -200,7 +200,7 @@ static inline std::optional<std::string> ConvertToString(const common::SettingsV
 
 //! Return int64 if setting is a number or bool, otherwise return nullopt. For
 //! legacy untyped args, coerce string settings as well.
-static inline std::optional<int64_t> ConvertToInt(const common::SettingsValue& value, bool typed_arg)
+std::optional<int64_t> ConvertToInt(const common::SettingsValue& value, bool typed_arg)
 {
     if (value.isNum()) return value.getInt<int64_t>();
     if (value.isBool()) return value.get_bool();
@@ -210,7 +210,7 @@ static inline std::optional<int64_t> ConvertToInt(const common::SettingsValue& v
 
 //! Return bool if setting is a bool, otherwise return nullopt. For legacy
 //! untyped args, coerce string settings as well.
-static inline std::optional<bool> ConvertToBool(const common::SettingsValue& value, bool typed_arg)
+std::optional<bool> ConvertToBool(const common::SettingsValue& value, bool typed_arg)
 {
     if (value.isBool()) return value.get_bool();
     if (!typed_arg && !value.isNull()) return InterpretBool(value.get_str());
