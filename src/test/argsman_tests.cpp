@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <common/args.h>
+#include <common/setting.h>
 #include <sync.h>
 #include <test/util/logging.h>
 #include <test/util/setup_common.h>
@@ -20,9 +21,60 @@
 
 #include <boost/test/unit_test.hpp>
 
+using common::HelpArgs;
+using common::Setting;
+using common::SettingOptions;
 using util::ToString;
 
 BOOST_FIXTURE_TEST_SUITE(argsman_tests, BasicTestingSetup)
+
+using UpnpSetting = Setting<
+    "-upnp", "Use UPnP to map the listening port (default: %u)",
+    bool, OptionsCategory::CONNECTION>;
+
+using RpcServerSetting = Setting<
+    "-rpcserver", "Whether to enable RPC server (default: %u)",
+    bool, OptionsCategory::CONNECTION>;
+
+using DnsSeedSetting = Setting<
+    "-dnsseed", "",
+    std::optional<bool>, OptionsCategory::CONNECTION>;
+
+using BanTimeSetting = Setting<
+    "-bantime", "Ban time (default: %u)",
+    std::optional<int>, OptionsCategory::CONNECTION>;
+
+using BytesPerSigopSetting = Setting<
+    "-bytespersigop", "Bytes per sigop (default: %u)",
+    std::optional<int>, OptionsCategory::CONNECTION>::Options<SettingOptions{.disallow_negation = true}>;
+
+using AssumeValidSetting = Setting<
+    "-assumevalid", "",
+    std::optional<std::string_view>, OptionsCategory::CONNECTION>;
+
+using LogFileSetting = Setting<
+    "-logfile", "Log file (default: %s)",
+    std::optional<std::string_view>, OptionsCategory::CONNECTION>;
+
+using ChainSetting = Setting<
+    "-chain", "Network chain (default: %s)",
+    std::optional<std::string_view>, OptionsCategory::CONNECTION>::Options<SettingOptions{.disallow_negation = true}>;
+
+using RescanSetting = Setting<
+    "-rescan", "",
+    std::variant<int, bool>, OptionsCategory::CONNECTION>;
+
+using IpcBindSetting = Setting<
+    "-ipcbind", "",
+    std::variant<std::string_view, bool>, OptionsCategory::CONNECTION>;
+
+using LoadBlockSetting = Setting<
+    "-loadblock", "",
+    std::vector<std::string_view>, OptionsCategory::CONNECTION>;
+
+using ListenSetting = Setting<
+    "-listen", "",
+    std::vector<std::string_view>, OptionsCategory::CONNECTION>;
 
 //! Example code showing how to declare and parse options using ArgsManager flags.
 namespace example_options {
@@ -90,38 +142,39 @@ struct Options {
 
 void RegisterArgs(ArgsManager& args)
 {
-    args.AddArg("-upnp", "",          ArgsManager::ALLOW_BOOL, {});
-    args.AddArg("-rpcserver", "",     ArgsManager::ALLOW_BOOL, {});
-    args.AddArg("-dnsseed", "",       ArgsManager::ALLOW_BOOL, {});
-    args.AddArg("-bantime", "",       ArgsManager::ALLOW_INT, {});
-    args.AddArg("-bytespersigop", "", ArgsManager::ALLOW_INT | ArgsManager::DISALLOW_NEGATION, {});
-    args.AddArg("-assumevalid", "",   ArgsManager::ALLOW_STRING, {});
-    args.AddArg("-logfile", "",       ArgsManager::ALLOW_STRING, {});
-    args.AddArg("-chain", "",         ArgsManager::ALLOW_STRING | ArgsManager::DISALLOW_NEGATION, {});
-    args.AddArg("-rescan", "",        ArgsManager::ALLOW_INT | ArgsManager::ALLOW_BOOL, {});
-    args.AddArg("-ipcbind", "",       ArgsManager::ALLOW_STRING | ArgsManager::ALLOW_BOOL, {});
-    args.AddArg("-loadblock", "",     ArgsManager::ALLOW_STRING | ArgsManager::ALLOW_LIST, {});
-    args.AddArg("-listen", "",        ArgsManager::ALLOW_STRING | ArgsManager::ALLOW_LIST, {});
+    UpnpSetting::Register(args, HelpArgs(Options{}.enable_upnp));
+    RpcServerSetting::Register(args, HelpArgs(Options{}.enable_rpc_server));
+    DnsSeedSetting::Register(args);
+    BanTimeSetting::Register(args, HelpArgs(Options{}.bantime.count()));
+    BytesPerSigopSetting::Register(args, HelpArgs(Options{}.bytes_per_sigop));
+    AssumeValidSetting::Register(args);
+    LogFileSetting::Register(args, HelpArgs(fs::PathToString(Options{}.log_file)));
+    ChainSetting::Register(args, HelpArgs(Options{}.chain));
+    RescanSetting::Register(args);
+    IpcBindSetting::Register(args);
+    LoadBlockSetting::Register(args);
+    ListenSetting::Register(args);
 }
 
 void ReadOptions(const ArgsManager& args, Options& options)
 {
-    if (auto value = args.GetBoolArg("-upnp")) options.enable_upnp = *value;
+    UpnpSetting::Update(args, options.enable_upnp);
+    RpcServerSetting::Update(args, options.enable_rpc_server);
+    DnsSeedSetting::Update(args, options.enable_dns_seed);
 
-    if (auto value = args.GetBoolArg("-rpcserver")) options.enable_rpc_server = *value;
-
-    if (auto value = args.GetBoolArg("-dnsseed")) options.enable_dns_seed = *value;
-
+    //BanTimeSetting::Update(args, options.bantime);
     if (auto value = args.GetIntArg("-bantime")) {
         if (*value < 0) throw std::runtime_error(strprintf("-bantime value %i is negative", *value));
         options.bantime = std::chrono::seconds{*value};
     }
 
+    //BytesPerSigopSetting::Update(args, options.bytes_per_sigop);
     if (auto value = args.GetIntArg("-bytespersigop")) {
         if (*value < 1) throw std::runtime_error(strprintf("-bytespersigop value %i is less than 1", *value));
         options.bytes_per_sigop = *value;
     }
 
+    //AssumeValidSetting::Update(args, options.assumevalid);
     if (auto value = args.GetArg("-assumevalid"); value && !value->empty()) {
         if (auto hash{uint256::FromHex(*value)}) {
             options.assumevalid = *hash;
@@ -130,10 +183,12 @@ void ReadOptions(const ArgsManager& args, Options& options)
         }
     }
 
+    //LogFileSetting::Update(args, options.log_file);
     if (auto value = args.GetArg("-logfile")) {
         options.log_file = fs::PathFromString(*value);
     }
 
+    //ChainSetting::Update(args, options.chain);
     if (auto value = args.GetArg("-chain")) {
         if (auto chain_type{ChainTypeFromString(*value)}) {
            options.chain = *chain_type;
@@ -142,6 +197,7 @@ void ReadOptions(const ArgsManager& args, Options& options)
         }
     }
 
+    //RescanSetting::Update(args, options.wallet_rescan);
     if (auto value{args.GetBoolArg("-rescan")}) {
         // If -rescan was passed with no height, enable wallet rescan with
         // default options. If -norescan was passed, do nothing.
@@ -152,6 +208,7 @@ void ReadOptions(const ArgsManager& args, Options& options)
         options.wallet_rescan = RescanOptions{.start_height=*value};
     }
 
+    //IpcBindSetting::Update(args, options.ipc_bind);
     if (auto value{args.GetBoolArg("-ipcbind")}) {
         // If -ipcbind was passed with no address, set ipc_bind = true, or if
         // -noipcbind was passed, set ipc_bind = false.
@@ -161,11 +218,13 @@ void ReadOptions(const ArgsManager& args, Options& options)
         options.ipc_bind = *value;
     }
 
+    //LoadBlockSetting::Update(args, options.load_block);
     for (const std::string& value : args.GetArgs("-loadblock")) {
         if (value.empty()) throw std::runtime_error(strprintf("-loadblock value '%s' is not a valid file path", value));
         options.load_block.push_back(fs::PathFromString(value));
     }
 
+    //ListenSetting::Update(args, options.listen_addresses);
     if (args.IsArgNegated("-listen")) {
         // If -nolisten was passed, disable listening by assigning an empty list
         // of listening addresses.
@@ -401,6 +460,27 @@ BOOST_FIXTURE_TEST_CASE(ExampleOptions, example_options::TestSetup)
     BOOST_CHECK_EXCEPTION(ParseOptions({"-listen"}), std::exception, HasReason{"Can not set -listen with no value. Please specify value with -listen=value. It must be set to a string."});
     BOOST_CHECK_EXCEPTION(ParseOptions({"-listen="}), std::exception, HasReason{"-listen address '' is not a valid host[:port]"});
 }
+
+BOOST_AUTO_TEST_CASE(setting_type_test)
+{
+    const bool DEFAULT_UPNP{false};
+
+    using UpnpSetting = Setting<
+        "-upnp", "Use UPnP to map the listening port (default: %u)",
+        bool, OptionsCategory::CONNECTION>::Default<DEFAULT_UPNP>;
+
+    ArgsManager args;
+    UpnpSetting::Register(args);
+    bool upnp{UpnpSetting::Get(args)};
+
+    BOOST_CHECK_EQUAL(args.GetHelpMessage(),
+        "Connection options:\n"
+        "\n"
+        "  -upnp\n"
+        "       Use UPnP to map the listening port (default: 0)\n\n");
+    BOOST_CHECK_EQUAL(upnp, DEFAULT_UPNP);
+}
+
 
 BOOST_AUTO_TEST_CASE(util_datadir)
 {
