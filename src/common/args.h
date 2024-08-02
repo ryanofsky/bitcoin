@@ -193,12 +193,19 @@ public:
         COMMAND = 0x800,
     };
 
+    /**
+     * Callback to process settings value immediately after it is parsed,
+     * optionally rejecting it with an error or normalizing it.
+     */
+    using ProcessValueFn = std::function<bool(common::SettingsValue& value, std::string& error)>;
+
 protected:
     struct Arg
     {
         std::string m_help_param;
         std::string m_help_text;
         unsigned int m_flags;
+        ProcessValueFn m_process_fn{};
     };
 
     mutable RecursiveMutex cs_args;
@@ -484,7 +491,7 @@ protected:
     /**
      * Add argument
      */
-    void AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat);
+    void AddArg(const std::string& name, const std::string& help, unsigned int flags, const OptionsCategory& cat, ProcessValueFn process_fn = {});
 
     /**
      * Add subcommand
