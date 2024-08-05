@@ -12,8 +12,6 @@
 namespace common {
 //! State representing a setting that is unset
 struct Unset {};
-//! State representing a setting that is set to empty ("-setting=")
-struct Empty {};
 //! State representing a setting that is enabled without a value ("-setting")
 struct Enabled {};
 //! State representing a setting that is disabled ("-nosetting")
@@ -22,7 +20,9 @@ struct Disabled {};
 struct SettingOptions {
     bool disallow_multiple{false};
     bool disallow_negation{false};
-    bool disallow_empty{false};
+    bool disallow_empty_string{false};
+    bool empty_string_means_unset{true};
+    bool disabled_list_means_clear{true};
 };
 
 template<typename... Args>
@@ -48,11 +48,11 @@ struct StringLiteral {
 };
 
 namespace internal {
-template<typename T>
-void SettingRegister(auto& manager, auto summary, auto help, auto category, auto options, auto check_fn, auto default_fn, auto&&... register_options);
-template<typename T>
+template<SettingOptions options, typename T>
+void SettingRegister(auto& manager, auto summary, auto help, auto category, auto check_fn, auto default_fn, auto&&... register_options);
+template<SettingOptions options, typename T>
 T SettingConstruct(auto default_fn);
-template<typename T>
+template<SettingOptions options, typename T>
 void SettingUpdate(auto& manager, auto summary, auto default_fn, T& out);
 };
 
@@ -60,17 +60,17 @@ template<StringLiteral summary, StringLiteral help, typename T, auto category, a
 struct Setting {
     static void Register(auto& manager, auto&&... register_options)
     {
-        internal::SettingRegister<T>(manager, summary.value, help.value, category, options, check_fn, default_fn, register_options...);
+        internal::SettingRegister<options, T>(manager, summary.value, help.value, category, check_fn, default_fn, register_options...);
     }
 
     static T Construct()
     {
-        return internal::SettingConstruct<T>(default_fn);
+        return internal::SettingConstruct<options, T>(default_fn);
     }
 
     static void Update(auto& manager, T& out)
     {
-        internal::SettingUpdate<T>(manager, summary.value, default_fn, out);
+        internal::SettingUpdate<options, T>(manager, summary.value, default_fn, out);
     }
 
     static T Get(auto& manager)
