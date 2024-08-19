@@ -107,6 +107,11 @@ public:
      * - If your setting accepts multiple values and you want to read all the
      *   values, not just the last value, add | ALLOW_LIST to the flags.
      *
+     * - If your setting causes a new action to be performed, and does not
+     *   require a value, add | ALLOW_BOOL to the flags. Adding it just allows
+     *   the setting to be specified alone on the command line without a value,
+     *   as "-foo" instead of "-foo=value".
+     *
      * - Only use the DISALLOW_NEGATION flag if your setting really cannot
      *   function without a value, so the command line interface will generally
      *   support negation and be more consistent.
@@ -116,16 +121,16 @@ public:
      * The ALLOW_STRING, ALLOW_INT, and ALLOW_BOOL flags control what syntaxes are
      * accepted, according to the following chart:
      *
-     * | Syntax   | STRING | INT | BOOL |
-     * | -------- | :----: | :-: | :--: |
-     * | -foo=abc |   X    |     |      |
-     * | -foo=123 |   X    |  X  |      |
-     * | -foo=0   |   X    |  X  |  X   |
-     * | -foo=1   |   X    |  X  |  X   |
-     * | -foo     |        |     |  X   |
-     * | -foo=    |   X    |  X  |  X   |
-     * | -nofoo   |   X    |  X  |  X   |
-     * | -nofoo=1 |   X    |  X  |  X   |
+     * | Syntax   | STRING | INT | BOOL | STRING\|BOOL | INT\|BOOL |
+     * | -------- | :----: | :-: | :--: | :----------: | :-------: |
+     * | -foo=abc |   X    |     |      |      X       |           |
+     * | -foo=123 |   X    |  X  |      |      X       |     X     |
+     * | -foo=0   |   X    |  X  |  X   |      X       |     X     |
+     * | -foo=1   |   X    |  X  |  X   |      X       |     X     |
+     * | -foo     |        |     |  X   |      X       |     X     |
+     * | -foo=    |   X    |  X  |  X   |      X       |     X     |
+     * | -nofoo   |   X    |  X  |  X   |      X       |     X     |
+     * | -nofoo=1 |   X    |  X  |  X   |      X       |     X     |
      *
      * Once validated, settings can be retrieved by called GetSetting(),
      * GetArg(), GetIntArg(), and GetBoolArg(). GetSetting() is the most general

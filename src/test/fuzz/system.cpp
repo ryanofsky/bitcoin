@@ -73,7 +73,6 @@ FUZZ_TARGET(system, .init = initialize_system)
                 if (flags & ArgsManager::ALLOW_ANY) flags &= ~(ArgsManager::ALLOW_BOOL | ArgsManager::ALLOW_INT | ArgsManager::ALLOW_STRING);
                 if (flags & ArgsManager::ALLOW_BOOL) flags &= ~ArgsManager::DISALLOW_ELISION;
                 if (flags & ArgsManager::ALLOW_STRING) flags &= ~ArgsManager::ALLOW_INT;
-                if (flags & ArgsManager::ALLOW_BOOL) flags &= ~(ArgsManager::ALLOW_INT | ArgsManager::ALLOW_STRING);
                 args_manager.AddArg(argument_name, fuzzed_data_provider.ConsumeRandomLengthString(16), flags & ~ArgsManager::COMMAND, options_category);
             },
             [&] {
