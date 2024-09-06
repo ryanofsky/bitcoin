@@ -330,7 +330,24 @@ if(WITH_MULTIPROCESS AND BUILD_DAEMON)
     bitcoin_ipc
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
+<<<<<<< HEAD
   install_binary_component(bitcoin-node)
+||||||| parent of 9ef58dbc4c87 (multiprocess: Add bitcoin-mine test program)
+  list(APPEND installable_targets bitcoin-node)
+=======
+  list(APPEND installable_targets bitcoin-node)
+
+  add_executable(bitcoin-mine
+    bitcoin-mine.cpp
+    init/bitcoin-mine.cpp
+  )
+  target_link_libraries(bitcoin-mine
+    core_interface
+    bitcoin_common
+    bitcoin_ipc
+  )
+  list(APPEND installable_targets bitcoin-mine)
+>>>>>>> 9ef58dbc4c87 (multiprocess: Add bitcoin-mine test program)
 endif()
 
 if(WITH_MULTIPROCESS AND BUILD_TESTS)
