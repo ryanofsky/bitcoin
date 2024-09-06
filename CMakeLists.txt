@@ -669,7 +669,12 @@ message("  bitcoin-util ........................ ${BUILD_UTIL}")
 message("  bitcoin-wallet ...................... ${BUILD_WALLET_TOOL}")
 message("  bitcoin-chainstate (experimental) ... ${BUILD_UTIL_CHAINSTATE}")
 message("  libbitcoinkernel (experimental) ..... ${BUILD_KERNEL_LIB}")
+<<<<<<< HEAD
 message("  kernel-test (experimental) .......... ${BUILD_KERNEL_TEST}")
+||||||| parent of 245daec3d092 (ipc: Add bitcoin-mine test program)
+=======
+message("  bitcoin-mine (experimental) ......... ${bitcoin_daemon_status}")
+>>>>>>> 245daec3d092 (ipc: Add bitcoin-mine test program)
 message("Optional features:")
 message("  wallet support ...................... ${ENABLE_WALLET}")
 message("  external signer ..................... ${ENABLE_EXTERNAL_SIGNER}")
