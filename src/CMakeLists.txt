@@ -332,6 +332,7 @@ if(WITH_MULTIPROCESS)
   target_capnp_sources(bitcoin_ipc_test ${PROJECT_SOURCE_DIR}
     test/ipc_test.capnp
   )
+  add_dependencies(bitcoin_ipc_test bitcoin_ipc_headers)
 endif()
 
 
