@@ -326,6 +326,17 @@ if(WITH_MULTIPROCESS)
   )
   list(APPEND installable_targets bitcoin-node)
 
+  add_executable(bitcoin-mine
+    bitcoin-mine.cpp
+    init/bitcoin-mine.cpp
+  )
+  target_link_libraries(bitcoin-mine
+    core_interface
+    bitcoin_common
+    bitcoin_ipc
+  )
+  list(APPEND installable_targets bitcoin-mine)
+
   add_library(bitcoin_ipc_test STATIC EXCLUDE_FROM_ALL
     test/ipc_test.cpp
   )
