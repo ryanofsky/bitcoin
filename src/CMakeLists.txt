@@ -330,6 +330,17 @@ if(WITH_MULTIPROCESS)
   )
   list(APPEND installable_targets bitcoin-node)
 
+  add_executable(bitcoin-mine
+    bitcoin-mine.cpp
+    init/bitcoin-mine.cpp
+  )
+  target_link_libraries(bitcoin-mine
+    core_interface
+    bitcoin_common
+    bitcoin_ipc
+  )
+  list(APPEND installable_targets bitcoin-mine)
+
   if(BUILD_TESTS)
     # bitcoin_ipc_test library target is defined here in src/CMakeLists.txt
     # instead of src/test/CMakeLists.txt so capnp files in src/test/ are able to
