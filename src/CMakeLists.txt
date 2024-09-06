@@ -334,7 +334,24 @@ if(WITH_MULTIPROCESS AND BUILD_DAEMON)
   list(APPEND installable_targets bitcoin-node)
 endif()
 
+<<<<<<< HEAD
 if(WITH_MULTIPROCESS AND BUILD_TESTS)
+||||||| parent of 8fab41611a47 (multiprocess: Add bitcoin-mine test program)
+  if(BUILD_TESTS)
+=======
+  add_executable(bitcoin-mine
+    bitcoin-mine.cpp
+    init/bitcoin-mine.cpp
+  )
+  target_link_libraries(bitcoin-mine
+    core_interface
+    bitcoin_common
+    bitcoin_ipc
+  )
+  list(APPEND installable_targets bitcoin-mine)
+
+  if(BUILD_TESTS)
+>>>>>>> 8fab41611a47 (multiprocess: Add bitcoin-mine test program)
     # bitcoin_ipc_test library target is defined here in src/CMakeLists.txt
     # instead of src/test/CMakeLists.txt so capnp files in src/test/ are able to
     # reference capnp files in src/ipc/capnp/ by relative path. The Cap'n Proto
