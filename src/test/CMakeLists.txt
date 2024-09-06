@@ -159,14 +159,6 @@ if(ENABLE_WALLET)
 endif()
 
 if(WITH_MULTIPROCESS)
-  add_library(bitcoin_ipc_test STATIC EXCLUDE_FROM_ALL
-    ipc_test.cpp
-  )
-
-  target_capnp_sources(bitcoin_ipc_test ${PROJECT_SOURCE_DIR}
-    ipc_test.capnp
-  )
-
   target_link_libraries(bitcoin_ipc_test
     PRIVATE
       core_interface
@@ -177,7 +169,7 @@ if(WITH_MULTIPROCESS)
     PRIVATE
       ipc_tests.cpp
   )
-  target_link_libraries(test_bitcoin bitcoin_ipc_test)
+  target_link_libraries(test_bitcoin bitcoin_ipc_test bitcoin_ipc)
 endif()
 
 function(add_boost_test source_file)
