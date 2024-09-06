@@ -9,12 +9,29 @@ import tempfile
 import argparse
 
 BINARIES = [
+<<<<<<< HEAD
 'bin/bitcoind',
 'bin/bitcoin-cli',
 'bin/bitcoin-tx',
 'bin/bitcoin-wallet',
 'bin/bitcoin-util',
 'bin/bitcoin-qt',
+||||||| parent of 3465a41ef6bd (multiprocess: Add bitcoin-mine test program)
+'src/bitcoind',
+'src/bitcoin-cli',
+'src/bitcoin-tx',
+'src/bitcoin-wallet',
+'src/bitcoin-util',
+'src/qt/bitcoin-qt',
+=======
+'src/bitcoind',
+'src/bitcoin-cli',
+'src/bitcoin-mine',
+'src/bitcoin-tx',
+'src/bitcoin-wallet',
+'src/bitcoin-util',
+'src/qt/bitcoin-qt',
+>>>>>>> 3465a41ef6bd (multiprocess: Add bitcoin-mine test program)
 ]
 
 parser = argparse.ArgumentParser(
