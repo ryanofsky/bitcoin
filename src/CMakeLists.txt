@@ -325,6 +325,13 @@ if(WITH_MULTIPROCESS)
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
   list(APPEND installable_targets bitcoin-node)
+
+  add_library(bitcoin_ipc_test STATIC EXCLUDE_FROM_ALL
+    test/ipc_test.cpp
+  )
+  target_capnp_sources(bitcoin_ipc_test ${PROJECT_SOURCE_DIR}
+    test/ipc_test.capnp
+  )
 endif()
 
 
