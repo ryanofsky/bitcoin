@@ -334,6 +334,7 @@ if(WITH_MULTIPROCESS)
   )
   list(APPEND installable_targets bitcoin-node)
 
+<<<<<<< HEAD
   if(BUILD_TESTS)
     # bitcoin_ipc_test library target is defined here in src/CMakeLists.txt
     # instead of src/test/CMakeLists.txt so capnp files in src/test/ are able to
@@ -349,6 +350,32 @@ if(WITH_MULTIPROCESS)
     )
     add_dependencies(bitcoin_ipc_test bitcoin_ipc_headers)
   endif()
+||||||| parent of 227955025749 (multiprocess: Add bitcoin-mine test program)
+  add_library(bitcoin_ipc_test STATIC EXCLUDE_FROM_ALL
+    test/ipc_test.cpp
+  )
+  target_capnp_sources(bitcoin_ipc_test ${PROJECT_SOURCE_DIR}
+    test/ipc_test.capnp
+  )
+=======
+  add_executable(bitcoin-mine
+    bitcoin-mine.cpp
+    init/bitcoin-mine.cpp
+  )
+  target_link_libraries(bitcoin-mine
+    core_interface
+    bitcoin_common
+    bitcoin_ipc
+  )
+  list(APPEND installable_targets bitcoin-mine)
+
+  add_library(bitcoin_ipc_test STATIC EXCLUDE_FROM_ALL
+    test/ipc_test.cpp
+  )
+  target_capnp_sources(bitcoin_ipc_test ${PROJECT_SOURCE_DIR}
+    test/ipc_test.capnp
+  )
+>>>>>>> 227955025749 (multiprocess: Add bitcoin-mine test program)
 endif()
 
 
