@@ -16,32 +16,16 @@
 
 namespace ipc {
 namespace capnp {
-//! Use SFINAE to define Serializeable<T> trait which is true if type T has a
-//! Serialize(stream) method, false otherwise.
+//! Detect if type has an Serialize method
 template <typename T>
-struct Serializable {
-private:
-    template <typename C>
-    static std::true_type test(decltype(std::declval<C>().Serialize(std::declval<std::nullptr_t&>()))*);
-    template <typename>
-    static std::false_type test(...);
-
-public:
-    static constexpr bool value = decltype(test<T>(nullptr))::value;
+concept Serializable = requires(T t) {
+    decltype(t.Serialize(std::declval<std::nullptr_t&>()))();
 };
 
-//! Use SFINAE to define Unserializeable<T> trait which is true if type T has
-//! an Unserialize(stream) method, false otherwise.
+//! Detect if type has an Unserialize method
 template <typename T>
-struct Unserializable {
-private:
-    template <typename C>
-    static std::true_type test(decltype(std::declval<C>().Unserialize(std::declval<std::nullptr_t&>()))*);
-    template <typename>
-    static std::false_type test(...);
-
-public:
-    static constexpr bool value = decltype(test<T>(nullptr))::value;
+concept Unserializable = requires(T t) {
+    decltype(t.Unserialize(std::declval<std::nullptr_t&>()))();
 };
 } // namespace capnp
 } // namespace ipc
@@ -50,18 +34,16 @@ public:
 namespace mp {
 //! Overload multiprocess library's CustomBuildField hook to allow any
 //! serializable object to be stored in a capnproto Data field or passed to a
-//! canproto interface. Use Priority<1> so this hook has medium priority, and
+//! capnproto interface. Use Priority<1> so this hook has medium priority, and
 //! higher priority hooks could take precedence over this one.
 template <typename LocalType, typename Value, typename Output>
-void CustomBuildField(
-    TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Value&& value, Output&& output,
-    // Enable if serializeable and if LocalType is not cv or reference
-    // qualified. If LocalType is cv or reference qualified, it is important to
-    // fall back to lower-priority Priority<0> implementation of this function
-    // that strips cv references, to prevent this CustomBuildField overload from
-    // taking precedence over more narrow overloads for specific LocalTypes.
-    std::enable_if_t<ipc::capnp::Serializable<LocalType>::value &&
-                     std::is_same_v<LocalType, std::remove_cv_t<std::remove_reference_t<LocalType>>>>* enable = nullptr)
+void CustomBuildField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Value&& value, Output&& output)
+// Enable if serializeable and if LocalType is not cv or reference qualified. If
+// LocalType is cv or reference qualified, it is important to fall back to
+// lower-priority Priority<0> implementation of this function that strips cv
+// references, to prevent this CustomBuildField overload from taking precedence
+// over more narrow overloads for specific LocalTypes.
+requires ipc::capnp::Serializable<LocalType> && std::is_same_v<LocalType, std::remove_cv_t<std::remove_reference_t<LocalType>>>
 {
     DataStream stream;
     value.Serialize(stream);
@@ -71,12 +53,11 @@ void CustomBuildField(
 
 //! Overload multiprocess library's CustomReadField hook to allow any object
 //! with an Unserialize method to be read from a capnproto Data field or
-//! returned from canproto interface. Use Priority<1> so this hook has medium
+//! returned from capnproto interface. Use Priority<1> so this hook has medium
 //! priority, and higher priority hooks could take precedence over this one.
 template <typename LocalType, typename Input, typename ReadDest>
-decltype(auto)
-CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest,
-                std::enable_if_t<ipc::capnp::Unserializable<LocalType>::value>* enable = nullptr)
+decltype(auto) CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context, Input&& input, ReadDest&& read_dest)
+requires ipc::capnp::Unserializable<LocalType>
 {
     return read_dest.update([&](auto& value) {
         if (!input.has()) return;
@@ -86,6 +67,8 @@ CustomReadField(TypeList<LocalType>, Priority<1>, InvokeContext& invoke_context,
     });
 }
 
+//! Overload CustomBuildField and CustomReadField to serialize UniValue
+//! parameters and return values as JSON strings.
 template <typename Value, typename Output>
 void CustomBuildField(TypeList<UniValue>, Priority<1>, InvokeContext& invoke_context, Value&& value, Output&& output)
 {
