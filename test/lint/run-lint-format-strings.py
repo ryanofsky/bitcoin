@@ -15,8 +15,14 @@ import sys
 FALSE_POSITIVES = [
     ("src/clientversion.cpp", "strprintf(_(COPYRIGHT_HOLDERS), COPYRIGHT_HOLDERS_SUBSTITUTION)"),
     ("src/test/translation_tests.cpp", "strprintf(format, arg)"),
+<<<<<<< HEAD
     ("src/test/util_string_tests.cpp", 'tfm::format(ConstevalFormatString<2>{"%*s"}, "hi", "hi")'),
     ("src/test/util_string_tests.cpp", 'tfm::format(ConstevalFormatString<2>{"%.*s"}, "hi", "hi")'),
+||||||| parent of c68a225861a7 (multiprocess: Add bitcoin wrapper executable)
+=======
+    ("src/bitcoin.cpp", "tfm::format(std::cout, HELP_USAGE, argv[0])"),
+    ("src/bitcoin.cpp", "tfm::format(std::cout, HELP_COMMANDS, argv[0])"),
+>>>>>>> c68a225861a7 (multiprocess: Add bitcoin wrapper executable)
 ]
 
 
