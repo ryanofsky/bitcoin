@@ -15,7 +15,12 @@
 #include <tinyformat.h>
 #include <vector>
 
+#ifdef WIN32
+#include <process.h>
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 
 const TranslateFn G_TRANSLATION_FUN{nullptr};
 
@@ -124,6 +129,63 @@ CommandLine ParseCommandLine(int argc, char* argv[])
     return cmd;
 }
 
+//! Cross-platform wrapper for POSIX execvp
+int ExecVp(const char *file, char *const argv[])
+{
+#ifndef WIN32
+    return execvp(file, argv);
+#else
+    std::vector<char*> new_argv;
+    std::vector<std::string> escaped_args;
+    for (char* const* arg_ptr{argv}; arg_ptr; ++arg_ptr) {
+        std::string_view arg{*arg_ptr};
+        if (arg.find_first_of(" \t\"") == std::string_view::npos) {
+            new_argv.push_back(*arg_ptr);
+        } else {
+            // Add escaping that will the executable that is being invoked to
+            // split up the windows command line into an argument list correctly
+            // using the CommandLineToArgvW function, which expects arguments
+            // with spaces to be quoted, quote characters to be
+            // backslash-escaped, and backslashes to also be backslash-escaped,
+            // but only if they precede a quote character
+            std::string escaped{'"'}; // Start with a quote
+            for (size_t i = 0; i < arg.size(); ++i) {
+                if (arg[i] == '\\') {
+                    // Count consecutive backslashes
+                    size_t backslash_count = 0;
+                    while (i < arg.size() && arg[i] == '\\') {
+                        ++backslash_count;
+                        ++i;
+                    }
+                    if (i < arg.size() && arg[i] == '"') {
+                        // Backslashes before a quote need to be doubled
+                        escaped.append(backslash_count * 2 + 1, '\\');
+                        escaped.push_back('"');
+                    } else {
+                        // Otherwise, backslashes remain as-is
+                        escaped.append(backslash_count, '\\');
+                        if (i < arg.size()) {
+                            --i; // Compensate for the outer loop's increment
+                        }
+                    }
+                } else if (arg[i] == '"') {
+                    // Escape double quotes with a backslash
+                    escaped.push_back('\\');
+                    escaped.push_back('"');
+                } else {
+                    escaped.push_back(arg[i]);
+                }
+            }
+            escaped.push_back('"'); // End with a quote
+            escaped_args.emplace_back(std::move(escaped));
+            new_argv.push_back((char *)escaped_args.back().c_str());
+        }
+        new_argv.push_back(nullptr);
+    }
+    return _execvp(file, new_argv.data());
+#endif
+}
+
 //! Execute the specified bitcoind, bitcoin-qt or other command line in `args`
 //! using src, bin and libexec directory paths relative to this executable, where
 //! the path to this executable is specified `argv0`.
@@ -151,7 +213,7 @@ void ExecCommand(const std::vector<const char*>& args, std::string_view wrapper_
     auto try_exec = [&](fs::path exe_path, bool allow_notfound = true) {
         std::string exe_path_str{fs::PathToString(exe_path)};
         exec_args[0] = exe_path_str.c_str();
-        if (execvp(exec_args[0], (char*const*)exec_args.data()) == -1) {
+        if (ExecVp(exec_args[0], (char*const*)exec_args.data()) == -1) {
             if (allow_notfound && errno == ENOENT) return false;
             throw std::system_error(errno, std::system_category(), strprintf("execvp failed to execute '%s'", exec_args[0]));
         }
@@ -173,6 +235,7 @@ void ExecCommand(const std::vector<const char*>& args, std::string_view wrapper_
     const fs::path wrapper_argv0_path{fs::PathFromString(std::string{wrapper_argv0})};
     fs::path wrapper_path{wrapper_argv0_path};
     std::error_code ec;
+#ifndef WIN32
     if (search_system_path) {
         if (const char* path_env = std::getenv("PATH")) {
             size_t start{0}, end{0};
@@ -186,6 +249,14 @@ void ExecCommand(const std::vector<const char*>& args, std::string_view wrapper_
             }
         }
     }
+#else
+    wchar_t module_path[MAX_PATH];
+    if (GetModuleFileNameW(nullptr, module_path, MAX_PATH) > 0) {
+        wrapper_path = fs::path{module_path};
+    } else {
+        tfm::format(std::cerr, "Warning: Failed to get executable path. Error: %s\n", GetLastError());
+    }
+#endif
 
     // Try to resolve any symlinks and figure out actual directory containing the wrapper executable.
     fs::path wrapper_dir{fs::weakly_canonical(wrapper_path, ec)};
