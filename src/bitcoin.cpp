@@ -272,6 +272,8 @@ void ExecCommand(const std::vector<const char*>& args, std::string_view wrapper_
     (wrapper_dir.filename() == "bin" && try_exec(fs::path{wrapper_dir.parent_path()} / "libexec" / arg0.filename())) ||
     // Otherwise look for target executable next to current wrapper
     try_exec(wrapper_dir / arg0.filename(), search_system_path) ||
+    // On windows various executables may be installed in a "daemon" subdirectory next to the wrapper.
+    try_exec(wrapper_dir / "daemon" / arg0.filename(), search_system_path) ||
     // Otherwise just look on the system path.
     (search_system_path && try_exec(arg0.filename(), false));
 };
