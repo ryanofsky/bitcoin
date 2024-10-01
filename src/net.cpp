@@ -28,7 +28,7 @@
 #include <random.h>
 #include <scheduler.h>
 #include <util/fs.h>
-#include <util/netif.h>
+#include <common/netif.h>
 #include <util/sock.h>
 #include <util/strencodings.h>
 #include <util/thread.h>
