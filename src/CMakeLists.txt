@@ -183,6 +183,7 @@ if(ENABLE_WALLET)
       bitcoin_common
       bitcoin_util
       Boost::headers
+      univalue
     )
     list(APPEND installable_targets bitcoin-wallet)
   endif()
@@ -314,6 +315,8 @@ if(BUILD_DAEMON)
     core_interface
     bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
+    Boost::headers
+    univalue
   )
   list(APPEND installable_targets bitcoind)
 endif()
@@ -327,6 +330,8 @@ if(WITH_MULTIPROCESS)
     bitcoin_node
     bitcoin_ipc
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
+    Boost::headers
+    univalue
   )
   list(APPEND installable_targets bitcoin-node)
 
@@ -395,6 +400,7 @@ if(BUILD_UTIL)
     core_interface
     bitcoin_common
     bitcoin_util
+    univalue
   )
   list(APPEND installable_targets bitcoin-util)
 endif()
