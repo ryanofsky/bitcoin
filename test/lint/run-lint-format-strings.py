@@ -13,7 +13,15 @@ import re
 import sys
 
 FALSE_POSITIVES = [
+<<<<<<< HEAD
     ("src/clientversion.cpp", "strprintf(_(COPYRIGHT_HOLDERS), COPYRIGHT_HOLDERS_SUBSTITUTION)"),
+||||||| parent of 655833a83e02 (common: Add Setting class to support typed Settings)
+    ("src/clientversion.cpp", "strprintf(_(COPYRIGHT_HOLDERS).translated, COPYRIGHT_HOLDERS_SUBSTITUTION)"),
+=======
+    ("src/clientversion.cpp", "strprintf(_(COPYRIGHT_HOLDERS).translated, COPYRIGHT_HOLDERS_SUBSTITUTION)"),
+    ("src/common/setting_internal.h", "strprintf(fmt, args...)"),
+    ("src/common/setting_internal.h", "strprintf(util::ConstevalFormatString<1>{help.value}, default_fn())"),
+>>>>>>> 655833a83e02 (common: Add Setting class to support typed Settings)
     ("src/test/translation_tests.cpp", "strprintf(format, arg)"),
 ]
 
