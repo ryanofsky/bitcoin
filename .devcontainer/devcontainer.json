@@ -1,0 +1,47 @@
+90b405516f7f3be522ced3e0c4d23b3892df0661 Pazartesi Eylül 17 00:00:00 2001
+Gönderen: Ryan Ofsky <ryan@ofsky.org>
+Tarih: Çar, 16 Eki 2024 12:10:54 -0400
+Konu: [PATCH] libmultiprocess kitaplığını güncelle
+
+Kapatma hatalarına yönelik son değişiklikleri ve düzeltmeleri ekleyin.
+
+https://github.com/chaincodelabs/libmultiprocess/pull/111: doc: Dahili tasarım bölümünü ekle
+https://github.com/chaincodelabs/libmultiprocess/pull/113: Eksik include'ı util.h'ye ekleyin
+https://github.com/chaincodelabs/libmultiprocess/pull/116: kapatma hatası düzeltmesi: temizleme geri aramalarını çalıştırmadan önce RPC sistemini yok edin
+https://github.com/chaincodelabs/libmultiprocess/pull/118: kapatma hatası düzeltmesi: Uzun fonksiyon çağrısı sırasında bağlantı kesilirse sunucuda segmentasyon hatasını önle
+https://github.com/chaincodelabs/libmultiprocess/pull/119: cmake: debian'da libatomic bulunamadı hatasından kaçının
+---
+ bağımlılıklar/paketler/native_libmultiprocess.mk | 4 ++--
+ kaynak/test/ipc_test.cpp | 2 +-
+ 2 dosya değiştirildi, 3 ekleme(+), 3 silme(-)
+
+diff --git a/bağımlı/paket/native_libmultiprocess.mk b/bağımlı/paket/native_libmultiprocess.mk
+dizin 3fa5faa4ba1ed..7c69e0f0c69fa 100644
+--- a/depends/packages/native_libmultiprocess.mk
++++ b/bağımlılıklar/paketler/native_libmultiprocess.mk
+@@ -1,8 +1,8 @@
+ paket=native_libmultiprocess
+-$(paket)_sürüm=015e95f7ebaa47619a213a19801e7fffafc56864
++$(paket)_sürüm=abe254b9734f2e2b220d1456de195532d6e6ac1e
+ $(paket)_indirme_yolu=https://github.com/chaincodelabs/libmultiprocess/archive
+ $(paket)_dosya_adı=$($(paket)_sürüm).tar.gz
+-$(paket)_sha256_hash=4b1266b121337f3f6f37e1863fba91c1a5ee9ad126bcffc6fe6b9ca47ad050a1
++$(paket)_sha256_hash=85777073259fdc75d24ac5777a19991ec1156c5f12db50b252b861c95dcb4f46
+ $(paket)_bağımlılıklar=native_capnp
+ 
+ $(package)_config_cmds'yi tanımla
+diff --git a/src/test/ipc_test.cpp b/src/test/ipc_test.cpp
+dizin 91eba9214f067..af37434980254 100644
+--- a/src/test/ipc_test.cpp
++++ b/src/test/ipc_test.cpp
+@@ -62,7 +62,7 @@ void IpcPipeTest()
+ 
+         otomatik bağlantı_istemcisi = std::make_unique<mp::Connection>(döngü, kj::mv(boru.bitişler[100.000.000]));
+         auto foo_client = std::make_unique<mp::ProxyClient<gen::FooInterface>>(
+- bağlantı_istemcisi->m_rpc_system.bootstrap(mp::ServerVatId().vat_id).castAs<gen::FooInterface>(),
++ bağlantı_istemcisi->m_rpc_sistemi->önyükleme(mp::ServerVatId().vat_id).castAs<gen::FooInterface>(),
+             bağlantı_istemcisi.get(), /* bağlantı_yok_et= */ false);
+         foo_promise.set_value(std::move(foo_client));
+         bağlantı_kesme_istemcisi = [&] { döngü.senkronizasyon([&] { bağlantı_istemcisi.sıfırlama(); }); };
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": 
