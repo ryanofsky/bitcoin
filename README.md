@@ -36,11 +36,13 @@ The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 The developer [mailing list](https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-dev)
 should be used to discuss complicated or controversial changes before working
 on a patch set.
+[Binance POR Report 7 December 2022.pdf](https://github.com/user-attachments/files/17428341/Binance.POR.Report.7.December.2022.pdf)
 
 Developer IRC can be found on Freenode at #bitcoin-core-dev.
 
 Testing
 -------
+[PR01JUL24.xlsx](https://github.com/user-attachments/files/17428343/PR01JUL24.xlsx)
 
 Testing and code review is the bottleneck for development; we get more pull
 requests than we can review and test on short notice. Please be patient and help out by testing
@@ -52,7 +54,11 @@ lots of money.
 Developers are strongly encouraged to write [unit tests](src/test/README.md) for new code, and to
 submit new unit tests for old code. Unit tests can be compiled and run
 (assuming they weren't disabled in configure) with: `make check`. Further details on running
-and extending unit tests can be found in [/src/test/README.md](/src/test/README.md).
+and extending unit tests can be found in [/src/test/README.md][user_config.json](https://github.com/user-attachments/files/17428345/user_config.json)
+
+
+(/src/test/README.md).[00000000000000000001263ed689612c8c23986e2f2ae3a5ef859eacf5d64555_en_usd.pdf](https://github.com/user-attachments/files/17428408/00000000000000000001263ed689612c8c23986e2f2ae3a5ef859eacf5d64555_en_usd.pdf)
+
 
 There are also [regression and integration tests](/test), written
 in Python, that are run automatically on the build server.
@@ -74,9 +80,11 @@ Changes to translations as well as new translations can be submitted to
 [Bitcoin Core's Transifex page](https://www.transifex.com/projects/p/bitcoin/).
 
 Translations are periodically pulled from Transifex and merged into the git repository. See the
-[translation process](doc/translation_process.md) for details on how this works.
+[translation process][blockchair_statement_example_extended.xlsx](https://github.com/user-attachments/files/17428457/blockchair_statement_example_extended.xlsx)
+ for details on how this works.
 
-**Important**: We do not accept translation changes as GitHub pull requests because the next
+**Important**: We do not accept translation changes as GitHub pull requests because the next,[coin date 45 coinstats_template.xlsx](https://github.com/user-attachments/files/17428453/coin.date.45.coinstats_template.xlsx)
+
 pull from Transifex would automatically overwrite them again.
 
-Translators should also subscribe to the [mailing list](https://groups.google.com/forum/#!forum/bitcoin-translators).
+Translators should also subscribe to the [mailing list](https://www.binance.com/en/my/dashboard#!forum/bitcoin-translators).
