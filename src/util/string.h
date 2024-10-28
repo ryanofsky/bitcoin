@@ -25,12 +25,6 @@ namespace util {
  * strings, to reduce the likelihood of tinyformat throwing exceptions at
  * run-time. Validation is partial to try and prevent the most common errors
  * while avoiding re-implementing the entire parsing logic.
- *
- * @note Counting of `*` dynamic width and precision fields (such as `%*c`,
- * `%2$*3$d`, `%.*f`) is not implemented to minimize code complexity as long as
- * they are not used in the codebase. Usage of these fields is not counted and
- * can lead to run-time exceptions. Code wanting to use the `*` specifier can
- * side-step this struct and call tinyformat directly.
  */
 template <unsigned num_params>
 struct ConstevalFormatString {
@@ -53,23 +47,45 @@ struct ConstevalFormatString {
                 continue;
             }
 
-            unsigned maybe_num{0};
-            while ('0' <= *it && *it <= '9') {
-                maybe_num *= 10;
-                maybe_num += *it - '0';
-                ++it;
+            auto add_arg = [&] {
+                unsigned maybe_num{0};
+                while ('0' <= *it && *it <= '9') {
+                    maybe_num *= 10;
+                    maybe_num += *it - '0';
+                    ++it;
+                };
+                if (*it == '$') {
+                    // Positional specifier, like %8$s
+                    if (maybe_num == 0) throw "Positional format specifier must have position of at least 1";
+                    count_pos = std::max(count_pos, maybe_num);
+                    if (++it >= str.end()) throw "Format specifier incorrectly terminated by end of string";
+                } else {
+                    ++count_normal;
+                }
             };
 
-            if (*it == '$') {
-                // Positional specifier, like %8$s
-                if (maybe_num == 0) throw "Positional format specifier must have position of at least 1";
-                count_pos = std::max(count_pos, maybe_num);
-                if (++it >= str.end()) throw "Format specifier incorrectly terminated by end of string";
-            } else {
-                // Non-positional specifier, like %s
-                ++count_normal;
+            add_arg();
+
+            // Consume flags.
+            while (*it == '#' || *it == '0' || *it == '-' || *it == ' ' || *it == '+') {
                 ++it;
             }
+
+            // Consume dynamic width or static width.
+            if (*it == '*') {
+                ++it;
+                add_arg();
+            } else {
+                while ('0' <= *it && *it <= '9') ++it;
+            }
+
+            // Consume dynamic precision.
+            if (*it == '.' && *++it == '*') {
+               ++it;
+               add_arg();
+            }
+            ++it;
+
             // The remainder "[flags][width][.precision][length]type" of the
             // specifier is not checked. Parsing continues with the next '%'.
         }

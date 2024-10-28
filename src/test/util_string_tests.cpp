@@ -54,12 +54,16 @@ BOOST_AUTO_TEST_CASE(ConstevalFormatString_NumSpec)
     PassFmt<1>("%_");
     PassFmt<1>("%\n");
 
-    // The `*` specifier behavior is unsupported and can lead to runtime
-    // errors when used in a ConstevalFormatString. Please refer to the
-    // note in the ConstevalFormatString docs.
-    PassFmt<1>("%*c");
-    PassFmt<2>("%2$*3$d");
-    PassFmt<1>("%.*f");
+    PassFmt<2>("%*c");
+    PassFmt<2>("%+*c");
+    PassFmt<2>("%.*f");
+    PassFmt<3>("%*.*f");
+    PassFmt<3>("%2$*3$d");
+    PassFmt<3>("%2$*3$.9d");
+    PassFmt<3>("%2$.*3$d");
+    PassFmt<3>("%2$9.*3$d");
+    PassFmt<3>("%2$+9.*3$d");
+    PassFmt<4>("%3$*2$.*4$f");
 
     auto err_mix{"Format specifiers must be all positional or all non-positional!"};
     FailFmtWithError<1>("%s%1$s", err_mix);
