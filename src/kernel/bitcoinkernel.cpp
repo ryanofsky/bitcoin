@@ -55,9 +55,15 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+<<<<<<< HEAD
 #include <string_view>
 #include <tuple>
+||||||| parent of 7d411f8746b (refactor: Use util::Result class in LoadChainstate and VerifyLoadedChainstate)
+#include <tuple>
+=======
+>>>>>>> 7d411f8746b (refactor: Use util::Result class in LoadChainstate and VerifyLoadedChainstate)
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace Consensus {
@@ -1282,14 +1288,14 @@ btck_ChainstateManager* btck_chainstate_manager_create(
         const auto chainstate_load_opts{WITH_LOCK(opts.m_mutex, return opts.m_chainstate_load_options)};
 
         const kernel::CacheSizes cache_sizes{WITH_LOCK(opts.m_mutex, return opts.m_db_cache_bytes)};
-        auto [status, chainstate_err]{node::LoadChainstate(*chainman, cache_sizes, chainstate_load_opts)};
-        if (status != node::ChainstateLoadStatus::SUCCESS) {
-            LogError("Failed to load chain state from your data directory: %s", chainstate_err.original);
+        auto load_result{node::LoadChainstate(*chainman, cache_sizes, chainstate_load_opts)};
+        if (!load_result || IsInterrupted(*load_result)) {
+            LogError("Failed to load chain state from your data directory: %s", util::ErrorString(load_result).original);
             return nullptr;
         }
-        std::tie(status, chainstate_err) = node::VerifyLoadedChainstate(*chainman, chainstate_load_opts);
-        if (status != node::ChainstateLoadStatus::SUCCESS) {
-            LogError("Failed to verify loaded chain state from your datadir: %s", chainstate_err.original);
+        auto verify_result{node::VerifyLoadedChainstate(*chainman, chainstate_load_opts)};
+        if (!verify_result || IsInterrupted(*verify_result)) {
+            LogError("Failed to verify loaded chain state from your datadir: %s", util::ErrorString(load_result).original);
             return nullptr;
         }
         if (auto result = chainman->ActivateBestChains(); !result) {
