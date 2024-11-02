@@ -290,11 +290,19 @@ void ChainTestingSetup::LoadVerifyActivateChainstate()
     options.check_blocks = m_args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS);
     options.check_level = m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL);
     options.require_full_verification = m_args.IsArgSet("-checkblocks") || m_args.IsArgSet("-checklevel");
+<<<<<<< HEAD
     auto [status, error] = LoadChainstate(chainman, m_kernel_cache_sizes, options);
     assert(status == node::ChainstateLoadStatus::SUCCESS);
-
-    std::tie(status, error) = VerifyLoadedChainstate(chainman, options);
+||||||| parent of 2dd48496a487 (refactor: Use util::Result class in LoadChainstate and VerifyLoadedChainstate)
+    auto [status, error] = LoadChainstate(chainman, m_cache_sizes, options);
     assert(status == node::ChainstateLoadStatus::SUCCESS);
+=======
+    auto load_result{LoadChainstate(chainman, m_cache_sizes, options)};
+    Assert(load_result);
+>>>>>>> 2dd48496a487 (refactor: Use util::Result class in LoadChainstate and VerifyLoadedChainstate)
+
+    auto verify_result{VerifyLoadedChainstate(chainman, options)};
+    Assert(verify_result);
 
     BlockValidationState state;
     if (!chainman.ActiveChainstate().ActivateBestChain(state)) {
