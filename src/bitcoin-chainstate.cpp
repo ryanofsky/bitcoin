@@ -155,6 +155,7 @@ int main(int argc, char* argv[])
 
     Logger logger{std::make_unique<KernelLog>()};
 
+<<<<<<< HEAD
     ContextOptions options{};
     ChainParams params{ChainType::MAINNET};
     options.SetChainParams(params);
@@ -173,6 +174,31 @@ int main(int argc, char* argv[])
     } catch (std::exception&) {
         std::cerr << "Failed to instantiate ChainMan, exiting" << std::endl;
         return 1;
+||||||| parent of fc101484b425 (refactor: Use util::Result class in LoadChainstate and VerifyLoadedChainstate)
+    node::ChainstateLoadOptions options;
+    auto [status, error] = node::LoadChainstate(chainman, cache_sizes, options);
+    if (status != node::ChainstateLoadStatus::SUCCESS) {
+        std::cerr << "Failed to load Chain state from your datadir." << std::endl;
+        goto epilogue;
+    } else {
+        std::tie(status, error) = node::VerifyLoadedChainstate(chainman, options);
+        if (status != node::ChainstateLoadStatus::SUCCESS) {
+            std::cerr << "Failed to verify loaded Chain state from your datadir." << std::endl;
+            goto epilogue;
+        }
+=======
+    node::ChainstateLoadOptions options;
+    auto load_result{node::LoadChainstate(chainman, cache_sizes, options)};
+    if (!load_result) {
+        std::cerr << "Failed to load Chain state from your datadir." << std::endl;
+        goto epilogue;
+    } else {
+        auto verify_result{node::VerifyLoadedChainstate(chainman, options)};
+        if (!verify_result) {
+            std::cerr << "Failed to verify loaded Chain state from your datadir." << std::endl;
+            goto epilogue;
+        }
+>>>>>>> fc101484b425 (refactor: Use util::Result class in LoadChainstate and VerifyLoadedChainstate)
     }
 
     std::cout << "Enter the block you want to validate on the next line:" << std::endl;
