@@ -39,6 +39,7 @@
 #include <streams.h>
 #include <test/util/net.h>
 #include <test/util/random.h>
+#include <test/util/setup_common_settings.h>
 #include <test/util/txmempool.h>
 #include <txdb.h>
 #include <txmempool.h>
@@ -73,8 +74,6 @@ using node::RegenerateCommitments;
 using node::VerifyLoadedChainstate;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
-
-constexpr inline auto TEST_DIR_PATH_ELEMENT{"test_common bitcoin"}; // Includes a space to catch possible path escape issues.
 
 struct NetworkSetup
 {
