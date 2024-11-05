@@ -74,8 +74,6 @@ using node::VerifyLoadedChainstate;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 
-constexpr inline auto TEST_DIR_PATH_ELEMENT{"test_common bitcoin"}; // Includes a space to catch possible path escape issues.
-
 struct NetworkSetup
 {
     NetworkSetup()
