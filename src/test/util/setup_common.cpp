@@ -39,6 +39,7 @@
 #include <streams.h>
 #include <test/util/net.h>
 #include <test/util/random.h>
+#include <test/util/setup_common_settings.h>
 #include <test/util/txmempool.h>
 #include <txdb.h>
 #include <txmempool.h>
@@ -74,6 +75,7 @@ using node::VerifyLoadedChainstate;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 
+<<<<<<< HEAD
 constexpr inline auto TEST_DIR_PATH_ELEMENT{"test_common bitcoin"}; // Includes a space to catch possible path escape issues.
 /** Random context to get unique temp data dirs. Separate from m_rng, which can be seeded from a const env var */
 static FastRandomContext g_rng_temp_path;
@@ -83,6 +85,11 @@ static const bool g_rng_temp_path_init{[] {
     return true;
 }()};
 
+||||||| parent of b51a156f3889 (move-only: move AddArg default values to headers)
+constexpr inline auto TEST_DIR_PATH_ELEMENT{"test_common bitcoin"}; // Includes a space to catch possible path escape issues.
+
+=======
+>>>>>>> b51a156f3889 (move-only: move AddArg default values to headers)
 struct NetworkSetup
 {
     NetworkSetup()
