@@ -74,7 +74,16 @@ using node::VerifyLoadedChainstate;
 
 const std::function<std::string(const char*)> G_TRANSLATION_FUN = nullptr;
 
+<<<<<<< HEAD
 constexpr inline auto TEST_DIR_PATH_ELEMENT{"test_common bitcoin"}; // Includes a space to catch possible path escape issues.
+||||||| parent of aa78be8a4bb1 (move-only: move AddArg default values to headers)
+constexpr inline auto TEST_DIR_PATH_ELEMENT{"test_common bitcoin"}; // Includes a space to catch possible path escape issues.
+/** Random context to get unique temp data dirs. Separate from m_rng, which can be seeded from a const env var */
+static FastRandomContext g_rng_temp_path;
+=======
+/** Random context to get unique temp data dirs. Separate from m_rng, which can be seeded from a const env var */
+static FastRandomContext g_rng_temp_path;
+>>>>>>> aa78be8a4bb1 (move-only: move AddArg default values to headers)
 
 struct NetworkSetup
 {
