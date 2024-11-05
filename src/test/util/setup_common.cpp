@@ -40,7 +40,12 @@
 #include <test/util/coverage.h>
 #include <test/util/net.h>
 #include <test/util/random.h>
+<<<<<<< HEAD
 #include <test/util/transaction_utils.h>
+||||||| parent of 2fbb67d25214 (move-only: move AddArg default values to headers)
+=======
+#include <test/util/setup_common_settings.h>
+>>>>>>> 2fbb67d25214 (move-only: move AddArg default values to headers)
 #include <test/util/txmempool.h>
 #include <txdb.h>
 #include <txmempool.h>
@@ -76,7 +81,6 @@ using node::VerifyLoadedChainstate;
 
 const TranslateFn G_TRANSLATION_FUN{nullptr};
 
-constexpr inline auto TEST_DIR_PATH_ELEMENT{"test_common bitcoin"}; // Includes a space to catch possible path escape issues.
 /** Random context to get unique temp data dirs. Separate from m_rng, which can be seeded from a const env var */
 static FastRandomContext g_rng_temp_path;
 static const bool g_rng_temp_path_init{[] {
