@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <bench/bench_bitcoin_settings.h>
 #include <bench/bench.h>
 #include <common/args.h>
 #include <crypto/sha256.h>
@@ -18,9 +19,22 @@
 #include <sstream>
 #include <vector>
 
+<<<<<<< HEAD
 static const char* DEFAULT_BENCH_FILTER = ".*";
 static constexpr int64_t DEFAULT_MIN_TIME_MS{10};
 
+||||||| parent of 18dd37b6800 (move-only: move AddArg default values to headers)
+using util::SplitString;
+
+static const char* DEFAULT_BENCH_FILTER = ".*";
+static constexpr int64_t DEFAULT_MIN_TIME_MS{10};
+/** Priority level default value, run "all" priority levels */
+static const std::string DEFAULT_PRIORITY{"all"};
+
+=======
+using util::SplitString;
+
+>>>>>>> 18dd37b6800 (move-only: move AddArg default values to headers)
 static void SetupBenchArgs(ArgsManager& argsman)
 {
     SetupHelpOptions(argsman);
