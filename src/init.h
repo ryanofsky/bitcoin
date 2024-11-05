@@ -11,7 +11,19 @@
 //! Default value for -daemon option
 inline constexpr bool DEFAULT_DAEMON = false;
 //! Default value for -daemonwait option
+<<<<<<< HEAD
 inline constexpr bool DEFAULT_DAEMONWAIT = false;
+||||||| parent of 3429229bef7 (move-only: move AddArg default values to headers)
+static constexpr bool DEFAULT_DAEMONWAIT = false;
+=======
+static constexpr bool DEFAULT_DAEMONWAIT = false;
+static constexpr bool DEFAULT_PROXYRANDOMIZE{true};
+static constexpr bool DEFAULT_REST_ENABLE{false};
+static constexpr bool DEFAULT_I2P_ACCEPT_INCOMING{true};
+static constexpr bool DEFAULT_STOPAFTERBLOCKIMPORT{false};
+static constexpr char DEFAULT_ASMAP_FILENAME[] = "ip_asn.map";
+static constexpr char BITCOIN_PID_FILENAME[] = "bitcoind.pid";
+>>>>>>> 3429229bef7 (move-only: move AddArg default values to headers)
 
 class ArgsManager;
 namespace interfaces {
