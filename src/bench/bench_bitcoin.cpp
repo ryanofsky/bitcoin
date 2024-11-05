@@ -20,11 +20,6 @@
 
 using util::SplitString;
 
-static const char* DEFAULT_BENCH_FILTER = ".*";
-static constexpr int64_t DEFAULT_MIN_TIME_MS{10};
-/** Priority level default value, run "all" priority levels */
-static const std::string DEFAULT_PRIORITY{"all"};
-
 static void SetupBenchArgs(ArgsManager& argsman)
 {
     SetupHelpOptions(argsman);
