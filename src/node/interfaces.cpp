@@ -14,6 +14,7 @@
 #include <external_signer.h>
 #include <index/blockfilterindex.h>
 #include <init.h>
+#include <init_settings.h>
 #include <interfaces/chain.h>
 #include <interfaces/handler.h>
 #include <interfaces/mining.h>
@@ -33,9 +34,9 @@
 #include <node/coin.h>
 #include <node/context.h>
 #include <node/interface_ui.h>
-#include <node/mini_miner.h>
-#include <node/miner.h>
 #include <node/kernel_notifications.h>
+#include <node/miner.h>
+#include <node/mini_miner.h>
 #include <node/transaction.h>
 #include <node/types.h>
 #include <node/warnings.h>
@@ -61,6 +62,7 @@
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
+#include <wallet/init_settings.h>
 
 #include <bitcoin-build-config.h> // IWYU pragma: keep
 
@@ -140,7 +142,23 @@ public:
         if (!(Assert(ctx.shutdown_request))()) {
             LogError("Failed to send shutdown signal\n");
         }
+<<<<<<< HEAD
         Interrupt(*m_context);
+||||||| parent of 0a6eb8e31cb4 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+
+        // Stop RPC for clean shutdown if any of waitfor* commands is executed.
+        if (args().GetBoolArg("-server", false)) {
+            InterruptRPC();
+            StopRPC();
+        }
+=======
+
+        // Stop RPC for clean shutdown if any of waitfor* commands is executed.
+        if (ServerSetting::Get(args())) {
+            InterruptRPC();
+            StopRPC();
+        }
+>>>>>>> 0a6eb8e31cb4 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     }
     bool shutdownRequested() override { return ShutdownRequested(*Assert(m_context)); };
     bool isSettingIgnored(const std::string& name) override
@@ -258,7 +276,7 @@ public:
     {
 #ifdef ENABLE_EXTERNAL_SIGNER
         std::vector<ExternalSigner> signers = {};
-        const std::string command = args().GetArg("-signer", "");
+        const std::string command = wallet::SignerSetting::Get(args());
         if (command == "") return {};
         ExternalSigner::Enumerate(command, signers, Params().GetChainTypeString());
         std::vector<std::unique_ptr<interfaces::ExternalSigner>> result;
