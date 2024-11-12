@@ -13,6 +13,7 @@
 #include <util/string.h>
 #include <util/translation.h>
 #include <wallet/context.h>
+#include <wallet/init_settings.h>
 #include <wallet/spend.h>
 #include <wallet/wallet.h>
 #include <wallet/walletdb.h>
@@ -29,8 +30,8 @@ bool VerifyWallets(WalletContext& context)
     interfaces::Chain& chain = *context.chain;
     ArgsManager& args = *Assert(context.args);
 
-    if (args.IsArgSet("-walletdir")) {
-        const fs::path wallet_dir{args.GetPathArg("-walletdir")};
+    if (WalletdirSetting::Get(args)) {
+        const fs::path wallet_dir{WalletdirSetting::Get(args, {})};
         std::error_code error;
         // The canonical path cleans the path, preventing >1 Berkeley environment instances for the same directory
         // It also lets the fs::exists and fs::is_directory checks below pass on windows, since they return false
@@ -160,7 +161,7 @@ void StartWallets(WalletContext& context)
     }
 
     // Schedule periodic wallet flushes and tx rebroadcasts
-    if (context.args->GetBoolArg("-flushwallet", DEFAULT_FLUSHWALLET)) {
+    if (FlushwalletSetting::Get(*context.args)) {
         context.scheduler->scheduleEvery([&context] { MaybeCompactWalletDB(context); }, 500ms);
     }
     context.scheduler->scheduleEvery([&context] { MaybeResendWalletTxs(context); }, 1min);
