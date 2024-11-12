@@ -10,6 +10,7 @@
 #include <common/args.h>
 #include <common/messages.h>
 #include <compat/compat.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <netbase.h>
 #include <node/interface_ui.h>
@@ -225,7 +226,7 @@ static bool InitHTTPAllowList()
     rpc_allow_subnets.clear();
     rpc_allow_subnets.emplace_back(LookupHost("127.0.0.1", false).value(), 8);  // always allow IPv4 local subnet
     rpc_allow_subnets.emplace_back(LookupHost("::1", false).value());  // always allow IPv6 localhost
-    for (const std::string& strAllow : gArgs.GetArgs("-rpcallowip")) {
+    for (const std::string& strAllow : RpcallowipSetting::Get(gArgs, {})) {
         const CSubNet subnet{LookupSubNet(strAllow)};
         if (!subnet.IsValid()) {
             uiInterface.ThreadSafeMessageBox(
@@ -360,21 +361,21 @@ static void ThreadHTTP(struct event_base* base)
 /** Bind HTTP server to specified addresses */
 static bool HTTPBindAddresses(struct evhttp* http)
 {
-    uint16_t http_port{static_cast<uint16_t>(gArgs.GetIntArg("-rpcport", BaseParams().RPCPort()))};
+    uint16_t http_port{static_cast<uint16_t>(RpcportSettingInt::Get(gArgs))};
     std::vector<std::pair<std::string, uint16_t>> endpoints;
 
     // Determine what addresses to bind to
-    if (!(gArgs.IsArgSet("-rpcallowip") && gArgs.IsArgSet("-rpcbind"))) { // Default to loopback if not allowing external IPs
+    if (!(RpcallowipSetting::Get(gArgs) && RpcbindSetting::Get(gArgs))) { // Default to loopback if not allowing external IPs
         endpoints.emplace_back("::1", http_port);
         endpoints.emplace_back("127.0.0.1", http_port);
-        if (gArgs.IsArgSet("-rpcallowip")) {
+        if (RpcallowipSetting::Get(gArgs)) {
             LogPrintf("WARNING: option -rpcallowip was specified without -rpcbind; this doesn't usually make sense\n");
         }
-        if (gArgs.IsArgSet("-rpcbind")) {
+        if (RpcbindSetting::Get(gArgs)) {
             LogPrintf("WARNING: option -rpcbind was ignored because -rpcallowip was not specified, refusing to allow everyone to connect\n");
         }
-    } else if (gArgs.IsArgSet("-rpcbind")) { // Specific bind address
-        for (const std::string& strRPCBind : gArgs.GetArgs("-rpcbind")) {
+    } else if (RpcbindSetting::Get(gArgs)) { // Specific bind address
+        for (const std::string& strRPCBind : RpcbindSetting::Get(gArgs, {})) {
             uint16_t port{http_port};
             std::string host;
             if (!SplitHostPort(strRPCBind, port, host)) {
@@ -462,7 +463,7 @@ bool InitHTTPServer(const util::SignalInterrupt& interrupt)
         return false;
     }
 
-    evhttp_set_timeout(http, gArgs.GetIntArg("-rpcservertimeout", DEFAULT_HTTP_SERVER_TIMEOUT));
+    evhttp_set_timeout(http, RpcservertimeoutSetting::Get(gArgs));
     evhttp_set_max_headers_size(http, MAX_HEADERS_SIZE);
     evhttp_set_max_body_size(http, MAX_SIZE);
     evhttp_set_gencb(http, http_request_cb, (void*)&interrupt);
@@ -473,7 +474,7 @@ bool InitHTTPServer(const util::SignalInterrupt& interrupt)
     }
 
     LogDebug(BCLog::HTTP, "Initialized HTTP server\n");
-    int workQueueDepth = std::max((long)gArgs.GetIntArg("-rpcworkqueue", DEFAULT_HTTP_WORKQUEUE), 1L);
+    int workQueueDepth = std::max((long)RpcworkqueueSetting::Get(gArgs), 1L);
     LogDebug(BCLog::HTTP, "creating work queue of depth %d\n", workQueueDepth);
 
     g_work_queue = std::make_unique<WorkQueue<HTTPClosure>>(workQueueDepth);
@@ -496,7 +497,7 @@ static std::vector<std::thread> g_thread_http_workers;
 
 void StartHTTPServer()
 {
-    int rpcThreads = std::max((long)gArgs.GetIntArg("-rpcthreads", DEFAULT_HTTP_THREADS), 1L);
+    int rpcThreads = std::max((long)RpcthreadsSetting::Get(gArgs), 1L);
     LogInfo("Starting HTTP server with %d worker threads\n", rpcThreads);
     g_thread_http = std::thread(ThreadHTTP, eventBase);
 
