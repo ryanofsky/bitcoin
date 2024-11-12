@@ -5,6 +5,7 @@
 #include <bitcoin-build-config.h> // IWYU pragma: keep
 
 #include <arith_uint256.h>
+#include <bitcoin-util_settings.h>
 #include <chain.h>
 #include <chainparams.h>
 #include <chainparamsbase.h>
@@ -32,7 +33,7 @@ static void SetupBitcoinUtilArgs(ArgsManager &argsman)
 {
     SetupHelpOptions(argsman);
 
-    argsman.AddArg("-version", "Print version and exit", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    VersionSetting::Register(argsman);
 
     argsman.AddCommand("grind", "Perform proof of work on hex header string");
 
@@ -50,11 +51,23 @@ static int AppInitUtil(ArgsManager& args, int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
+<<<<<<< HEAD
     if (HelpRequested(args) || args.GetBoolArg("-version", false)) {
+||||||| parent of 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (HelpRequested(args) || args.IsArgSet("-version")) {
+=======
+    if (HelpRequested(args) || !VersionSetting::Value(args).isNull()) {
+>>>>>>> 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
         // First part of help message is specific to this utility
         std::string strUsage = CLIENT_NAME " bitcoin-util utility version " + FormatFullVersion() + "\n";
 
+<<<<<<< HEAD
         if (args.GetBoolArg("-version", false)) {
+||||||| parent of 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+        if (args.IsArgSet("-version")) {
+=======
+        if (!VersionSetting::Value(args).isNull()) {
+>>>>>>> 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
             strUsage += FormatParagraph(LicenseInfo());
         } else {
             strUsage += "\n"

@@ -12,6 +12,7 @@
 #include <common/system.h>
 #include <compat/compat.h>
 #include <init.h>
+#include <init_settings.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
 #include <kernel/context.h>
@@ -135,10 +136,22 @@ static bool ParseArgs(NodeContext& node, int argc, char* argv[])
 static bool ProcessInitCommands(ArgsManager& args)
 {
     // Process help and version before taking care about datadir
+<<<<<<< HEAD
     if (HelpRequested(args) || args.GetBoolArg("-version", false)) {
+||||||| parent of 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (HelpRequested(args) || args.IsArgSet("-version")) {
+=======
+    if (HelpRequested(args) || !VersionSetting::Value(args).isNull()) {
+>>>>>>> 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
         std::string strUsage = CLIENT_NAME " daemon version " + FormatFullVersion() + "\n";
 
+<<<<<<< HEAD
         if (args.GetBoolArg("-version", false)) {
+||||||| parent of 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+        if (args.IsArgSet("-version")) {
+=======
+        if (!VersionSetting::Value(args).isNull()) {
+>>>>>>> 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
             strUsage += FormatParagraph(LicenseInfo());
         } else {
             strUsage += "\n"
@@ -199,7 +212,7 @@ static bool AppInit(NodeContext& node)
             return false;
         }
 
-        if (args.GetBoolArg("-daemon", DEFAULT_DAEMON) || args.GetBoolArg("-daemonwait", DEFAULT_DAEMONWAIT)) {
+        if (DaemonSetting::Get(args, DEFAULT_DAEMON) || DaemonwaitSetting::Get(args)) {
 #if HAVE_DECL_FORK
             tfm::format(std::cout, CLIENT_NAME " starting\n");
 
@@ -207,7 +220,7 @@ static bool AppInit(NodeContext& node)
             switch (fork_daemon(1, 0, daemon_ep)) { // don't chdir (1), do close FDs (0)
             case 0: // Child: continue.
                 // If -daemonwait is not enabled, immediately send a success token the parent.
-                if (!args.GetBoolArg("-daemonwait", DEFAULT_DAEMONWAIT)) {
+                if (!DaemonwaitSetting::Get(args)) {
                     daemon_ep.TokenWrite(1);
                     daemon_ep.Close();
                 }

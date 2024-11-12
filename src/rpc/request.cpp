@@ -6,6 +6,7 @@
 #include <rpc/request.h>
 
 #include <common/args.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <random.h>
 #include <rpc/protocol.h>
@@ -85,10 +86,16 @@ static const char* const COOKIEAUTH_FILE = ".cookie";
 /** Get name of RPC authentication cookie file */
 static fs::path GetAuthCookieFile(bool temp=false)
 {
+<<<<<<< HEAD
     fs::path arg = gArgs.GetPathArg("-rpccookiefile", COOKIEAUTH_FILE);
     if (arg.empty()) {
         return {}; // -norpccookiefile was specified
     }
+||||||| parent of 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    fs::path arg = gArgs.GetPathArg("-rpccookiefile", COOKIEAUTH_FILE);
+=======
+    fs::path arg = RpccookiefileSetting::Get(gArgs, COOKIEAUTH_FILE);
+>>>>>>> 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     if (temp) {
         arg += ".tmp";
     }

@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <common/args.h>
+#include <init_settings.h>
 
 #include <common/settings.h>
 #include <logging.h>
@@ -125,10 +126,11 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
         LOCK(cs_args);
         m_settings.ro_config.clear();
         m_config_sections.clear();
-        m_config_path = AbsPathForConfigVal(*this, GetPathArg("-conf", BITCOIN_CONF_FILENAME), /*net_specific=*/false);
+        m_config_path = AbsPathForConfigVal(*this, ConfSettingPath::Get(*this), /*net_specific=*/false);
     }
 
     const auto conf_path{GetConfigFilePath()};
+<<<<<<< HEAD
     std::ifstream stream;
     if (!conf_path.empty()) { // path is empty when -noconf is specified
         if (fs::is_directory(conf_path)) {
@@ -141,6 +143,21 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
             error = strprintf("specified config file \"%s\" could not be opened.", fs::PathToString(conf_path));
             return false;
         }
+||||||| parent of 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    std::ifstream stream{conf_path};
+
+    // not ok to have a config file specified that cannot be opened
+    if (IsArgSet("-conf") && !stream.good()) {
+        error = strprintf("specified config file \"%s\" could not be opened.", fs::PathToString(conf_path));
+        return false;
+=======
+    std::ifstream stream{conf_path};
+
+    // not ok to have a config file specified that cannot be opened
+    if (!ConfSetting::Value(*this).isNull() && !stream.good()) {
+        error = strprintf("specified config file \"%s\" could not be opened.", fs::PathToString(conf_path));
+        return false;
+>>>>>>> 4e33ed4eb054 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     }
     // ok to not have a config file
     if (stream.good()) {
@@ -217,7 +234,7 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
     // If datadir is changed in .conf file:
     ClearPathCache();
     if (!CheckDataDirOption(*this)) {
-        error = strprintf("specified data directory \"%s\" does not exist.", GetArg("-datadir", ""));
+        error = strprintf("specified data directory \"%s\" does not exist.", DatadirSetting::Get(*this));
         return false;
     }
     return true;
