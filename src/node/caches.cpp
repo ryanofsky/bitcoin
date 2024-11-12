@@ -7,7 +7,12 @@
 #include <common/args.h>
 #include <common/system.h>
 #include <index/txindex.h>
+<<<<<<< HEAD
 #include <index/txospenderindex.h>
+||||||| parent of 5eccdabc31d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+=======
+#include <init_settings.h>
+>>>>>>> 5eccdabc31d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 #include <kernel/caches.h>
 #include <logging.h>
 #include <node/interface_ui.h>
@@ -45,7 +50,7 @@ size_t GetDefaultDBCache()
 
 size_t CalculateDbCacheBytes(const ArgsManager& args)
 {
-    if (auto db_cache{args.GetIntArg("-dbcache")}) {
+    if (auto db_cache{DbCacheSetting::Get(args)}) {
         if (*db_cache < 0) db_cache = 0;
         const uint64_t db_cache_bytes{SaturatingLeftShift<uint64_t>(*db_cache, 20)};
         constexpr auto max_db_cache{sizeof(void*) == 4 ? MAX_32BIT_DBCACHE : std::numeric_limits<size_t>::max()};
@@ -59,7 +64,7 @@ CacheSizes CalculateCacheSizes(const ArgsManager& args, size_t n_indexes)
     size_t total_cache{CalculateDbCacheBytes(args)};
 
     IndexCacheSizes index_sizes;
-    index_sizes.tx_index = std::min(total_cache / 8, args.GetBoolArg("-txindex", DEFAULT_TXINDEX) ? MAX_TX_INDEX_CACHE : 0);
+    index_sizes.tx_index = std::min(total_cache / 8, TxIndexSetting::Get(args) ? MAX_TX_INDEX_CACHE : 0);
     total_cache -= index_sizes.tx_index;
     index_sizes.txospender_index = std::min(total_cache / 8, args.GetBoolArg("-txospenderindex", DEFAULT_TXOSPENDERINDEX) ? MAX_TXOSPENDER_INDEX_CACHE : 0);
     total_cache -= index_sizes.txospender_index;
