@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <common/args.h>
+#include <dummywallet_settings.h>
 #include <logging.h>
 #include <walletinitinterface.h>
 
@@ -26,6 +27,7 @@ public:
 
 void DummyWalletInit::AddWalletOptions(ArgsManager& argsman) const
 {
+<<<<<<< HEAD
     argsman.AddHiddenArgs({
         "-addresstype",
         "-avoidpartialspends",
@@ -51,6 +53,65 @@ void DummyWalletInit::AddWalletOptions(ArgsManager& argsman) const
         "-walletcrosschain",
         "-unsafesqlitesync",
     });
+||||||| parent of b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    argsman.AddHiddenArgs({
+        "-addresstype",
+        "-avoidpartialspends",
+        "-changetype",
+        "-consolidatefeerate=<amt>",
+        "-disablewallet",
+        "-discardfee=<amt>",
+        "-fallbackfee=<amt>",
+        "-keypool=<n>",
+        "-maxapsfee=<n>",
+        "-maxtxfee=<amt>",
+        "-mintxfee=<amt>",
+        "-paytxfee=<amt>",
+        "-signer=<cmd>",
+        "-spendzeroconfchange",
+        "-txconfirmtarget=<n>",
+        "-wallet=<path>",
+        "-walletbroadcast",
+        "-walletdir=<dir>",
+        "-walletnotify=<cmd>",
+        "-walletrbf",
+        "-dblogsize=<n>",
+        "-flushwallet",
+        "-privdb",
+        "-walletrejectlongchains",
+        "-walletcrosschain",
+        "-unsafesqlitesync",
+        "-swapbdbendian",
+    });
+=======
+    AddressTypeSettingHidden::Register(argsman);
+    AvoidPartialSpendsSettingHidden::Register(argsman);
+    ChangeTypeSettingHidden::Register(argsman);
+    ConsolidateFeeRateSettingHidden::Register(argsman);
+    DisableWalletSettingHidden::Register(argsman);
+    DiscardFeeSettingHidden::Register(argsman);
+    FallbackFeeSettingHidden::Register(argsman);
+    KeyPoolSettingHidden::Register(argsman);
+    MaxApsFeeSettingHidden::Register(argsman);
+    MaxTxFeeSettingHidden::Register(argsman);
+    MinTxFeeSettingHidden::Register(argsman);
+    PayTxFeeSettingHidden::Register(argsman);
+    SignerSettingHidden::Register(argsman);
+    SpendZeroConfChangeSettingHidden::Register(argsman);
+    TxConfirmTargetSettingHidden::Register(argsman);
+    WalletSettingHidden::Register(argsman);
+    WalletBroadcastSettingHidden::Register(argsman);
+    WalletDirSettingHidden::Register(argsman);
+    WalletNotifySettingHidden::Register(argsman);
+    WalletRbfSettingHidden::Register(argsman);
+    DbLogSizeSettingHidden::Register(argsman);
+    FlushWalletSettingHidden::Register(argsman);
+    PrivDbSettingHidden::Register(argsman);
+    WalletRejectLongChainsSettingHidden::Register(argsman);
+    WalletCrossChainSettingHidden::Register(argsman);
+    UnsafeSqliteSyncSettingHidden::Register(argsman);
+    SwapBdbEndianSettingHidden::Register(argsman);
+>>>>>>> b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 }
 
 const WalletInitInterface& g_wallet_init_interface = DummyWalletInit();

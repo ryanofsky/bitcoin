@@ -12,6 +12,7 @@
 #include <common/system.h>
 #include <compat/compat.h>
 #include <init.h>
+#include <init_settings.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
 #include <kernel/context.h>
@@ -135,6 +136,7 @@ static bool ParseArgs(NodeContext& node, int argc, char* argv[])
 static bool ProcessInitCommands(interfaces::Init& init, ArgsManager& args)
 {
     // Process help and version before taking care about datadir
+<<<<<<< HEAD
     if (HelpRequested(args) || args.GetBoolArg("-version", false)) {
         std::string strUsage = CLIENT_NAME " daemon version " + FormatFullVersion();
         if (const char* exe_name{init.exeName()}) {
@@ -142,8 +144,15 @@ static bool ProcessInitCommands(interfaces::Init& init, ArgsManager& args)
             strUsage += exe_name;
         }
         strUsage += "\n";
+||||||| parent of b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (HelpRequested(args) || args.GetBoolArg("-version", false)) {
+        std::string strUsage = CLIENT_NAME " daemon version " + FormatFullVersion() + "\n";
+=======
+    if (HelpRequested(args) || VersionSetting::Get(args)) {
+        std::string strUsage = CLIENT_NAME " daemon version " + FormatFullVersion() + "\n";
+>>>>>>> b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 
-        if (args.GetBoolArg("-version", false)) {
+        if (VersionSetting::Get(args)) {
             strUsage += FormatParagraph(LicenseInfo());
         } else {
             strUsage += "\n"
@@ -204,7 +213,7 @@ static bool AppInit(NodeContext& node)
             return false;
         }
 
-        if (args.GetBoolArg("-daemon", DEFAULT_DAEMON) || args.GetBoolArg("-daemonwait", DEFAULT_DAEMONWAIT)) {
+        if (DaemonSetting::Get(args, DEFAULT_DAEMON) || DaemonWaitSetting::Get(args)) {
 #if HAVE_DECL_FORK
             tfm::format(std::cout, CLIENT_NAME " starting\n");
 
@@ -212,7 +221,7 @@ static bool AppInit(NodeContext& node)
             switch (fork_daemon(1, 0, daemon_ep)) { // don't chdir (1), do close FDs (0)
             case 0: // Child: continue.
                 // If -daemonwait is not enabled, immediately send a success token the parent.
-                if (!args.GetBoolArg("-daemonwait", DEFAULT_DAEMONWAIT)) {
+                if (!DaemonWaitSetting::Get(args)) {
                     daemon_ep.TokenWrite(1);
                     daemon_ep.Close();
                 }

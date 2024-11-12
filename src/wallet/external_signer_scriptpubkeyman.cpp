@@ -7,6 +7,7 @@
 #include <common/system.h>
 #include <external_signer.h>
 #include <node/types.h>
+#include <wallet/init_settings.h>
 #include <wallet/external_signer_scriptpubkeyman.h>
 
 #include <iostream>
@@ -45,9 +46,19 @@ bool ExternalSignerScriptPubKeyMan::SetupDescriptor(WalletBatch& batch, std::uni
     return true;
 }
 
+<<<<<<< HEAD
  util::Result<ExternalSigner> ExternalSignerScriptPubKeyMan::GetExternalSigner() {
     const std::string command = gArgs.GetArg("-signer", "");
     if (command == "") return util::Error{Untranslated("restart bitcoind with -signer=<cmd>")};
+||||||| parent of b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+ExternalSigner ExternalSignerScriptPubKeyMan::GetExternalSigner() {
+    const std::string command = gArgs.GetArg("-signer", "");
+    if (command == "") throw std::runtime_error(std::string(__func__) + ": restart bitcoind with -signer=<cmd>");
+=======
+ExternalSigner ExternalSignerScriptPubKeyMan::GetExternalSigner() {
+    const std::string command = SignerSetting::Get(gArgs);
+    if (command == "") throw std::runtime_error(std::string(__func__) + ": restart bitcoind with -signer=<cmd>");
+>>>>>>> b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     std::vector<ExternalSigner> signers;
     ExternalSigner::Enumerate(command, signers, Params().GetChainTypeString());
     if (signers.empty()) return util::Error{Untranslated("No external signers found")};

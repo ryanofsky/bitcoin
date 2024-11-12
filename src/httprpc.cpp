@@ -7,6 +7,7 @@
 #include <common/args.h>
 #include <crypto/hmac_sha256.h>
 #include <httpserver.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <netaddress.h>
 #include <rpc/protocol.h>
@@ -239,13 +240,19 @@ static bool HTTPReq_JSONRPC(const std::any& context, HTTPRequest* req)
 
 static bool InitRPCAuthentication()
 {
+<<<<<<< HEAD
     std::string user;
     std::string pass;
 
     if (gArgs.GetArg("-rpcpassword", "") == "")
+||||||| parent of b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (gArgs.GetArg("-rpcpassword", "") == "")
+=======
+    if (RpcPasswordSetting::Get(gArgs) == "")
+>>>>>>> b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     {
         std::optional<fs::perms> cookie_perms{std::nullopt};
-        auto cookie_perms_arg{gArgs.GetArg("-rpccookieperms")};
+        auto cookie_perms_arg{RpcCookiePermsSetting::Get(gArgs)};
         if (cookie_perms_arg) {
             auto perm_opt = InterpretPermString(*cookie_perms_arg);
             if (!perm_opt) {
@@ -266,6 +273,7 @@ static bool InitRPCAuthentication()
             break;
         }
     } else {
+<<<<<<< HEAD
         LogInfo("Using rpcuser/rpcpassword authentication.");
         LogWarning("The use of rpcuser/rpcpassword is less secure, because credentials are configured in plain text. It is recommended that locally-run instances switch to cookie-based auth, or otherwise to use hashed rpcauth credentials. See share/rpcauth in the source directory for more information.");
         user = gArgs.GetArg("-rpcuser", "");
@@ -285,11 +293,18 @@ static bool InitRPCAuthentication()
         std::string hash = HexStr(out);
 
         g_rpcauth.push_back({user, salt, hash});
+||||||| parent of b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+        LogPrintf("Config options rpcuser and rpcpassword will soon be deprecated. Locally-run instances may remove rpcuser to use cookie-based auth, or may be replaced with rpcauth. Please see share/rpcauth for rpcauth auth generation.\n");
+        strRPCUserColonPass = gArgs.GetArg("-rpcuser", "") + ":" + gArgs.GetArg("-rpcpassword", "");
+=======
+        LogPrintf("Config options rpcuser and rpcpassword will soon be deprecated. Locally-run instances may remove rpcuser to use cookie-based auth, or may be replaced with rpcauth. Please see share/rpcauth for rpcauth auth generation.\n");
+        strRPCUserColonPass = RpcUserSetting::Get(gArgs) + ":" + RpcPasswordSetting::Get(gArgs);
+>>>>>>> b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     }
 
-    if (!gArgs.GetArgs("-rpcauth").empty()) {
+    if (!RpcAuthSetting::Get(gArgs).empty()) {
         LogInfo("Using rpcauth authentication.\n");
-        for (const std::string& rpcauth : gArgs.GetArgs("-rpcauth")) {
+        for (const std::string& rpcauth : RpcAuthSetting::Get(gArgs)) {
             std::vector<std::string> fields{SplitString(rpcauth, ':')};
             const std::vector<std::string> salt_hmac{SplitString(fields.back(), '$')};
             if (fields.size() == 2 && salt_hmac.size() == 2) {
@@ -303,8 +318,8 @@ static bool InitRPCAuthentication()
         }
     }
 
-    g_rpc_whitelist_default = gArgs.GetBoolArg("-rpcwhitelistdefault", !gArgs.GetArgs("-rpcwhitelist").empty());
-    for (const std::string& strRPCWhitelist : gArgs.GetArgs("-rpcwhitelist")) {
+    g_rpc_whitelist_default = RpcWhitelistDefaultSetting::Get(gArgs, !RpcWhitelistSetting::Get(gArgs).empty());
+    for (const std::string& strRPCWhitelist : RpcWhitelistSetting::Get(gArgs)) {
         auto pos = strRPCWhitelist.find(':');
         std::string strUser = strRPCWhitelist.substr(0, pos);
         bool intersect = g_rpc_whitelist.count(strUser);

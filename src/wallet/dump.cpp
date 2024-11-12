@@ -4,6 +4,7 @@
 
 #include <wallet/dump.h>
 
+#include <bitcoin-wallet_settings.h>
 #include <common/args.h>
 #include <util/fs.h>
 #include <util/translation.h>
@@ -24,7 +25,7 @@ uint32_t DUMP_VERSION = 1;
 bool DumpWallet(const ArgsManager& args, WalletDatabase& db, bilingual_str& error)
 {
     // Get the dumpfile
-    std::string dump_filename = args.GetArg("-dumpfile", "");
+    std::string dump_filename = DumpFileSetting::Get(args);
     if (dump_filename.empty()) {
         error = _("No dump file provided. To use dump, -dumpfile=<filename> must be provided.");
         return false;
@@ -122,7 +123,7 @@ static void WalletToolReleaseWallet(CWallet* wallet)
 bool CreateFromDump(const ArgsManager& args, const std::string& name, const fs::path& wallet_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
     // Get the dumpfile
-    std::string dump_filename = args.GetArg("-dumpfile", "");
+    std::string dump_filename = DumpFileSetting::Get(args);
     if (dump_filename.empty()) {
         error = _("No dump file provided. To use createfromdump, -dumpfile=<filename> must be provided.");
         return false;
@@ -175,12 +176,24 @@ bool CreateFromDump(const ArgsManager& args, const std::string& name, const fs::
         dump_file.close();
         return false;
     }
+<<<<<<< HEAD
     // Make sure that the dump was created from a sqlite database only as that is the only
     // type of database that we still support.
     // Other formats such as BDB should not be loaded into a sqlite database since they also
     // use a different type of wallet entirely which is no longer compatible with this software.
     if (format_value != "sqlite") {
         error = strprintf(_("Error: Dumpfile specifies an unsupported database format (%s). Only sqlite database dumps are supported"), format_value);
+||||||| parent of b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    // Get the data file format with format_value as the default
+    std::string file_format = args.GetArg("-format", format_value);
+    if (file_format.empty()) {
+        error = _("No wallet file format provided. To use createfromdump, -format=<format> must be provided.");
+=======
+    // Get the data file format with format_value as the default
+    std::string file_format = FormatSetting::Get(args, format_value);
+    if (file_format.empty()) {
+        error = _("No wallet file format provided. To use createfromdump, -format=<format> must be provided.");
+>>>>>>> b3968352b292 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
         return false;
     }
     std::string format_hasher_line = strprintf("%s,%s\n", format_key, format_value);
