@@ -6,7 +6,9 @@
 #include <common/args.h>
 
 #include <chainparamsbase.h>
+#include <common/args_settings.h>
 #include <common/settings.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <sync.h>
 #include <tinyformat.h>
@@ -688,12 +690,12 @@ std::string ArgsManager::GetHelpMessage() const
 
 bool HelpRequested(const ArgsManager& args)
 {
-    return args.IsArgSet("-?") || args.IsArgSet("-h") || args.IsArgSet("-help") || args.IsArgSet("-help-debug");
+    return args.IsArgSet("-?") || args.IsArgSet("-h") || !HelpSetting::Value(args).isNull() || !HelpDebugSetting::Value(args).isNull();
 }
 
 void SetupHelpOptions(ArgsManager& args)
 {
-    args.AddArg("-help", "Print this help message and exit (also -h or -?)", ArgsManager::ALLOW_ANY, OptionsCategory::OPTIONS);
+    HelpSetting::Register(args);
     args.AddHiddenArgs({"-h", "-?"});
 }
 
@@ -719,7 +721,7 @@ const std::vector<std::string> TEST_OPTIONS_DOC{
 
 bool HasTestOption(const ArgsManager& args, const std::string& test_option)
 {
-    const auto options = args.GetArgs("-test");
+    const auto options = TestSetting::Get(args);
     return std::any_of(options.begin(), options.end(), [test_option](const auto& option) {
         return option == test_option;
     });
@@ -759,7 +761,7 @@ fs::path GetDefaultDataDir()
 
 bool CheckDataDirOption(const ArgsManager& args)
 {
-    const fs::path datadir{args.GetPathArg("-datadir")};
+    const fs::path datadir{DatadirSettingPath::Get(args)};
     return datadir.empty() || fs::is_directory(fs::absolute(datadir));
 }
 
