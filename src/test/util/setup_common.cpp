@@ -14,6 +14,7 @@
 #include <crypto/sha256.h>
 #include <init.h>
 #include <init/common.h>
+#include <init_settings.h>
 #include <interfaces/chain.h>
 #include <kernel/mempool_entry.h>
 #include <logging.h>
@@ -94,8 +95,7 @@ static NetworkSetup g_networksetup_instance;
 
 void SetupCommonTestArgs(ArgsManager& argsman)
 {
-    argsman.AddArg("-testdatadir", strprintf("Custom data directory (default: %s<random_string>)", fs::PathToString(fs::temp_directory_path() / TEST_DIR_PATH_ELEMENT / "")),
-                   ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+    TestDataDirSetting::Register(argsman);
 }
 
 /** Test setup failure */
@@ -143,7 +143,7 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
     }
 
     const std::string test_name{G_TEST_GET_FULL_NAME ? G_TEST_GET_FULL_NAME() : ""};
-    if (!m_node.args->IsArgSet("-testdatadir")) {
+    if (TestDataDirSetting::Value(*m_node.args).isNull()) {
         // To avoid colliding with a leftover prior datadir, and to allow
         // tests, such as the fuzz tests to run in several processes at the
         // same time, add a random element to the path. Keep it small enough to
@@ -154,7 +154,7 @@ BasicTestingSetup::BasicTestingSetup(const ChainType chainType, TestOpts opts)
     } else {
         // Custom data directory
         m_has_custom_datadir = true;
-        fs::path root_dir{m_node.args->GetPathArg("-testdatadir")};
+        fs::path root_dir{TestDataDirSetting::Get(*m_node.args)};
         if (root_dir.empty()) ExitFailure("-testdatadir argument is empty, please specify a path");
 
         root_dir = fs::absolute(root_dir);
@@ -285,12 +285,32 @@ void ChainTestingSetup::LoadVerifyActivateChainstate()
     node::ChainstateLoadOptions options;
     options.mempool = Assert(m_node.mempool.get());
     options.coins_db_in_memory = m_coins_db_in_memory;
+<<<<<<< HEAD
     options.wipe_chainstate_db = m_args.GetBoolArg("-reindex", false) || m_args.GetBoolArg("-reindex-chainstate", false);
+||||||| parent of e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    options.wipe_block_tree_db = m_args.GetBoolArg("-reindex", false);
+    options.wipe_chainstate_db = m_args.GetBoolArg("-reindex", false) || m_args.GetBoolArg("-reindex-chainstate", false);
+=======
+    options.wipe_block_tree_db = ReIndexSetting::Get(m_args);
+    options.wipe_chainstate_db = ReIndexSetting::Get(m_args) || ReIndexChainstateSetting::Get(m_args);
+>>>>>>> e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     options.prune = chainman.m_blockman.IsPruneMode();
+<<<<<<< HEAD
     options.check_blocks = m_args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS);
     options.check_level = m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL);
     options.require_full_verification = m_args.IsArgSet("-checkblocks") || m_args.IsArgSet("-checklevel");
     auto [status, error] = LoadChainstate(chainman, m_kernel_cache_sizes, options);
+||||||| parent of e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    options.check_blocks = m_args.GetIntArg("-checkblocks", DEFAULT_CHECKBLOCKS);
+    options.check_level = m_args.GetIntArg("-checklevel", DEFAULT_CHECKLEVEL);
+    options.require_full_verification = m_args.IsArgSet("-checkblocks") || m_args.IsArgSet("-checklevel");
+    auto [status, error] = LoadChainstate(chainman, m_cache_sizes, options);
+=======
+    options.check_blocks = CheckBlocksSetting::Get(m_args);
+    options.check_level = CheckLevelSetting::Get(m_args);
+    options.require_full_verification = !CheckBlocksSetting::Value(m_args).isNull() || !CheckLevelSetting::Value(m_args).isNull();
+    auto [status, error] = LoadChainstate(chainman, m_cache_sizes, options);
+>>>>>>> e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     assert(status == node::ChainstateLoadStatus::SUCCESS);
 
     std::tie(status, error) = VerifyLoadedChainstate(chainman, options);
@@ -320,7 +340,7 @@ TestingSetup::TestingSetup(
     m_node.netgroupman = std::make_unique<NetGroupManager>(/*asmap=*/std::vector<bool>());
     m_node.addrman = std::make_unique<AddrMan>(*m_node.netgroupman,
                                                /*deterministic=*/false,
-                                               m_node.args->GetIntArg("-checkaddrman", 0));
+                                               CheckAddrManSetting::Get(*m_node.args, 0));
     m_node.banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
     m_node.connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, *m_node.netgroupman, Params()); // Deterministic randomness for tests.
     PeerManager::Options peerman_opts;

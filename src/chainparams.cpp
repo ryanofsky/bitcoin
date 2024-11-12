@@ -6,9 +6,11 @@
 #include <chainparams.h>
 
 #include <chainparamsbase.h>
+#include <chainparamsbase_settings.h>
 #include <common/args.h>
 #include <consensus/params.h>
 #include <deploymentinfo.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <tinyformat.h>
 #include <util/chaintype.h>
@@ -25,11 +27,27 @@ using util::SplitString;
 
 void ReadSigNetArgs(const ArgsManager& args, CChainParams::SigNetOptions& options)
 {
+<<<<<<< HEAD
     if (!args.GetArgs("-signetseednode").empty()) {
         options.seeds.emplace(args.GetArgs("-signetseednode"));
+||||||| parent of e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (args.IsArgSet("-signetseednode")) {
+        options.seeds.emplace(args.GetArgs("-signetseednode"));
+=======
+    if (!SignetSeedNodeSetting::Value(args).isNull()) {
+        options.seeds.emplace(SignetSeedNodeSetting::Get(args));
+>>>>>>> e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     }
+<<<<<<< HEAD
     if (!args.GetArgs("-signetchallenge").empty()) {
         const auto signet_challenge = args.GetArgs("-signetchallenge");
+||||||| parent of e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (args.IsArgSet("-signetchallenge")) {
+        const auto signet_challenge = args.GetArgs("-signetchallenge");
+=======
+    if (!SignetChallengeSetting::Value(args).isNull()) {
+        const auto signet_challenge = SignetChallengeSetting::Get(args);
+>>>>>>> e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
         if (signet_challenge.size() != 1) {
             throw std::runtime_error("-signetchallenge cannot be multiple values.");
         }
@@ -43,10 +61,10 @@ void ReadSigNetArgs(const ArgsManager& args, CChainParams::SigNetOptions& option
 
 void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& options)
 {
-    if (auto value = args.GetBoolArg("-fastprune")) options.fastprune = *value;
+    if (auto value = FastPruneSetting::Get(args)) options.fastprune = *value;
     if (HasTestOption(args, "bip94")) options.enforce_bip94 = true;
 
-    for (const std::string& arg : args.GetArgs("-testactivationheight")) {
+    for (const std::string& arg : TestActivationHeightSetting::Get(args)) {
         const auto found{arg.find('@')};
         if (found == std::string::npos) {
             throw std::runtime_error(strprintf("Invalid format (%s) for -testactivationheight=name@height.", arg));
@@ -66,7 +84,17 @@ void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& opti
         }
     }
 
+<<<<<<< HEAD
     for (const std::string& strDeployment : args.GetArgs("-vbparams")) {
+||||||| parent of e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (!args.IsArgSet("-vbparams")) return;
+
+    for (const std::string& strDeployment : args.GetArgs("-vbparams")) {
+=======
+    if (VbParamsSetting::Value(args).isNull()) return;
+
+    for (const std::string& strDeployment : VbParamsSetting::Get(args)) {
+>>>>>>> e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
         std::vector<std::string> vDeploymentParams = SplitString(strDeployment, ':');
         if (vDeploymentParams.size() < 3 || 4 < vDeploymentParams.size()) {
             throw std::runtime_error("Version bits parameters malformed, expecting deployment:start:end[:min_activation_height]");

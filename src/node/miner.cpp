@@ -15,6 +15,7 @@
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
 #include <deploymentstatus.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
@@ -94,12 +95,18 @@ BlockAssembler::BlockAssembler(Chainstate& chainstate, const CTxMemPool* mempool
 void ApplyArgsManOptions(const ArgsManager& args, BlockAssembler::Options& options)
 {
     // Block resource limits
-    options.nBlockMaxWeight = args.GetIntArg("-blockmaxweight", options.nBlockMaxWeight);
-    if (const auto blockmintxfee{args.GetArg("-blockmintxfee")}) {
+    options.nBlockMaxWeight = BlockMaxWeightSetting::Get(args, options.nBlockMaxWeight);
+    if (const auto blockmintxfee{BlockMinTxFeeSetting::Get(args)}) {
         if (const auto parsed{ParseMoney(*blockmintxfee)}) options.blockMinFeeRate = CFeeRate{*parsed};
     }
+<<<<<<< HEAD
     options.print_modified_fee = args.GetBoolArg("-printpriority", options.print_modified_fee);
     options.block_reserved_weight = args.GetIntArg("-blockreservedweight", options.block_reserved_weight);
+||||||| parent of e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    options.print_modified_fee = args.GetBoolArg("-printpriority", options.print_modified_fee);
+=======
+    options.print_modified_fee = PrintPrioritySetting::Get(args, options.print_modified_fee);
+>>>>>>> e12edf766138 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 }
 
 void BlockAssembler::resetBlock()
@@ -138,7 +145,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     // -regtest only: allow overriding block.nVersion with
     // -blockversion=N to test forking scenarios
     if (chainparams.MineBlocksOnDemand()) {
-        pblock->nVersion = gArgs.GetIntArg("-blockversion", pblock->nVersion);
+        pblock->nVersion = BlockVersionSetting::Get(gArgs, pblock->nVersion);
     }
 
     pblock->nTime = TicksSinceEpoch<std::chrono::seconds>(NodeClock::now());
