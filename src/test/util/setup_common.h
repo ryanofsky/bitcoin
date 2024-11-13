@@ -258,4 +258,90 @@ std::unique_ptr<T> MakeNoLogFileContext(const ChainType chain_type = ChainType::
 
 CBlock getBlock13b8a();
 
+<<<<<<< HEAD
+||||||| parent of 9a52b4b9ec0 (test: Add test for common::Setting class)
+// Make types usable in BOOST_CHECK_* @{
+namespace std {
+template <typename T> requires std::is_enum_v<T>
+inline std::ostream& operator<<(std::ostream& os, const T& e)
+{
+    return os << static_cast<std::underlying_type_t<T>>(e);
+}
+
+template <typename T>
+inline std::ostream& operator<<(std::ostream& os, const std::optional<T>& v)
+{
+    return v ? os << *v
+             : os << "std::nullopt";
+}
+} // namespace std
+
+std::ostream& operator<<(std::ostream& os, const arith_uint256& num);
+std::ostream& operator<<(std::ostream& os, const uint160& num);
+std::ostream& operator<<(std::ostream& os, const uint256& num);
+std::ostream& operator<<(std::ostream& os, const Txid& txid);
+std::ostream& operator<<(std::ostream& os, const Wtxid& wtxid);
+// @}
+
+/**
+ * BOOST_CHECK_EXCEPTION predicates to check the specific validation error.
+ * Use as
+ * BOOST_CHECK_EXCEPTION(code that throws, exception type, HasReason("foo"));
+ */
+class HasReason
+{
+public:
+    explicit HasReason(std::string_view reason) : m_reason(reason) {}
+    bool operator()(std::string_view s) const { return s.find(m_reason) != std::string_view::npos; }
+    bool operator()(const std::exception& e) const { return (*this)(e.what()); }
+
+private:
+    const std::string m_reason;
+};
+
+=======
+// Make types usable in BOOST_CHECK_* @{
+namespace std {
+template <typename T> requires std::is_enum_v<T>
+inline std::ostream& operator<<(std::ostream& os, const T& e)
+{
+    return os << static_cast<std::underlying_type_t<T>>(e);
+}
+
+inline std::ostream& operator<<(std::ostream& os, const std::nullopt_t)
+{
+    return os << "std::nullopt";
+}
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::optional<T>& v)
+{
+    return v ? os << *v
+             : os << std::nullopt;
+}
+} // namespace std
+
+std::ostream& operator<<(std::ostream& os, const arith_uint256& num);
+std::ostream& operator<<(std::ostream& os, const uint160& num);
+std::ostream& operator<<(std::ostream& os, const uint256& num);
+std::ostream& operator<<(std::ostream& os, const Txid& txid);
+std::ostream& operator<<(std::ostream& os, const Wtxid& wtxid);
+// @}
+
+/**
+ * BOOST_CHECK_EXCEPTION predicates to check the specific validation error.
+ * Use as
+ * BOOST_CHECK_EXCEPTION(code that throws, exception type, HasReason("foo"));
+ */
+class HasReason
+{
+public:
+    explicit HasReason(std::string_view reason) : m_reason(reason) {}
+    bool operator()(std::string_view s) const { return s.find(m_reason) != std::string_view::npos; }
+    bool operator()(const std::exception& e) const { return (*this)(e.what()); }
+
+private:
+    const std::string m_reason;
+};
+
+>>>>>>> 9a52b4b9ec0 (test: Add test for common::Setting class)
 #endif // BITCOIN_TEST_UTIL_SETUP_COMMON_H
