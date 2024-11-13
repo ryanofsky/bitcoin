@@ -56,7 +56,7 @@ bool VerifyWallets(WalletContext& context)
 
     // For backwards compatibility if an unnamed top level wallet exists in the
     // wallets directory, include it in the default list of wallets to load.
-    if (!args.IsArgSet("wallet")) {
+    if (args.GetSetting("wallet").isNull()) {
         DatabaseOptions options;
         DatabaseStatus status;
         ReadDatabaseArgs(args, options);
