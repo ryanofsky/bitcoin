@@ -1903,7 +1903,13 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
                     fast_rescan_filter ? "fast variant using block filters" : "slow variant inspecting all blocks");
 
     fAbortRescan = false;
+<<<<<<< HEAD
     ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…")), 0); // show rescan progress in GUI as dialog or on splashscreen, if rescan required on startup (e.g. due to corruption)
+||||||| parent of df45123dc073 (wallet: Translate [default wallet] string in progress messages)
+    ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…").translated), 0); // show rescan progress in GUI as dialog or on splashscreen, if rescan required on startup (e.g. due to corruption)
+=======
+    ShowProgress(strprintf("[%s] %s", DisplayName(), _("Rescanning…").translated), 0); // show rescan progress in GUI as dialog or on splashscreen, if rescan required on startup (e.g. due to corruption)
+>>>>>>> df45123dc073 (wallet: Translate [default wallet] string in progress messages)
     uint256 tip_hash = WITH_LOCK(cs_wallet, return GetLastBlockHash());
     uint256 end_hash = tip_hash;
     if (max_height) chain().findAncestorByHeight(tip_hash, *max_height, FoundBlock().hash(end_hash));
@@ -1918,7 +1924,13 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
             m_scanning_progress = 0;
         }
         if (block_height % 100 == 0 && progress_end - progress_begin > 0.0) {
+<<<<<<< HEAD
             ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…")), std::max(1, std::min(99, (int)(m_scanning_progress * 100))));
+||||||| parent of df45123dc073 (wallet: Translate [default wallet] string in progress messages)
+            ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…").translated), std::max(1, std::min(99, (int)(m_scanning_progress * 100))));
+=======
+            ShowProgress(strprintf("[%s] %s", DisplayName(), _("Rescanning…").translated), std::max(1, std::min(99, (int)(m_scanning_progress * 100))));
+>>>>>>> df45123dc073 (wallet: Translate [default wallet] string in progress messages)
         }
 
         bool next_interval = reserver.now() >= current_time + INTERVAL_TIME;
@@ -2015,7 +2027,13 @@ CWallet::ScanResult CWallet::ScanForWalletTransactions(const uint256& start_bloc
         WalletLogPrintf("Scanning current mempool transactions.\n");
         WITH_LOCK(cs_wallet, chain().requestMempoolTransactions(*this));
     }
+<<<<<<< HEAD
     ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…")), 100); // hide progress dialog in GUI
+||||||| parent of df45123dc073 (wallet: Translate [default wallet] string in progress messages)
+    ShowProgress(strprintf("%s %s", GetDisplayName(), _("Rescanning…").translated), 100); // hide progress dialog in GUI
+=======
+    ShowProgress(strprintf("[%s] %s", DisplayName(), _("Rescanning…").translated), 100); // hide progress dialog in GUI
+>>>>>>> df45123dc073 (wallet: Translate [default wallet] string in progress messages)
     if (block_height && fAbortRescan) {
         WalletLogPrintf("Rescan aborted at block %d. Progress=%f\n", block_height, progress_current);
         result.status = ScanResult::USER_ABORT;

@@ -534,7 +534,13 @@ RPCHelpMan importwallet()
 
         // Use uiInterface.ShowProgress instead of pwallet.ShowProgress because pwallet.ShowProgress has a cancel button tied to AbortRescan which
         // we don't want for this progress bar showing the import progress. uiInterface.ShowProgress does not have a cancel button.
+<<<<<<< HEAD
         pwallet->chain().showProgress(strprintf("%s %s", pwallet->GetDisplayName(), _("Importing…")), 0, false); // show progress dialog in GUI
+||||||| parent of df45123dc073 (wallet: Translate [default wallet] string in progress messages)
+        pwallet->chain().showProgress(strprintf("%s %s", pwallet->GetDisplayName(), _("Importing…").translated), 0, false); // show progress dialog in GUI
+=======
+        pwallet->chain().showProgress(strprintf("[%s] %s", pwallet->DisplayName(), _("Importing…").translated), 0, false); // show progress dialog in GUI
+>>>>>>> df45123dc073 (wallet: Translate [default wallet] string in progress messages)
         std::vector<std::tuple<CKey, int64_t, bool, std::string>> keys;
         std::vector<std::pair<CScript, int64_t>> scripts;
         while (file.good()) {
