@@ -929,6 +929,14 @@ public:
         return strprintf("[%s]", wallet_name);
     };
 
+    /** Return a translate message with the wallet name for use in ShowProgress. */
+    std::string TranslatedMessage(const bilingual_str& message)
+    {
+        std::string name{GetName()};
+        if (name.empty()) name = _("default wallet").translated;
+        return strprintf("[%s] %s", name, message.translated);
+    }
+
     /** Prepends the wallet name in logging output to ease debugging in multi-wallet use cases */
     template <typename... Params>
     void WalletLogPrintf(util::ConstevalFormatString<sizeof...(Params)> wallet_fmt, const Params&... params) const
