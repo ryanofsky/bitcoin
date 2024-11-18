@@ -496,10 +496,100 @@ std::unordered_set<CScript, SaltedSipHasher> LegacyDataSPKM::GetCandidateScriptP
         add_script(script);
     }
 
+<<<<<<< HEAD
     // Although setWatchOnly should only contain output scripts, we will also include each script's
     // P2SH, P2WSH, and P2SH-P2WSH as a precaution.
     for (const auto& script : setWatchOnly) {
         add_script(script);
+||||||| parent of a46ec1dece8d (wallet, refactor: Replace GetDisplayName() with LogName())
+    WalletBatch batch(m_storage.GetDatabase());
+    if (!batch.TxnBegin()) return false;
+    if (!TopUpChain(batch, m_hd_chain, kpSize)) {
+        return false;
+    }
+    for (auto& [chain_id, chain] : m_inactive_hd_chains) {
+        if (!TopUpChain(batch, chain, kpSize)) {
+            return false;
+        }
+    }
+    if (!batch.TxnCommit()) throw std::runtime_error(strprintf("Error during keypool top up. Cannot commit changes for wallet %s", m_storage.GetDisplayName()));
+    NotifyCanGetAddressesChanged();
+    // Note: Unlike with DescriptorSPKM, LegacySPKM does not need to call
+    // m_storage.TopUpCallback() as we do not know what new scripts the LegacySPKM is
+    // watching for. CWallet's scriptPubKey cache is not used for LegacySPKMs.
+    return true;
+}
+
+bool LegacyScriptPubKeyMan::TopUpChain(WalletBatch& batch, CHDChain& chain, unsigned int kpSize)
+{
+    LOCK(cs_KeyStore);
+
+    if (m_storage.IsLocked()) return false;
+
+    // Top up key pool
+    unsigned int nTargetSize;
+    if (kpSize > 0) {
+        nTargetSize = kpSize;
+    } else {
+        nTargetSize = m_keypool_size;
+    }
+    int64_t target = std::max((int64_t) nTargetSize, int64_t{1});
+
+    // count amount of available keys (internal, external)
+    // make sure the keypool of external and internal keys fits the user selected target (-keypool)
+    int64_t missingExternal;
+    int64_t missingInternal;
+    if (chain == m_hd_chain) {
+        missingExternal = std::max(target - (int64_t)setExternalKeyPool.size(), int64_t{0});
+        missingInternal = std::max(target - (int64_t)setInternalKeyPool.size(), int64_t{0});
+    } else {
+        missingExternal = std::max(target - (chain.nExternalChainCounter - chain.m_next_external_index), int64_t{0});
+        missingInternal = std::max(target - (chain.nInternalChainCounter - chain.m_next_internal_index), int64_t{0});
+=======
+    WalletBatch batch(m_storage.GetDatabase());
+    if (!batch.TxnBegin()) return false;
+    if (!TopUpChain(batch, m_hd_chain, kpSize)) {
+        return false;
+    }
+    for (auto& [chain_id, chain] : m_inactive_hd_chains) {
+        if (!TopUpChain(batch, chain, kpSize)) {
+            return false;
+        }
+    }
+    if (!batch.TxnCommit()) throw std::runtime_error(strprintf("Error during keypool top up. Cannot commit changes for wallet [%s]", m_storage.LogName()));
+    NotifyCanGetAddressesChanged();
+    // Note: Unlike with DescriptorSPKM, LegacySPKM does not need to call
+    // m_storage.TopUpCallback() as we do not know what new scripts the LegacySPKM is
+    // watching for. CWallet's scriptPubKey cache is not used for LegacySPKMs.
+    return true;
+}
+
+bool LegacyScriptPubKeyMan::TopUpChain(WalletBatch& batch, CHDChain& chain, unsigned int kpSize)
+{
+    LOCK(cs_KeyStore);
+
+    if (m_storage.IsLocked()) return false;
+
+    // Top up key pool
+    unsigned int nTargetSize;
+    if (kpSize > 0) {
+        nTargetSize = kpSize;
+    } else {
+        nTargetSize = m_keypool_size;
+    }
+    int64_t target = std::max((int64_t) nTargetSize, int64_t{1});
+
+    // count amount of available keys (internal, external)
+    // make sure the keypool of external and internal keys fits the user selected target (-keypool)
+    int64_t missingExternal;
+    int64_t missingInternal;
+    if (chain == m_hd_chain) {
+        missingExternal = std::max(target - (int64_t)setExternalKeyPool.size(), int64_t{0});
+        missingInternal = std::max(target - (int64_t)setInternalKeyPool.size(), int64_t{0});
+    } else {
+        missingExternal = std::max(target - (chain.nExternalChainCounter - chain.m_next_external_index), int64_t{0});
+        missingInternal = std::max(target - (chain.nInternalChainCounter - chain.m_next_internal_index), int64_t{0});
+>>>>>>> a46ec1dece8d (wallet, refactor: Replace GetDisplayName() with LogName())
     }
 
     return candidate_spks;
@@ -996,7 +1086,7 @@ bool DescriptorScriptPubKeyMan::TopUp(unsigned int size)
     WalletBatch batch(m_storage.GetDatabase());
     if (!batch.TxnBegin()) return false;
     bool res = TopUpWithDB(batch, size);
-    if (!batch.TxnCommit()) throw std::runtime_error(strprintf("Error during descriptors keypool top up. Cannot commit changes for wallet %s", m_storage.GetDisplayName()));
+    if (!batch.TxnCommit()) throw std::runtime_error(strprintf("Error during descriptors keypool top up. Cannot commit changes for wallet [%s]", m_storage.LogName()));
     return res;
 }
 
