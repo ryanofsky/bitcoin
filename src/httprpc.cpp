@@ -69,6 +69,7 @@ private:
 };
 
 
+bool g_http_rpc_auth_initialized{false};
 /* Pre-base64-encoded authentication token */
 static std::string strRPCUserColonPass;
 /* Stored RPC timer interface (for unregistration) */
@@ -134,7 +135,7 @@ static bool multiUserAuthorized(std::string strUserPass)
 
 static bool RPCAuthorized(const std::string& strAuth, std::string& strAuthUsernameOut)
 {
-    if (strRPCUserColonPass.empty()) // Belt-and-suspenders measure if InitRPCAuthentication was not called
+    if (!g_http_rpc_auth_initialized) // Belt-and-suspenders measure if InitRPCAuthentication was not called
         return false;
     if (strAuth.substr(0, 6) != "Basic ")
         return false;
@@ -147,8 +148,9 @@ static bool RPCAuthorized(const std::string& strAuth, std::string& strAuthUserna
     if (strUserPass.find(':') != std::string::npos)
         strAuthUsernameOut = strUserPass.substr(0, strUserPass.find(':'));
 
-    //Check if authorized under single-user field
-    if (TimingResistantEqual(strUserPass, strRPCUserColonPass)) {
+    // Check if authorized under single-user field.
+    // (strRPCUserColonPass is empty when -norpccookiefile is specified).
+    if (!strRPCUserColonPass.empty() && TimingResistantEqual(strUserPass, strRPCUserColonPass)) {
         return true;
     }
     return multiUserAuthorized(strUserPass);
@@ -294,21 +296,26 @@ static bool InitRPCAuthentication()
 {
     if (gArgs.GetArg("-rpcpassword", "") == "")
     {
-        LogInfo("Using random cookie authentication.\n");
-
         std::optional<fs::perms> cookie_perms{std::nullopt};
         auto cookie_perms_arg{gArgs.GetArg("-rpccookieperms")};
         if (cookie_perms_arg) {
             auto perm_opt = InterpretPermString(*cookie_perms_arg);
             if (!perm_opt) {
-                LogInfo("Invalid -rpccookieperms=%s; must be one of 'owner', 'group', or 'all'.\n", *cookie_perms_arg);
+                LogError("Invalid -rpccookieperms=%s; must be one of 'owner', 'group', or 'all'.", *cookie_perms_arg);
                 return false;
             }
             cookie_perms = *perm_opt;
         }
 
-        if (!GenerateAuthCookie(&strRPCUserColonPass, cookie_perms)) {
-            return false;
+        if (std::optional<bool> result{GenerateAuthCookie(&strRPCUserColonPass, cookie_perms)}) {
+            if (*result) {
+                LogInfo("Using random cookie authentication.");
+            } else {
+                // Failure reason message expected to already have been logged.
+                return false;
+            }
+        } else {
+            LogInfo("RPC authentication cookie file generation is disabled.");
         }
     } else {
         LogPrintf("Config options rpcuser and rpcpassword will soon be deprecated. Locally-run instances may remove rpcuser to use cookie-based auth, or may be replaced with rpcauth. Please see share/rpcauth for rpcauth auth generation.\n");
@@ -353,6 +360,7 @@ static bool InitRPCAuthentication()
         }
     }
 
+    g_http_rpc_auth_initialized = true;
     return true;
 }
 

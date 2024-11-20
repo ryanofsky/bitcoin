@@ -86,6 +86,7 @@ static const char* const COOKIEAUTH_FILE = ".cookie";
 static fs::path GetAuthCookieFile(bool temp=false)
 {
     fs::path arg = gArgs.GetPathArg("-rpccookiefile", COOKIEAUTH_FILE);
+    if (arg.empty()) return {}; // -norpccookiefile was specified
     if (temp) {
         arg += ".tmp";
     }
@@ -94,7 +95,7 @@ static fs::path GetAuthCookieFile(bool temp=false)
 
 static bool g_generated_cookie = false;
 
-bool GenerateAuthCookie(std::string* cookie_out, std::optional<fs::perms> cookie_perms)
+std::optional<bool> GenerateAuthCookie(std::string* cookie_out, std::optional<fs::perms> cookie_perms)
 {
     const size_t COOKIE_SIZE = 32;
     unsigned char rand_pwd[COOKIE_SIZE];
@@ -106,9 +107,16 @@ bool GenerateAuthCookie(std::string* cookie_out, std::optional<fs::perms> cookie
      */
     std::ofstream file;
     fs::path filepath_tmp = GetAuthCookieFile(true);
+    if (filepath_tmp.empty()) {
+        if (cookie_perms) {
+            LogWarning("Unable to set specified permissions on cookie file as we aren't generating one.");
+        }
+        return std::nullopt;
+    }
+
     file.open(filepath_tmp);
     if (!file.is_open()) {
-        LogInfo("Unable to open cookie authentication file %s for writing\n", fs::PathToString(filepath_tmp));
+        LogWarning("Unable to open cookie authentication file %s for writing\n", fs::PathToString(filepath_tmp));
         return false;
     }
     file << cookie;
@@ -116,14 +124,14 @@ bool GenerateAuthCookie(std::string* cookie_out, std::optional<fs::perms> cookie
 
     fs::path filepath = GetAuthCookieFile(false);
     if (!RenameOver(filepath_tmp, filepath)) {
-        LogInfo("Unable to rename cookie authentication file %s to %s\n", fs::PathToString(filepath_tmp), fs::PathToString(filepath));
+        LogWarning("Unable to rename cookie authentication file %s to %s\n", fs::PathToString(filepath_tmp), fs::PathToString(filepath));
         return false;
     }
     if (cookie_perms) {
         std::error_code code;
         fs::permissions(filepath, cookie_perms.value(), fs::perm_options::replace, code);
         if (code) {
-            LogInfo("Unable to set permissions on cookie authentication file %s\n", fs::PathToString(filepath_tmp));
+            LogWarning("Unable to set permissions on cookie authentication file %s\n", fs::PathToString(filepath_tmp));
             return false;
         }
     }
@@ -142,6 +150,10 @@ bool GetAuthCookie(std::string *cookie_out)
     std::ifstream file;
     std::string cookie;
     fs::path filepath = GetAuthCookieFile();
+    if (filepath.empty()) {
+        LogDebug(BCLog::RPC, "RPC authentication cookie file reading is disabled.");
+        return false;
+    }
     file.open(filepath);
     if (!file.is_open())
         return false;
