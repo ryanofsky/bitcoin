@@ -65,25 +65,32 @@ std::optional<ConfigError> InitConfig(ArgsManager& args, SettingsAbortFn setting
         // Show an error or warning if there is a bitcoin.conf file in the
         // datadir that is being ignored.
         const fs::path base_config_path = base_path / BITCOIN_CONF_FILENAME;
-        if (fs::exists(base_config_path) && !fs::equivalent(orig_config_path, base_config_path)) {
+        if (fs::exists(base_config_path) && (orig_config_path.empty()
+                                             || !fs::equivalent(orig_config_path, base_config_path))) {
             const std::string cli_config_path = args.GetArg("-conf", "");
             const std::string config_source = cli_config_path.empty()
                 ? strprintf("data directory %s", fs::quoted(fs::PathToString(orig_datadir_path)))
                 : strprintf("command line argument %s", fs::quoted("-conf=" + cli_config_path));
-            const std::string error = strprintf(
-                "Data directory %1$s contains a %2$s file which is ignored, because a different configuration file "
-                "%3$s from %4$s is being used instead. Possible ways to address this would be to:\n"
-                "- Delete or rename the %2$s file in data directory %1$s.\n"
-                "- Change datadir= or conf= options to specify one configuration file, not two, and use "
-                "includeconf= to include any other configuration files.\n"
-                "- Set allowignoredconf=1 option to treat this condition as a warning, not an error.",
-                fs::quoted(fs::PathToString(base_path)),
-                fs::quoted(BITCOIN_CONF_FILENAME),
-                fs::quoted(fs::PathToString(orig_config_path)),
-                config_source);
+            std::string error = orig_config_path.empty()
+                ? strprintf(
+                    "Data directory %1$s contains a %2$s file which is ignored, because -noconf has been "
+                    "set to disable config reading.",
+                    fs::quoted(fs::PathToString(base_path)),
+                    fs::quoted(BITCOIN_CONF_FILENAME))
+                : strprintf(
+                    "Data directory %1$s contains a %2$s file which is ignored, because a different configuration file "
+                    "%3$s from %4$s is being used instead. Possible ways to address this would be to:\n"
+                    "- Delete or rename the %2$s file in data directory %1$s.\n"
+                    "- Change datadir= or conf= options to specify one configuration file, not two, and use "
+                    "includeconf= to include any other configuration files.",
+                    fs::quoted(fs::PathToString(base_path)),
+                    fs::quoted(BITCOIN_CONF_FILENAME),
+                    fs::quoted(fs::PathToString(orig_config_path)),
+                    config_source);
             if (args.GetBoolArg("-allowignoredconf", false)) {
                 LogPrintf("Warning: %s\n", error);
             } else {
+                error += "\n- Set allowignoredconf=1 option to treat this condition as a warning, not an error.";
                 return ConfigError{ConfigStatus::FAILED, Untranslated(error)};
             }
         }

@@ -125,8 +125,9 @@ bool StartLogging(const ArgsManager& args)
     if (fs::exists(config_file_path)) {
         LogPrintf("Config file: %s\n", fs::PathToString(config_file_path));
     } else if (args.IsArgSet("-conf")) {
-        // Warn if no conf file exists at path provided by user
-        InitWarning(strprintf(_("The specified config file %s does not exist"), fs::PathToString(config_file_path)));
+        if (!args.IsArgNegated("-conf")) {
+            InitWarning(strprintf(_("The specified config file %s does not exist"), fs::PathToString(config_file_path)));
+        }
     } else {
         // Not categorizing as "Warning" because it's the default behavior
         LogPrintf("Config file: %s (not found, skipping)\n", fs::PathToString(config_file_path));
