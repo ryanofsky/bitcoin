@@ -8,7 +8,10 @@ import time
 import subprocess
 
 from test_framework.messages import hash256
-from test_framework.test_framework import BitcoinTestFramework
+from test_framework.test_framework import (
+    Binaries,
+    BitcoinTestFramework,
+)
 from test_framework.util import (
     assert_raises_rpc_error,
     assert_equal,
@@ -112,7 +115,7 @@ class WalletEncryptionTest(BitcoinTestFramework):
 
             def do_wallet_tool(*args):
                 proc = subprocess.Popen(
-                    [self.options.bitcoinwallet, f"-datadir={self.nodes[0].datadir_path}", f"-chain={self.chain}"] + list(args),
+                    Binaries(self.paths).wallet_argv() + [f"-datadir={self.nodes[0].datadir_path}", f"-chain={self.chain}"] + list(args),
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
