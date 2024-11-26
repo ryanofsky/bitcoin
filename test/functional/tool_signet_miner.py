@@ -5,6 +5,7 @@
 """Test signet miner tool"""
 
 import os.path
+import shlex
 import subprocess
 import sys
 import time
@@ -49,14 +50,24 @@ class SignetMinerTest(BitcoinTestFramework):
         # generate block with signet miner tool
         base_dir = self.config["environment"]["SRCDIR"]
         signet_miner_path = os.path.join(base_dir, "contrib", "signet", "miner")
+        rpc_args = node.binaries.rpc_args() + [f"-datadir={node.cli.datadir}"]
+        util_args = node.binaries.util_args() + ["grind"]
         subprocess.run([
                 sys.executable,
                 signet_miner_path,
-                f'--cli={node.cli.binary} -datadir={node.cli.datadir}',
+                f'--cli={shlex.join(rpc_args)}',
                 'generate',
                 f'--address={node.getnewaddress()}',
+<<<<<<< HEAD
                 f'--grind-cmd={self.options.bitcoinutil} grind',
                 f'--nbits={DIFF_1_N_BITS:08x}',
+||||||| parent of a1d960e03be5 (test: Support BITCOIN_CMD environment variable)
+                f'--grind-cmd={self.options.bitcoinutil} grind',
+                '--nbits=1d00ffff',
+=======
+                f'--grind-cmd={shlex.join(util_args)}',
+                '--nbits=1d00ffff',
+>>>>>>> a1d960e03be5 (test: Support BITCOIN_CMD environment variable)
                 f'--set-block-time={int(time.time())}',
                 '--poolnum=99',
             ], check=True, stderr=subprocess.STDOUT)
