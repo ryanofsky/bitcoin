@@ -13,6 +13,7 @@ import platform
 import pdb
 import random
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -74,27 +75,31 @@ class Binaries:
 
     def daemon_argv(self):
         "Return argv array that should be used to invoke bitcoind"
-        return self._argv("bitcoind")
+        return self._argv("daemon", "bitcoind")
 
     def rpc_argv(self):
         "Return argv array that should be used to invoke bitcoin-cli"
-        return self._argv("bitcoincli")
+        # Add -nonamed because "bitcoin rpc" enables -named by default, but bitcoin-cli doesn't
+        return self._argv("rpc", "bitcoincli") + ["-nonamed"]
 
     def util_argv(self):
         "Return argv array that should be used to invoke bitcoin-util"
-        return self._argv("bitcoinutil")
+        return self._argv("util", "bitcoinutil")
 
     def wallet_argv(self):
         "Return argv array that should be used to invoke bitcoin-wallet"
-        return self._argv("bitcoinwallet")
+        return self._argv("wallet", "bitcoinwallet")
 
-    def _argv(self, path_attr):
-        """Return argv array that should be used to invoke the command.
-        Normally this will return binary paths directly from the paths object,
-        but when bin_path is set (by tests calling binaries from previous
-        releases) it will return paths relative to bin_path instead."""
+    def _argv(self, command, path_attr):
+        """Return argv array that should be used to invoke the command. It
+        either uses the bitcoin wrapper executable (if BITCOIN_CMD is set), or
+        the direct binary path (bitcoind, etc). When bin_path is set (by tests
+        calling binaries from previous releases) it always uses the direct
+        path."""
         if self.bin_path is not None:
             return [os.path.join(self.bin_path, os.path.basename(getattr(self.paths, path_attr)))]
+        elif self.paths.bitcoin_cmd is not None:
+            return self.paths.bitcoin_cmd + [command]
         else:
             return [getattr(self.paths, path_attr)]
 
@@ -304,6 +309,9 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 binary + self.config["environment"]["EXEEXT"],
             )
             setattr(paths, attribute_name, os.getenv(env_variable_name, default=default_filename))
+        # BITCOIN_CMD environment variable can be specified to invoke bitcoin
+        # wrapper binary instead of other executables.
+        paths.bitcoin_cmd = shlex.split(os.getenv("BITCOIN_CMD", "")) or None
         return paths
 
     def setup(self):
