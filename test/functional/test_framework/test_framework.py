@@ -220,6 +220,65 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
         PortSeed.n = self.options.port_seed
 
+<<<<<<< HEAD
+||||||| parent of 5583d031bf61 (test: add interface_ipc_mining.py test calling bitcoin-mine)
+    def get_binary_paths(self):
+        """Get paths of all binaries from environment variables or their default values"""
+
+        paths = types.SimpleNamespace()
+        binaries = {
+            "bitcoin": "BITCOIN_BIN",
+            "bitcoind": "BITCOIND",
+            "bitcoin-cli": "BITCOINCLI",
+            "bitcoin-util": "BITCOINUTIL",
+            "bitcoin-tx": "BITCOINTX",
+            "bitcoin-chainstate": "BITCOINCHAINSTATE",
+            "bitcoin-wallet": "BITCOINWALLET",
+        }
+        # Set paths to bitcoin core binaries allowing overrides with environment
+        # variables.
+        for binary, env_variable_name in binaries.items():
+            default_filename = os.path.join(
+                self.config["environment"]["BUILDDIR"],
+                "bin",
+                binary + self.config["environment"]["EXEEXT"],
+            )
+            setattr(paths, env_variable_name.lower(), os.getenv(env_variable_name, default=default_filename))
+        # BITCOIN_CMD environment variable can be specified to invoke bitcoin
+        # wrapper binary instead of other executables.
+        paths.bitcoin_cmd = shlex.split(os.getenv("BITCOIN_CMD", "")) or None
+        return paths
+
+=======
+    def get_binary_paths(self):
+        """Get paths of all binaries from environment variables or their default values"""
+
+        paths = types.SimpleNamespace()
+        binaries = {
+            "bitcoin": "BITCOIN_BIN",
+            "bitcoind": "BITCOIND",
+            "bitcoin-cli": "BITCOINCLI",
+            "bitcoin-util": "BITCOINUTIL",
+            "bitcoin-tx": "BITCOINTX",
+            "bitcoin-chainstate": "BITCOINCHAINSTATE",
+            "bitcoin-mine": "BITCOINMINE",
+            "bitcoin-wallet": "BITCOINWALLET",
+        }
+        # Set paths to bitcoin core binaries allowing overrides with environment
+        # variables.
+        for binary, env_variable_name in binaries.items():
+            default_filename = os.path.join(
+                self.config["environment"]["BUILDDIR"],
+                "bin",
+                binary + self.config["environment"]["EXEEXT"],
+            )
+            setattr(paths, env_variable_name.lower(), os.getenv(env_variable_name, default=default_filename))
+        # BITCOIN_CMD environment variable can be specified to invoke bitcoin
+        # wrapper binary instead of other executables.
+        paths.bitcoin_cmd = shlex.split(os.getenv("BITCOIN_CMD", "")) or None
+        return paths
+
+>>>>>>> 5583d031bf61 (test: add interface_ipc_mining.py test calling bitcoin-mine)
     def get_binaries(self, bin_dir=None):
         return Binaries(self.binary_paths, bin_dir)
 
