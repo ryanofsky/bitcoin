@@ -289,8 +289,14 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
             "bitcoin-chainstate": "BITCOINCHAINSTATE",
             "bitcoin-wallet": "BITCOINWALLET",
         }
+<<<<<<< HEAD
         # Set paths to bitcoin core binaries allowing overrides with environment
         # variables.
+||||||| parent of 3846e14aa314 (test: Provide path to `bitcoin` binary)
+=======
+        # Set paths to bitcoin binaries allowing overrides with environment
+        # variables.
+>>>>>>> 3846e14aa314 (test: Provide path to `bitcoin` binary)
         for binary, env_variable_name in binaries.items():
             default_filename = os.path.join(
                 self.config["environment"]["BUILDDIR"],
