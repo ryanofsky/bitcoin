@@ -1034,11 +1034,20 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         if not self.is_cli_compiled():
             raise SkipTest("bitcoin-cli has not been compiled.")
 
+<<<<<<< HEAD
     def skip_if_no_ipc(self):
         """Skip the running test if ipc is not compiled."""
         if not self.is_ipc_compiled():
             raise SkipTest("ipc has not been compiled.")
 
+||||||| parent of c3d82ef8fa94 (test: add is_ipc_enabled() and skip_if_no_ipc() functions)
+=======
+    def skip_if_no_ipc(self):
+        """Skip the running test if ipc is not enabled."""
+        if not self.is_ipc_enabled():
+            raise SkipTest("ipc is not enabled.")
+
+>>>>>>> c3d82ef8fa94 (test: add is_ipc_enabled() and skip_if_no_ipc() functions)
     def skip_if_no_previous_releases(self):
         """Skip the running test if previous releases are not available."""
         if not self.has_previous_releases():
@@ -1098,10 +1107,18 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         """Checks whether the USDT tracepoints were compiled."""
         return self.config["components"].getboolean("ENABLE_USDT_TRACEPOINTS")
 
+<<<<<<< HEAD
     def is_ipc_compiled(self):
         """Checks whether ipc was compiled."""
         return self.config["components"].getboolean("ENABLE_IPC")
 
+||||||| parent of c3d82ef8fa94 (test: add is_ipc_enabled() and skip_if_no_ipc() functions)
+=======
+    def is_ipc_enabled(self):
+        """Checks whether ipc is enabled."""
+        return self.config["components"].getboolean("ENABLE_IPC")
+
+>>>>>>> c3d82ef8fa94 (test: add is_ipc_enabled() and skip_if_no_ipc() functions)
     def has_blockfile(self, node, filenum: str):
         return (node.blocks_path/ f"blk{filenum}.dat").is_file()
 
