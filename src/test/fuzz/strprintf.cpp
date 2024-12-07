@@ -24,7 +24,6 @@ FUZZ_TARGET(str_printf)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
     const std::string format_string = fuzzed_data_provider.ConsumeRandomLengthString(64);
-    const bilingual_str bilingual_string{format_string, format_string};
 
     const int digits_in_format_specifier = std::count_if(format_string.begin(), format_string.end(), IsDigit);
 
