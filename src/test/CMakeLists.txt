@@ -215,5 +215,5 @@ endfunction()
 add_all_test_targets()
 
 install(TARGETS test_bitcoin
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
 )

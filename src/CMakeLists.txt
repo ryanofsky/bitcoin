@@ -171,7 +171,8 @@ target_link_libraries(bitcoin_common
 )
 
 
-set(installable_targets)
+set(external_binaries)
+set(internal_binaries)
 if(ENABLE_WALLET)
   add_subdirectory(wallet)
 
@@ -189,7 +190,7 @@ if(ENABLE_WALLET)
       bitcoin_util
       Boost::headers
     )
-    list(APPEND installable_targets bitcoin-wallet)
+    list(APPEND external_binaries bitcoin-wallet)
   endif()
 endif()
 
@@ -318,7 +319,7 @@ if(BUILD_DAEMON)
     bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
-  list(APPEND installable_targets bitcoind)
+  list(APPEND external_binaries bitcoind)
 endif()
 if(WITH_MULTIPROCESS AND BUILD_DAEMON)
   add_executable(bitcoin-node
@@ -331,8 +332,14 @@ if(WITH_MULTIPROCESS AND BUILD_DAEMON)
     bitcoin_ipc
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
+<<<<<<< HEAD
   list(APPEND installable_targets bitcoin-node)
 endif()
+||||||| parent of 47a872236e07 (cmake: Move internal binaries from bin/ to libexec/)
+  list(APPEND installable_targets bitcoin-node)
+=======
+  list(APPEND internal_binaries bitcoin-node)
+>>>>>>> 47a872236e07 (cmake: Move internal binaries from bin/ to libexec/)
 
 if(WITH_MULTIPROCESS AND BUILD_TESTS)
     # bitcoin_ipc_test library target is defined here in src/CMakeLists.txt
@@ -374,7 +381,7 @@ if(BUILD_CLI)
     libevent::core
     libevent::extra
   )
-  list(APPEND installable_targets bitcoin-cli)
+  list(APPEND external_binaries bitcoin-cli)
 endif()
 
 
@@ -387,7 +394,7 @@ if(BUILD_TX)
     bitcoin_util
     univalue
   )
-  list(APPEND installable_targets bitcoin-tx)
+  list(APPEND external_binaries bitcoin-tx)
 endif()
 
 
@@ -399,7 +406,7 @@ if(BUILD_UTIL)
     bitcoin_common
     bitcoin_util
   )
-  list(APPEND installable_targets bitcoin-util)
+  list(APPEND external_binaries bitcoin-util)
 endif()
 
 
@@ -430,6 +437,7 @@ if(BUILD_UTIL_CHAINSTATE)
       core_interface
       bitcoinkernel
   )
+  list(APPEND internal_binaries bitcoin-chainstate)
 endif()
 
 
@@ -447,10 +455,14 @@ if(BUILD_FUZZ_BINARY)
 endif()
 
 
-install(TARGETS ${installable_targets}
+install(TARGETS ${external_binaries}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-unset(installable_targets)
+install(TARGETS ${internal_binaries}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
+)
+unset(external_binaries)
+unset(internal_binaries)
 
 if(INSTALL_MAN)
   # TODO: these stubs are no longer needed. man pages should be generated at install time.
