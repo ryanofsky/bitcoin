@@ -236,7 +236,13 @@ target_link_libraries(bitcoin-qt
 )
 
 import_plugins(bitcoin-qt)
+<<<<<<< HEAD
 install_binary_component(bitcoin-qt HAS_MANPAGE)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+set(installable_targets bitcoin-qt)
+=======
+set(external_binaries bitcoin-qt)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 if(WIN32)
   set_target_properties(bitcoin-qt PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
@@ -253,12 +259,36 @@ if(WITH_MULTIPROCESS)
     bitcoin_ipc
   )
   import_plugins(bitcoin-gui)
+<<<<<<< HEAD
   install_binary_component(bitcoin-gui)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+  list(APPEND installable_targets bitcoin-gui)
+=======
+  set(internal_binaries bitcoin-gui)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
   if(WIN32)
     set_target_properties(bitcoin-gui PROPERTIES WIN32_EXECUTABLE TRUE)
   endif()
 endif()
 
+<<<<<<< HEAD
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+install(TARGETS ${installable_targets}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  COMPONENT GUI
+)
+
+=======
+install(TARGETS ${external_binaries}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  COMPONENT GUI
+)
+install(TARGETS ${internal_binaries}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
+  COMPONENT GUI
+)
+
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 if(BUILD_GUI_TESTS)
   add_subdirectory(test)
 endif()

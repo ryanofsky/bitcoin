@@ -171,6 +171,13 @@ target_link_libraries(bitcoin_common
 
 include(InstallBinaryComponent)
 
+<<<<<<< HEAD
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+set(installable_targets)
+=======
+set(external_binaries)
+set(internal_binaries)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 if(ENABLE_WALLET)
   add_subdirectory(wallet)
 
@@ -188,7 +195,13 @@ if(ENABLE_WALLET)
       bitcoin_util
       Boost::headers
     )
+<<<<<<< HEAD
     install_binary_component(bitcoin-wallet HAS_MANPAGE)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+    list(APPEND installable_targets bitcoin-wallet)
+=======
+    list(APPEND external_binaries bitcoin-wallet)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
   endif()
 endif()
 
@@ -317,7 +330,13 @@ if(BUILD_DAEMON)
     bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
+<<<<<<< HEAD
   install_binary_component(bitcoind HAS_MANPAGE)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+  list(APPEND installable_targets bitcoind)
+=======
+  list(APPEND external_binaries bitcoind)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 endif()
 if(WITH_MULTIPROCESS AND BUILD_DAEMON)
   add_executable(bitcoin-node
@@ -330,7 +349,13 @@ if(WITH_MULTIPROCESS AND BUILD_DAEMON)
     bitcoin_ipc
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
   )
+<<<<<<< HEAD
   install_binary_component(bitcoin-node)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+  list(APPEND installable_targets bitcoin-node)
+=======
+  list(APPEND internal_binaries bitcoin-node)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 endif()
 
 if(WITH_MULTIPROCESS AND BUILD_TESTS)
@@ -373,7 +398,13 @@ if(BUILD_CLI)
     libevent::core
     libevent::extra
   )
+<<<<<<< HEAD
   install_binary_component(bitcoin-cli HAS_MANPAGE)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+  list(APPEND installable_targets bitcoin-cli)
+=======
+  list(APPEND external_binaries bitcoin-cli)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 endif()
 
 
@@ -386,7 +417,13 @@ if(BUILD_TX)
     bitcoin_util
     univalue
   )
+<<<<<<< HEAD
   install_binary_component(bitcoin-tx HAS_MANPAGE)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+  list(APPEND installable_targets bitcoin-tx)
+=======
+  list(APPEND external_binaries bitcoin-tx)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 endif()
 
 
@@ -398,7 +435,13 @@ if(BUILD_UTIL)
     bitcoin_common
     bitcoin_util
   )
+<<<<<<< HEAD
   install_binary_component(bitcoin-util HAS_MANPAGE)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+  list(APPEND installable_targets bitcoin-util)
+=======
+  list(APPEND external_binaries bitcoin-util)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
 endif()
 
 
@@ -429,6 +472,7 @@ if(BUILD_UTIL_CHAINSTATE)
       core_interface
       bitcoinkernel
   )
+  list(APPEND internal_binaries bitcoin-chainstate)
 endif()
 
 
@@ -444,3 +488,39 @@ endif()
 if(BUILD_FUZZ_BINARY)
   add_subdirectory(test/fuzz)
 endif()
+<<<<<<< HEAD
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+
+
+install(TARGETS ${installable_targets}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+unset(installable_targets)
+
+if(INSTALL_MAN)
+  # TODO: these stubs are no longer needed. man pages should be generated at install time.
+  install(DIRECTORY ../doc/man/
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
+    FILES_MATCHING PATTERN *.1
+  )
+endif()
+=======
+
+
+install(TARGETS ${external_binaries}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(TARGETS ${internal_binaries}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
+)
+unset(external_binaries)
+unset(internal_binaries)
+
+if(INSTALL_MAN)
+  # TODO: these stubs are no longer needed. man pages should be generated at install time.
+  install(DIRECTORY ../doc/man/
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
+    FILES_MATCHING PATTERN *.1
+  )
+endif()
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)

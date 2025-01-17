@@ -81,4 +81,14 @@ add_test(NAME bench_sanity_check_high_priority
   COMMAND bench_bitcoin -sanity-check -priority-level=high
 )
 
+<<<<<<< HEAD
 install_binary_component(bench_bitcoin)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+install(TARGETS bench_bitcoin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+=======
+install(TARGETS bench_bitcoin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
+)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)

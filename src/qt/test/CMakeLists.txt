@@ -45,4 +45,14 @@ if(WIN32 AND VCPKG_TARGET_TRIPLET)
   )
 endif()
 
+<<<<<<< HEAD
 install_binary_component(test_bitcoin-qt)
+||||||| parent of d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
+install(TARGETS test_bitcoin-qt
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+=======
+install(TARGETS test_bitcoin-qt
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
+)
+>>>>>>> d2ceb2e0735a (cmake: Move internal binaries from bin/ to libexec/)
