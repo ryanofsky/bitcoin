@@ -82,5 +82,5 @@ add_test(NAME bench_sanity_check_high_priority
 )
 
 install(TARGETS bench_bitcoin
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}
 )
