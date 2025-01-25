@@ -133,10 +133,19 @@ $(1)_cached:=$(BASE_CACHE)/$(host)/$(1)/$(1)-$($(1)_version)-$($(1)_build_id).ta
 $(1)_build_log:=$(BASEDIR)/$(1)-$($(1)_version)-$($(1)_build_id).log
 endef
 
+# Convert a string to a human-readable filename, replacing dot, slash, and space
+# characters that could cause problems with dashes and collapsing them.
+define int_friendly_file_name
+$(subst $(null) $(null),-,$(strip $(subst ., ,$(subst /, ,$(1)))))
+endef
+
 define int_get_build_properties
 $(1)_build_subdir?=.
 $(1)_download_file?=$($(1)_file_name)
 $(1)_source_dir:=$(SOURCES_PATH)
+# If $(1)_file_name is empty and $(1)_local_dir is nonempty, set file name to a
+# .tar file with a friendly filename named after the directory path.
+$(if $($(1)_file_name),,$(if $($(1)_local_dir),$(eval $(1)_file_name:=$(call int_friendly_file_name,$($(1)_local_dir)).tar)))
 $(1)_source:=$$($(1)_source_dir)/$($(1)_file_name)
 $(1)_download_dir:=$(base_download_dir)/$(1)-$($(1)_version)
 $(1)_prefixbin:=$($($(1)_type)_prefix)/bin/
