@@ -2,6 +2,24 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or https://opensource.org/license/mit/.
 
+# Build local libmultiprocess/ directory, unless an external libmultiprocess
+# package is being used instead.
+if (NOT WITH_EXTERNAL_LIBMULTIPROCESS)
+  add_subdirectory(libmultiprocess EXCLUDE_FROM_ALL)
+  # Apply core_interface compile options to libmultiprocess runtime library.
+  target_link_libraries(multiprocess PUBLIC $<BUILD_INTERFACE:core_interface>)
+  target_link_libraries(mputil PUBLIC $<BUILD_INTERFACE:core_interface>)
+  target_link_libraries(mpgen PUBLIC $<BUILD_INTERFACE:core_interface>)
+  # Mark capproto options as advanced to hide by default from cmake UI
+  mark_as_advanced(CapnProto_DIR)
+  mark_as_advanced(CAPNP_EXECUTABLE)
+  mark_as_advanced(CAPNPC_CXX_EXECUTABLE)
+  # Share MP_INCLUDE_DIR variable with parent scope so target_capnp_sources
+  # build rules can find the libmultiprocess include directory and avoid
+  # "error: Import failed: /mp/proxy.capnp" errors from capnp.
+  set(MP_INCLUDE_DIR "${MP_INCLUDE_DIR}" PARENT_SCOPE)
+endif()
+
 add_library(bitcoin_ipc STATIC EXCLUDE_FROM_ALL
   capnp/mining.cpp
   capnp/protocol.cpp
