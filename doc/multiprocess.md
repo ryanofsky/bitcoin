@@ -4,7 +4,7 @@ _This document describes usage of the multiprocess feature. For design informati
 
 ## Build Option
 
-On Unix systems, the `-DWITH_MULTIPROCESS=ON` build option can be passed to build the supplemental `bitcoin-node` and `bitcoin-gui` multiprocess executables.
+The `-DBUILD_MULTIPROCESS=ON` build option, supported on Unix systems, can be passed to build the supplemental `bitcoin-node` and `bitcoin-gui` multiprocess executables.
 
 ## Debugging
 
@@ -12,7 +12,11 @@ The `-debug=ipc` command line option can be used to see requests and responses b
 
 ## Installation
 
-The multiprocess feature requires [Cap'n Proto](https://capnproto.org/) and [libmultiprocess](https://github.com/chaincodelabs/libmultiprocess) as dependencies. A simple way to get started using it without installing these dependencies manually is to use the [depends system](../depends) with the `MULTIPROCESS=1` [dependency option](../depends#dependency-options) passed to make:
+The multiprocess feature requires [Cap'n Proto](https://capnproto.org/) as an external dependency, which is available from most package managers. See [build-unix.md](build-unix.md) and [build-osx.md](build-osx.md) for information about installing dependencies.
+
+### Depends installation
+
+Alternately the [depends system](../depends) can be used to avoid need to install dependencies. A simple way to get started is to pass the `MULTIPROCESS=1` [dependency option](../depends#dependency-options) to make:
 
 ```
 cd <BITCOIN_SOURCE_DIRECTORY>
@@ -25,9 +29,13 @@ build/src/bitcoin-node -regtest -printtoconsole -debug=ipc
 BITCOIND=$(pwd)/build/src/bitcoin-node build/test/functional/test_runner.py
 ```
 
-The `cmake` build will pick up settings and library locations from the depends directory, so there is no need to pass `-DWITH_MULTIPROCESS=ON` as a separate flag when using the depends system (it's controlled by the `MULTIPROCESS=1` option).
+The `cmake` build will pick up settings and library locations from the depends directory, so there is no need to pass `-DBUILD_MULTIPROCESS=ON` as a separate flag when using the depends system (it's controlled by the `MULTIPROCESS=1` option).
 
-Alternately, you can install [Cap'n Proto](https://capnproto.org/) and [libmultiprocess](https://github.com/chaincodelabs/libmultiprocess) packages on your system, and just run `cmake -B build -DWITH_MULTIPROCESS=ON` without using the depends system. The `cmake` build will be able to locate the installed packages via [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/). See [Installation](https://github.com/chaincodelabs/libmultiprocess/blob/master/doc/install.md) section of the libmultiprocess readme for install steps. See [build-unix.md](build-unix.md) and [build-osx.md](build-osx.md) for information about installing dependencies in general.
+### External libmultiprocess installation
+
+Optionally, when not using depends, the [libmultiprocess](https://github.com/chaincodelabs/libmultiprocess) library can be installed as an external dependency. This can enabled with the `-DWITH_LIBMULTIPROCESS=ON` option, which is off by default. When it is disabled, the libmultiprocess sources in ../src/ipc/libmultiprocess are used instead. See [Installation](https://github.com/chaincodelabs/libmultiprocess/blob/master/doc/install.md) section of the libmultiprocess documentation for install steps.
+
+Installing libmultiprocess externally is only necessary when cross-compiling (to provide a code generation binary that can run on the native system). It can also be useful when developing changes meant to be submitted upstream.
 
 ## Usage
 
