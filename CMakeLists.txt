@@ -141,8 +141,9 @@ endif()
 
 cmake_dependent_option(WITH_DBUS "Enable DBus support." ON "CMAKE_SYSTEM_NAME STREQUAL \"Linux\" AND BUILD_GUI" OFF)
 
-option(WITH_MULTIPROCESS "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
-if(WITH_MULTIPROCESS)
+option(BUILD_MULTIPROCESS "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
+option(WITH_LIBMULTIPROCESS "Build with external libmultiprocess library instead of with local git submodule when BUILD_MULTIPROCESS is enabled. This is necessary in cross-compiled builds to provide a native code-generation tool, and also useful for making changes to the upstream project." OFF)
+if(WITH_LIBMULTIPROCESS)
   find_package(Libmultiprocess REQUIRED COMPONENTS Lib)
   find_package(LibmultiprocessNative REQUIRED COMPONENTS Bin
     NAMES Libmultiprocess
@@ -609,9 +610,9 @@ message("Configure summary")
 message("=================")
 message("Executables:")
 message("  bitcoind ............................ ${BUILD_DAEMON}")
-message("  bitcoin-node (multiprocess) ......... ${WITH_MULTIPROCESS}")
+message("  bitcoin-node (multiprocess) ......... ${BUILD_MULTIPROCESS}")
 message("  bitcoin-qt (GUI) .................... ${BUILD_GUI}")
-if(BUILD_GUI AND WITH_MULTIPROCESS)
+if(BUILD_GUI AND BUILD_MULTIPROCESS)
   set(bitcoin_gui_status ON)
 else()
   set(bitcoin_gui_status OFF)
