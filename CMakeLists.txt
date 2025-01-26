@@ -142,6 +142,7 @@ endif()
 cmake_dependent_option(WITH_DBUS "Enable DBus support." ON "NOT CMAKE_SYSTEM_NAME MATCHES \"(Windows|Darwin)\" AND BUILD_GUI" OFF)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 option(ENABLE_IPC "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
 cmake_dependent_option(WITH_EXTERNAL_LIBMULTIPROCESS "Build with external libmultiprocess library instead of with local git subtree when ENABLE_IPC is enabled. This is not normally recommended, but can be useful for developing libmultiprocess itself." OFF "ENABLE_IPC" OFF)
 if(ENABLE_IPC AND WITH_EXTERNAL_LIBMULTIPROCESS)
@@ -156,6 +157,11 @@ if(ENABLE_IPC)
 ||||||| parent of d597ab1dee6b (cmake: Support building with libmultiprocess subtree)
 if(ENABLE_IPC)
 =======
+||||||| parent of a6d9db48249d (cmake: Enable BUILD_MULTIPROCESS option by default)
+option(ENABLE_IPC "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
+=======
+cmake_dependent_option(ENABLE_IPC "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables." ON "NOT WIN32" OFF)
+>>>>>>> a6d9db48249d (cmake: Enable BUILD_MULTIPROCESS option by default)
 cmake_dependent_option(WITH_EXTERNAL_LIBMULTIPROCESS "Build with external libmultiprocess library instead of with local git subtree when ENABLE_IPC is enabled. This is not normally recommended, but can be useful when cross-compiling or making changes to the upstream project." OFF "ENABLE_IPC" OFF)
 if(ENABLE_IPC AND WITH_EXTERNAL_LIBMULTIPROCESS)
 >>>>>>> d597ab1dee6b (cmake: Support building with libmultiprocess subtree)
