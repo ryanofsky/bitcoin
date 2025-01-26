@@ -1131,7 +1131,36 @@ The ultimate upstream of the few externally managed subtrees are:
   - Used by leveldb for hardware acceleration of CRC32C checksums for data integrity.
   - Upstream at https://github.com/google/crc32c ; maintained by Google.
 
+<<<<<<< HEAD
 ## Upgrading LevelDB
+||||||| parent of e88ab394c163 (doc: Update documentation to explain libmultiprocess subtree)
+- src/secp256k1
+  - Upstream at https://github.com/bitcoin-core/secp256k1/ ; maintained by Core contributors.
+
+- src/crypto/ctaes
+  - Upstream at https://github.com/bitcoin-core/ctaes ; maintained by Core contributors.
+
+- src/minisketch
+  - Upstream at https://github.com/bitcoin-core/minisketch ; maintained by Core contributors.
+
+Upgrading LevelDB
+---------------------
+=======
+- src/secp256k1
+  - Upstream at https://github.com/bitcoin-core/secp256k1/ ; maintained by Core contributors.
+
+- src/crypto/ctaes
+  - Upstream at https://github.com/bitcoin-core/ctaes ; maintained by Core contributors.
+
+- src/minisketch
+  - Upstream at https://github.com/bitcoin-core/minisketch ; maintained by Core contributors.
+
+- src/ipc/libmultiprocess
+  - Upstream at https://github.com/bitcoin-core/libmultiprocess ; maintained by Core contributors.
+
+Upgrading LevelDB
+---------------------
+>>>>>>> e88ab394c163 (doc: Update documentation to explain libmultiprocess subtree)
 
 Extra care must be taken when upgrading LevelDB. This section explains issues
 you must be aware of.
