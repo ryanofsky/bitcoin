@@ -19,9 +19,49 @@ include(../cmake/crc32c.cmake)
 include(../cmake/leveldb.cmake)
 include(../cmake/minisketch.cmake)
 add_subdirectory(univalue)
+<<<<<<< HEAD
 if (ENABLE_IPC AND NOT WITH_EXTERNAL_LIBMULTIPROCESS)
   include(../cmake/libmultiprocess.cmake)
   add_libmultiprocess(ipc/libmultiprocess)
+||||||| parent of d597ab1dee6b (cmake: Support building with libmultiprocess subtree)
+#=============================
+# secp256k1 subtree
+#=============================
+message("")
+message("Configuring secp256k1 subtree...")
+set(SECP256K1_DISABLE_SHARED ON CACHE BOOL "" FORCE)
+set(SECP256K1_ENABLE_MODULE_ECDH OFF CACHE BOOL "" FORCE)
+set(SECP256K1_ENABLE_MODULE_RECOVERY ON CACHE BOOL "" FORCE)
+set(SECP256K1_ENABLE_MODULE_MUSIG OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_TESTS ${BUILD_TESTS} CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_EXHAUSTIVE_TESTS ${BUILD_TESTS} CACHE BOOL "" FORCE)
+if(NOT BUILD_TESTS)
+  # Always skip the ctime tests, if we are building no other tests.
+  # Otherwise, they are built if Valgrind is available. See SECP256K1_VALGRIND.
+  set(SECP256K1_BUILD_CTIME_TESTS ${BUILD_TESTS} CACHE BOOL "" FORCE)
+=======
+if (ENABLE_IPC AND NOT WITH_EXTERNAL_LIBMULTIPROCESS)
+  include(../cmake/libmultiprocess.cmake)
+  add_libmultiprocess(ipc/libmultiprocess)
+endif()
+#=============================
+# secp256k1 subtree
+#=============================
+message("")
+message("Configuring secp256k1 subtree...")
+set(SECP256K1_DISABLE_SHARED ON CACHE BOOL "" FORCE)
+set(SECP256K1_ENABLE_MODULE_ECDH OFF CACHE BOOL "" FORCE)
+set(SECP256K1_ENABLE_MODULE_RECOVERY ON CACHE BOOL "" FORCE)
+set(SECP256K1_ENABLE_MODULE_MUSIG OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_TESTS ${BUILD_TESTS} CACHE BOOL "" FORCE)
+set(SECP256K1_BUILD_EXHAUSTIVE_TESTS ${BUILD_TESTS} CACHE BOOL "" FORCE)
+if(NOT BUILD_TESTS)
+  # Always skip the ctime tests, if we are building no other tests.
+  # Otherwise, they are built if Valgrind is available. See SECP256K1_VALGRIND.
+  set(SECP256K1_BUILD_CTIME_TESTS ${BUILD_TESTS} CACHE BOOL "" FORCE)
+>>>>>>> d597ab1dee6b (cmake: Support building with libmultiprocess subtree)
 endif()
 include(../cmake/secp256k1.cmake)
 add_secp256k1(secp256k1)
