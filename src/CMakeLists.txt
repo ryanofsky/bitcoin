@@ -469,6 +469,9 @@ if(BUILD_FUZZ_BINARY)
 endif()
 
 
+include(GenerateSymlinks)
+create_symlinks_for_all_targets()
+
 install(TARGETS ${installable_targets}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
