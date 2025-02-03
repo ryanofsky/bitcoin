@@ -149,8 +149,8 @@ endif()
 
 cmake_dependent_option(WITH_DBUS "Enable DBus support." ON "CMAKE_SYSTEM_NAME STREQUAL \"Linux\" AND BUILD_GUI" OFF)
 
-option(WITH_MULTIPROCESS "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
-if(WITH_MULTIPROCESS)
+option(ENABLE_IPC "Build multiprocess bitcoin-node and bitcoin-gui executables in addition to monolithic bitcoind and bitcoin-qt executables. Requires libmultiprocess library. Experimental." OFF)
+if(ENABLE_IPC)
   find_package(Libmultiprocess REQUIRED COMPONENTS Lib)
   find_package(LibmultiprocessNative REQUIRED COMPONENTS Bin
     NAMES Libmultiprocess
@@ -625,14 +625,20 @@ message("Configure summary")
 message("=================")
 message("Executables:")
 message("  bitcoind ............................ ${BUILD_DAEMON}")
+<<<<<<< HEAD
 if(BUILD_DAEMON AND WITH_MULTIPROCESS)
   set(bitcoin_daemon_status ON)
 else()
   set(bitcoin_daemon_status OFF)
 endif()
 message("  bitcoin-node (multiprocess) ......... ${bitcoin_daemon_status}")
+||||||| parent of 97e2b5962f98 (scripted-diff: s/WITH_MULTIPROCESS/ENABLE_IPC/ in cmake)
+message("  bitcoin-node (multiprocess) ......... ${WITH_MULTIPROCESS}")
+=======
+message("  bitcoin-node (multiprocess) ......... ${ENABLE_IPC}")
+>>>>>>> 97e2b5962f98 (scripted-diff: s/WITH_MULTIPROCESS/ENABLE_IPC/ in cmake)
 message("  bitcoin-qt (GUI) .................... ${BUILD_GUI}")
-if(BUILD_GUI AND WITH_MULTIPROCESS)
+if(BUILD_GUI AND ENABLE_IPC)
   set(bitcoin_gui_status ON)
 else()
   set(bitcoin_gui_status OFF)

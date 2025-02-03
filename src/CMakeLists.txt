@@ -26,7 +26,7 @@ add_dependencies(bitcoin_clientversion generate_build_info)
 add_subdirectory(crypto)
 add_subdirectory(univalue)
 add_subdirectory(util)
-if(WITH_MULTIPROCESS)
+if(ENABLE_IPC)
   add_subdirectory(ipc)
 endif()
 
@@ -320,7 +320,13 @@ if(BUILD_DAEMON)
   )
   list(APPEND installable_targets bitcoind)
 endif()
+<<<<<<< HEAD
 if(WITH_MULTIPROCESS AND BUILD_DAEMON)
+||||||| parent of 97e2b5962f98 (scripted-diff: s/WITH_MULTIPROCESS/ENABLE_IPC/ in cmake)
+if(WITH_MULTIPROCESS)
+=======
+if(ENABLE_IPC)
+>>>>>>> 97e2b5962f98 (scripted-diff: s/WITH_MULTIPROCESS/ENABLE_IPC/ in cmake)
   add_executable(bitcoin-node
     bitcoind.cpp
     init/bitcoin-node.cpp
