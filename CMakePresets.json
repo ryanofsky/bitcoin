@@ -78,7 +78,17 @@
         "BUILD_WALLET_TOOL": "ON",
         "ENABLE_EXTERNAL_SIGNER": "ON",
         "ENABLE_WALLET": "ON",
+<<<<<<< HEAD
         "ENABLE_IPC": "ON",
+||||||| parent of 69f0d4adb72c (scripted-diff: s/WITH_MULTIPROCESS/ENABLE_IPC/ in cmake)
+        "WARN_INCOMPATIBLE_BDB": "OFF",
+        "WITH_BDB": "ON",
+        "WITH_MULTIPROCESS": "ON",
+=======
+        "WARN_INCOMPATIBLE_BDB": "OFF",
+        "WITH_BDB": "ON",
+        "ENABLE_IPC": "ON",
+>>>>>>> 69f0d4adb72c (scripted-diff: s/WITH_MULTIPROCESS/ENABLE_IPC/ in cmake)
         "WITH_QRENCODE": "ON",
         "WITH_USDT": "ON",
         "WITH_ZMQ": "ON"
