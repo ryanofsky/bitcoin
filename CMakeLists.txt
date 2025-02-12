@@ -347,11 +347,25 @@ target_link_libraries(core_interface INTERFACE
   Threads::Threads
 )
 
+<<<<<<< HEAD
 # Define sanitize_interface with -fsanitize flags intended to apply to all
 # libraries and executables.
+||||||| parent of e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
+=======
+# Define "sanitize_interface" with flags intended to apply to all libraries and
+# executables to support sanitizers and fuzzing, and a separate
+# "fuzzer_interface" with flags specifically intended to apply to the fuzz test
+# binary. Reason these are separate interfaces is that if -DSANITIZERS=fuzzer is
+# specified, the fuzz test binary should be built with -fsanitize=fuzzer (so it
+# can use libFuzzer's main function), but libraries should be built with
+# -fsanitize=fuzzer-no-link (so they can be linked into other executables that
+# have their own main functions).
+>>>>>>> e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
 add_library(sanitize_interface INTERFACE)
+add_library(fuzzer_interface INTERFACE)
 target_link_libraries(core_interface INTERFACE sanitize_interface)
 if(SANITIZERS)
+<<<<<<< HEAD
   # Transform list of sanitizers into -fsanitize flags, replacing "fuzzer" with
   # "fuzzer-no-link" in sanitize_interface flags, and moving "fuzzer" to
   # fuzzer_interface flags. If -DSANITIZERS=fuzzer is specified, the fuzz test
@@ -365,10 +379,32 @@ if(SANITIZERS)
     set(fuzz_flag "-fsanitize=fuzzer")
   endif()
 
+||||||| parent of e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
+=======
+  # Transform list of sanitizers into -fsanitize flags, replacing "fuzzer" with
+  # "fuzzer-no-link" in sanitize_interface flags, and moving "fuzzer" to
+  # fuzzer_interface flags.
+  string(REGEX REPLACE "(^|,)fuzzer($|,)" "\\1fuzzer-no-link\\2" SANITIZE_FLAG "${SANITIZERS}")
+  set(FUZZ_FLAG "")
+  if (NOT "${SANITIZE_FLAG}" STREQUAL "${SANITIZERS}")
+    set(FUZZ_FLAG "-fsanitize=fuzzer")
+    if(NOT BUILD_FOR_FUZZING)
+      message(FATAL_ERROR "Error: Enabling -DSANITIZERS=fuzzer without -DBUILD_FOR_FUZZING=ON is not supported.")
+    endif()
+  endif()
+  set(SANITIZE_FLAG "-fsanitize=${SANITIZE_FLAG}")
+
+>>>>>>> e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
   # First check if the compiler accepts flags. If an incompatible pair like
   # -fsanitize=address,thread is used here, this check will fail. This will also
   # fail if a bad argument is passed, e.g. -fsanitize=undfeined
+<<<<<<< HEAD
   try_append_cxx_flags("-fsanitize=${sanitize_opts}" TARGET sanitize_interface
+||||||| parent of e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
+  try_append_cxx_flags("-fsanitize=${SANITIZERS}" TARGET sanitize_interface
+=======
+  try_append_cxx_flags("${SANITIZE_FLAG}" TARGET sanitize_interface
+>>>>>>> e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
     RESULT_VAR cxx_supports_sanitizers
     SKIP_LINK
   )
@@ -381,7 +417,13 @@ if(SANITIZERS)
   # flag. This is a separate check so we can give a better error message when
   # the sanitize flags are supported by the compiler but the actual sanitizer
   # libs are missing.
+<<<<<<< HEAD
   try_append_linker_flag("-fsanitize=${sanitize_opts}" VAR SANITIZER_LDFLAGS
+||||||| parent of e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
+  try_append_linker_flag("-fsanitize=${SANITIZERS}" VAR SANITIZER_LDFLAGS
+=======
+  try_append_linker_flag("${SANITIZE_FLAG}" VAR SANITIZER_LDFLAGS
+>>>>>>> e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
     SOURCE "
       #include <cstdint>
       #include <cstddef>
@@ -396,6 +438,7 @@ if(SANITIZERS)
   endif()
 endif()
 target_link_options(sanitize_interface INTERFACE ${SANITIZER_LDFLAGS})
+target_link_options(fuzzer_interface INTERFACE ${FUZZ_FLAG})
 
 # Define fuzzer_interface with flags intended to apply to the fuzz test binary,
 # and perform a test compilation to determine correct value of
@@ -408,7 +451,13 @@ if(BUILD_FUZZ_BINARY)
       extern \"C\" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) { return 0; }
       // No main() function.
     " FUZZ_BINARY_LINKS_WITHOUT_MAIN_FUNCTION
+<<<<<<< HEAD
     LDFLAGS ${SANITIZER_LDFLAGS} ${fuzz_flag}
+||||||| parent of e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
+    LDFLAGS ${SANITIZER_LDFLAGS}
+=======
+    LDFLAGS ${SANITIZER_LDFLAGS} ${FUZZ_FLAG}
+>>>>>>> e3d940dbc6c3 (cmake: Fix fuzzer "multiple definition of `main'" errors)
     LINK_LIBRARIES ${FUZZ_LIBS}
   )
   add_library(fuzzer_interface INTERFACE)
