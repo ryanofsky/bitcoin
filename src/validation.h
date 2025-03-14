@@ -843,7 +843,18 @@ public:
         return m_mempool ? &m_mempool->cs : nullptr;
     }
 
+<<<<<<< HEAD
 protected:
+||||||| parent of 8de9d35d43a5 (refactor: Simplify pruning functions)
+private:
+=======
+    //! Return the [start, end] (inclusive) of block heights we can prune.
+    //!
+    //! start > end is possible, meaning no blocks can be pruned.
+    std::pair<int, int> GetPruneRange(int last_height_can_prune) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+
+private:
+>>>>>>> 8de9d35d43a5 (refactor: Simplify pruning functions)
     bool ActivateBestChainStep(BlockValidationState& state, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_mempool->cs);
     bool ConnectTip(
         BlockValidationState& state,
@@ -1326,12 +1337,6 @@ public:
     //!
     //! @sa node/chainstate:LoadChainstate()
     bool ValidatedSnapshotCleanup(Chainstate& validated_cs, Chainstate& unvalidated_cs) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
-
-    //! Return the [start, end] (inclusive) of block heights we can prune.
-    //!
-    //! start > end is possible, meaning no blocks can be pruned.
-    std::pair<int, int> GetPruneRange(
-        const Chainstate& chainstate, int last_height_can_prune) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
     //! Get range of historical blocks to download.
     std::optional<std::pair<const CBlockIndex*, const CBlockIndex*>> GetHistoricalBlockRange() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
