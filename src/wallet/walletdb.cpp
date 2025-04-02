@@ -455,11 +455,18 @@ bool LoadHDChain(CWallet* pwallet, DataStream& ssValue, std::string& strErr)
 
 static DBErrors LoadWalletFlags(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
+    const auto& log{pwallet->Log()};
     AssertLockHeld(pwallet->cs_wallet);
     uint64_t flags;
     if (batch.Read(DBKeys::FLAGS, flags)) {
         if (!pwallet->LoadWalletFlags(flags)) {
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error reading wallet database: Unknown non-tolerable wallet flags found");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            pwallet->WalletLogPrintf("Error reading wallet database: Unknown non-tolerable wallet flags found\n");
+=======
+            LogInfo(log, "Error reading wallet database: Unknown non-tolerable wallet flags found\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             return DBErrors::TOO_NEW;
         }
         // All wallets must be descriptor wallets unless opened with a bdb_ro db
@@ -484,10 +491,17 @@ static LoadResult LoadRecords(CWallet* pwallet, DatabaseBatch& batch, const std:
     DataStream ssKey;
     DataStream ssValue{};
 
+    const auto& log{Assert(pwallet)->Log()};
     Assume(!prefix.empty());
     std::unique_ptr<DatabaseCursor> cursor = batch.GetNewPrefixCursor(prefix);
     if (!cursor) {
+<<<<<<< HEAD
         pwallet->WalletLogPrintf("Error getting database cursor for '%s' records", key);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        pwallet->WalletLogPrintf("Error getting database cursor for '%s' records\n", key);
+=======
+        LogInfo(log, "Error getting database cursor for '%s' records\n", key);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         result.m_result = DBErrors::CORRUPT;
         return result;
     }
@@ -497,7 +511,13 @@ static LoadResult LoadRecords(CWallet* pwallet, DatabaseBatch& batch, const std:
         if (status == DatabaseCursor::Status::DONE) {
             break;
         } else if (status == DatabaseCursor::Status::FAIL) {
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error reading next '%s' record for wallet database", key);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            pwallet->WalletLogPrintf("Error reading next '%s' record for wallet database\n", key);
+=======
+            LogInfo(log, "Error reading next '%s' record for wallet database\n", key);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             result.m_result = DBErrors::CORRUPT;
             return result;
         }
@@ -507,7 +527,13 @@ static LoadResult LoadRecords(CWallet* pwallet, DatabaseBatch& batch, const std:
         std::string error;
         DBErrors record_res = load_func(pwallet, ssKey, ssValue, error);
         if (record_res != DBErrors::LOAD_OK) {
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("%s", error);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            pwallet->WalletLogPrintf("%s\n", error);
+=======
+            LogInfo(log, "%s\n", error);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         }
         result.m_result = std::max(result.m_result, record_res);
         ++result.m_records;
@@ -552,13 +578,20 @@ bool HasLegacyRecords(CWallet& wallet, DatabaseBatch& batch)
 
 static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, int last_client) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
+    const auto& log{pwallet->Log()};
     AssertLockHeld(pwallet->cs_wallet);
     DBErrors result = DBErrors::LOAD_OK;
 
     // Make sure descriptor wallets don't have any legacy records
     if (pwallet->IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS)) {
         if (HasLegacyRecords(*pwallet, batch)) {
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.", pwallet->GetName());
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            pwallet->WalletLogPrintf("Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.\n", pwallet->GetName());
+=======
+            LogInfo(log, "Error: Unexpected legacy entry found in descriptor wallet %s. The wallet might have been tampered with or created with malicious intent.\n", pwallet->GetName());
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             return DBErrors::UNEXPECTED_LEGACY_ENTRY;
         }
 
@@ -686,7 +719,13 @@ static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, 
                 }
             }
         } else {
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Inactive HD chains found but no LegacyDataSPKM");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            pwallet->WalletLogPrintf("Inactive HD chains found but no LegacyDataSPKM\n");
+=======
+            LogInfo(log, "Inactive HD chains found but no LegacyDataSPKM\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             result = DBErrors::CORRUPT;
         }
     }
@@ -750,7 +789,13 @@ static DBErrors LoadLegacyWalletRecords(CWallet* pwallet, DatabaseBatch& batch, 
 
     if (result <= DBErrors::NONCRITICAL_ERROR) {
         // Only do logging and time first key update if there were no critical errors
+<<<<<<< HEAD
         pwallet->WalletLogPrintf("Legacy Wallet Keys: %u plaintext, %u encrypted, %u w/ metadata, %u total.",
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        pwallet->WalletLogPrintf("Legacy Wallet Keys: %u plaintext, %u encrypted, %u w/ metadata, %u total.\n",
+=======
+        LogInfo(log, "Legacy Wallet Keys: %u plaintext, %u encrypted, %u w/ metadata, %u total.\n",
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
                key_res.m_records, ckey_res.m_records, keymeta_res.m_records, key_res.m_records + ckey_res.m_records);
     }
 
@@ -767,6 +812,7 @@ static DataStream PrefixStream(const Args&... args)
 
 static DBErrors LoadDescriptorWalletRecords(CWallet* pwallet, DatabaseBatch& batch, int last_client) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
+    const auto& log{pwallet->Log()};
     AssertLockHeld(pwallet->cs_wallet);
 
     // Load descriptor record
@@ -932,7 +978,13 @@ static DBErrors LoadDescriptorWalletRecords(CWallet* pwallet, DatabaseBatch& bat
 
     if (desc_res.m_result <= DBErrors::NONCRITICAL_ERROR) {
         // Only log if there are no critical errors
+<<<<<<< HEAD
         pwallet->WalletLogPrintf("Descriptors: %u, Descriptor Keys: %u plaintext, %u encrypted, %u total.",
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        pwallet->WalletLogPrintf("Descriptors: %u, Descriptor Keys: %u plaintext, %u encrypted, %u total.\n",
+=======
+        LogInfo(log, "Descriptors: %u, Descriptor Keys: %u plaintext, %u encrypted, %u total.\n",
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
                desc_res.m_records, num_keys, num_ckeys, num_keys + num_ckeys);
     }
 
@@ -941,6 +993,7 @@ static DBErrors LoadDescriptorWalletRecords(CWallet* pwallet, DatabaseBatch& bat
 
 static DBErrors LoadAddressBookRecords(CWallet* pwallet, DatabaseBatch& batch) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet)
 {
+    const auto& log{pwallet->Log()};
     AssertLockHeld(pwallet->cs_wallet);
     DBErrors result = DBErrors::LOAD_OK;
 
@@ -958,14 +1011,20 @@ static DBErrors LoadAddressBookRecords(CWallet* pwallet, DatabaseBatch& batch) E
 
     // Load purpose record
     LoadResult purpose_res = LoadRecords(pwallet, batch, DBKeys::PURPOSE,
-        [] (CWallet* pwallet, DataStream& key, DataStream& value, std::string& err) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet) {
+        [&] (CWallet* pwallet, DataStream& key, DataStream& value, std::string& err) EXCLUSIVE_LOCKS_REQUIRED(pwallet->cs_wallet) {
         std::string strAddress;
         key >> strAddress;
         std::string purpose_str;
         value >> purpose_str;
         std::optional<AddressPurpose> purpose{PurposeFromString(purpose_str)};
         if (!purpose) {
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Warning: nonstandard purpose string '%s' for address '%s'", purpose_str, strAddress);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            pwallet->WalletLogPrintf("Warning: nonstandard purpose string '%s' for address '%s'\n", purpose_str, strAddress);
+=======
+            LogInfo(log, "Warning: nonstandard purpose string '%s' for address '%s'\n", purpose_str, strAddress);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         }
         pwallet->m_address_book[DecodeDestination(strAddress)].purpose = purpose;
         return DBErrors::LOAD_OK;
@@ -1151,11 +1210,13 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
     DBErrors result = DBErrors::LOAD_OK;
     bool any_unordered = false;
 
+    const auto& log{pwallet->Log()};
     LOCK(pwallet->cs_wallet);
 
     // Last client version to open this wallet
     int last_client = VERSION_LATEST;
     bool has_last_client = m_batch->Read(DBKeys::VERSION, last_client);
+<<<<<<< HEAD
     if (has_last_client) pwallet->WalletLogPrintf("Last client version = %d", last_client);
 
     std::optional<uint64_t> last_client_features;
@@ -1170,6 +1231,11 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
             pwallet->SetLastDecryptedFeatures(last_decrypted);
         }
     }
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    if (has_last_client) pwallet->WalletLogPrintf("Last client version = %d\n", last_client);
+=======
+    if (has_last_client) LogInfo(log, "Last client version = %d\n", last_client);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
     try {
         // Load wallet flags, so they are known when processing other records.
@@ -1178,7 +1244,13 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
 
 #ifndef ENABLE_EXTERNAL_SIGNER
         if (pwallet->IsWalletFlagSet(WALLET_FLAG_EXTERNAL_SIGNER)) {
+<<<<<<< HEAD
             pwallet->WalletLogPrintf("Error: External signer wallet being loaded without external signer support compiled");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            pwallet->WalletLogPrintf("Error: External signer wallet being loaded without external signer support compiled\n");
+=======
+            LogInfo(log, "Error: External signer wallet being loaded without external signer support compiled\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             return DBErrors::EXTERNAL_SIGNER_SUPPORT_REQUIRED;
         }
 #endif
@@ -1209,7 +1281,13 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
         // Any uncaught exceptions will be caught here and treated as critical.
         // Catch std::runtime_error specifically as many functions throw these and they at least have some message that
         // we can log
+<<<<<<< HEAD
         pwallet->WalletLogPrintf("%s", e.what());
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        pwallet->WalletLogPrintf("%s\n", e.what());
+=======
+        LogInfo(log, "%s\n", e.what());
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         result = DBErrors::CORRUPT;
     } catch (...) {
         // All other exceptions are still problematic, but we can't log them
@@ -1237,10 +1315,22 @@ DBErrors WalletBatch::LoadWallet(CWallet* pwallet)
     // Although wallets without private keys should not have *ckey records, we should double check that.
     // Removing the mkey records is only safe if there are no *ckey records.
     if (pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS) && pwallet->HasEncryptionKeys() && !pwallet->HaveCryptedKeys()) {
+<<<<<<< HEAD
         pwallet->WalletLogPrintf("Detected extraneous encryption keys in this wallet without private keys. Removing extraneous encryption keys.");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        pwallet->WalletLogPrintf("Detected extraneous encryption keys in this wallet without private keys. Removing extraneous encryption keys.\n");
+=======
+        LogInfo(log, "Detected extraneous encryption keys in this wallet without private keys. Removing extraneous encryption keys.\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         for (const auto& [id, _] : pwallet->mapMasterKeys) {
             if (!EraseMasterKey(id)) {
+<<<<<<< HEAD
                 pwallet->WalletLogPrintf("Error: Unable to remove extraneous encryption key '%u'. Wallet corrupt.", id);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+                pwallet->WalletLogPrintf("Error: Unable to remove extraneous encryption key '%u'. Wallet corrupt.\n", id);
+=======
+                LogInfo(log, "Error: Unable to remove extraneous encryption key '%u'. Wallet corrupt.\n", id);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
                 return DBErrors::CORRUPT;
             }
         }

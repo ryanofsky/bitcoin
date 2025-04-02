@@ -250,7 +250,13 @@ static std::set<std::string> g_unloading_wallet_set GUARDED_BY(g_wallet_release_
 static void FlushAndDeleteWallet(CWallet* wallet)
 {
     const std::string name = wallet->GetName();
+<<<<<<< HEAD
     wallet->WalletLogPrintf("Releasing wallet %s..", name);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    wallet->WalletLogPrintf("Releasing wallet %s..\n", name);
+=======
+    LogInfo(wallet->Log(), "Releasing wallet\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
     delete wallet;
     // Wallet is now released, notify WaitForDeleteWallet, if any.
     {
@@ -485,6 +491,7 @@ std::shared_ptr<CWallet> RestoreWallet(WalletContext& context, const fs::path& b
 CWallet::CWallet(interfaces::Chain* chain, const std::string& name, std::unique_ptr<WalletDatabase> database)
     : m_chain(chain),
       m_name(name),
+      m_log{LogName()},
       m_database(std::move(database)),
       m_scanner(std::make_unique<ChainScanner>(*this))
 {
@@ -662,7 +669,13 @@ util::Expected<void, WalletError> CWallet::ChangeWalletPassphrase(const SecureSt
                 if (!WalletBatch(GetDatabase()).WriteMasterKey(master_key_id, new_master_key)) {
                     return util::Unexpected{WalletError{WalletErrorCode::GenericError, _("Error: Writing the new encryption key to the wallet database failed")}};
                 }
+<<<<<<< HEAD
                 WalletLogPrintf("Wallet passphrase changed to an nDeriveIterations of %i", new_master_key.nDeriveIterations);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+                WalletLogPrintf("Wallet passphrase changed to an nDeriveIterations of %i\n", new_master_key.nDeriveIterations);
+=======
+                LogInfo(m_log, "Wallet passphrase changed to an nDeriveIterations of %i\n", new_master_key.nDeriveIterations);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
                 master_key = std::move(new_master_key);
                 return {};
             }
@@ -864,7 +877,13 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
     if (!EncryptMasterKey(strWalletPassphrase, plain_master_key, master_key)) {
         return false;
     }
+<<<<<<< HEAD
     WalletLogPrintf("Encrypting Wallet with an nDeriveIterations of %i", master_key.nDeriveIterations);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    WalletLogPrintf("Encrypting Wallet with an nDeriveIterations of %i\n", master_key.nDeriveIterations);
+=======
+    LogInfo(m_log, "Encrypting Wallet with an nDeriveIterations of %i\n", master_key.nDeriveIterations);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
     {
         LOCK2(m_relock_mutex, cs_wallet);
@@ -1005,7 +1024,13 @@ bool CWallet::MarkReplaced(const Txid& originalHash, const Txid& newHash)
 
     bool success = true;
     if (!batch.WriteTxMetadata(wtx)) {
+<<<<<<< HEAD
         WalletLogPrintf("%s: Updating batch tx %s failed", __func__, wtx.GetHash().ToString());
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        WalletLogPrintf("%s: Updating batch tx %s failed\n", __func__, wtx.GetHash().ToString());
+=======
+        LogInfo(m_log, "%s: Updating batch tx %s failed\n", __func__, wtx.GetHash().ToString());
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         success = false;
     }
 
@@ -1015,7 +1040,13 @@ bool CWallet::MarkReplaced(const Txid& originalHash, const Txid& newHash)
         if (variant == &wtx) continue;
         variant->m_replaced_by_txid = newHash;
         if (!batch.WriteTxMetadata(*variant)) {
+<<<<<<< HEAD
             WalletLogPrintf("%s: Updating variant tx %s failed", __func__, variant->GetHash().ToString());
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            WalletLogPrintf("%s: Updating variant tx %s failed\n", __func__, variant->GetHash().ToString());
+=======
+            LogInfo(m_log, "%s: Updating variant tx %s failed\n", __func__, variant->GetHash().ToString());
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             success = false;
         }
     }
@@ -1103,7 +1134,7 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const TxState& state, const 
         try {
             fUpdated |= wtx.Update(tx, state, batch, fUpdated);
         } catch (const std::ios_base::failure& e) {
-            WalletLogPrintf("Error: Unable to write tx update, %s", e.what());
+            LogInfo(m_log, "Error: Unable to write tx update, %s", e.what());
             return nullptr;
         }
     }
@@ -1140,7 +1171,7 @@ CWalletTx* CWallet::AddToWallet(CTransactionRef tx, const TxState& state, const 
     if (fInsertedNew || fUpdated) {
         status = fInsertedNew ? (fUpdated ? "new, update" : "new") : "update";
     }
-    WalletLogPrintf("AddToWallet %s %s %s", hash.ToString(), status, TxStateString(state));
+    LogInfo(m_log, "AddToWallet %s %s %s", hash.ToString(), status, TxStateString(state));
 
     // Break debit/credit balance caches:
     wtx.MarkDirty();
@@ -1225,7 +1256,13 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransactionRef& ptx, const SyncTxS
                 std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
                 while (range.first != range.second) {
                     if (range.first->second != tx.GetHash()) {
+<<<<<<< HEAD
                         WalletLogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)", tx.GetHash().ToString(), conf->confirmed_block_hash.ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+                        WalletLogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)\n", tx.GetHash().ToString(), conf->confirmed_block_hash.ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
+=======
+                        LogInfo(m_log, "Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)\n", tx.GetHash().ToString(), conf->confirmed_block_hash.ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
                         MarkConflicted(conf->confirmed_block_hash, conf->confirmed_block_height, range.first->second);
                     }
                     range.first++;
@@ -1856,7 +1893,13 @@ bool CWallet::SubmitTxMemoryPoolAndRelay(CWalletTx& wtx,
         what = "for private broadcast without adding to the mempool";
         break;
     }
+<<<<<<< HEAD
     WalletLogPrintf("Submitting wtx %s %s", wtx.GetHash().ToString(), what);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    WalletLogPrintf("Submitting wtx %s %s\n", wtx.GetHash().ToString(), what);
+=======
+    LogInfo(m_log, "Submitting wtx %s %s\n", wtx.GetHash().ToString(), what);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
     // We must set TxStateInMempool here. Even though it will also be set later by the
     // entered-mempool callback, if we did not there would be a race where a
     // user could call sendmoney in a loop and hit spurious out of funds errors
@@ -1956,7 +1999,13 @@ void CWallet::ResubmitWalletTransactions(node::TxBroadcast broadcast_method, boo
     } // cs_wallet
 
     if (submitted_tx_count > 0) {
+<<<<<<< HEAD
         WalletLogPrintf("%s: resubmit %u unconfirmed transactions", __func__, submitted_tx_count);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        WalletLogPrintf("%s: resubmit %u unconfirmed transactions\n", __func__, submitted_tx_count);
+=======
+        LogInfo(m_log, "%s: resubmit %u unconfirmed transactions\n", __func__, submitted_tx_count);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
     }
 }
 
@@ -2145,7 +2194,13 @@ void CWallet::CommitTransaction(
 )
 {
     LOCK(cs_wallet);
+<<<<<<< HEAD
     WalletLogPrintf("CommitTransaction:\n%s", util::RemoveSuffixView(tx->ToString(), "\n"));
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    WalletLogPrintf("CommitTransaction:\n%s\n", util::RemoveSuffixView(tx->ToString(), "\n"));
+=======
+    LogInfo(m_log, "CommitTransaction:\n%s\n", util::RemoveSuffixView(tx->ToString(), "\n"));
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
     // Add tx to wallet, because if it has change it's also ours,
     // otherwise just for transaction history.
@@ -2177,7 +2232,13 @@ void CWallet::CommitTransaction(
 
     std::string err_string;
     if (!SubmitTxMemoryPoolAndRelay(*wtx, err_string, node::TxBroadcast::MEMPOOL_AND_BROADCAST_TO_ALL)) {
+<<<<<<< HEAD
         WalletLogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s", err_string);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        WalletLogPrintf("CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", err_string);
+=======
+        LogInfo(m_log, "CommitTransaction(): Transaction cannot be broadcast immediately, %s\n", err_string);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         // TODO: if we expect the failure to be long term or permanent, instead delete wtx from the wallet and return failure.
     }
 }
@@ -2318,11 +2379,23 @@ bool CWallet::SetAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
 
     const std::string& encoded_dest = EncodeDestination(address);
     if (new_purpose && !batch.WritePurpose(encoded_dest, PurposeToString(*new_purpose))) {
+<<<<<<< HEAD
         WalletLogPrintf("Error: fail to write address book 'purpose' entry");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        WalletLogPrintf("Error: fail to write address book 'purpose' entry\n");
+=======
+        LogInfo(m_log, "Error: fail to write address book 'purpose' entry\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         return false;
     }
     if (!batch.WriteName(encoded_dest, strName)) {
+<<<<<<< HEAD
         WalletLogPrintf("Error: fail to write address book 'name' entry");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        WalletLogPrintf("Error: fail to write address book 'name' entry\n");
+=======
+        LogInfo(m_log, "Error: fail to write address book 'name' entry\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         return false;
     }
 
@@ -2355,24 +2428,48 @@ bool CWallet::DelAddressBookWithDB(WalletBatch& batch, const CTxDestination& add
         // NOTE: This isn't a problem for sending addresses because they don't have any data that needs to be kept.
         // When adding new address data, it should be considered here whether to retain or delete it.
         if (IsMine(address)) {
+<<<<<<< HEAD
             WalletLogPrintf("%s called with IsMine address, NOT SUPPORTED. Please report this bug! %s", __func__, CLIENT_BUGREPORT);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            WalletLogPrintf("%s called with IsMine address, NOT SUPPORTED. Please report this bug! %s\n", __func__, CLIENT_BUGREPORT);
+=======
+            LogInfo(m_log, "%s called with IsMine address, NOT SUPPORTED. Please report this bug! %s\n", __func__, CLIENT_BUGREPORT);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             return false;
         }
         // Delete data rows associated with this address
         if (!batch.EraseAddressData(address)) {
+<<<<<<< HEAD
             WalletLogPrintf("Error: cannot erase address book entry data");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            WalletLogPrintf("Error: cannot erase address book entry data\n");
+=======
+            LogInfo(m_log, "Error: cannot erase address book entry data\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             return false;
         }
 
         // Delete purpose entry
         if (!batch.ErasePurpose(dest)) {
+<<<<<<< HEAD
             WalletLogPrintf("Error: cannot erase address book entry purpose");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            WalletLogPrintf("Error: cannot erase address book entry purpose\n");
+=======
+            LogInfo(m_log, "Error: cannot erase address book entry purpose\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             return false;
         }
 
         // Delete name entry
         if (!batch.EraseName(dest)) {
+<<<<<<< HEAD
             WalletLogPrintf("Error: cannot erase address book entry name");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            WalletLogPrintf("Error: cannot erase address book entry name\n");
+=======
+            LogInfo(m_log, "Error: cannot erase address book entry name\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
             return false;
         }
 
@@ -2674,7 +2771,13 @@ unsigned int CWallet::ComputeTimeSmart(const CWalletTx& wtx, bool rescanning_old
                 nTimeSmart = std::max(latestEntry, std::min(blocktime, latestNow));
             }
         } else {
+<<<<<<< HEAD
             WalletLogPrintf("%s: found %s in block %s not in index", __func__, wtx.GetHash().ToString(), block_hash->ToString());
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            WalletLogPrintf("%s: found %s in block %s not in index\n", __func__, wtx.GetHash().ToString(), block_hash->ToString());
+=======
+            LogInfo(m_log, "%s: found %s in block %s not in index\n", __func__, wtx.GetHash().ToString(), block_hash->ToString());
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         }
     }
     return nTimeSmart;
@@ -2942,6 +3045,7 @@ std::shared_ptr<CWallet> CWallet::CreateNew(WalletContext& context, const std::s
     // TODO: Can't use std::make_shared because we need a custom deleter but
     // should be possible to use std::allocate_shared.
     std::shared_ptr<CWallet> walletInstance(new CWallet(chain, name, std::move(database)), FlushAndDeleteWallet);
+    const auto& log{walletInstance->Log()};
 
     if (!LoadWalletArgs(walletInstance, context, error, warnings)) {
         return nullptr;
@@ -2982,7 +3086,13 @@ std::shared_ptr<CWallet> CWallet::CreateNew(WalletContext& context, const std::s
         }
     }
 
+<<<<<<< HEAD
     walletInstance->WalletLogPrintf("Wallet completed creation in %15dms", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    walletInstance->WalletLogPrintf("Wallet completed creation in %15dms\n", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
+=======
+    LogInfo(log, "Wallet completed creation in %15dms\n", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
     // Try to top up keypool. No-op if the wallet is locked.
     walletInstance->TopUpKeyPool();
@@ -3002,6 +3112,7 @@ std::shared_ptr<CWallet> CWallet::LoadExisting(WalletContext& context, const std
 
     const auto start{SteadyClock::now()};
     std::shared_ptr<CWallet> walletInstance(new CWallet(chain, name, std::move(database)), FlushAndDeleteWallet);
+    const auto& log{walletInstance->Log()};
 
     if (!LoadWalletArgs(walletInstance, context, error, warnings)) {
         return nullptr;
@@ -3023,7 +3134,13 @@ std::shared_ptr<CWallet> CWallet::LoadExisting(WalletContext& context, const std
         }
     }
 
+<<<<<<< HEAD
     walletInstance->WalletLogPrintf("Wallet completed loading in %15dms", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    walletInstance->WalletLogPrintf("Wallet completed loading in %15dms\n", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
+=======
+    LogInfo(log, "Wallet completed loading in %15dms\n", Ticks<std::chrono::milliseconds>(SteadyClock::now() - start));
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
     // Try to top up keypool. No-op if the wallet is locked.
     walletInstance->TopUpKeyPool();
@@ -3041,6 +3158,7 @@ std::shared_ptr<CWallet> CWallet::LoadExisting(WalletContext& context, const std
 
 bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interfaces::Chain& chain, const bool rescan_required, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
+    const auto& log{walletInstance->Log()};
     LOCK(walletInstance->cs_wallet);
     // allow setting the chain if it hasn't been set already but prevent changing it
     assert(!walletInstance->m_chain || walletInstance->m_chain == &chain);
@@ -3136,7 +3254,13 @@ bool CWallet::AttachChain(const std::shared_ptr<CWallet>& walletInstance, interf
         }
 
         chain.initMessage(_("Rescanning…"));
+<<<<<<< HEAD
         walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...", *tip_height - rescan_height, rescan_height);
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        walletInstance->WalletLogPrintf("Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
+=======
+        LogInfo(log, "Rescanning last %i blocks (from block %i)...\n", *tip_height - rescan_height, rescan_height);
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
         {
             WalletRescanReserver reserver(*walletInstance);
@@ -3565,7 +3689,13 @@ void CWallet::LoadActiveScriptPubKeyMan(uint256 id, OutputType type, bool intern
     // Legacy wallets have only one ScriptPubKeyManager and it's active for all output and change types.
     Assert(IsWalletFlagSet(WALLET_FLAG_DESCRIPTORS));
 
+<<<<<<< HEAD
     WalletLogPrintf("Setting spkMan to active: id = %s, type = %s, internal = %s", id.ToString(), FormatOutputType(type), internal ? "true" : "false");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    WalletLogPrintf("Setting spkMan to active: id = %s, type = %s, internal = %s\n", id.ToString(), FormatOutputType(type), internal ? "true" : "false");
+=======
+    LogInfo(m_log, "Setting spkMan to active: id = %s, type = %s, internal = %s\n", id.ToString(), FormatOutputType(type), internal ? "true" : "false");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
     auto& spk_mans = internal ? m_internal_spk_managers : m_external_spk_managers;
     auto& spk_mans_other = internal ? m_external_spk_managers : m_internal_spk_managers;
     auto spk_man = m_spk_managers.at(id).get();
@@ -3583,7 +3713,13 @@ void CWallet::DeactivateScriptPubKeyMan(uint256 id, OutputType type, bool intern
 {
     auto spk_man = GetScriptPubKeyMan(type, internal);
     if (spk_man != nullptr && spk_man->GetID() == id) {
+<<<<<<< HEAD
         WalletLogPrintf("Deactivate spkMan: id = %s, type = %s, internal = %s", id.ToString(), FormatOutputType(type), internal ? "true" : "false");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        WalletLogPrintf("Deactivate spkMan: id = %s, type = %s, internal = %s\n", id.ToString(), FormatOutputType(type), internal ? "true" : "false");
+=======
+        LogInfo(m_log, "Deactivate spkMan: id = %s, type = %s, internal = %s\n", id.ToString(), FormatOutputType(type), internal ? "true" : "false");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         WalletBatch batch(GetDatabase());
         if (!batch.EraseActiveScriptPubKeyMan(static_cast<uint8_t>(type), internal)) {
             throw std::runtime_error(std::string(__func__) + ": erasing active ScriptPubKeyMan id failed");
@@ -3637,7 +3773,13 @@ util::Result<std::reference_wrapper<DescriptorScriptPubKeyMan>> CWallet::AddWall
 
     auto spk_man = GetDescriptorScriptPubKeyMan(desc);
     if (spk_man) {
+<<<<<<< HEAD
         WalletLogPrintf("Update existing descriptor: %s", desc.descriptor->ToString());
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        WalletLogPrintf("Update existing descriptor: %s\n", desc.descriptor->ToString());
+=======
+        LogInfo(m_log, "Update existing descriptor: %s\n", desc.descriptor->ToString());
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         if (auto spkm_res = spk_man->UpdateWalletDescriptor(desc, signing_provider); !spkm_res) {
             return util::Error{util::ErrorString(spkm_res)};
         }
@@ -3758,7 +3900,13 @@ bool CWallet::MigrateToSQLite(bilingual_str& error)
 {
     AssertLockHeld(cs_wallet);
 
+<<<<<<< HEAD
     WalletLogPrintf("Migrating wallet storage database from BerkeleyDB to SQLite.");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+    WalletLogPrintf("Migrating wallet storage database from BerkeleyDB to SQLite.\n");
+=======
+    LogInfo(m_log, "Migrating wallet storage database from BerkeleyDB to SQLite.\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
     if (m_database->Format() == "sqlite") {
         error = _("Error: This wallet already uses SQLite");
@@ -4085,6 +4233,7 @@ static std::string MigrationPrefixName(CWallet& wallet)
 
 bool DoMigration(CWallet& wallet, WalletContext& context, bilingual_str& error, MigrationResult& res, const bool load_on_startup = true) EXCLUSIVE_LOCKS_REQUIRED(wallet.cs_wallet)
 {
+    const auto& log{wallet.Log()};
     AssertLockHeld(wallet.cs_wallet);
 
     // Get all of the descriptors from the legacy wallet
@@ -4110,7 +4259,13 @@ bool DoMigration(CWallet& wallet, WalletContext& context, bilingual_str& error, 
             options.create_flags |= WALLET_FLAG_KEY_ORIGIN_METADATA;
         }
         if (data->watch_descs.size() > 0) {
+<<<<<<< HEAD
             wallet.WalletLogPrintf("Making a new watchonly wallet containing the watched scripts");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            wallet.WalletLogPrintf("Making a new watchonly wallet containing the watched scripts\n");
+=======
+            LogInfo(log, "Making a new watchonly wallet containing the watched scripts\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
             DatabaseStatus status;
             std::vector<bilingual_str> warnings;
@@ -4150,7 +4305,13 @@ bool DoMigration(CWallet& wallet, WalletContext& context, bilingual_str& error, 
             UpdateWalletSetting(*context.chain, wallet_name, load_on_startup, warnings);
         }
         if (data->solvable_descs.size() > 0) {
+<<<<<<< HEAD
             wallet.WalletLogPrintf("Making a new watchonly wallet containing the unwatched solvable scripts");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+            wallet.WalletLogPrintf("Making a new watchonly wallet containing the unwatched solvable scripts\n");
+=======
+            LogInfo(log, "Making a new watchonly wallet containing the unwatched solvable scripts\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
             DatabaseStatus status;
             std::vector<bilingual_str> warnings;
@@ -4197,7 +4358,13 @@ bool DoMigration(CWallet& wallet, WalletContext& context, bilingual_str& error, 
             error = util::ErrorString(res_migration);
             return false;
         }
+<<<<<<< HEAD
         wallet.WalletLogPrintf("Wallet migration complete.");
+||||||| parent of 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        wallet.WalletLogPrintf("Wallet migration complete.\n");
+=======
+        LogInfo(log, "Wallet migration complete.\n");
+>>>>>>> 34a4dedfdcd (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         return true;
     });
 }
