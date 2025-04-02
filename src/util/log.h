@@ -90,6 +90,7 @@ void Log(Logger* logger, Entry entry);
 //! optional log pointer which can be used by the application's log handler to
 //! determine where to log to, and a Format hook to control message formatting.
 struct Context {
+    static constexpr bool log_context{true};
     Category category;
     Logger* logger;
 
@@ -112,7 +113,8 @@ namespace detail {
 //! Internal helper to get Context from the first macro argument. Overloaded to
 //! detect case where first macro argument is a string literal and context has
 //! been omitted.
-template <Options options>
+template <Options options, typename Context>
+requires (Context::log_context)
 Context& GetContext(Context& context LIFETIMEBOUND) { return context; }
 template <Options options>
 Context GetContext(std::string_view fmt)
@@ -214,6 +216,10 @@ void Log(Options options, SourceLocation&& source_loc, Context&& context, Contex
 //!   const util::log::Context m_log{BCLog::TXRECONCILIATION};
 //!   ...
 //!   LogDebug(m_log, "Forget txreconciliation state of peer=%d", peer_id);
+//!
+//! Using context objects also provides the flexibility to add extra information
+//! and custom formatting to log messages, or to divert log messages to a local
+//! logger instead of the global logging instance.
 //!
 //! If severity level is Info or higher, rate limiting is applied to mitigate
 //! disk filling attacks. Users enabling logging at Debug and lower levels are
