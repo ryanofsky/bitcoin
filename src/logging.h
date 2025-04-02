@@ -241,6 +241,13 @@ namespace BCLog {
     //! category, a reference to the logger object to output to, and a
     //! formatting hook.
     struct Context {
+<<<<<<< HEAD
+||||||| parent of 1770366f5212 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+        LogFlags category;
+=======
+        static constexpr bool log_context{true};
+        LogFlags category;
+>>>>>>> 1770366f5212 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
         Logger& logger;
         LogFlags category;
 
@@ -262,7 +269,20 @@ namespace BCLog {
 namespace detail {
 //! Internal helper to get log context object from the first macro argument.
 template <bool take_category>
+<<<<<<< HEAD
 static const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
+||||||| parent of 1770366f5212 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+static inline const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
+template <bool take_category>
+static inline Context GetContext(std::string_view fmt) { return {}; }
+=======
+static inline const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
+template <bool take_category, typename Context>
+requires (Context::log_context)
+static inline const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
+template <bool take_category>
+static inline Context GetContext(std::string_view fmt) { return {}; }
+>>>>>>> 1770366f5212 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
 template <bool take_category>
 static Context GetContext(LogFlags category)
@@ -373,6 +393,10 @@ bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 //!   ...
 //!   LogDebug(m_log, "Forget txreconciliation state of peer=%d\n", peer_id);
 //!
+//! Using context objects also provides the flexibility to add extra information
+//! and custom formatting to log messages, or to divert log messages to a local
+//! logger instead of the global logging instance, without needing to change
+//! existing log statements.
 #define LogError(...) LogPrint_(BCLog::Level::Error, false, __VA_ARGS__)
 #define LogWarning(...) LogPrint_(BCLog::Level::Warning, false, __VA_ARGS__)
 #define LogInfo(...) LogPrint_(BCLog::Level::Info, false, __VA_ARGS__)
