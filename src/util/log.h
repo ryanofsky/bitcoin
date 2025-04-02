@@ -73,6 +73,7 @@ void Log(Logger* logger, Entry entry);
 //! optional log pointer which can be used by the application's log handler to
 //! determine where to log to, and a Format hook to control message formatting.
 struct Source {
+    static constexpr bool log_source{true};
     Category category;
     Logger* logger;
 
@@ -93,7 +94,9 @@ struct Source {
 
 namespace detail {
 //! Internal helper to get log source object from the first macro argument.
-inline const Source& GetSource(const Source& source LIFETIMEBOUND) { return source; }
+template <typename Source>
+requires (Source::log_source)
+const Source& GetSource(const Source& source LIFETIMEBOUND) { return source; }
 inline Source GetSource(Category category) { return Source{category}; }
 inline Source GetSource(std::string_view fmt) { return Source{}; }
 
@@ -168,6 +171,10 @@ void Log(Level level, bool ratelimit, SourceLocation&& source_loc, Source&& sour
 //!   const util::log::Source m_log{BCLog::TXRECONCILIATION};
 //!   ...
 //!   LogDebug(m_log, "Forget txreconciliation state of peer=%d\n", peer_id);
+//!
+//! Using source objects also provides the flexibility to add extra information
+//! and custom formatting to log messages, or to divert log messages to a local
+//! logger instead of the global logging instance.
 //!
 //! If severity level is Info or higher, rate limiting is applied to mitigate
 //! disk filling attacks. Users enabling logging at Debug and lower levels are
