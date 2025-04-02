@@ -357,11 +357,18 @@ namespace BCLog {
 
 namespace detail {
 //! Internal helper to get log context object from the first macro argument.
+<<<<<<< HEAD
 template <bool take_category, typename Context>
 requires (Context::log_context)
 static const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
 
 template <bool take_category>
+||||||| parent of fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+template <bool take_category>
+=======
+template <bool take_category, typename Context>
+requires (Context::log_context)
+>>>>>>> fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 static const Context& GetContext(const Context& ctx LIFETIMEBOUND) { return ctx; }
 
 template <bool take_category>
@@ -472,6 +479,7 @@ bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 //!   ...
 //!   LogDebug(m_log, "Forget txreconciliation state of peer=%d\n", peer_id);
 //!
+<<<<<<< HEAD
 //! Using context objects also provides the flexibility to add extra information
 //! and custom formatting to log messages, or to divert log messages to a local
 //! logger instead of the global logging instance, without needing to change
@@ -488,6 +496,25 @@ bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 #define LogTrace(...) LogPrint_(BCLog::Level::Trace, false, true, __VA_ARGS__)
 #define LogPrintLevel(ctx, level, ...) LogPrint_((level), (level) >= BCLog::Level::Info, true, (ctx), __VA_ARGS__)
 #define LogPrintLevel_(ctx, level, ratelimit, ...) LogPrint_((level), (ratelimit), true, (ctx), __VA_ARGS__)
+||||||| parent of fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
+#define LogError(...) LogPrint_(BCLog::Level::Error, false, __VA_ARGS__)
+#define LogWarning(...) LogPrint_(BCLog::Level::Warning, false, __VA_ARGS__)
+#define LogInfo(...) LogPrint_(BCLog::Level::Info, false, __VA_ARGS__)
+#define LogDebug(...) LogPrint_(BCLog::Level::Debug, true, __VA_ARGS__)
+#define LogTrace(...) LogPrint_(BCLog::Level::Trace, true, __VA_ARGS__)
+#define LogPrintLevel(ctx, level, ...) LogPrint_(level, true, ctx, __VA_ARGS__)
+=======
+//! Using context objects also provides the flexibility to add extra information
+//! and custom formatting to log messages, or to divert log messages to a local
+//! logger instead of the global logging instance, without needing to change
+//! existing log statements.
+#define LogError(...) LogPrint_(BCLog::Level::Error, false, __VA_ARGS__)
+#define LogWarning(...) LogPrint_(BCLog::Level::Warning, false, __VA_ARGS__)
+#define LogInfo(...) LogPrint_(BCLog::Level::Info, false, __VA_ARGS__)
+#define LogDebug(...) LogPrint_(BCLog::Level::Debug, true, __VA_ARGS__)
+#define LogTrace(...) LogPrint_(BCLog::Level::Trace, true, __VA_ARGS__)
+#define LogPrintLevel(ctx, level, ...) LogPrint_(level, true, ctx, __VA_ARGS__)
+>>>>>>> fea5da15eef4 (wallet, logging: Replace WalletLogPrintf() with LogInfo())
 
 //! Deprecated macros.
 #define LogPrintf(...) LogInfo(__VA_ARGS__)
