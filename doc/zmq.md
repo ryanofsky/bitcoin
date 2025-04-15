@@ -87,9 +87,23 @@ For instance:
                -zmqpubrawtx=ipc:///tmp/bitcoind.tx.raw \
                -zmqpubhashtxhwm=10000
 
+<<<<<<< HEAD
 Notification types correspond to message topics (details in next section). For instance,
 for the notification `-zmqpubhashtx` the topic is `hashtx`. These options can also be
 provided in bitcoin.conf.
+||||||| parent of d0a2a5239d6c (doc: Mention bitcoin wrapper executable in documentation)
+Each PUB notification has a topic and body, where the header
+corresponds to the notification type. For instance, for the
+notification `-zmqpubhashtx` the topic is `hashtx` (no null
+terminator). These options can also be provided in bitcoin.conf.
+=======
+`bitcoin daemon` or `bitcoin gui` can also be substituted for `bitcoind`.
+
+Each PUB notification has a topic and body, where the header
+corresponds to the notification type. For instance, for the
+notification `-zmqpubhashtx` the topic is `hashtx` (no null
+terminator). These options can also be provided in bitcoin.conf.
+>>>>>>> d0a2a5239d6c (doc: Mention bitcoin wrapper executable in documentation)
 
 ### Message format
 
