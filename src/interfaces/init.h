@@ -9,6 +9,7 @@
 #include <interfaces/echo.h>
 #include <interfaces/mining.h>
 #include <interfaces/node.h>
+#include <interfaces/rpc.h>
 #include <interfaces/wallet.h>
 
 #include <memory>
@@ -36,6 +37,7 @@ public:
     virtual std::unique_ptr<Mining> makeMining() { return nullptr; }
     virtual std::unique_ptr<WalletLoader> makeWalletLoader(Chain& chain) { return nullptr; }
     virtual std::unique_ptr<Echo> makeEcho() { return nullptr; }
+    virtual std::unique_ptr<Rpc> makeRpc() { return nullptr; }
     virtual Ipc* ipc() { return nullptr; }
     virtual bool canListenIpc() { return false; }
 };
@@ -53,6 +55,14 @@ std::unique_ptr<Init> MakeWalletInit(int argc, char* argv[], int& exit_status);
 
 //! Return implementation of Init interface for the gui process.
 std::unique_ptr<Init> MakeGuiInit(int argc, char* argv[]);
+
+//! Return implementation of Init interface for a basic IPC client that doesn't
+//! provide any IPC services itself. The exe_name parameter is used for
+//! logging, and the process_argv0 parameter is optional and only needed if the
+//! IPC client will spawn subprocesses.  If so, it should point to the argv[0]
+//! value which the current executable was started with, so other executables
+//! can be found relative to the current one.
+std::unique_ptr<Init> MakeBasicInit(const char* exe_name, const char* process_argv0="");
 } // namespace interfaces
 
 #endif // BITCOIN_INTERFACES_INIT_H
