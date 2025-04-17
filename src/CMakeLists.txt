@@ -393,6 +393,12 @@ target_link_libraries(bitcoin_cli
 # Bitcoin Core RPC client
 if(BUILD_CLI)
   add_executable(bitcoin-cli bitcoin-cli.cpp)
+  if(ENABLE_IPC)
+    target_sources(bitcoin-cli PRIVATE init/basic-ipc.cpp)
+    target_link_libraries(bitcoin-cli bitcoin_ipc)
+  else()
+    target_sources(bitcoin-cli PRIVATE init/basic.cpp)
+  endif()
   add_windows_resources(bitcoin-cli bitcoin-cli-res.rc)
   add_windows_application_manifest(bitcoin-cli)
   target_link_libraries(bitcoin-cli
