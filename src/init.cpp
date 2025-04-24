@@ -33,6 +33,7 @@
 #include <interfaces/ipc.h>
 #include <interfaces/mining.h>
 #include <interfaces/node.h>
+#include <ipc/exception.h>
 #include <kernel/caches.h>
 #include <kernel/context.h>
 #include <key.h>
@@ -298,8 +299,13 @@ void Shutdown(NodeContext& node)
     StopREST();
     StopRPC();
     StopHTTPServer();
-    for (const auto& client : node.chain_clients) {
-        client->flush();
+    for (auto& client : node.chain_clients) {
+        try {
+            client->flush();
+        } catch (const ipc::Exception& e) {
+            LogDebug(BCLog::IPC, "Chain client did not disconnect cleanly: %s", e.what());
+            client.reset();
+        }
     }
     StopMapPort();
 
@@ -374,7 +380,7 @@ void Shutdown(NodeContext& node)
         }
     }
     for (const auto& client : node.chain_clients) {
-        client->stop();
+        if (client) client->stop();
     }
 
 #ifdef ENABLE_ZMQ
