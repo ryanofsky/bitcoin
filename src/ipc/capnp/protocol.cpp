@@ -68,6 +68,13 @@ public:
         m_loop->loop();
         m_loop.reset();
     }
+    void disconnectIncoming() override
+    {
+        if (!m_loop) return;
+        m_loop->sync([&] {
+            m_loop->m_incoming_connections.clear();
+        });
+    }
     void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) override
     {
         mp::ProxyTypeRegister::types().at(type)(iface).cleanup_fns.emplace_back(std::move(cleanup));
