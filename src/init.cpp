@@ -398,6 +398,12 @@ void Shutdown(NodeContext& node)
 
     RemovePidFile(*node.args);
 
+    // If any -ipcbind clients are still connected, disconnect them now so they
+    // do not block shutdown.
+    if (interfaces::Ipc* ipc = node.init->ipc()) {
+        ipc->disconnectIncoming();
+    }
+
     LogPrintf("%s: done\n", __func__);
 }
 
