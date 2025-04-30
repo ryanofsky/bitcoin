@@ -25,6 +25,10 @@
 
 #include <boost/test/unit_test.hpp>
 
+#ifndef WIN32
+#define closesocket close
+#endif
+
 static_assert(ipc::capnp::messages::MAX_MONEY == MAX_MONEY);
 static_assert(ipc::capnp::messages::MAX_DOUBLE == std::numeric_limits<double>::max());
 static_assert(ipc::capnp::messages::DEFAULT_BLOCK_RESERVED_WEIGHT == DEFAULT_BLOCK_RESERVED_WEIGHT);
@@ -44,7 +48,7 @@ static std::string TempPath(std::string_view pattern)
     temp.push_back('\0');
     int fd{mkstemp(temp.data())};
     BOOST_CHECK_GE(fd, 0);
-    BOOST_CHECK_EQUAL(close(fd), 0);
+    BOOST_CHECK_EQUAL(closesocket(fd), 0);
     temp.resize(temp.size() - 1);
     fs::remove(fs::PathFromString(temp));
     return temp;
