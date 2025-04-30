@@ -33,12 +33,18 @@ class ProcessImpl : public Process
 {
 public:
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::tuple<mp::ProcessId, mp::SocketId> spawn(const std::string& new_exe_name, const fs::path& argv0_path) override
 ||||||| parent of 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
     int spawn(const std::string& new_exe_name, const fs::path& argv0_path, int& pid) override
 =======
     int spawn(const std::string& new_exe_name, const fs::path& argv0_path, mp::ProcessId& pid) override
 >>>>>>> 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+    int spawn(const std::string& new_exe_name, const fs::path& argv0_path, mp::ProcessId& pid) override
+=======
+    mp::SocketId spawn(const std::string& new_exe_name, const fs::path& argv0_path, mp::ProcessId& pid) override
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
     {
         return mp::SpawnProcess([&](std::string connect_info) {
             fs::path path = argv0_path;
@@ -55,8 +61,14 @@ public:
     bool checkSpawned(int argc, char* argv[], int& fd) override
 =======
     int waitSpawned(mp::ProcessId pid) override { return mp::WaitProcess(pid); }
+<<<<<<< HEAD
     bool checkSpawned(int argc, char* argv[], int& fd) override
 >>>>>>> 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+    bool checkSpawned(int argc, char* argv[], int& fd) override
+=======
+    bool checkSpawned(int argc, char* argv[], mp::SocketId& socket) override
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
     {
         // If this process was not started with a single -ipcfd argument, it is
         // not a process spawned by the spawn() call above, so return false and
@@ -75,6 +87,12 @@ public:
         } catch (const std::exception& e) {
            throw std::runtime_error(strprintf("Invalid -ipcfd number '%s' (%s)", argv[2], e.what()));
         }
+<<<<<<< HEAD
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+        fd = *maybe_fd;
+=======
+        socket = *maybe_fd;
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
         return true;
     }
     mp::SocketId connect(const fs::path& data_dir,

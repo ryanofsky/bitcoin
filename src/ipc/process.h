@@ -25,6 +25,7 @@ public:
     virtual ~Process() = default;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     //! Spawn process and return socket id for communicating with it.
     virtual std::tuple<mp::ProcessId, mp::SocketId> spawn(const std::string& new_exe_name, const fs::path& argv0_path) = 0;
 ||||||| parent of 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
@@ -36,6 +37,14 @@ public:
     //! it.
     virtual int spawn(const std::string& new_exe_name, const fs::path& argv0_path, mp::ProcessId& pid) = 0;
 >>>>>>> 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+    //! Spawn process and return socket file descriptor for communicating with
+    //! it.
+    virtual int spawn(const std::string& new_exe_name, const fs::path& argv0_path, mp::ProcessId& pid) = 0;
+=======
+    //! Spawn process and return socket id for communicating with it.
+    virtual mp::SocketId spawn(const std::string& new_exe_name, const fs::path& argv0_path, mp::ProcessId& pid) = 0;
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
 
     //! Wait for spawned process to exit and return its exit code.
     virtual int waitSpawned(mp::ProcessId pid) = 0;

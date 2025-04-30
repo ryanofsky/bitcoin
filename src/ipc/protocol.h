@@ -34,16 +34,23 @@ public:
     //! and any client calls will just throw ipc::Exception errors after a
     //! disconnect.
 <<<<<<< HEAD
+<<<<<<< HEAD
     virtual std::unique_ptr<interfaces::Init> connect(mp::Stream stream) = 0;
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     virtual std::unique_ptr<interfaces::Init> connect(int fd, const char* exe_name) = 0;
 =======
     virtual std::unique_ptr<interfaces::Init> connect(int fd) = 0;
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+    virtual std::unique_ptr<interfaces::Init> connect(int fd) = 0;
+=======
+    virtual std::unique_ptr<interfaces::Init> connect(mp::SocketId fd) = 0;
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
 
     //! Listen for connections on provided socket id, accept them, and handle
     //! requests on accepted connections. This method doesn't block, and
     //! performs I/O on a background thread.
+<<<<<<< HEAD
 <<<<<<< HEAD
     virtual void listen(mp::SocketId listen_fd, interfaces::Init& init) = 0;
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
@@ -51,6 +58,11 @@ public:
 =======
     virtual void listen(int listen_fd, interfaces::Init& init) = 0;
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+    virtual void listen(int listen_fd, interfaces::Init& init) = 0;
+=======
+    virtual void listen(mp::SocketId listen_fd, interfaces::Init& init) = 0;
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
 
     //! Handle requests from a stream provided by the make_stream callback,
     //! forwarding them to the provided Init interface. Socket communication is
@@ -86,8 +98,14 @@ public:
     //! client connections from another thread as soon as the event loop is
     //! available, but should not be necessary in normal code which starts
     //! clients and servers independently.
+<<<<<<< HEAD
     virtual void serve(int fd, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+    virtual void serve(int fd, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
+=======
+    virtual void serve(mp::SocketId fd, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
 
     //! Disconnect any incoming connections that are still connected.
     virtual void disconnectIncoming() = 0;

@@ -69,8 +69,14 @@ public:
         int fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
 =======
         mp::ProcessId pid;
+<<<<<<< HEAD
         int fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
 >>>>>>> 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+        int fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
+=======
+        mp::SocketId fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
         LogDebug(::BCLog::IPC, "Process %s pid %i launched\n", new_exe_name, pid);
 <<<<<<< HEAD
         auto init = m_protocol->connect(m_protocol->makeStream(socket));
@@ -94,12 +100,18 @@ public:
         }
         IgnoreCtrlC(strprintf("[%s] SIGINT received — waiting for parent to shut down.\n", m_exe_name));
 <<<<<<< HEAD
+<<<<<<< HEAD
         m_protocol->serve(m_init, [&] { return m_protocol->makeStream(socket); } );
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         m_protocol->serve(fd, m_exe_name, m_init);
 =======
         m_protocol->serve(fd, m_init);
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+        m_protocol->serve(fd, m_init);
+=======
+        m_protocol->serve(socket, m_init);
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
         exit_status = EXIT_SUCCESS;
         return true;
     }
@@ -139,6 +151,7 @@ public:
     void listenAddress(std::string& address) override
     {
 <<<<<<< HEAD
+<<<<<<< HEAD
         mp::SocketId fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
         m_protocol->listen(fd, m_init);
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
@@ -146,6 +159,11 @@ public:
         m_protocol->listen(fd, m_exe_name, m_init);
 =======
         int fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
+||||||| parent of 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+        int fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
+=======
+        mp::SocketId fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
+>>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
         m_protocol->listen(fd, m_init);
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     }
