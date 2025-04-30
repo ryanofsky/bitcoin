@@ -33,12 +33,24 @@ public:
     //! up its own state (calling ProxyServer destructors, etc) on disconnect,
     //! and any client calls will just throw ipc::Exception errors after a
     //! disconnect.
+<<<<<<< HEAD
     virtual std::unique_ptr<interfaces::Init> connect(mp::Stream stream) = 0;
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+    virtual std::unique_ptr<interfaces::Init> connect(int fd, const char* exe_name) = 0;
+=======
+    virtual std::unique_ptr<interfaces::Init> connect(int fd) = 0;
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
 
     //! Listen for connections on provided socket id, accept them, and handle
     //! requests on accepted connections. This method doesn't block, and
     //! performs I/O on a background thread.
+<<<<<<< HEAD
     virtual void listen(mp::SocketId listen_fd, interfaces::Init& init) = 0;
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+    virtual void listen(int listen_fd, const char* exe_name, interfaces::Init& init) = 0;
+=======
+    virtual void listen(int listen_fd, interfaces::Init& init) = 0;
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
 
     //! Handle requests from a stream provided by the make_stream callback,
     //! forwarding them to the provided Init interface. Socket communication is
@@ -54,10 +66,28 @@ public:
     //! loop that was created by them. This isn't a problem because serve() is
     //! only called by spawned child processes that call it immediately to
     //! communicate back with parent processes.
+<<<<<<< HEAD
     virtual void serve(interfaces::Init& init, const std::function<mp::Stream()>& make_stream) = 0;
 
     //! Make stream object from socket id.
     virtual mp::Stream makeStream(mp::SocketId socket) = 0;
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+    //
+    //! The optional `ready_fn` callback will be called after the event loop is
+    //! created but before it is started. This can be useful in tests to trigger
+    //! client connections from another thread as soon as the event loop is
+    //! available, but should not be necessary in normal code which starts
+    //! clients and servers independently.
+    virtual void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
+=======
+    //
+    //! The optional `ready_fn` callback will be called after the event loop is
+    //! created but before it is started. This can be useful in tests to trigger
+    //! client connections from another thread as soon as the event loop is
+    //! available, but should not be necessary in normal code which starts
+    //! clients and servers independently.
+    virtual void serve(int fd, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
 
     //! Disconnect any incoming connections that are still connected.
     virtual void disconnectIncoming() = 0;

@@ -78,12 +78,32 @@ public:
         if (m_loop_thread.joinable()) m_loop_thread.join();
         assert(!m_loop);
     };
+<<<<<<< HEAD
     std::unique_ptr<interfaces::Init> connect(mp::Stream stream) override
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+    std::unique_ptr<interfaces::Init> connect(int fd, const char* exe_name) override
+=======
+    std::unique_ptr<interfaces::Init> connect(int fd) override
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     {
+<<<<<<< HEAD
         startLoop();
         return mp::ConnectStream<messages::Init>(*m_loop, std::move(stream));
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+        startLoop(exe_name);
+        return mp::ConnectStream<messages::Init>(*m_loop, fd);
+=======
+        startLoop();
+        return mp::ConnectStream<messages::Init>(*m_loop, fd);
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     }
+<<<<<<< HEAD
     void listen(mp::SocketId listen_fd, interfaces::Init& init) override
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+    void listen(int listen_fd, const char* exe_name, interfaces::Init& init) override
+=======
+    void listen(int listen_fd, interfaces::Init& init) override
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     {
         startLoop();
         if (::listen(listen_fd, /*backlog=*/5) != 0) {
@@ -91,16 +111,38 @@ public:
         }
         mp::ListenConnections<messages::Init>(*m_loop, listen_fd, init);
     }
+<<<<<<< HEAD
     void serve(interfaces::Init& init, const std::function<mp::Stream()>& make_stream) override
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+    void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
+=======
+    void serve(int fd, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     {
         assert(!m_loop);
+<<<<<<< HEAD
         mp::CurrentThread().thread_name = mp::ThreadName(m_exe_name);
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+        mp::g_thread_context.thread_name = mp::ThreadName(exe_name);
+=======
+        mp::g_thread_context.thread_name = mp::ThreadName(m_exe_name);
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         mp::LogOptions opts = {
             .log_fn = IpcLogFn,
             .log_level = GetRequestedIPCLogLevel()
         };
+<<<<<<< HEAD
         m_loop.emplace(m_exe_name, std::move(opts), &m_context);
         mp::ServeStream<messages::Init>(*m_loop, make_stream(), init);
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+        m_loop.emplace(exe_name, std::move(opts), &m_context);
+        if (ready_fn) ready_fn();
+        mp::ServeStream<messages::Init>(*m_loop, fd, init);
+=======
+        m_loop.emplace(m_exe_name, std::move(opts), &m_context);
+        if (ready_fn) ready_fn();
+        mp::ServeStream<messages::Init>(*m_loop, fd, init);
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         m_parent_connection = &m_loop->m_incoming_connections.back();
         m_loop->loop();
         m_loop.reset();

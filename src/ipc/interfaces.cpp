@@ -64,7 +64,13 @@ public:
     {
         const auto [pid, socket] = m_process->spawn(new_exe_name, m_process_argv0);
         LogDebug(::BCLog::IPC, "Process %s pid %i launched\n", new_exe_name, pid);
+<<<<<<< HEAD
         auto init = m_protocol->connect(m_protocol->makeStream(socket));
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+        auto init = m_protocol->connect(fd, m_exe_name);
+=======
+        auto init = m_protocol->connect(fd);
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         Ipc::addCleanup(*init, [this, new_exe_name, pid] {
             int status = m_process->waitSpawned(pid);
             LogDebug(::BCLog::IPC, "Process %s pid %i exited with status %i\n", new_exe_name, pid, status);
@@ -79,7 +85,13 @@ public:
             return false;
         }
         IgnoreCtrlC(strprintf("[%s] SIGINT received — waiting for parent to shut down.\n", m_exe_name));
+<<<<<<< HEAD
         m_protocol->serve(m_init, [&] { return m_protocol->makeStream(socket); } );
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+        m_protocol->serve(fd, m_exe_name, m_init);
+=======
+        m_protocol->serve(fd, m_init);
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         exit_status = EXIT_SUCCESS;
         return true;
     }
@@ -108,12 +120,26 @@ public:
         } else {
             fd = m_process->connect(gArgs.GetDataDirNet(), "bitcoin-node", address);
         }
+<<<<<<< HEAD
         return m_protocol->connect(m_protocol->makeStream(fd));
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+        return m_protocol->connect(fd, m_exe_name);
+=======
+        return m_protocol->connect(fd);
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     }
     void listenAddress(std::string& address) override
     {
+<<<<<<< HEAD
         mp::SocketId fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
         m_protocol->listen(fd, m_init);
+||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+        int fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
+        m_protocol->listen(fd, m_exe_name, m_init);
+=======
+        int fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
+        m_protocol->listen(fd, m_init);
+>>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     }
     void disconnectIncoming() override
     {
