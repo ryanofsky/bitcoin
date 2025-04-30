@@ -62,7 +62,15 @@ public:
     }
     std::unique_ptr<interfaces::Init> spawnProcess(const char* new_exe_name) override
     {
+<<<<<<< HEAD
         const auto [pid, socket] = m_process->spawn(new_exe_name, m_process_argv0);
+||||||| parent of 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
+        int pid;
+        int fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
+=======
+        mp::ProcessId pid;
+        int fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
+>>>>>>> 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
         LogDebug(::BCLog::IPC, "Process %s pid %i launched\n", new_exe_name, pid);
 <<<<<<< HEAD
         auto init = m_protocol->connect(m_protocol->makeStream(socket));
