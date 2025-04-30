@@ -24,11 +24,19 @@
 #include <variant>
 #include <vector>
 
+<<<<<<< HEAD
 #if __has_include(<cxxabi.h>)
 #include <cxxabi.h>
 #include <memory>
 #endif
 
+||||||| parent of b2fc43a57c7 (util: Add Windows support)
+=======
+#ifdef WIN32
+#include <winsock2.h>
+#endif
+
+>>>>>>> b2fc43a57c7 (util: Add Windows support)
 namespace mp {
 
 //! Generic utility functions used by capnp code.
@@ -260,12 +268,20 @@ std::string LogEscape(const kj::StringTree& string, size_t max_size);
 
 using Stream = kj::Own<kj::AsyncIoStream>;
 
+#ifdef WIN32
+using ProcessId = uintptr_t;
+using SocketId = uintptr_t;
+constexpr SocketId SocketError{INVALID_SOCKET};
+#else
 using ProcessId = int;
 using SocketId = int;
 constexpr SocketId SocketError{-1};
+#endif
 
 //! Information about parent process passed to child process as a command-line
 //! argument. On unix this is the child socket fd number formatted as a string.
+//! On windows, this is a path to a named pipe the parent process will write
+//! WSADuplicateSocket info to.
 using ConnectInfo = std::string;
 
 //! Callback type used by SpawnProcess below.
