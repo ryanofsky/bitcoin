@@ -20,6 +20,7 @@
 #include <kj/memory.h>
 #include <kj/test.h>
 #include <stdexcept>
+#include <unistd.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -133,16 +134,19 @@ void IpcPipeTest()
 //! Test ipc::Protocol connect() and serve() methods connecting over a socketpair.
 void IpcSocketPairTest()
 {
-    int fds[2];
-    BOOST_CHECK_EQUAL(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
     std::unique_ptr<interfaces::Init> init{std::make_unique<TestInit>()};
-    std::unique_ptr<ipc::Protocol> protocol{ipc::capnp::MakeCapnpProtocol()};
+    std::unique_ptr<ipc::Protocol> protocol{ipc::capnp::MakeCapnpProtocol("IpcSocketPairTest")};
+    std::array<mp::Stream, 2> fds;
     std::promise<void> promise;
     std::thread thread([&]() {
-        protocol->serve(fds[0], "test-serve", *init, [&] { promise.set_value(); });
+        protocol->serve(*init, [&] {
+            fds = protocol->makeSocketPair();
+            promise.set_value();
+            return std::move(fds[0]);
+        });
     });
     promise.get_future().wait();
-    std::unique_ptr<interfaces::Init> remote_init{protocol->connect(fds[1], "test-connect")};
+    std::unique_ptr<interfaces::Init> remote_init{protocol->connect(std::move(fds[1]))};
     std::unique_ptr<interfaces::Echo> remote_echo{remote_init->makeEcho()};
     BOOST_CHECK_EQUAL(remote_echo->echo("echo test"), "echo test");
     remote_echo.reset();
@@ -154,7 +158,7 @@ void IpcSocketPairTest()
 void IpcSocketTest(const fs::path& datadir)
 {
     std::unique_ptr<interfaces::Init> init{std::make_unique<TestInit>()};
-    std::unique_ptr<ipc::Protocol> protocol{ipc::capnp::MakeCapnpProtocol()};
+    std::unique_ptr<ipc::Protocol> protocol{ipc::capnp::MakeCapnpProtocol("IpcSocketTest")};
     std::unique_ptr<ipc::Process> process{ipc::MakeProcess()};
 
     std::string invalid_bind{"invalid:"};
@@ -163,17 +167,17 @@ void IpcSocketTest(const fs::path& datadir)
 
     auto bind_and_listen{[&](const std::string& bind_address) {
         std::string address{bind_address};
-        int serve_fd = process->bind(datadir, "test_bitcoin", address);
+        mp::SocketId serve_fd = process->bind(datadir, "test_bitcoin", address);
         BOOST_CHECK_GE(serve_fd, 0);
         BOOST_CHECK_EQUAL(address, bind_address);
-        protocol->listen(serve_fd, "test-serve", *init);
+        protocol->listen(serve_fd, *init);
     }};
 
     auto connect_and_test{[&](const std::string& connect_address) {
         std::string address{connect_address};
-        int connect_fd{process->connect(datadir, "test_bitcoin", address)};
+        mp::SocketId connect_fd{process->connect(datadir, "test_bitcoin", address)};
         BOOST_CHECK_EQUAL(address, connect_address);
-        std::unique_ptr<interfaces::Init> remote_init{protocol->connect(connect_fd, "test-connect")};
+        std::unique_ptr<interfaces::Init> remote_init{protocol->connect(protocol->makeStream(connect_fd))};
         std::unique_ptr<interfaces::Echo> remote_echo{remote_init->makeEcho()};
         BOOST_CHECK_EQUAL(remote_echo->echo("echo test"), "echo test");
     }};

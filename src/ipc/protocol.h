@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <memory>
+#include <mp/proxy-io.h>
 #include <typeindex>
 
 namespace ipc {
@@ -32,12 +33,12 @@ public:
     //! up its own state (calling ProxyServer destructors, etc) on disconnect,
     //! and any client calls will just throw ipc::Exception errors after a
     //! disconnect.
-    virtual std::unique_ptr<interfaces::Init> connect(int fd, const char* exe_name) = 0;
+    virtual std::unique_ptr<interfaces::Init> connect(mp::Stream stream) = 0;
 
     //! Listen for connections on provided socket descriptor, accept them, and
     //! handle requests on accepted connections. This method doesn't block, and
     //! performs I/O on a background thread.
-    virtual void listen(int listen_fd, const char* exe_name, interfaces::Init& init) = 0;
+    virtual void listen(mp::SocketId listen_fd, interfaces::Init& init) = 0;
 
     //! Handle requests on provided socket descriptor, forwarding them to the
     //! provided Init interface. Socket communication is handled on the
@@ -56,7 +57,14 @@ public:
     //! client connections from another thread as soon as the event loop is
     //! available, but should not be necessary in normal code which starts
     //! clients and servers independently.
-    virtual void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
+    //! FIXME update comment
+    virtual void serve(interfaces::Init& init, const std::function<mp::Stream()>& make_stream) = 0;
+
+    //! Make stream object from socket id.
+    virtual mp::Stream makeStream(mp::SocketId socket) = 0;
+
+    //! Return a socket pair for communication within a single process or with a child process.
+    virtual std::array<mp::Stream, 2> makeSocketPair() = 0;
 
     //! Add cleanup callback to interface that will run when the interface is
     //! deleted.
