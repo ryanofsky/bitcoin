@@ -79,12 +79,18 @@ public:
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
         LogDebug(::BCLog::IPC, "Process %s pid %i launched\n", new_exe_name, pid);
 <<<<<<< HEAD
+<<<<<<< HEAD
         auto init = m_protocol->connect(m_protocol->makeStream(socket));
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         auto init = m_protocol->connect(fd, m_exe_name);
 =======
         auto init = m_protocol->connect(fd);
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+        auto init = m_protocol->connect(fd);
+=======
+        auto init = m_protocol->connect(m_protocol->makeStream(fd));
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
         Ipc::addCleanup(*init, [this, new_exe_name, pid] {
             int status = m_process->waitSpawned(pid);
             LogDebug(::BCLog::IPC, "Process %s pid %i exited with status %i\n", new_exe_name, pid, status);
@@ -101,6 +107,7 @@ public:
         IgnoreCtrlC(strprintf("[%s] SIGINT received — waiting for parent to shut down.\n", m_exe_name));
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         m_protocol->serve(m_init, [&] { return m_protocol->makeStream(socket); } );
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         m_protocol->serve(fd, m_exe_name, m_init);
@@ -112,6 +119,11 @@ public:
 =======
         m_protocol->serve(socket, m_init);
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+        m_protocol->serve(socket, m_init);
+=======
+        m_protocol->serve(m_init, [&] { return m_protocol->makeStream(socket); } );
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
         exit_status = EXIT_SUCCESS;
         return true;
     }
@@ -141,12 +153,18 @@ public:
             fd = m_process->connect(gArgs.GetDataDirNet(), "bitcoin-node", address);
         }
 <<<<<<< HEAD
+<<<<<<< HEAD
         return m_protocol->connect(m_protocol->makeStream(fd));
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         return m_protocol->connect(fd, m_exe_name);
 =======
         return m_protocol->connect(fd);
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+        return m_protocol->connect(fd);
+=======
+        return m_protocol->connect(m_protocol->makeStream(fd));
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
     }
     void listenAddress(std::string& address) override
     {

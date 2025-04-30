@@ -35,6 +35,7 @@ public:
     //! disconnect.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     virtual std::unique_ptr<interfaces::Init> connect(mp::Stream stream) = 0;
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     virtual std::unique_ptr<interfaces::Init> connect(int fd, const char* exe_name) = 0;
@@ -46,6 +47,11 @@ public:
 =======
     virtual std::unique_ptr<interfaces::Init> connect(mp::SocketId fd) = 0;
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+    virtual std::unique_ptr<interfaces::Init> connect(mp::SocketId fd) = 0;
+=======
+    virtual std::unique_ptr<interfaces::Init> connect(mp::Stream stream) = 0;
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
 
     //! Listen for connections on provided socket id, accept them, and handle
     //! requests on accepted connections. This method doesn't block, and
@@ -79,6 +85,7 @@ public:
     //! only called by spawned child processes that call it immediately to
     //! communicate back with parent processes.
 <<<<<<< HEAD
+<<<<<<< HEAD
     virtual void serve(interfaces::Init& init, const std::function<mp::Stream()>& make_stream) = 0;
 
     //! Make stream object from socket id.
@@ -106,6 +113,20 @@ public:
 =======
     virtual void serve(mp::SocketId fd, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+    //
+    //! The optional `ready_fn` callback will be called after the event loop is
+    //! created but before it is started. This can be useful in tests to trigger
+    //! client connections from another thread as soon as the event loop is
+    //! available, but should not be necessary in normal code which starts
+    //! clients and servers independently.
+    virtual void serve(mp::SocketId fd, interfaces::Init& init, const std::function<void()>& ready_fn = {}) = 0;
+=======
+    virtual void serve(interfaces::Init& init, const std::function<mp::Stream()>& make_stream) = 0;
+
+    //! Make stream object from socket id.
+    virtual mp::Stream makeStream(mp::SocketId socket) = 0;
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
 
     //! Disconnect any incoming connections that are still connected.
     virtual void disconnectIncoming() = 0;

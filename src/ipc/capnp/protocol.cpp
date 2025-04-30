@@ -80,6 +80,7 @@ public:
     };
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::unique_ptr<interfaces::Init> connect(mp::Stream stream) override
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     std::unique_ptr<interfaces::Init> connect(int fd, const char* exe_name) override
@@ -91,9 +92,15 @@ public:
 =======
     std::unique_ptr<interfaces::Init> connect(mp::SocketId socket) override
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+    std::unique_ptr<interfaces::Init> connect(mp::SocketId socket) override
+=======
+    std::unique_ptr<interfaces::Init> connect(mp::Stream stream) override
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
     {
 <<<<<<< HEAD
         startLoop();
+<<<<<<< HEAD
         return mp::ConnectStream<messages::Init>(*m_loop, std::move(stream));
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         startLoop(exe_name);
@@ -108,6 +115,11 @@ public:
 =======
         return mp::ConnectStream<messages::Init>(*m_loop, socket);
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+        return mp::ConnectStream<messages::Init>(*m_loop, socket);
+=======
+        return mp::ConnectStream<messages::Init>(*m_loop, std::move(stream));
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
     }
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -131,6 +143,7 @@ public:
     }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     void serve(interfaces::Init& init, const std::function<mp::Stream()>& make_stream) override
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
     void serve(int fd, const char* exe_name, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
@@ -142,6 +155,11 @@ public:
 =======
     void serve(mp::SocketId socket, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+    void serve(mp::SocketId socket, interfaces::Init& init, const std::function<void()>& ready_fn = {}) override
+=======
+    void serve(interfaces::Init& init, const std::function<mp::Stream()>& make_stream) override
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
     {
         assert(!m_loop);
 <<<<<<< HEAD
@@ -164,6 +182,7 @@ public:
         mp::ServeStream<messages::Init>(*m_loop, fd, init);
 =======
         m_loop.emplace(m_exe_name, std::move(opts), &m_context);
+<<<<<<< HEAD
         if (ready_fn) ready_fn();
 <<<<<<< HEAD
         mp::ServeStream<messages::Init>(*m_loop, fd, init);
@@ -173,6 +192,12 @@ public:
 =======
         mp::ServeStream<messages::Init>(*m_loop, socket, init);
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+        if (ready_fn) ready_fn();
+        mp::ServeStream<messages::Init>(*m_loop, socket, init);
+=======
+        mp::ServeStream<messages::Init>(*m_loop, make_stream(), init);
+>>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
         m_parent_connection = &m_loop->m_incoming_connections.back();
         m_loop->loop();
         m_loop.reset();
