@@ -21,9 +21,14 @@
 #include <utility>
 #include <vector>
 
+#ifdef WIN32
+#include <afunix.h>
+#else
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#define closesocket close
+#endif
 
 using util::RemovePrefixView;
 
@@ -159,7 +164,7 @@ mp::SocketId ProcessImpl::connect(const fs::path& data_dir,
         return fd;
     }
     int connect_error = errno;
-    if (::close(fd) != 0) {
+    if (::closesocket(fd) != 0) {
         LogWarning("Error closing file descriptor %i '%s': %s", fd, address, SysErrorString(errno));
     }
     throw std::system_error(connect_error, std::system_category());
@@ -176,7 +181,12 @@ mp::SocketId ProcessImpl::bind(const fs::path& data_dir, const std::string& exe_
     if (addr.sun_family == AF_UNIX) {
         fs::path path = addr.sun_path;
         if (path.has_parent_path()) fs::create_directories(path.parent_path());
-        if (fs::symlink_status(path).type() == fs::file_type::socket) {
+        if (fs::symlink_status(path).type() == fs::file_type::socket
+#ifdef WIN32
+            // On windows, sockets show up as regular files with size 0
+            || (fs::is_regular_file(path) && fs::file_size(path) == 0)
+#endif
+        ) {
             fs::remove(path);
         }
     }
@@ -190,7 +200,7 @@ mp::SocketId ProcessImpl::bind(const fs::path& data_dir, const std::string& exe_
         return fd;
     }
     int bind_error = errno;
-    if (::close(fd) != 0) {
+    if (::closesocket(fd) != 0) {
         LogWarning("Error closing file descriptor %i: %s", fd, SysErrorString(errno));
     }
     throw std::system_error(bind_error, std::system_category());
