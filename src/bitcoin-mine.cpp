@@ -95,6 +95,10 @@ MAIN_FUNCTION
         tfm::format(std::cerr, "Error: StartLogging failed\n");
         return EXIT_FAILURE;
     }
+    if (!SetupNetworking()) {
+        tfm::format(std::cerr, "Error: SetupNetworking failed\n");
+        return EXIT_FAILURE;
+    }
 
     // Connect to bitcoin-node process, or fail and print an error.
     std::unique_ptr<interfaces::Init> mine_init{interfaces::MakeBasicInit("bitcoin-mine", argc > 0 ? argv[0] : "")};
