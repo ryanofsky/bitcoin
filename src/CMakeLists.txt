@@ -367,6 +367,7 @@ if(ENABLE_IPC AND BUILD_DAEMON)
     core_interface
     bitcoin_common
     bitcoin_ipc
+    bitcoin_node
   )
   install_binary_component(bitcoin-mine)
 endif()

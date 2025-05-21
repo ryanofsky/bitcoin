@@ -120,5 +120,7 @@ MAIN_FUNCTION
         tfm::format(std::cout, "Tip hash is null.\n");
     }
 
+    sleep(5);
+
     return EXIT_SUCCESS;
 }
