@@ -11,6 +11,8 @@
 #include <common/system.h>
 #include <compat/compat.h>
 #include <init/common.h>
+#include <interfaces/chain.h>
+#include <interfaces/handler.h>
 #include <interfaces/init.h>
 #include <interfaces/ipc.h>
 #include <logging.h>
@@ -110,15 +112,17 @@ MAIN_FUNCTION
     }
     assert(node_init);
     tfm::format(std::cout, "Connected to bitcoin-node\n");
-    std::unique_ptr<interfaces::Mining> mining{node_init->makeMining()};
-    assert(mining);
+    std::unique_ptr<interfaces::Chain> chain{node_init->makeChain()};
+    assert(chain);
 
-    auto tip{mining->getTip()};
-    if (tip) {
-        tfm::format(std::cout, "Tip hash is %s.\n", tip->hash.ToString());
+    auto height{chain->getHeight()};
+    if (height) {
+        tfm::format(std::cout, "Height is %s.\n", *height);
     } else {
-        tfm::format(std::cout, "Tip hash is null.\n");
+        tfm::format(std::cout, "Height is null.\n");
     }
+
+    auto handler{chain->handleNotifications(std::make_shared<interfaces::Chain::Notifications>())};
 
     sleep(5);
 
