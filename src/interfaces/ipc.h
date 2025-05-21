@@ -70,8 +70,8 @@ public:
     //! clients. Throws an exception if there was an error.
     virtual void listenAddress(std::string& address) = 0;
 
-    //! Disconnect any incoming connections that are still connected.
-    virtual void disconnectIncoming() = 0;
+    //! Shut down IPC, freeing resources and disconnecting any current connections.
+    virtual void shutdown() = 0;
 
     //! Add cleanup callback to remote interface that will run when the
     //! interface is deleted.

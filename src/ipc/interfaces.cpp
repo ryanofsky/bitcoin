@@ -109,9 +109,9 @@ public:
         int fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
         m_protocol->listen(fd, m_exe_name, m_init);
     }
-    void disconnectIncoming() override
+    void shutdown() override
     {
-        m_protocol->disconnectIncoming();
+        m_protocol.reset();
     }
     void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) override
     {

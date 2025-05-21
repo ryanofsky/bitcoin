@@ -41,6 +41,11 @@ class CapnpProtocol : public Protocol
 public:
     ~CapnpProtocol() noexcept(true)
     {
+        if (m_loop) {
+            m_loop->sync([&] {
+                m_loop->m_incoming_connections.clear();
+            });
+        }
         m_loop_ref.reset();
         if (m_loop_thread.joinable()) m_loop_thread.join();
         assert(!m_loop);
@@ -67,13 +72,6 @@ public:
         mp::ServeStream<messages::Init>(*m_loop, fd, init);
         m_loop->loop();
         m_loop.reset();
-    }
-    void disconnectIncoming() override
-    {
-        if (!m_loop) return;
-        m_loop->sync([&] {
-            m_loop->m_incoming_connections.clear();
-        });
     }
     void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) override
     {

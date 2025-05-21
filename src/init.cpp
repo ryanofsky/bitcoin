@@ -383,6 +383,12 @@ void Shutdown(NodeContext& node)
         if (client) client->stop();
     }
 
+    // Shut down IPC. If any -ipcbind clients are still connected, disconnect
+    // them now so they do not interfere with shutdown.
+    if (interfaces::Ipc* ipc = node.init->ipc()) {
+        ipc->shutdown();
+    }
+
 #ifdef ENABLE_ZMQ
     if (g_zmq_notification_interface) {
         if (node.validation_signals) node.validation_signals->UnregisterValidationInterface(g_zmq_notification_interface.get());
@@ -403,12 +409,6 @@ void Shutdown(NodeContext& node)
     node.kernel.reset();
 
     RemovePidFile(*node.args);
-
-    // If any -ipcbind clients are still connected, disconnect them now so they
-    // do not block shutdown.
-    if (interfaces::Ipc* ipc = node.init->ipc()) {
-        ipc->disconnectIncoming();
-    }
 
     LogPrintf("%s: done\n", __func__);
 }
