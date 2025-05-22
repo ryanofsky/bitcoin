@@ -144,7 +144,7 @@ CommandLine ParseCommandLine(int argc, char* argv[])
 }
 
 //! Execute the specified bitcoind, bitcoin-qt or other command line in `args`
-//! using src, bin and libexec directory paths relative to this executable, where
+//! using bin and libexec directory paths relative to this executable, where
 //! the path to this executable is specified in `wrapper_argv0`.
 //!
 //! @param args Command line arguments to execute, where first argument should
@@ -182,7 +182,7 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
     const fs::path wrapper_path{util::GetExePath(wrapper_argv0)};
 
     // Try to resolve any symlinks and figure out the directory containing the wrapper executable.
-    std::error_code ec;
+    std::error_code ec; // Unchecked, but passed to avoid throwing exceptions.
     fs::path wrapper_dir{fs::weakly_canonical(wrapper_path, ec)};
     if (wrapper_dir.empty()) wrapper_dir = wrapper_path; // Restore previous path if weakly_canonical failed.
     wrapper_dir = wrapper_dir.parent_path();

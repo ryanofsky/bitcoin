@@ -46,8 +46,8 @@ fs::path GetExePath(std::string_view argv0)
     // executables.
     const fs::path argv0_path{fs::PathFromString(std::string{argv0})};
     fs::path path{argv0_path};
-    std::error_code ec;
 #ifndef WIN32
+    std::error_code ec; // Unchecked, but passed to avoid throwing exceptions.
     // If argv0 doesn't contain a path separator, it was invoked from the system
     // PATH and can be searched for there.
     if (!argv0_path.has_parent_path()) {
