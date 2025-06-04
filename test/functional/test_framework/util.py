@@ -305,7 +305,17 @@ class Binaries:
         "Return argv array that should be used to invoke bitcoin-chainstate"
         return self._argv("chainstate", self.paths.bitcoinchainstate)
 
+<<<<<<< HEAD
     def _argv(self, command, bin_path, *, need_ipc=False, use_gui=False):
+||||||| parent of bffde2f1ff8 (ipc: Add bitcoin-mine to bitcoin wrapper interface)
+    def _argv(self, command, bin_path, need_ipc=False):
+=======
+    def mine_argv(self):
+        "Return argv array that should be used to invoke bitcoin-mine"
+        return self._argv("mine", self.paths.bitcoinmine)
+
+    def _argv(self, command, bin_path, need_ipc=False):
+>>>>>>> bffde2f1ff8 (ipc: Add bitcoin-mine to bitcoin wrapper interface)
         """Return argv array that should be used to invoke the command.
 
         It either uses the bitcoin wrapper executable (if BITCOIN_CMD, need_ipc,
