@@ -46,7 +46,8 @@ class TestBitcoinMine(BitcoinTestFramework):
         super().setup_nodes()
 
     def run_test(self):
-        args = [self.binary_paths.bitcoin_mine, f"-datadir={self.nodes[0].datadir_path}"] + self.mine_args
+        node = self.nodes[0]
+        args = node.binaries.mine_argv() + [f"-datadir={node.datadir_path}"] + self.mine_args
         result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=True)
         assert_equal(result.stdout, "Connected to bitcoin-node\nTip hash is 0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206.\n")
 
