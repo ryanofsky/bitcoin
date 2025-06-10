@@ -135,7 +135,7 @@ Connection::~Connection()
     }
     while (!m_async_cleanup_fns.empty()) {
         const Lock lock(m_loop->m_mutex);
-        m_loop->m_async_fns.emplace_back(std::move(m_async_cleanup_fns.front()));
+        m_loop->m_async_fns->emplace_back(std::move(m_async_cleanup_fns.front()));
         m_async_cleanup_fns.pop_front();
     }
     Lock lock(m_loop->m_mutex);
@@ -200,10 +200,11 @@ EventLoop::EventLoop(const char* exe_name, LogFn log_fn, void* context)
 
 EventLoop::~EventLoop()
 {
+    log() << "\n\n&&& ~EventLoop " << (m_async_thread.joinable()) << "&&&\n\n\n";
     if (m_async_thread.joinable()) m_async_thread.join();
     const Lock lock(m_mutex);
     KJ_ASSERT(m_post_fn == nullptr);
-    KJ_ASSERT(m_async_fns.empty());
+    KJ_ASSERT(!m_async_fns);
     KJ_ASSERT(m_wait_fd == -1);
     KJ_ASSERT(m_post_fd == -1);
     KJ_ASSERT(m_num_clients == 0);
@@ -218,6 +219,12 @@ void EventLoop::loop()
     assert(!g_thread_context.loop_thread);
     g_thread_context.loop_thread = true;
     KJ_DEFER(g_thread_context.loop_thread = false);
+
+    {
+        const Lock lock(m_mutex);
+        assert(!m_async_fns);
+        m_async_fns.emplace();
+    }
 
     kj::Own<kj::AsyncIoStream> wait_stream{
         m_io_context.lowLevelProvider->wrapSocketFd(m_wait_fd, kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP)};
@@ -247,6 +254,8 @@ void EventLoop::loop()
     const Lock lock(m_mutex);
     m_wait_fd = -1;
     m_post_fd = -1;
+    m_async_fns.reset();
+    m_cv.notify_all();
 }
 
 void EventLoop::post(kj::Function<void()> fn)
@@ -269,30 +278,27 @@ void EventLoop::post(kj::Function<void()> fn)
 
 void EventLoop::startAsyncThread()
 {
+    assert (std::this_thread::get_id() == m_thread_id);
     if (m_async_thread.joinable()) {
+        // If thread is already started, needs to be woken up (better name for
+        // this method might be startOrNotifyAsyncThread)
         m_cv.notify_all();
-    } else if (!m_async_fns.empty()) {
+    } else if (!m_async_fns->empty()) {
         m_async_thread = std::thread([this] {
             Lock lock(m_mutex);
-            while (!done()) {
-                if (!m_async_fns.empty()) {
+            log() << "\n\n&&& m_async_thread I AM START &&&\n\n\n";
+            while (m_async_fns) {
+                if (!m_async_fns->empty()) {
                     EventLoopRef ref{*this, &lock};
-                    const std::function<void()> fn = std::move(m_async_fns.front());
-                    m_async_fns.pop_front();
+                    const std::function<void()> fn = std::move(m_async_fns->front());
+                    m_async_fns->pop_front();
                     Unlock(lock, fn);
-                    // Important to explictly call ref.reset() here and
-                    // explicitly break if the EventLoop is done, not relying on
-                    // while condition above. Reason is that end of `ref`
-                    // lifetime can cause EventLoop::loop() to exit, and if
-                    // there is external code that immediately deletes the
-                    // EventLoop object as soon as EventLoop::loop() method
-                    // returns, checking the while condition may crash.
-                    if (ref.reset()) break;
                     // Continue without waiting in case there are more async_fns
                     continue;
                 }
                 m_cv.wait(lock.m_lock);
             }
+            log() << "\n\n&&& m_async_thread I AM DONE &&&\n\n\n";
         });
     }
 }
@@ -300,7 +306,7 @@ void EventLoop::startAsyncThread()
 bool EventLoop::done() const
 {
     assert(m_num_clients >= 0);
-    return m_num_clients == 0 && m_async_fns.empty();
+    return m_num_clients == 0 && m_async_fns->empty();
 }
 
 std::tuple<ConnThread, bool> SetThread(ConnThreads& threads, std::mutex& mutex, Connection* connection, const std::function<Thread::Client()>& make_thread)

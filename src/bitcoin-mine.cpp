@@ -11,6 +11,8 @@
 #include <common/system.h>
 #include <compat/compat.h>
 #include <init/common.h>
+#include <interfaces/chain.h>
+#include <interfaces/handler.h>
 #include <interfaces/init.h>
 #include <interfaces/ipc.h>
 #include <logging.h>
@@ -95,6 +97,8 @@ MAIN_FUNCTION
         return EXIT_FAILURE;
     }
 
+    while (true) {
+
     // Connect to bitcoin-node process, or fail and print an error.
     std::unique_ptr<interfaces::Init> mine_init{interfaces::MakeBasicInit("bitcoin-mine", argc > 0 ? argv[0] : "")};
     assert(mine_init);
@@ -110,15 +114,25 @@ MAIN_FUNCTION
     }
     assert(node_init);
     tfm::format(std::cout, "Connected to bitcoin-node\n");
-    std::unique_ptr<interfaces::Mining> mining{node_init->makeMining()};
-    assert(mining);
+    std::unique_ptr<interfaces::Chain> chain{node_init->makeChain()};
+    assert(chain);
 
-    auto tip{mining->getTip()};
-    if (tip) {
-        tfm::format(std::cout, "Tip hash is %s.\n", tip->hash.ToString());
+    chain->initMessage("Oxydation of the Bitcoin Core wallet in progress..");
+    node_init.reset(); // Disconnect without destroying chain client first.
+
+    if constexpr (1) continue;
+
+    auto height{chain->getHeight()};
+    if (height) {
+        tfm::format(std::cout, "Height is %s.\n", *height);
     } else {
-        tfm::format(std::cout, "Tip hash is null.\n");
+        tfm::format(std::cout, "Height is null.\n");
     }
+
+    auto handler{chain->handleNotifications(std::make_shared<interfaces::Chain::Notifications>())};
+
+    sleep(5);
+    } // while
 
     return EXIT_SUCCESS;
 }
