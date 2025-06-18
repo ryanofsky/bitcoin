@@ -8,17 +8,23 @@
 
 #include <boost/test/unit_test.hpp>
 
+<<<<<<< HEAD
 // Taken from validation.cpp
 static constexpr auto DATABASE_WRITE_INTERVAL_MIN{50min};
 static constexpr auto DATABASE_WRITE_INTERVAL_MAX{70min};
 
+||||||| parent of 70e26fe2b874 (refactor: Convert ChainstateRole enum to struct)
+=======
+using kernel::ChainstateRole;
+
+>>>>>>> 70e26fe2b874 (refactor: Convert ChainstateRole enum to struct)
 BOOST_AUTO_TEST_SUITE(chainstate_write_tests)
 
 BOOST_FIXTURE_TEST_CASE(chainstate_write_interval, TestingSetup)
 {
     struct TestSubscriber final : CValidationInterface {
         bool m_did_flush{false};
-        void ChainStateFlushed(ChainstateRole, const CBlockLocator&) override
+        void ChainStateFlushed(const ChainstateRole&, const CBlockLocator&) override
         {
             m_did_flush = true;
         }
