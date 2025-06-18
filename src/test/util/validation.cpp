@@ -9,6 +9,7 @@
 #include <validation.h>
 #include <validationinterface.h>
 
+<<<<<<< HEAD
 void TestChainstateManager::DisableNextWrite()
 {
     struct TestChainstate : public Chainstate {
@@ -18,6 +19,11 @@ void TestChainstateManager::DisableNextWrite()
         static_cast<TestChainstate*>(cs)->ResetNextWrite();
     }
 }
+||||||| parent of 7bac6d14fb6e (refactor: Convert ChainstateRole enum to struct)
+=======
+using kernel::ChainstateRole;
+
+>>>>>>> 7bac6d14fb6e (refactor: Convert ChainstateRole enum to struct)
 void TestChainstateManager::ResetIbd()
 {
     m_cached_finished_ibd = false;
@@ -32,10 +38,10 @@ void TestChainstateManager::JumpOutOfIbd()
 }
 
 void ValidationInterfaceTest::BlockConnected(
-        ChainstateRole role,
-        CValidationInterface& obj,
-        const std::shared_ptr<const CBlock>& block,
-        const CBlockIndex* pindex)
+    const ChainstateRole& role,
+    CValidationInterface& obj,
+    const std::shared_ptr<const CBlock>& block,
+    const CBlockIndex* pindex)
 {
     obj.BlockConnected(role, block, pindex);
 }
