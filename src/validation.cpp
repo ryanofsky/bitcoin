@@ -20,13 +20,13 @@
 #include <cuckoocache.h>
 #include <flatfile.h>
 #include <hash.h>
-#include <kernel/chain.h>
 #include <kernel/chainparams.h>
 #include <kernel/coinstats.h>
 #include <kernel/disconnected_transactions.h>
 #include <kernel/mempool_entry.h>
 #include <kernel/messagestartchars.h>
 #include <kernel/notifications_interface.h>
+#include <kernel/types.h>
 #include <kernel/warning.h>
 #include <logging.h>
 #include <logging/timer.h>
@@ -77,6 +77,7 @@
 #include <utility>
 
 using kernel::CCoinsStats;
+using kernel::ChainstateRole;
 using kernel::CoinStatsHashType;
 using kernel::ComputeUTXOStats;
 using kernel::Notifications;
@@ -2054,7 +2055,7 @@ void Chainstate::CheckForkWarningConditions()
     // Before we get past initial download, we cannot reliably alert about forks
     // (we assume we don't get stuck on a fork before finishing our initial sync)
     // Also not applicable to the background chainstate
-    if (m_chainman.IsInitialBlockDownload() || this->GetRole() == ChainstateRole::BACKGROUND) {
+    if (m_chainman.IsInitialBlockDownload() || this->GetRole().historical) {
         return;
     }
 
@@ -2599,6 +2600,7 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
              Ticks<SecondsDouble>(m_chainman.time_forks),
              Ticks<MillisecondsDouble>(m_chainman.time_forks) / m_chainman.num_blocks_total);
 
+<<<<<<< HEAD
     const bool fScriptChecks{!!script_check_reason};
     if (script_check_reason != m_last_script_check_reason_logged && GetRole() == ChainstateRole::NORMAL) {
         if (fScriptChecks) {
@@ -2609,6 +2611,16 @@ bool Chainstate::ConnectBlock(const CBlock& block, BlockValidationState& state, 
                     pindex->nHeight, block_hash.ToString());
         }
         m_last_script_check_reason_logged = script_check_reason;
+||||||| parent of 4c60a7d70744 (refactor: Convert ChainstateRole enum to struct)
+    if (fScriptChecks != m_prev_script_checks_logged && GetRole() == ChainstateRole::NORMAL) {
+        LogInfo("%s signature validations at block #%d (%s).", fScriptChecks ? "Enabling" : "Disabling", pindex->nHeight, block_hash.ToString());
+        m_prev_script_checks_logged = fScriptChecks;
+=======
+    auto role{GetRole()};
+    if (fScriptChecks != m_prev_script_checks_logged && role.validated && !role.historical) {
+        LogInfo("%s signature validations at block #%d (%s).", fScriptChecks ? "Enabling" : "Disabling", pindex->nHeight, block_hash.ToString());
+        m_prev_script_checks_logged = fScriptChecks;
+>>>>>>> 4c60a7d70744 (refactor: Convert ChainstateRole enum to struct)
     }
 
     CBlockUndo blockundo;
@@ -4721,7 +4733,7 @@ bool Chainstate::LoadChainTip()
               m_chainman.GuessVerificationProgress(tip));
 
     // Ensure KernelNotifications m_tip_block is set even if no new block arrives.
-    if (this->GetRole() != ChainstateRole::BACKGROUND) {
+    if (!this->GetRole().historical) {
         // Ignoring return value for now.
         (void)m_chainman.GetNotifications().blockTip(
             /*state=*/GetSynchronizationState(/*init=*/true, m_chainman.m_blockman.m_blockfiles_indexed),
@@ -6407,7 +6419,7 @@ bool ChainstateManager::DeleteSnapshotChainstate()
 
 ChainstateRole Chainstate::GetRole() const
 {
-    return m_target_blockhash ? ChainstateRole::BACKGROUND : m_assumeutxo == Assumeutxo::UNVALIDATED ? ChainstateRole::ASSUMEDVALID : ChainstateRole::NORMAL;
+    return ChainstateRole{.validated = m_assumeutxo == Assumeutxo::VALIDATED, .historical = bool{m_target_blockhash}};
 }
 
 void ChainstateManager::RecalculateBestHeader()
