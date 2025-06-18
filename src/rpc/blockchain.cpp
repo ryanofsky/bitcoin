@@ -3385,7 +3385,7 @@ return RPCHelpMan{
         if (cs.m_from_snapshot_blockhash) {
             data.pushKV("snapshot_blockhash", cs.m_from_snapshot_blockhash->ToString());
         }
-        data.pushKV("validated", cs.Validity() == ChainValidity::VALIDATED);
+        data.pushKV("validated", cs.m_assumeutxo == Assumeutxo::VALIDATED);
         return data;
     };
 
