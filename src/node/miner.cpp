@@ -187,12 +187,18 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     // increasing its length would reduce the space they can use and may break
     // existing clients.
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight;
+<<<<<<< HEAD
     // Set script_sig_prefix here, so IPC mining clients are not affected by
     // the optional scriptSig padding below. They provide their own extraNonce,
     // and in a typical setup a pool name or realistic extraNonce already makes
     // the scriptSig long enough.
     coinbase_tx.script_sig_prefix = coinbaseTx.vin[0].scriptSig;
     if (nHeight <= 16) {
+||||||| parent of 6cb64bb9630 (bitcoin-mine: Extend example to mine a block)
+    if (m_options.include_dummy_extranonce) {
+=======
+    if (nHeight <= 16 || m_options.include_dummy_extranonce) {
+>>>>>>> 6cb64bb9630 (bitcoin-mine: Extend example to mine a block)
         // For blocks at heights <= 16, the BIP34-encoded height alone is only
         // one byte. Consensus requires coinbase scriptSigs to be at least two
         // bytes long (bad-cb-length), so an OP_0 is always appended at those
