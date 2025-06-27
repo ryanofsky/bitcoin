@@ -12,18 +12,39 @@
 #include <string>
 #include <string_view>
 
+enum ParamFormat { JSON, STRING };
+
 class CRPCConvertParam
 {
 public:
     std::string methodName; //!< method whose params want conversion
     int paramIdx;           //!< 0-based idx of param to convert
     std::string paramName;  //!< parameter name
+    ParamFormat format{ParamFormat::JSON}; //!< parameter format
 };
 
 // clang-format off
 /**
- * Specify a (method, idx, name) here if the argument is a non-string RPC
- * argument and needs to be converted from JSON.
+ * Specify a (method, idx, name, format) here if the argument is a non-string RPC
+ * argument and needs to be converted from JSON, or if it is a string argument
+ * passed to a method that accepts '=' characters in string arguments.
+ *
+ * JSON parameters need to be listed here to make bitcoin-cli treat command line
+ * arguments as JSON values instead of strings.
+ *
+ * String parameters need to be listed here for methods accepting string
+ * arguments with '=' characters, to make bitcoin-cli treat these command line
+ * arguments as positional parameters instead of named parameters when -named is
+ * used. For example, passing "key=store" as a parameter for some method would split
+ * "key" as a param name and "store" as a param value rather than passing "key=store"
+ * as a whole positional parameter when -named is used. This is useful when we want to pass the
+ * params as positional even if we are specifying -named. This special handling is not
+ * needed for string parameters that are guaranteed not to contain an '=' character.
+ *
+ * IMPORTANT: If one string parameter is listed for a method, other string
+ * parameters for that method need to be listed as well so bitcoin-cli does not
+ * make the opposite mistake and pass other arguments by position instead of
+ * name because it does not recognize their names.
  *
  * @note Parameter indexes start from 0.
  */
@@ -31,6 +52,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
 {
     { "setmocktime", 0, "timestamp" },
     { "mockscheduler", 0, "delta_time" },
+    { "utxoupdatepsbt", 0, "psbt", ParamFormat::STRING },
     { "utxoupdatepsbt", 1, "descriptors" },
     { "generatetoaddress", 0, "nblocks" },
     { "generatetoaddress", 2, "maxtries" },
@@ -40,16 +62,21 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "generateblock", 2, "submit" },
     { "getnetworkhashps", 0, "nblocks" },
     { "getnetworkhashps", 1, "height" },
+    { "sendtoaddress", 0, "address", ParamFormat::STRING },
     { "sendtoaddress", 1, "amount" },
+    { "sendtoaddress", 2, "comment", ParamFormat::STRING },
+    { "sendtoaddress", 3, "comment_to", ParamFormat::STRING },
     { "sendtoaddress", 4, "subtractfeefromamount" },
     { "sendtoaddress", 5 , "replaceable" },
     { "sendtoaddress", 6 , "conf_target" },
+    { "sendtoaddress", 7, "estimate_mode", ParamFormat::STRING },
     { "sendtoaddress", 8, "avoid_reuse" },
     { "sendtoaddress", 9, "fee_rate"},
     { "sendtoaddress", 10, "verbose"},
     { "settxfee", 0, "amount" },
     { "getreceivedbyaddress", 1, "minconf" },
     { "getreceivedbyaddress", 2, "include_immature_coinbase" },
+    { "getreceivedbylabel", 0, "label", ParamFormat::STRING },
     { "getreceivedbylabel", 1, "minconf" },
     { "getreceivedbylabel", 2, "include_immature_coinbase" },
     { "listreceivedbyaddress", 0, "minconf" },
@@ -69,20 +96,27 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "waitforblockheight", 1, "timeout" },
     { "waitforblock", 1, "timeout" },
     { "waitfornewblock", 0, "timeout" },
+    { "listtransactions", 0, "label", ParamFormat::STRING },
     { "listtransactions", 1, "count" },
     { "listtransactions", 2, "skip" },
     { "listtransactions", 3, "include_watchonly" },
+    { "walletpassphrase", 0, "passphrase", ParamFormat::STRING },
     { "walletpassphrase", 1, "timeout" },
     { "getblocktemplate", 0, "template_request" },
+    { "listsinceblock", 0, "blockhash", ParamFormat::STRING },
     { "listsinceblock", 1, "target_confirmations" },
     { "listsinceblock", 2, "include_watchonly" },
     { "listsinceblock", 3, "include_removed" },
     { "listsinceblock", 4, "include_change" },
+    { "listsinceblock", 5, "label", ParamFormat::STRING },
+    { "sendmany", 0, "dummy", ParamFormat::STRING },
     { "sendmany", 1, "amounts" },
     { "sendmany", 2, "minconf" },
+    { "sendmany", 3, "comment", ParamFormat::STRING },
     { "sendmany", 4, "subtractfeefrom" },
     { "sendmany", 5 , "replaceable" },
     { "sendmany", 6 , "conf_target" },
+    { "sendmany", 7, "estimate_mode", ParamFormat::STRING },
     { "sendmany", 8, "fee_rate"},
     { "sendmany", 9, "verbose" },
     { "deriveaddresses", 1, "range" },
@@ -169,10 +203,14 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "walletcreatefundedpsbt", 3, "max_tx_weight"},
     { "walletcreatefundedpsbt", 4, "bip32derivs" },
     { "walletcreatefundedpsbt", 5, "version" },
+    { "walletprocesspsbt", 0, "psbt", ParamFormat::STRING },
     { "walletprocesspsbt", 1, "sign" },
+    { "walletprocesspsbt", 2, "sighashtype", ParamFormat::STRING },
     { "walletprocesspsbt", 3, "bip32derivs" },
     { "walletprocesspsbt", 4, "finalize" },
+    { "descriptorprocesspsbt", 0, "psbt", ParamFormat::STRING },
     { "descriptorprocesspsbt", 1, "descriptors"},
+    { "descriptorprocesspsbt", 2, "sighashtype", ParamFormat::STRING },
     { "descriptorprocesspsbt", 3, "bip32derivs" },
     { "descriptorprocesspsbt", 4, "finalize" },
     { "createpsbt", 0, "inputs" },
@@ -182,6 +220,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "createpsbt", 4, "version" },
     { "combinepsbt", 0, "txs"},
     { "joinpsbts", 0, "txs"},
+    { "finalizepsbt", 0, "psbt", ParamFormat::STRING },
     { "finalizepsbt", 1, "extract"},
     { "converttopsbt", 1, "permitsigdata"},
     { "converttopsbt", 2, "iswitness"},
@@ -190,6 +229,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "gettxoutproof", 0, "txids" },
     { "gettxoutsetinfo", 1, "hash_or_height" },
     { "gettxoutsetinfo", 2, "use_index"},
+    { "dumptxoutset", 0, "path", ParamFormat::STRING },
+    { "dumptxoutset", 1, "type", ParamFormat::STRING },
     { "dumptxoutset", 2, "options" },
     { "dumptxoutset", 2, "rollback" },
     { "lockunspent", 0, "unlock" },
@@ -238,6 +279,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "simulaterawtransaction", 0, "rawtxs" },
     { "simulaterawtransaction", 1, "options" },
     { "simulaterawtransaction", 1, "include_watchonly"},
+    { "importmempool", 0, "filepath", ParamFormat::STRING },
     { "importmempool", 1, "options" },
     { "importmempool", 1, "apply_fee_delta_priority" },
     { "importmempool", 1, "use_current_time" },
@@ -298,14 +340,20 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "echojson", 9, "arg9" },
     { "rescanblockchain", 0, "start_height"},
     { "rescanblockchain", 1, "stop_height"},
+    { "createwallet", 0, "wallet_name", ParamFormat::STRING },
     { "createwallet", 1, "disable_private_keys"},
     { "createwallet", 2, "blank"},
+    { "createwallet", 3, "passphrase", ParamFormat::STRING },
     { "createwallet", 4, "avoid_reuse"},
     { "createwallet", 5, "descriptors"},
     { "createwallet", 6, "load_on_startup"},
     { "createwallet", 7, "external_signer"},
+    { "restorewallet", 0, "wallet_name", ParamFormat::STRING },
+    { "restorewallet", 1, "backup_file", ParamFormat::STRING },
     { "restorewallet", 2, "load_on_startup"},
+    { "loadwallet", 0, "filename", ParamFormat::STRING },
     { "loadwallet", 1, "load_on_startup"},
+    { "unloadwallet", 0, "wallet_name", ParamFormat::STRING },
     { "unloadwallet", 1, "load_on_startup"},
     { "getnodeaddresses", 0, "count"},
     { "addpeeraddress", 1, "port"},
@@ -314,8 +362,62 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "stop", 0, "wait" },
     { "addnode", 2, "v2transport" },
     { "addconnection", 2, "v2transport" },
+    { "decodepsbt", 0, "psbt", ParamFormat::STRING },
+    { "analyzepsbt", 0, "psbt", ParamFormat::STRING},
+    { "verifymessage", 1, "signature", ParamFormat::STRING },
+    { "verifymessage", 2, "message", ParamFormat::STRING },
+    { "getnewaddress", 0, "label", ParamFormat::STRING },
+    { "getnewaddress", 1, "address_type", ParamFormat::STRING },
+    { "backupwallet", 0, "destination", ParamFormat::STRING },
+    { "echoipc", 0, "arg", ParamFormat::STRING },
+    { "encryptwallet", 0, "passphrase", ParamFormat::STRING },
+    { "getaddressesbylabel", 0, "label", ParamFormat::STRING },
+    { "loadtxoutset", 0, "path", ParamFormat::STRING },
+    { "migratewallet", 0, "wallet_name", ParamFormat::STRING },
+    { "migratewallet", 1, "passphrase", ParamFormat::STRING },
+    { "setlabel", 1, "label", ParamFormat::STRING },
+    { "signmessage", 1, "message", ParamFormat::STRING },
+    { "signmessagewithprivkey", 1, "message", ParamFormat::STRING },
+    { "walletpassphrasechange", 0, "oldpassphrase", ParamFormat::STRING },
+    { "walletpassphrasechange", 1, "newpassphrase", ParamFormat::STRING },
 };
 // clang-format on
+
+class RPCConvertTable
+{
+public:
+    RPCConvertTable() = default;
+
+    const CRPCConvertParam* FromPosition(std::string_view method, int pos) const
+    {
+        auto it = std::ranges::find_if(vRPCConvertParams, [&](const auto& p) {
+            return p.methodName == method && p.paramIdx == pos;
+        });
+
+        return it == std::end(vRPCConvertParams) ? nullptr : &*it;
+    }
+
+    const CRPCConvertParam* FromName(std::string_view method, std::string_view name) const
+    {
+        auto it = std::ranges::find_if(vRPCConvertParams, [&](const auto& p) {
+            return p.methodName == method && p.paramName == name;
+        });
+
+        return it == std::end(vRPCConvertParams) ? nullptr : &*it;
+    }
+};
+
+static const RPCConvertTable g_rpc_convert_table;
+
+static const CRPCConvertParam* ParamFromPosition(std::string_view method_name, size_t position)
+{
+    return g_rpc_convert_table.FromPosition(method_name, static_cast<int>(position));
+}
+
+static const CRPCConvertParam* ParamFromName(std::string_view method_name, std::string_view param_name)
+{
+    return g_rpc_convert_table.FromName(method_name, param_name);
+}
 
 /** Parse string to UniValue or throw runtime_error if string contains invalid JSON */
 static UniValue Parse(std::string_view raw)
@@ -325,45 +427,19 @@ static UniValue Parse(std::string_view raw)
     return parsed;
 }
 
-class CRPCConvertTable
+static UniValue ParseParam(const CRPCConvertParam* param, std::string_view raw)
 {
-private:
-    std::set<std::pair<std::string, int>> members;
-    std::set<std::pair<std::string, std::string>> membersByName;
-
-public:
-    CRPCConvertTable();
-
-    /** Return arg_value as UniValue, and first parse it if it is a non-string parameter */
-    UniValue ArgToUniValue(std::string_view arg_value, const std::string& method, int param_idx)
-    {
-        return members.count({method, param_idx}) > 0 ? Parse(arg_value) : arg_value;
-    }
-
-    /** Return arg_value as UniValue, and first parse it if it is a non-string parameter */
-    UniValue ArgToUniValue(std::string_view arg_value, const std::string& method, const std::string& param_name)
-    {
-        return membersByName.count({method, param_name}) > 0 ? Parse(arg_value) : arg_value;
-    }
-};
-
-CRPCConvertTable::CRPCConvertTable()
-{
-    for (const auto& cp : vRPCConvertParams) {
-        members.emplace(cp.methodName, cp.paramIdx);
-        membersByName.emplace(cp.methodName, cp.paramName);
-    }
+    // Only parse parameters which have the JSON format; otherwise, treat them as strings.
+    return (param && param->format == ParamFormat::JSON) ? Parse(raw) : UniValue(std::string(raw));
 }
 
-static CRPCConvertTable rpcCvtTable;
 
 UniValue RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
 {
     UniValue params(UniValue::VARR);
 
-    for (unsigned int idx = 0; idx < strParams.size(); idx++) {
-        std::string_view value{strParams[idx]};
-        params.push_back(rpcCvtTable.ArgToUniValue(value, strMethod, idx));
+    for (std::string_view s : strParams) {
+        params.push_back(ParseParam(ParamFromPosition(strMethod, params.size()), s));
     }
 
     return params;
@@ -376,18 +452,40 @@ UniValue RPCConvertNamedValues(const std::string &strMethod, const std::vector<s
 
     for (std::string_view s: strParams) {
         size_t pos = s.find('=');
-        if (pos == std::string::npos) {
-            positional_args.push_back(rpcCvtTable.ArgToUniValue(s, strMethod, positional_args.size()));
+        if (pos == std::string_view::npos) {
+            positional_args.push_back(ParseParam(ParamFromPosition(strMethod, positional_args.size()), s));
             continue;
         }
 
         std::string name{s.substr(0, pos)};
         std::string_view value{s.substr(pos+1)};
 
+        const CRPCConvertParam* named_param{ParamFromName(strMethod, name)};
+        if (!named_param) {
+              /**
+             * This handles two cases where a named parameter (param=value) is not recognized:
+             *
+             * 1. The RPC method was listed in the vRPCConvertParams table with a given index, but the parameter is not a known parameter
+             *    and has a param format STRING; in such cases we pass the whole parameter as positional.
+             *
+             * 2. The RPC method was listed in the vRPCConvertParams table with a given index, but the parameter is not a known parameter
+             *    and has a param format JSON; in such cases we first parse the whole parameter as JSON and then treat as positional.
+             */
+            const CRPCConvertParam* positional_param = ParamFromPosition(strMethod, positional_args.size());
+            UniValue parsed_value;
+            if (positional_param && positional_param->format == ParamFormat::JSON && parsed_value.read(s)) {
+                positional_args.push_back(std::move(parsed_value));
+                continue;
+            } else if (positional_param && positional_param->format == ParamFormat::STRING) {
+                positional_args.push_back(s);
+                continue;
+            }
+        }
+
         // Intentionally overwrite earlier named values with later ones as a
         // convenience for scripts and command line users that want to merge
         // options.
-        params.pushKV(name, rpcCvtTable.ArgToUniValue(value, strMethod, name));
+        params.pushKV(name, ParseParam(named_param, value));
     }
 
     if (!positional_args.empty()) {
