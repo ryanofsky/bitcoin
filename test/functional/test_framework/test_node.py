@@ -233,9 +233,16 @@ class TestNode():
             # this destructor is called.
             print(self._node_msg("Cleaning up leftover process"), file=sys.stderr)
             self.process.kill()
+<<<<<<< HEAD
         if self.ipc_tmp_dir:
             print(self._node_msg(f"Cleaning up ipc directory {str(self.ipc_tmp_dir)!r}"))
             shutil.rmtree(self.ipc_tmp_dir)
+||||||| parent of 6d0103472f1d (test: Add TestNode ipcbind option)
+=======
+        if self.ipc_tmp_dir:
+            print(self._node_msg(f"Cleaning up ipc directory {str(self.ipc_tmp_dir)!r}"), file=sys.stderr)
+            shutil.rmtree(self.ipc_tmp_dir)
+>>>>>>> 6d0103472f1d (test: Add TestNode ipcbind option)
 
     def __getattr__(self, name):
         """Dispatches any unrecognised messages to the RPC connection or a CLI instance."""

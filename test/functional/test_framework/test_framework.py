@@ -556,8 +556,14 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
 
             bin_dirs.append(bin_dir)
 
+<<<<<<< HEAD
         extra_init = [{}] * num_nodes if self.extra_init is None else self.extra_init # type: ignore[var-annotated]
         assert_equal(len(extra_init), num_nodes)
+||||||| parent of 6d0103472f1d (test: Add TestNode ipcbind option)
+=======
+        extra_init = [{}] * num_nodes if self.extra_init is None else self.extra_init
+        assert_equal(len(extra_init), num_nodes)
+>>>>>>> 6d0103472f1d (test: Add TestNode ipcbind option)
         assert_equal(len(extra_confs), num_nodes)
         assert_equal(len(extra_args), num_nodes)
         assert_equal(len(versions), num_nodes)
