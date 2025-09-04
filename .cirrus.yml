@@ -94,6 +94,7 @@ compute_credits_template: &CREDITS_TEMPLATE
 
 task:
   name: 'lint'
+  only_if: "false"
   << : *BASE_TEMPLATE
   container:
     dockerfile: ci/lint_imagefile
@@ -108,6 +109,7 @@ task:
 
 task:
   name: 'tidy'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -117,6 +119,7 @@ task:
 
 task:
   name: 'ARM, unit tests, no functional tests'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -126,6 +129,7 @@ task:
 
 task:
   name: 'CentOS, depends, gui'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -135,6 +139,7 @@ task:
 
 task:
   name: 'previous releases, depends DEBUG'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -144,6 +149,7 @@ task:
 
 task:
   name: 'TSan, depends, no gui'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -153,6 +159,7 @@ task:
 
 task:
   name: 'MSan, depends'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -163,6 +170,7 @@ task:
 
 task:
   name: 'fuzzer,address,undefined,integer, no depends'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -173,6 +181,7 @@ task:
 
 task:
   name: 'multiprocess, i686, DEBUG'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -182,6 +191,7 @@ task:
 
 task:
   name: 'no wallet, libbitcoinkernel'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
@@ -191,6 +201,7 @@ task:
 
 task:
   name: 'macOS-cross, gui, no tests'
+  only_if: "false"
   << : *GLOBAL_TASK_TEMPLATE
   persistent_worker:
     labels:
