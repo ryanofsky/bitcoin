@@ -43,8 +43,8 @@ class ToolBitcoinTest(BitcoinTestFramework):
             os.environ["DEBUG_FILE"] = t
             node.start(extra_args=extra_args)
             ret, out, err = get_node_output(node)
-            print(f")) Start {t}\n{pathlib.Path(t).read_text()}\n)) End {t}")
             try:
+                print(f")) Start {t}\n{pathlib.Path(t).read_text()}\n)) End {t}")
                 assert_equal(get_exe_name(out), expect_exe.encode())
                 #assert_equal(err, b"")
             except Exception as e:
