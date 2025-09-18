@@ -12,6 +12,8 @@
 #include <string>
 #include <string_view>
 
+//! Specify whether parameter should be parsed by bitcoin-cli as a JSON value,
+//! or passed unchanged as a string.
 enum ParamFormat { JSON, STRING };
 
 class CRPCConvertParam
@@ -27,24 +29,20 @@ public:
 /**
  * Specify a (method, idx, name, format) here if the argument is a non-string RPC
  * argument and needs to be converted from JSON, or if it is a string argument
- * passed to a method that accepts '=' characters in string arguments.
+ * passed to a method that accepts '=' characters in any string argument.
  *
- * JSON parameters need to be listed here to make bitcoin-cli treat command line
- * arguments as JSON values instead of strings.
+ * JSON parameters need to be listed in this table to make bitcoin-cli parse
+ * command line arguments as JSON, instead of passing them as strings, since
+ * unlisted parameters are passed as strings by default.
  *
- * String parameters need to be listed here for methods accepting string
- * arguments with '=' characters, to make bitcoin-cli treat these command line
- * arguments as positional parameters instead of named parameters when -named is
- * used. For example, passing "key=store" as a parameter for some method would split
- * "key" as a param name and "store" as a param value rather than passing "key=store"
- * as a whole positional parameter when -named is used. This is useful when we want to pass the
- * params as positional even if we are specifying -named. This special handling is not
- * needed for string parameters that are guaranteed not to contain an '=' character.
- *
- * IMPORTANT: If one string parameter is listed for a method, other string
- * parameters for that method need to be listed as well so bitcoin-cli does not
- * make the opposite mistake and pass other arguments by position instead of
- * name because it does not recognize their names.
+ * String parameters that can contain '=' characters (like base64 strings,
+ * filenames, or labels) should also be listed here, so when bitcoin-cli -named
+ * is used, these will not automatically be treated as named parameters in
+ * NAME=VALUE format and split on '=' (see RPCConvertNamedValues below). If any
+ * string parameter for a method is listed, it also makes sense to list all the
+ * method's other parameters, so bitcoin-cli -named will not make the opposite
+ * mistake and fail to pass NAME=VALUE arguments by name because their names are
+ * unknown.
  *
  * @note Parameter indexes start from 0.
  */
@@ -383,40 +381,21 @@ static const CRPCConvertParam vRPCConvertParams[] =
 };
 // clang-format on
 
-class RPCConvertTable
+template<class Pred>
+static const CRPCConvertParam* ParamFind(const Pred& p)
 {
-public:
-    RPCConvertTable() = default;
-
-    const CRPCConvertParam* FromPosition(std::string_view method, int pos) const
-    {
-        auto it = std::ranges::find_if(vRPCConvertParams, [&](const auto& p) {
-            return p.methodName == method && p.paramIdx == pos;
-        });
-
-        return it == std::end(vRPCConvertParams) ? nullptr : &*it;
-    }
-
-    const CRPCConvertParam* FromName(std::string_view method, std::string_view name) const
-    {
-        auto it = std::ranges::find_if(vRPCConvertParams, [&](const auto& p) {
-            return p.methodName == method && p.paramName == name;
-        });
-
-        return it == std::end(vRPCConvertParams) ? nullptr : &*it;
-    }
-};
-
-static const RPCConvertTable g_rpc_convert_table;
+    auto it = std::ranges::find_if(vRPCConvertParams, p);
+    return it == std::end(vRPCConvertParams) ? nullptr : &*it;
+}
 
 static const CRPCConvertParam* ParamFromPosition(std::string_view method_name, size_t position)
 {
-    return g_rpc_convert_table.FromPosition(method_name, static_cast<int>(position));
+    return ParamFind([&](const auto& p) { return p.methodName == method_name && p.paramIdx == static_cast<int>(position); });
 }
 
 static const CRPCConvertParam* ParamFromName(std::string_view method_name, std::string_view param_name)
 {
-    return g_rpc_convert_table.FromName(method_name, param_name);
+    return ParamFind([&](const auto& p) { return p.methodName == method_name && p.paramName == param_name; });
 }
 
 /** Parse string to UniValue or throw runtime_error if string contains invalid JSON */
@@ -429,11 +408,13 @@ static UniValue Parse(std::string_view raw)
 
 static UniValue ParseParam(const CRPCConvertParam* param, std::string_view raw)
 {
-    // Only parse parameters which have the JSON format; otherwise, treat them as strings.
-    return (param && param->format == ParamFormat::JSON) ? Parse(raw) : UniValue(std::string(raw));
+    // Treat parameters as strings unless they are marked as having JSON format.
+    return (param && param->format == ParamFormat::JSON) ? Parse(raw) : raw;
 }
 
-
+/**
+ * Convert command lines arguments to params object when -named is disabled.
+ */
 UniValue RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
 {
     UniValue params(UniValue::VARR);
@@ -445,6 +426,26 @@ UniValue RPCConvertValues(const std::string &strMethod, const std::vector<std::s
     return params;
 }
 
+/**
+ * Convert command line arguments to params object when -named is enabled.
+ *
+ * The -named syntax accepts named arguments in NAME=VALUE format, as well as
+ * positional arguments without names. The syntax is inherently ambiguous if
+ * names are omitted and values contain '=', so a heuristic is used to
+ * disambiguate:
+ *
+ * - Arguments that do not contain '=' are treated as positional parameters.
+ *
+ * - Arguments that do contain '=' are assumed to be named parameters in
+ *   NAME=VALUE format except for two special cases:
+ *
+ *   1. The case where NAME is not a known parameter name, and the next
+ *      positional parameter requires a JSON value, and the argument parses as
+ *      JSON. E.g. ["list", "with", "="].
+ *
+ *   2. The case where NAME is not a known parameter name and the next
+ *      positional parameter requires a string value. E.g. "==label==".
+ */
 UniValue RPCConvertNamedValues(const std::string &strMethod, const std::vector<std::string> &strParams)
 {
     UniValue params(UniValue::VOBJ);
@@ -462,15 +463,10 @@ UniValue RPCConvertNamedValues(const std::string &strMethod, const std::vector<s
 
         const CRPCConvertParam* named_param{ParamFromName(strMethod, name)};
         if (!named_param) {
-              /**
-             * This handles two cases where a named parameter (param=value) is not recognized:
-             *
-             * 1. The RPC method was listed in the vRPCConvertParams table with a given index, but the parameter is not a known parameter
-             *    and has a param format STRING; in such cases we pass the whole parameter as positional.
-             *
-             * 2. The RPC method was listed in the vRPCConvertParams table with a given index, but the parameter is not a known parameter
-             *    and has a param format JSON; in such cases we first parse the whole parameter as JSON and then treat as positional.
-             */
+            // Unknown named parameter. Treat it as a positional JSON parameter
+            // if the next positional parameter expects JSON and the value is
+            // valid JSON. Treat is as a positional string parameter if the next
+            // positional parameter expects a string.
             const CRPCConvertParam* positional_param = ParamFromPosition(strMethod, positional_args.size());
             UniValue parsed_value;
             if (positional_param && positional_param->format == ParamFormat::JSON && parsed_value.read(s)) {
