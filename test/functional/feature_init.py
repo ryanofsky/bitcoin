@@ -3,13 +3,16 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Tests related to node initialization."""
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import os
 import platform
 import shutil
 import signal
 import subprocess
+import time
 
+from test_framework.authproxy import JSONRPCException
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.test_node import (
     BITCOIN_PID_FILENAME_DEFAULT,
@@ -36,16 +39,6 @@ class InitTest(BitcoinTestFramework):
         """
         self.stop_node(0)
         node = self.nodes[0]
-
-        def sigterm_node():
-            if platform.system() == 'Windows':
-                # Don't call Python's terminate() since it calls
-                # TerminateProcess(), which unlike SIGTERM doesn't allow
-                # bitcoind to perform any shutdown logic.
-                os.kill(node.process.pid, signal.CTRL_BREAK_EVENT)
-            else:
-                node.process.terminate()
-            node.process.wait()
 
         def start_expecting_error(err_fragment, args):
             node.assert_start_raises_init_error(
@@ -97,7 +90,7 @@ class InitTest(BitcoinTestFramework):
                 else:
                     node.start(extra_args=args)
             self.log.debug("Terminating node after terminate line was found")
-            sigterm_node()
+            sigterm_node(node)
 
         # Prior to deleting/perturbing index files, start node with all indexes enabled.
         # 'check_clean_start' will ensure indexes are synchronized (i.e., data exists to modify)
@@ -240,9 +233,50 @@ class InitTest(BitcoinTestFramework):
         self.stop_node(0)
         assert not custom_pidfile_absolute.exists()
 
+    def sigterm_wait_test(self):
+        """Test what happens when Ctrl-C is pressed (SIGTERM is sent) during a
+        waitforblockheight RPC call with a long timeout. Ideally the call should
+        be interrupted and return right away, but currently it times out and the
+        node does not finish shutting down until it times out."""
+
+        self.log.info("Testing waitforblockheight RPC call followed by SIGTERM")
+        node = self.nodes[0]
+        self.start_node(node.index)
+        current_height = node.getblock(node.getbestblockhash())['height']
+
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            # Call waitforblockheight with wait timeout longer than RPC timeout,
+            # so it is possible to distinguish whether it times out or returns
+            # early. If it times out it will throw an exception, and if it
+            # returns early it will return the current block height.
+            self.log.debug(f"Calling waitforblockheight with {self.rpc_timeout} sec RPC timeout")
+            fut = ex.submit(node.waitforblockheight, height=current_height+1, timeout=self.rpc_timeout*1000*2)
+            time.sleep(1)
+            self.log.debug(f"Sending SIGTERM")
+            sigterm_node(node)
+            try:
+                result = fut.result()
+                raise Exception(f"waitforblockheight returned {result!r}")
+            except JSONRPCException as e:
+                self.log.debug(f"waitforblockheight raised {e!r}")
+                assert_equal(e.error['code'], -344) # -344 is RPC timeout
+            node.wait_until_stopped()
+
     def run_test(self):
         self.init_pid_test()
         self.init_stress_test()
+        self.sigterm_wait_test()
+
+
+def sigterm_node(node):
+    if platform.system() == 'Windows':
+        # Don't call Python's terminate() since it calls
+        # TerminateProcess(), which unlike SIGTERM doesn't allow
+        # bitcoind to perform any shutdown logic.
+        os.kill(node.process.pid, signal.CTRL_BREAK_EVENT)
+    else:
+        node.process.terminate()
+    node.process.wait()
 
 
 if __name__ == '__main__':
