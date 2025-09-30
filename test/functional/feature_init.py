@@ -235,9 +235,8 @@ class InitTest(BitcoinTestFramework):
 
     def sigterm_wait_test(self):
         """Test what happens when Ctrl-C is pressed (SIGTERM is sent) during a
-        waitforblockheight RPC call with a long timeout. Ideally the call should
-        be interrupted and return right away, but currently it times out and the
-        node does not finish shutting down until it times out."""
+        waitforblockheight RPC call with a long timeout. The call should be
+        interrupted and return right away, and not time out."""
 
         self.log.info("Testing waitforblockheight RPC call followed by SIGTERM")
         node = self.nodes[0]
@@ -254,12 +253,9 @@ class InitTest(BitcoinTestFramework):
             time.sleep(1)
             self.log.debug(f"Sending SIGTERM")
             sigterm_node(node)
-            try:
-                result = fut.result()
-                raise Exception(f"waitforblockheight returned {result!r}")
-            except JSONRPCException as e:
-                self.log.debug(f"waitforblockheight raised {e!r}")
-                assert_equal(e.error['code'], -344) # -344 is RPC timeout
+            result = fut.result()
+            self.log.debug(f"waitforblockheight returned {result!r}")
+            assert_equal(result["height"], current_height)
             node.wait_until_stopped()
 
     def run_test(self):
