@@ -15,12 +15,20 @@ $Proxy.includeTypes("ipc/capnp/init-types.h");
 
 using Echo = import "echo.capnp";
 using Mining = import "mining.capnp";
+using Rpc = import "rpc.capnp";
 
 interface Init $Proxy.wrap("interfaces::Init") {
     construct @0 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
     makeEcho @1 (context :Proxy.Context) -> (result :Echo.Echo);
+<<<<<<< HEAD
     makeMining @3 (context :Proxy.Context) -> (result :Mining.Mining);
 
     # DEPRECATED: no longer supported; server returns an error.
     makeMiningOld2 @2 () -> ();
+||||||| parent of d408dc591f7 (ipc: Expose an RPC interface over the -ipcbind socket)
+    makeMining @2 (context :Proxy.Context) -> (result :Mining.Mining);
+=======
+    makeMining @2 (context :Proxy.Context) -> (result :Mining.Mining);
+    makeRpc @3 (context :Proxy.Context) -> (result :Rpc.Rpc);
+>>>>>>> d408dc591f7 (ipc: Expose an RPC interface over the -ipcbind socket)
 }
