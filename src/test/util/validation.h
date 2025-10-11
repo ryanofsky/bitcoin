@@ -7,6 +7,7 @@
 
 #include <validation.h>
 
+<<<<<<< HEAD
 namespace node {
 class BlockManager;
 }
@@ -17,6 +18,11 @@ struct TestBlockManager : public node::BlockManager {
     void CleanupForFuzzing();
 };
 
+||||||| parent of 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+class CValidationInterface;
+
+=======
+>>>>>>> 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
 struct TestChainstateManager : public ChainstateManager {
     /** Disable the next write of all chainstates */
     void DisableNextWrite();
@@ -31,6 +37,7 @@ struct TestChainstateManager : public ChainstateManager {
     void ResetBestInvalid() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 };
 
+<<<<<<< HEAD
 class ValidationInterfaceTest
 {
 public:
@@ -41,4 +48,17 @@ public:
         const CBlockIndex* pindex);
 };
 
+||||||| parent of 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
+class ValidationInterfaceTest
+{
+public:
+    static void BlockConnected(
+        ChainstateRole role,
+        CValidationInterface& obj,
+        const std::shared_ptr<const CBlock>& block,
+        const CBlockIndex* pindex);
+};
+
+=======
+>>>>>>> 4662905f3e0 (indexes, refactor: Remove index RegisterValidationInterface call)
 #endif // BITCOIN_TEST_UTIL_VALIDATION_H
