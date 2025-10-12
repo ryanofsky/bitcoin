@@ -125,10 +125,30 @@ private:
     bool Append(const interfaces::BlockInfo& new_block);
 
     /// Write the current index state (eg. chain block locator and subclass-specific items) to disk.
+<<<<<<< HEAD
     /// Will skip the commit if no block has been indexed yet or if the index's best block is
     /// ahead of the chainstate's last flushed block. This avoids persisting state an unclean shutdown
     /// could not roll back from. A later call commits when the chainstate has flushed far enough.
     void Commit();
+||||||| parent of ec250ca7501 (indexes, refactor: Add Commit CBlockLocator& argument)
+    ///
+    /// Recommendations for error handling:
+    /// If called on a successor of the previous committed best block in the index, the index can
+    /// continue processing without risk of corruption, though the index state will need to catch up
+    /// from further behind on reboot. If the new state is not a successor of the previous state (due
+    /// to a chain reorganization), the index must halt until Commit succeeds or else it could end up
+    /// getting corrupted.
+    bool Commit();
+=======
+    ///
+    /// Recommendations for error handling:
+    /// If called on a successor of the previous committed best block in the index, the index can
+    /// continue processing without risk of corruption, though the index state will need to catch up
+    /// from further behind on reboot. If the new state is not a successor of the previous state (due
+    /// to a chain reorganization), the index must halt until Commit succeeds or else it could end up
+    /// getting corrupted.
+    bool Commit(const CBlockLocator& locator);
+>>>>>>> ec250ca7501 (indexes, refactor: Add Commit CBlockLocator& argument)
 
     /// Loop over disconnected blocks and call CustomRemove.
     bool Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip);
