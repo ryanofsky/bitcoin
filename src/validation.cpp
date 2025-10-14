@@ -2833,6 +2833,7 @@ bool Chainstate::FlushStateToDisk(
         }
     }
     if (full_flush_completed) {
+        m_last_flushed_block = m_chain.Tip();
         if (m_chainman.m_options.signals) {
             // Update best block in wallet (so we can detect restored wallets).
             m_chainman.m_options.signals->ChainStateFlushed(this->GetRole(), GetLocator(m_chain.Tip()));
@@ -4587,6 +4588,7 @@ bool Chainstate::LoadChainTip()
         target = target->pprev;
     }
 
+    m_last_flushed_block = tip;
     LogInfo("Loaded best chain: hashBestChain=%s height=%d date=%s progress=%f",
               tip->GetBlockHash().ToString(),
               m_chain.Height(),
