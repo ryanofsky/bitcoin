@@ -2856,6 +2856,9 @@ bool Chainstate::FlushStateToDisk(
             m_next_write = FastRandomContext().rand_uniform_delay(NodeClock::now() + DATABASE_WRITE_INTERVAL_MIN, range);
         }
     }
+
+    if (full_flush_completed) m_last_flushed_block = m_chain.Tip();
+
     if (full_flush_completed && m_chainman.m_options.signals) {
         // Update best block in wallet (so we can detect restored wallets).
         m_chainman.m_options.signals->ChainStateFlushed(this->GetRole(), GetLocator(m_chain.Tip()));
@@ -4621,6 +4624,7 @@ bool Chainstate::LoadChainTip()
         return false;
     }
     m_chain.SetTip(*pindex);
+<<<<<<< HEAD
     tip = m_chain.Tip();
 
     // Make sure our chain tip before shutting down scores better than any other candidate
@@ -4635,6 +4639,10 @@ bool Chainstate::LoadChainTip()
     // Otherwise the scoring will be based on the memory address location instead of the nSequenceId
     setBlockIndexCandidates.erase(tip);
     TryAddBlockIndexCandidate(tip);
+||||||| parent of 619b73eae38 (indexes: Do not commit state referring to unflushed blocks)
+=======
+    m_last_flushed_block = pindex;
+>>>>>>> 619b73eae38 (indexes: Do not commit state referring to unflushed blocks)
     PruneBlockIndexCandidates();
 
     tip = m_chain.Tip();

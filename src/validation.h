@@ -618,11 +618,18 @@ public:
     //! @see CChain, CBlockIndex.
     CChain m_chain;
 
+<<<<<<< HEAD
     //! Assumeutxo state indicating whether all blocks in the chain were
     //! validated, or if the chainstate is based on an assumeutxo snapshot and
     //! the snapshot has not been validated.
     Assumeutxo m_assumeutxo GUARDED_BY(::cs_main);
 
+||||||| parent of 619b73eae38 (indexes: Do not commit state referring to unflushed blocks)
+=======
+    //! Tip of the chain at the last time the chainstate was flushed.
+    const CBlockIndex* m_last_flushed_block GUARDED_BY(::cs_main){nullptr};
+
+>>>>>>> 619b73eae38 (indexes: Do not commit state referring to unflushed blocks)
     /**
      * The blockhash which is the base of the snapshot this chainstate was created from.
      *
@@ -647,6 +654,7 @@ public:
      */
     const CBlockIndex* SnapshotBase() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
+<<<<<<< HEAD
     //! Return target block which chainstate tip is expected to reach, if this
     //! is a historic chainstate being used to validate a snapshot, or null if
     //! chainstate targets the most-work block.
@@ -667,6 +675,15 @@ public:
         return target_block && target_block == m_chain.Tip();
     }
 
+||||||| parent of 619b73eae38 (indexes: Do not commit state referring to unflushed blocks)
+=======
+    const CBlockIndex* LastFlushedBlock() const EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
+    {
+        AssertLockHeld(::cs_main);
+        return m_last_flushed_block;
+    }
+
+>>>>>>> 619b73eae38 (indexes: Do not commit state referring to unflushed blocks)
     /**
      * The set of all CBlockIndex entries that have as much work as our current
      * tip or more, and transaction data needed to be validated (with
