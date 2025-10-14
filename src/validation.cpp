@@ -2832,6 +2832,7 @@ bool Chainstate::FlushStateToDisk(
             m_next_write = FastRandomContext().rand_uniform_delay(NodeClock::now() + DATABASE_WRITE_INTERVAL_MIN, range);
         }
     }
+<<<<<<< HEAD
     if (full_flush_completed) {
         if (m_chainman.m_options.signals) {
             // Update best block in wallet (so we can detect restored wallets).
@@ -2845,6 +2846,18 @@ bool Chainstate::FlushStateToDisk(
                 LogWarning("Failed to start chainstate compaction (%s)", e.what());
             }
         }
+||||||| parent of b11276544c4 (indexes: Do not commit state referring to unflushed blocks)
+    if (full_flush_completed && m_chainman.m_options.signals) {
+        // Update best block in wallet (so we can detect restored wallets).
+        m_chainman.m_options.signals->ChainStateFlushed(this->GetRole(), GetLocator(m_chain.Tip()));
+=======
+
+    if (full_flush_completed) m_last_flushed_block = m_chain.Tip();
+
+    if (full_flush_completed && m_chainman.m_options.signals) {
+        // Update best block in wallet (so we can detect restored wallets).
+        m_chainman.m_options.signals->ChainStateFlushed(this->GetRole(), GetLocator(m_chain.Tip()));
+>>>>>>> b11276544c4 (indexes: Do not commit state referring to unflushed blocks)
     }
     } catch (const std::runtime_error& e) {
         return FatalError(m_chainman.GetNotifications(), state, strprintf(_("System error while flushing: %s"), e.what()));
@@ -4587,6 +4600,7 @@ bool Chainstate::LoadChainTip()
         target = target->pprev;
     }
 
+    m_last_flushed_block = tip;
     LogInfo("Loaded best chain: hashBestChain=%s height=%d date=%s progress=%f",
               tip->GetBlockHash().ToString(),
               m_chain.Height(),
