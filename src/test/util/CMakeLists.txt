@@ -24,7 +24,12 @@ target_link_libraries(test_util
   PRIVATE
     core_interface
     Boost::headers
+<<<<<<< HEAD
     $<$<BOOL:${ENABLE_WALLET}>:SQLite3::SQLite3>
+||||||| parent of f8aa3dd7daa (cmake: Add univalue, boost, and libevent include directories)
+=======
+    $<TARGET_NAME_IF_EXISTS:libevent::core>
+>>>>>>> f8aa3dd7daa (cmake: Add univalue, boost, and libevent include directories)
   PUBLIC
     univalue
 )
