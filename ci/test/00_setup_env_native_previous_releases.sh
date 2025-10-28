@@ -22,7 +22,14 @@ export BITCOIN_CONFIG="\
  -DCMAKE_BUILD_TYPE=Debug \
  -DCMAKE_C_FLAGS='-funsigned-char -Werror' \
  -DCMAKE_C_FLAGS_DEBUG='-g2 -O2' \
+<<<<<<< HEAD
  -DCMAKE_CXX_FLAGS='-funsigned-char -Werror' \
+||||||| parent of 326c23ab46e (ci: Avoid -Wno-error=maybe-uninitialized false positives)
+ -DCMAKE_CXX_FLAGS='-funsigned-char' \
+=======
+ -DCMAKE_CXX_FLAGS='-funsigned-char' \
+ -DCMAKE_CXX_FLAGS='-Wno-error=maybe-uninitialized' \
+>>>>>>> 326c23ab46e (ci: Avoid -Wno-error=maybe-uninitialized false positives)
  -DCMAKE_CXX_FLAGS_DEBUG='-g2 -O2' \
  -DAPPEND_CPPFLAGS='-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE' \
 "
