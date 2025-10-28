@@ -23,6 +23,7 @@ export BITCOIN_CONFIG="\
  -DCMAKE_C_FLAGS='-funsigned-char -Werror' \
  -DCMAKE_C_FLAGS_DEBUG='-g2 -O2' \
  -DCMAKE_CXX_FLAGS='-funsigned-char -Werror' \
+ -DCMAKE_CXX_FLAGS='-Wno-error=maybe-uninitialized' \
  -DCMAKE_CXX_FLAGS_DEBUG='-g2 -O2' \
  -DAPPEND_CPPFLAGS='-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE' \
 "
