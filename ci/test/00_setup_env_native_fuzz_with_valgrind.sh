@@ -17,6 +17,12 @@ export FUZZ_TESTS_CONFIG="--valgrind"
 export GOAL="all"
 export BITCOIN_CONFIG="\
  -DBUILD_FOR_FUZZING=ON \
+<<<<<<< HEAD
  -DCMAKE_C_COMPILER=clang \
  -DCMAKE_CXX_COMPILER=clang++ \
+||||||| parent of ba5f435034b (ci: Avoid -Wno-error=maybe-uninitialized false positives)
+ -DCMAKE_CXX_FLAGS='-Wno-error=array-bounds' \
+=======
+ -DCMAKE_CXX_FLAGS='-Wno-error=array-bounds -Wno-error=maybe-uninitialized' \
+>>>>>>> ba5f435034b (ci: Avoid -Wno-error=maybe-uninitialized false positives)
 "
