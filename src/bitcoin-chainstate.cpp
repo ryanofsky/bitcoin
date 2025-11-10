@@ -166,12 +166,18 @@ int main(int argc, char* argv[])
         .always_print_category_levels = true,
     };
 
-    logging_set_options(logging_options);
-
     Logger logger{std::make_unique<KernelLog>()};
+    logging_set_options(logger, logging_options);
 
     ContextOptions options{};
+<<<<<<< HEAD
     ChainParams params{has_regtest_flag ? ChainType::REGTEST : ChainType::MAINNET};
+||||||| parent of 168128bb5e6 (kernel: Simplify logging API)
+    ChainParams params{ChainType::MAINNET};
+=======
+    ChainParams params{ChainType::MAINNET};
+    options.SetLogger(logger);
+>>>>>>> 168128bb5e6 (kernel: Simplify logging API)
     options.SetChainParams(params);
 
     options.SetNotifications(std::make_shared<TestKernelNotifications>());
