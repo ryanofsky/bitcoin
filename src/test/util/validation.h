@@ -20,8 +20,13 @@ namespace node {
 class BlockManager;
 struct NodeContext;
 }
+<<<<<<< HEAD
 class BaseIndex;
 class CValidationInterface;
+||||||| parent of 527f7a79214 (indexes, refactor: Remove index RegisterValidationInterface call)
+class CValidationInterface;
+=======
+>>>>>>> 527f7a79214 (indexes, refactor: Remove index RegisterValidationInterface call)
 class FakeNodeClock;
 struct TestingSetup;
 
@@ -53,6 +58,7 @@ struct TestChainstateManager : public ChainstateManager {
     void ResetBestInvalid() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 };
 
+<<<<<<< HEAD
 class ValidationInterfaceTest
 {
 public:
@@ -71,5 +77,20 @@ std::vector<std::pair<COutPoint, CAmount>> ResetChainmanAndMempool(TestingSetup&
 
 /// Drain validation callbacks before stopping an index, matching Shutdown() in init.cpp.
 void StopIndex(BaseIndex& index, node::NodeContext& node);
+||||||| parent of 527f7a79214 (indexes, refactor: Remove index RegisterValidationInterface call)
+class ValidationInterfaceTest
+{
+public:
+    static void BlockConnected(
+        const kernel::ChainstateRole& role,
+        CValidationInterface& obj,
+        const std::shared_ptr<const CBlock>& block,
+        const CBlockIndex* pindex);
+};
+
+std::vector<std::pair<COutPoint, CAmount>> ResetChainmanAndMempool(TestingSetup& setup, FakeNodeClock& node_clock);
+=======
+std::vector<std::pair<COutPoint, CAmount>> ResetChainmanAndMempool(TestingSetup& setup, FakeNodeClock& node_clock);
+>>>>>>> 527f7a79214 (indexes, refactor: Remove index RegisterValidationInterface call)
 
 #endif // BITCOIN_TEST_UTIL_VALIDATION_H
