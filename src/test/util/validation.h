@@ -15,7 +15,6 @@
 namespace node {
 class BlockManager;
 }
-class CValidationInterface;
 struct TestingSetup;
 
 struct TestBlockManager : public node::BlockManager {
@@ -37,16 +36,7 @@ struct TestChainstateManager : public ChainstateManager {
     void ResetBestInvalid() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 };
 
-class ValidationInterfaceTest
-{
-public:
-    static void BlockConnected(
-        const kernel::ChainstateRole& role,
-        CValidationInterface& obj,
-        const std::shared_ptr<const CBlock>& block,
-        const CBlockIndex* pindex);
-};
-
 std::vector<std::pair<COutPoint, CAmount>> ResetChainmanAndMempool(TestingSetup& setup);
+
 
 #endif // BITCOIN_TEST_UTIL_VALIDATION_H
