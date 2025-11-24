@@ -204,6 +204,29 @@ BOOST_FIXTURE_TEST_CASE(index_reorg_crash, TestChain100Setup)
             }
             std::this_thread::sleep_for(100ms);
         }
+<<<<<<< HEAD
+||||||| parent of 63ae29a4e50 (indexes, refactor: Remove index RegisterValidationInterface call)
+        BOOST_CHECK_EQUAL(index.GetSummary().best_block_height, expected_sync_height);
+        index.Stop();
+        // Reload index to see which block data was actually committed.
+        BOOST_REQUIRE(index.Init());
+        BOOST_CHECK_EQUAL(index.GetSummary().best_block_height, expected_commit_height);
+        index.Stop();
+=======
+        BOOST_CHECK_EQUAL(index.GetSummary().best_block_height, expected_sync_height);
+        index.Stop();
+        // Reload index to see which block data was actually committed.
+        BOOST_REQUIRE(index.Init());
+        BOOST_CHECK_EQUAL(index.GetSummary().best_block_height, expected_commit_height);
+        // Drain any pending scheduler callbacks from Init so they run while index is
+        // alive. Without this, callbacks enqueued by connect() during Init could fire
+        // after the stack frame unwinds and index is freed.
+        // TODO: The handler destructor (NotificationsHandlerImpl::disconnect) should
+        // ensure any in-flight scheduler callback from RegisterSynced completes
+        // before returning, so the callback cannot access m_index after it is freed.
+        m_node.chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
+        index.Stop();
+>>>>>>> 63ae29a4e50 (indexes, refactor: Remove index RegisterValidationInterface call)
     };
 
     // Wait until the index is one block before the fork point

@@ -15,8 +15,13 @@
 namespace node {
 class BlockManager;
 }
+<<<<<<< HEAD
 class CValidationInterface;
 struct TestingSetup;
+||||||| parent of 63ae29a4e50 (indexes, refactor: Remove index RegisterValidationInterface call)
+class CValidationInterface;
+=======
+>>>>>>> 63ae29a4e50 (indexes, refactor: Remove index RegisterValidationInterface call)
 
 struct TestBlockManager : public node::BlockManager {
     /** Test-only method to clear internal state for fuzzing */
@@ -37,6 +42,7 @@ struct TestChainstateManager : public ChainstateManager {
     void ResetBestInvalid() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 };
 
+<<<<<<< HEAD
 class ValidationInterfaceTest
 {
 public:
@@ -49,4 +55,17 @@ public:
 
 std::vector<std::pair<COutPoint, CAmount>> ResetChainmanAndMempool(TestingSetup& setup);
 
+||||||| parent of 63ae29a4e50 (indexes, refactor: Remove index RegisterValidationInterface call)
+class ValidationInterfaceTest
+{
+public:
+    static void BlockConnected(
+        const kernel::ChainstateRole& role,
+        CValidationInterface& obj,
+        const std::shared_ptr<const CBlock>& block,
+        const CBlockIndex* pindex);
+};
+
+=======
+>>>>>>> 63ae29a4e50 (indexes, refactor: Remove index RegisterValidationInterface call)
 #endif // BITCOIN_TEST_UTIL_VALIDATION_H
