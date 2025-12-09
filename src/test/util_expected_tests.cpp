@@ -57,6 +57,7 @@ BOOST_AUTO_TEST_CASE(expected_error)
 {
     Expected<void, std::string> e{};
     BOOST_CHECK(e.has_value());
+    [&]() -> void { return e.value(); }(); // check value returns void and does not throw
 
     e = Unexpected{"fail"};
     BOOST_CHECK(!e.has_value());
