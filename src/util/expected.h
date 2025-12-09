@@ -106,8 +106,9 @@ public:
         return std::get<1>(std::move(m_data));
     }
 
-    constexpr T& operator*() LIFETIMEBOUND { return value(); }
-    constexpr const T& operator*() const LIFETIMEBOUND { return value(); }
+    constexpr T& operator*() & LIFETIMEBOUND { return value(); }
+    constexpr const T& operator*() const& LIFETIMEBOUND { return value(); }
+    constexpr T&& operator*() && LIFETIMEBOUND { return std::move(value()); }
 
     constexpr T* operator->() LIFETIMEBOUND { return &value(); }
     constexpr const T* operator->() const LIFETIMEBOUND { return &value(); }
