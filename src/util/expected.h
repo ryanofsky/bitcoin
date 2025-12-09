@@ -6,8 +6,10 @@
 #define BITCOIN_UTIL_EXPECTED_H
 
 #include <attributes.h>
+#include <util/check.h>
 
 #include <cassert>
+#include <exception>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -22,6 +24,11 @@ class Unexpected
 public:
     constexpr explicit Unexpected(E e) : err(std::move(e)) {}
     E err;
+};
+
+struct BadExpectedAccess : std::exception
+{
+    const char* what() const noexcept override { return "Bad util::Expected access"; }
 };
 
 /// The util::Expected class provides a standard way for low-level functions to
@@ -49,12 +56,16 @@ public:
 
     constexpr const ValueType& value() const LIFETIMEBOUND
     {
-        assert(has_value());
+        if (!Assume(has_value())) {
+            throw BadExpectedAccess{};
+        }
         return std::get<0>(m_data);
     }
     constexpr ValueType& value() LIFETIMEBOUND
     {
-        assert(has_value());
+        if (!Assume(has_value())) {
+            throw BadExpectedAccess{};
+        }
         return std::get<0>(m_data);
     }
 
