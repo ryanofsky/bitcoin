@@ -57,19 +57,26 @@ public:
     constexpr bool has_value() const noexcept { return m_data.index() == 0; }
     constexpr explicit operator bool() const noexcept { return has_value(); }
 
-    constexpr const T& value() const LIFETIMEBOUND
+    constexpr const T& value() const& LIFETIMEBOUND
     {
         if (!Assume(has_value())) {
             throw BadExpectedAccess{};
         }
         return std::get<0>(m_data);
     }
-    constexpr T& value() LIFETIMEBOUND
+    constexpr T& value() & LIFETIMEBOUND
     {
         if (!Assume(has_value())) {
             throw BadExpectedAccess{};
         }
         return std::get<0>(m_data);
+    }
+    constexpr T&& value() && LIFETIMEBOUND
+    {
+        if (!Assume(has_value())) {
+            throw BadExpectedAccess{};
+        }
+        return std::get<0>(std::move(m_data));
     }
 
     template <class U>
@@ -83,15 +90,20 @@ public:
         return has_value() ? std::move(value()) : std::forward<U>(default_value);
     }
 
-    constexpr const E& error() const LIFETIMEBOUND
+    constexpr const E& error() const& LIFETIMEBOUND
     {
         assert(!has_value());
         return std::get<1>(m_data);
     }
-    constexpr E& error() LIFETIMEBOUND
+    constexpr E& error() & LIFETIMEBOUND
     {
         assert(!has_value());
         return std::get<1>(m_data);
+    }
+    constexpr E&& error() && LIFETIMEBOUND
+    {
+        assert(!has_value());
+        return std::get<1>(std::move(m_data));
     }
 
     constexpr T& operator*() LIFETIMEBOUND { return value(); }
@@ -124,15 +136,20 @@ public:
         }
     }
 
-    constexpr const E& error() const LIFETIMEBOUND
+    constexpr const E& error() const& LIFETIMEBOUND
     {
         assert(!has_value());
         return std::get<1>(m_data);
     }
-    constexpr E& error() LIFETIMEBOUND
+    constexpr E& error() & LIFETIMEBOUND
     {
         assert(!has_value());
         return std::get<1>(m_data);
+    }
+    constexpr E&& error() && LIFETIMEBOUND
+    {
+        assert(!has_value());
+        return std::get<1>(std::move(m_data));
     }
 };
 
