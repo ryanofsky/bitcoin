@@ -23,6 +23,12 @@ class Unexpected
 {
 public:
     constexpr explicit Unexpected(E e) : err(std::move(e)) {}
+
+    constexpr const E& error() const& LIFETIMEBOUND { return err; }
+    constexpr E& error() & LIFETIMEBOUND { return err; }
+    constexpr E&& error() && LIFETIMEBOUND { return std::move(err); }
+
+private:
     E err;
 };
 
@@ -47,7 +53,7 @@ public:
     constexpr Expected() : m_data{std::in_place_index_t<0>{}, ValueType{}} {}
     constexpr Expected(ValueType v) : m_data{std::in_place_index_t<0>{}, std::move(v)} {}
     template <class Err>
-    constexpr Expected(Unexpected<Err> u) : m_data{std::in_place_index_t<1>{}, std::move(u.err)}
+    constexpr Expected(Unexpected<Err> u) : m_data{std::in_place_index_t<1>{}, std::move(u).error()}
     {
     }
 
