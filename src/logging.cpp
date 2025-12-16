@@ -602,3 +602,13 @@ bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::stri
     m_category_log_levels[flag] = level.value();
     return true;
 }
+
+bool util::log::ShouldLog(Category category, Level level)
+{
+    return LogInstance().WillLogCategoryLevel(static_cast<BCLog::LogFlags>(category), level);
+}
+
+void util::log::Log(util::log::Entry entry)
+{
+    LogInstance().LogPrintStr(std::move(entry.message), std::move(entry.source_loc), static_cast<BCLog::LogFlags>(entry.category), entry.level, entry.timestamp, entry.should_ratelimit);
+}
