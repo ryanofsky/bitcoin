@@ -6,11 +6,8 @@
 #ifndef BITCOIN_LOGGING_H
 #define BITCOIN_LOGGING_H
 
-#include <crypto/siphash.h>
 #include <logging/categories.h> // IWYU pragma: export
 #include <threadsafety.h>
-#include <tinyformat.h>
-#include <util/check.h>
 #include <util/fs.h>
 #include <util/log.h> // IWYU pragma: export
 #include <util/string.h>
@@ -22,11 +19,8 @@
 #include <functional>
 #include <list>
 #include <memory>
-#include <mutex>
-#include <source_location>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 static const bool DEFAULT_LOGTIMEMICROS = false;
@@ -155,7 +149,7 @@ namespace BCLog {
         std::list<std::function<void(const std::string&)>> m_print_callbacks GUARDED_BY(m_cs) {};
 
         /** Send a string to the log output (internal) */
-        void LogPrintStr_(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
+        void LogPrintStr_(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit, std::optional<util::log::Time> time = std::nullopt)
             EXCLUSIVE_LOCKS_REQUIRED(m_cs);
 
         std::string GetLogPrefix(LogFlags category, Level level) const;
@@ -174,7 +168,7 @@ namespace BCLog {
         std::atomic<bool> m_reopen_file{false};
 
         /** Send a string to the log output */
-        void LogPrintStr(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
+        void LogPrintStr(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit, std::optional<util::log::Time> time = std::nullopt)
             EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
 
         /** Returns whether logs will be written to any output */
@@ -287,18 +281,5 @@ static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level leve
 /** Return true if str parses as a log category and set the flag */
 bool GetLogCategory(BCLog::LogFlags& flag, std::string_view str);
 
-template <typename... Args>
-inline void LogPrintFormatInternal(SourceLocation&& source_loc, BCLog::LogFlags flag, BCLog::Level level, bool should_ratelimit, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
-{
-    if (LogInstance().Enabled()) {
-        std::string log_msg;
-        try {
-            log_msg = tfm::format(fmt, args...);
-        } catch (tinyformat::format_error& fmterr) {
-            log_msg = "Error \"" + std::string{fmterr.what()} + "\" while formatting log message: " + fmt.fmt;
-        }
-        LogInstance().LogPrintStr(log_msg, std::move(source_loc), flag, level, should_ratelimit);
-    }
-}
 
 #endif // BITCOIN_LOGGING_H

@@ -421,14 +421,14 @@ void BCLog::Logger::FormatLogStrInPlace(std::string& str, BCLog::LogFlags catego
     str.insert(0, LogTimestampStr(now, mocktime));
 }
 
-void BCLog::Logger::LogPrintStr(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
+void BCLog::Logger::LogPrintStr(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit, std::optional<util::log::Time> time)
 {
     StdLockGuard scoped_lock(m_cs);
-    return LogPrintStr_(str, std::move(source_loc), category, level, should_ratelimit);
+    return LogPrintStr_(str, std::move(source_loc), category, level, should_ratelimit, time);
 }
 
 // NOLINTNEXTLINE(misc-no-recursion)
-void BCLog::Logger::LogPrintStr_(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
+void BCLog::Logger::LogPrintStr_(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit, std::optional<util::log::Time> time)
 {
     std::string str_prefixed = LogEscapeMessage(str);
 
@@ -460,7 +460,7 @@ void BCLog::Logger::LogPrintStr_(std::string_view str, SourceLocation&& source_l
         return;
     }
 
-    FormatLogStrInPlace(str_prefixed, category, level, source_loc, util::ThreadGetInternalName(), SystemClock::now(), GetMockTime());
+    FormatLogStrInPlace(str_prefixed, category, level, source_loc, util::ThreadGetInternalName(), time ? *time : SystemClock::now(), GetMockTime());
     bool ratelimit{false};
     if (should_ratelimit && m_limiter) {
         auto status{m_limiter->Consume(source_loc, str_prefixed)};
@@ -601,4 +601,14 @@ bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::stri
     StdLockGuard scoped_lock(m_cs);
     m_category_log_levels[flag] = level.value();
     return true;
+}
+
+bool util::log::ShouldLog(Category category, Level level)
+{
+    return LogInstance().WillLogCategoryLevel(static_cast<BCLog::LogFlags>(category), level);
+}
+
+void util::log::Log(util::log::Entry entry)
+{
+    LogInstance().LogPrintStr(std::move(entry.message), std::move(entry.source_loc), static_cast<BCLog::LogFlags>(entry.category), entry.level, entry.should_ratelimit, entry.timestamp);
 }
