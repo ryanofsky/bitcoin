@@ -445,9 +445,33 @@ struct ServerCall
     template <typename ServerContext, typename... Args>
     decltype(auto) invoke(ServerContext& server_context, TypeList<>, Args&&... args) const
     {
-        return ProxyServerMethodTraits<typename decltype(server_context.call_context.getParams())::Reads>::invoke(
-            server_context,
-            std::forward<Args>(args)...);
+        // If cancel_lock is set, release it while executing the method, and
+        // reacquire it afterwards. The lock is needed to prevent params and
+        // response structs from being deleted by the event loop thread if the
+        // request is canceled, so it is only needed before and after method
+        // execution. It is important to release the lock during execution
+        // because the method can take arbitrarily long to return and the event
+        // loop will need the lock itself in on_cancel if the call is canceled.
+        if (server_context.cancel_lock) server_context.cancel_lock->m_lock.unlock();
+        return CallThen(
+            [&]() -> decltype(auto) {
+                return ProxyServerMethodTraits<
+                    typename decltype(server_context.call_context.getParams())::Reads
+                >::invoke(server_context, std::forward<Args>(args)...);
+            },
+            [&] {
+                if (server_context.cancel_lock) server_context.cancel_lock->m_lock.lock();
+                // If the IPC request was canceled, there is no point continuing to
+                // execute. It's also important to stop executing because the
+                // connection may have been destroyed as described in
+                // https://github.com/bitcoin/bitcoin/issues/34250 and there would
+                // be a crash if execution continued.
+                // If the IPC method threw an exception, the InterruptException
+                // thrown below will take precedence over it. Since the call has
+                // been cancelled that exception can't be returned to the
+                // caller, so it needs to be discarded like other result values.
+                if (server_context.request_canceled) throw InterruptException{"canceled"};
+            });
     }
 };
 
