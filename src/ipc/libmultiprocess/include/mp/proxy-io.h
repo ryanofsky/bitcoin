@@ -48,6 +48,7 @@ struct ServerInvokeContext : InvokeContext
     ProxyServer& proxy_server;
     CallContext& call_context;
     int req;
+    std::atomic<bool> cancelled{false};
 
     ServerInvokeContext(ProxyServer& proxy_server, CallContext& call_context, int req)
         : InvokeContext{*proxy_server.m_context.connection}, proxy_server{proxy_server}, call_context{call_context}, req{req}

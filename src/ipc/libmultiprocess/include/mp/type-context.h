@@ -64,8 +64,12 @@ auto PassField(Priority<1>, TypeList<>, ServerContext& server_context, const Fn&
     auto future = kj::newPromiseAndFulfiller<typename ServerContext::CallContext>();
     auto& server = server_context.proxy_server;
     int req = server_context.req;
+    auto cancel_monitor_ptr = kj::heap<CancelMonitor>();
+    CancelMonitor& cancel_monitor = *cancel_monitor_ptr;
     auto invoke = [fulfiller = kj::mv(future.fulfiller),
-         call_context = kj::mv(server_context.call_context), &server, req, fn, args...]() mutable {
+         call_context = kj::mv(server_context.call_context),
+         cancel_monitor_ptr = kj::mv(cancel_monitor_ptr),
+         &server, req, fn, args...]() mutable {
                 const auto& params = call_context.getParams();
                 Context::Reader context_arg = Accessor::get(params);
                 ServerContext server_context{server, call_context, req};
@@ -91,7 +95,17 @@ auto PassField(Priority<1>, TypeList<>, ServerContext& server_context, const Fn&
                     auto& request_threads = thread_context.request_threads;
                     ConnThread request_thread;
                     bool inserted;
+                    auto cancel_monitor = kj::mv(cancel_monitor_ptr);
                     server.m_context.loop->sync([&] {
+                        // Detect request being cancelled before or while it executes.
+                        if (cancel_monitor->m_cancelled) MP_LOG(*server.m_context.loop, Log::Raise) << "IPC server request #" << req << " cancelled before it could be executed";
+                        assert(!cancel_monitor->m_on_cancel);
+                        cancel_monitor->m_on_cancel = [&server, &server_context, req]() {
+                            MP_LOG(*server.m_context.loop, Log::Error) << "IPC server request #" << req << " cancelled while executing.";
+                            server_context.cancelled = true;
+                        };
+
+                        // Update requests_threads map if not cancelled.
                         std::tie(request_thread, inserted) = SetThread(
                             GuardedRef{thread_context.waiter->m_mutex, request_threads}, server.m_context.connection,
                             [&] { return context_arg.getCallbackThread(); });
@@ -103,7 +117,7 @@ auto PassField(Priority<1>, TypeList<>, ServerContext& server_context, const Fn&
                     // recursive call (IPC call calling back to the caller which
                     // makes another IPC call), so avoid modifying the map.
                     const bool erase_thread{inserted};
-                    KJ_DEFER(if (erase_thread) {
+                    KJ_DEFER(if (erase_thread && !cancel_monitor->m_cancelled) {
                         // Erase the request_threads entry on the event loop
                         // thread with loop->sync(), so if the connection is
                         // broken there is not a race between this thread and
@@ -123,8 +137,12 @@ auto PassField(Priority<1>, TypeList<>, ServerContext& server_context, const Fn&
                             }
                         });
                     });
+                    auto ptr = server.m_impl; // Keep server object shared_ptr alive during the call, in case the call is cancelled.
                     fn.invoke(server_context, args...);
                 }
+
+                // Fulfill or reject the promise, unless it was cancelled.
+                if (server_context.cancelled) return;
                 KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
                     server.m_context.loop->sync([&] {
                         auto fulfiller_dispose = kj::mv(fulfiller);
@@ -165,7 +183,8 @@ auto PassField(Priority<1>, TypeList<>, ServerContext& server_context, const Fn&
             }
         })
         // Wait for the invocation to finish before returning to the caller.
-        .then([invoke_wait = kj::mv(future.promise)]() mutable { return kj::mv(invoke_wait); });
+        .then([invoke_wait = kj::mv(future.promise)]() mutable { return kj::mv(invoke_wait); })
+        .attach(kj::heap<CancelProbe>(cancel_monitor));
 }
 } // namespace mp
 

@@ -319,6 +319,17 @@ void PassField(Priority<0>, TypeList<>, ServerContext& server_context, const Fn&
     ReadField(TypeList<>(), server_context, input);
     fn.invoke(server_context, std::forward<Args>(args)...);
     auto&& results = server_context.call_context.getResults();
+    // If IPC request was cancelled, there is no point continuing to execute.
+    // It's also important to stop executing because the connection may have
+    // been destroyed as described in
+    // https://github.com/bitcoin/bitcoin/issues/34250 and there would be a
+    // crash if this continued.
+    // TODO: Note this detection is racy because cancellation could happen after
+    // this check but before BuildField is called. However, fixing this would
+    // require changing definition of the InvokeContext struct and updating a
+    // lot of code, so this can be done in a followup.
+    if (server_context.cancelled) throw std::runtime_error("Aborting cancelled IPC request #" + std::to_string(server_context.req));
+
     BuildField(TypeList<>(), server_context, Make<StructField, Accessor>(results));
 }
 

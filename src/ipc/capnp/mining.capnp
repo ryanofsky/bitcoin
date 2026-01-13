@@ -5,6 +5,7 @@
 @0xc77d03df6a41b505;
 
 using Cxx = import "/capnp/c++.capnp";
+$Cxx.allowCancellation;
 $Cxx.namespace("ipc::capnp::messages");
 
 using Common = import "common.capnp";
