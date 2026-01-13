@@ -48,6 +48,11 @@ struct ServerInvokeContext : InvokeContext
     ProxyServer& proxy_server;
     CallContext& call_context;
     int req;
+    //! If method executes on another thread (not the event loop thread),
+    //! whether the call was cancelled by the client, or cancelled by a
+    //! disconnection. If the call executes on the event loop thread it can't be
+    //! cancelled.
+    std::atomic<bool> cancelled{false};
 
     ServerInvokeContext(ProxyServer& proxy_server, CallContext& call_context, int req)
         : InvokeContext{*proxy_server.m_context.connection}, proxy_server{proxy_server}, call_context{call_context}, req{req}
@@ -408,7 +413,7 @@ public:
         // will never run after connection object is destroyed. But when disconnect
         // handler fires, do not call the function f right away, instead add it
         // to the EventLoop TaskSet to avoid "Promise callback destroyed itself"
-        // error in cases where f deletes this Connection object.
+        // error in the typical case where f deletes this Connection object.
         m_on_disconnect.add(m_network.onDisconnect().then(
             [f = std::forward<F>(f), this]() mutable { m_loop->m_task_set->add(kj::evalLater(kj::mv(f))); }));
     }
@@ -416,6 +421,9 @@ public:
     EventLoopRef m_loop;
     kj::Own<kj::AsyncIoStream> m_stream;
     LoggingErrorHandler m_error_handler{*m_loop};
+    //! TaskSet to cancel the m_network.onDisconnect() handler for remote
+    //! connections if this Connection object is being deleted and the
+    //! connection closed locally.
     kj::TaskSet m_on_disconnect{m_error_handler};
     ::capnp::TwoPartyVatNetwork m_network;
     std::optional<::capnp::RpcSystem<::capnp::rpc::twoparty::VatId>> m_rpc_system;
@@ -427,6 +435,12 @@ public:
     //! Collection of server-side IPC worker threads (ProxyServer<Thread> objects previously returned by
     //! ThreadMap.makeThread) used to service requests to clients.
     ::capnp::CapabilityServerSet<Thread> m_threads;
+
+    //! Canceler for canceling promises that we want to discard when the
+    //! connection is destroyed. This is used to interrupt method calls that are
+    //! still executing at time of disconnection, e.g. if the remote side
+    //! disconnected without waiting for a response.
+    kj::Canceler m_canceler;
 
     //! Cleanup functions to run if connection is broken unexpectedly.  List
     //! will be empty if all ProxyClient are destroyed cleanly before the
