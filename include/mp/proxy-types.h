@@ -445,6 +445,23 @@ struct ServerCall
     template <typename ServerContext, typename... Args>
     decltype(auto) invoke(ServerContext& server_context, TypeList<>, Args&&... args) const
     {
+        // If cancel_lock is set, release it while executing the method, and
+        // reacquire it afterwards. The lock is needed to prevent params and
+        // response structs from being deleted by the event loop thread if the
+        // request is canceled, so it is only needed before and after method
+        // execution. It is important to release the lock during execution
+        // because the method can take arbitrarily long to return and the event
+        // loop will need the lock itself in on_cancel if the call is canceled.
+        if (server_context.cancel_lock) server_context.cancel_lock->m_lock.unlock();
+        KJ_DEFER(
+            if (server_context.cancel_lock) server_context.cancel_lock->m_lock.lock();
+            // If the IPC request was canceled, there is no point continuing to
+            // execute. It's also important to stop executing because the
+            // connection may have been destroyed as described in
+            // https://github.com/bitcoin/bitcoin/issues/34250 and there would
+            // be a crash if execution continued.
+            if (server_context.request_canceled) throw InterruptException{"canceled"};
+        );
         return ProxyServerMethodTraits<typename decltype(server_context.call_context.getParams())::Reads>::invoke(
             server_context,
             std::forward<Args>(args)...);
