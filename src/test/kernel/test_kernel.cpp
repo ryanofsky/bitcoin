@@ -721,6 +721,7 @@ BOOST_AUTO_TEST_CASE(logging_tests)
     Logger logger{std::make_unique<TestLog>()};
 }
 
+<<<<<<< HEAD
 BOOST_AUTO_TEST_CASE(btck_chainparams_tests)
 {
     ChainParams params_signet{ChainType::SIGNET};
@@ -728,6 +729,31 @@ BOOST_AUTO_TEST_CASE(btck_chainparams_tests)
     CheckHandle(params_signet, params_signet_challenge);
 }
 
+||||||| parent of 525f36e3c8b (kernel: add log level/category name getters)
+=======
+BOOST_AUTO_TEST_CASE(log_level_name_tests)
+{
+    BOOST_CHECK_EQUAL(log_level_get_name(LogLevel::TRACE_LEVEL), "trace");
+    BOOST_CHECK_EQUAL(log_level_get_name(LogLevel::DEBUG_LEVEL), "debug");
+    BOOST_CHECK_EQUAL(log_level_get_name(LogLevel::INFO_LEVEL), "info");
+}
+
+BOOST_AUTO_TEST_CASE(log_category_name_tests)
+{
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::ALL), "all");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::BENCH), "bench");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::BLOCKSTORAGE), "blockstorage");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::COINDB), "coindb");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::KERNEL), "kernel");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::LEVELDB), "leveldb");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::MEMPOOL), "mempool");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::PRUNE), "prune");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::RAND), "rand");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::REINDEX), "reindex");
+    BOOST_CHECK_EQUAL(log_category_get_name(LogCategory::VALIDATION), "validation");
+}
+
+>>>>>>> 525f36e3c8b (kernel: add log level/category name getters)
 BOOST_AUTO_TEST_CASE(btck_context_tests)
 {
     { // test default context
