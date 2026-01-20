@@ -463,4 +463,20 @@ BOOST_FIXTURE_TEST_CASE(logging_filesize_rate_limit, LogSetup)
     }
 }
 
+BOOST_FIXTURE_TEST_CASE(log_accept_category, LogSetup)
+{
+    using namespace util::log;
+    BCLog::Logger& logger{LogInstance()};
+
+    BOOST_CHECK(logger.WillLogCategoryLevel(BCLog::ALL, Level::Info));
+    BOOST_CHECK(logger.WillLogCategoryLevel(BCLog::NET, Level::Warning));
+    BOOST_CHECK(logger.WillLogCategoryLevel(BCLog::VALIDATION, Level::Error));
+    BOOST_CHECK(!logger.WillLogCategoryLevel(BCLog::LEVELDB, Level::Debug));
+    BOOST_CHECK(!logger.WillLogCategoryLevel(BCLog::ALL, Level::Trace));
+
+    logger.EnableCategory(BCLog::TXPACKAGES);
+    BOOST_CHECK(logger.WillLogCategoryLevel(BCLog::TXPACKAGES, Level::Debug));
+    BOOST_CHECK(!logger.WillLogCategoryLevel(BCLog::TXPACKAGES, Level::Trace));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
