@@ -6,7 +6,6 @@
 import asyncio
 from contextlib import AsyncExitStack
 from io import BytesIO
-import re
 from test_framework.blocktools import NULL_OUTPOINT
 from test_framework.messages import (
     MAX_BLOCK_WEIGHT,
@@ -245,17 +244,8 @@ class IPCMiningTest(BitcoinTestFramework):
                 await mining.createNewBlock(ctx, opts)
                 raise AssertionError("createNewBlock unexpectedly succeeded")
             except capnp.lib.capnp.KjException as e:
-                if e.type == "DISCONNECTED":
-                    # The remote exception isn't caught currently and leads to a
-                    # std::terminate call. Just detect and restart in this case.
-                    # This bug is fixed with
-                    # https://github.com/bitcoin-core/libmultiprocess/pull/218
-                    assert_equal(e.description, "Peer disconnected.")
-                    self.nodes[0].wait_until_stopped(expected_ret_code=(-11, -6, 1, 66), expected_stderr=re.compile(""))
-                    self.start_node(0)
-                else:
-                    assert_equal(e.description, "remote exception: std::exception: block_reserved_weight (0) must be at least 2000 weight units")
-                    assert_equal(e.type, "FAILED")
+                assert_equal(e.description, "remote exception: std::exception: block_reserved_weight (0) must be at least 2000 weight units")
+                assert_equal(e.type, "FAILED")
 
         asyncio.run(capnp.run(async_routine()))
 
