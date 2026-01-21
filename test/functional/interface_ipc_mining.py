@@ -7,6 +7,12 @@ import asyncio
 import time
 from contextlib import AsyncExitStack
 from io import BytesIO
+<<<<<<< HEAD
+||||||| parent of 0df79d4d12d (test: Updates needed after bitcoin-core/libmultiprocess#240)
+import re
+=======
+import platform
+>>>>>>> 0df79d4d12d (test: Updates needed after bitcoin-core/libmultiprocess#240)
 from test_framework.blocktools import NULL_OUTPOINT
 from test_framework.messages import (
     MAX_BLOCK_WEIGHT,
@@ -325,7 +331,31 @@ class IPCMiningTest(BitcoinTestFramework):
                 await mining.createNewBlock(ctx, opts)
                 raise AssertionError("createNewBlock unexpectedly succeeded")
             except capnp.lib.capnp.KjException as e:
+<<<<<<< HEAD
                 assert_capnp_failed(e, "remote exception: std::exception: block_reserved_weight (0) must be at least 2000 weight units")
+||||||| parent of 0df79d4d12d (test: Updates needed after bitcoin-core/libmultiprocess#240)
+                if e.type == "DISCONNECTED":
+                    # The remote exception isn't caught currently and leads to a
+                    # std::terminate call. Just detect and restart in this case.
+                    # This bug is fixed with
+                    # https://github.com/bitcoin-core/libmultiprocess/pull/218
+                    assert_equal(e.description, "Peer disconnected.")
+                    self.nodes[0].wait_until_stopped(expected_ret_code=(-11, -6, 1, 66), expected_stderr=re.compile(""))
+                    self.start_node(0)
+                else:
+                    assert_equal(e.description, "remote exception: std::exception: block_reserved_weight (0) must be at least 2000 weight units")
+                    assert_equal(e.type, "FAILED")
+=======
+                if e.description == "remote exception: unknown non-KJ exception of type: kj::Exception":
+                    # macOS + REDUCE_EXPORTS bug: Cap'n Proto fails to recognize
+                    # its own exception type and returns a generic error instead.
+                    # https://github.com/bitcoin/bitcoin/pull/34422#discussion_r2863852691
+                    # Assert this only occurs on Darwin until fixed.
+                    assert_equal(platform.system(), "Darwin")
+                else:
+                    assert_equal(e.description, "remote exception: std::exception: block_reserved_weight (0) must be at least 2000 weight units")
+                assert_equal(e.type, "FAILED")
+>>>>>>> 0df79d4d12d (test: Updates needed after bitcoin-core/libmultiprocess#240)
 
         asyncio.run(capnp.run(async_routine()))
 
