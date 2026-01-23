@@ -5,11 +5,18 @@
 #ifndef BITCOIN_KERNEL_CHAIN_H
 #define BITCOIN_KERNEL_CHAIN_H
 
+<<<<<<< HEAD
 #include <attributes.h>
 
 #include <cstdint>
+||||||| parent of c632f91b78a (kernel: Remove BlockInfo from kernel)
+#include <attributes.h>
+
+=======
+>>>>>>> c632f91b78a (kernel: Remove BlockInfo from kernel)
 #include <iostream>
 
+<<<<<<< HEAD
 class CBlock;
 class CBlockIndex;
 class CBlockUndo;
@@ -33,10 +40,34 @@ struct BlockInfo {
 };
 } // namespace interfaces
 
+||||||| parent of c632f91b78a (kernel: Remove BlockInfo from kernel)
+class CBlock;
+class CBlockIndex;
+class CBlockUndo;
+class uint256;
+
+namespace interfaces {
+//! Block data sent with blockConnected, blockDisconnected notifications.
+struct BlockInfo {
+    const uint256& hash;
+    const uint256* prev_hash = nullptr;
+    int height = -1;
+    int file_number = -1;
+    unsigned data_pos = 0;
+    const CBlock* data = nullptr;
+    const CBlockUndo* undo_data = nullptr;
+    // The maximum time in the chain up to and including this block.
+    // A timestamp that can only move forward.
+    unsigned int chain_time_max{0};
+
+    BlockInfo(const uint256& hash LIFETIMEBOUND) : hash(hash) {}
+};
+} // namespace interfaces
+
+=======
+>>>>>>> c632f91b78a (kernel: Remove BlockInfo from kernel)
 namespace kernel {
 struct ChainstateRole;
-//! Return data from block index.
-interfaces::BlockInfo MakeBlockInfo(const CBlockIndex* block_index, const CBlock* data = nullptr);
 std::ostream& operator<<(std::ostream& os, const ChainstateRole& role);
 } // namespace kernel
 
