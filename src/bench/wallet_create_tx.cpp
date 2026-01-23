@@ -9,9 +9,17 @@
 #include <consensus/amount.h>
 #include <consensus/consensus.h>
 #include <consensus/merkle.h>
+<<<<<<< HEAD
 #include <kernel/chain.h>
+||||||| parent of 4c50171f35d (kernel: Remove BlockInfo from kernel)
+#include <interfaces/chain.h>
+#include <kernel/chain.h>
+=======
+#include <interfaces/chain.h>
+>>>>>>> 4c50171f35d (kernel: Remove BlockInfo from kernel)
 #include <kernel/types.h>
 #include <node/blockstorage.h>
+#include <node/chain.h>
 #include <outputtype.h>
 #include <policy/feerate.h>
 #include <primitives/block.h>
@@ -105,7 +113,7 @@ void generateFakeBlock(const CChainParams& params,
 
     // notify wallet
     const auto& pindex = WITH_LOCK(::cs_main, return context.chainman->ActiveChain().Tip());
-    wallet.blockConnected(ChainstateRole{}, kernel::MakeBlockInfo(pindex, &block));
+    wallet.blockConnected(ChainstateRole{}, node::MakeBlockInfo(pindex, &block));
 }
 
 struct PreSelectInputs {
