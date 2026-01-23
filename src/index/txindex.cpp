@@ -10,6 +10,13 @@
 #include <index/base.h>
 #include <index/disktxpos.h>
 #include <interfaces/chain.h>
+<<<<<<< HEAD
+||||||| parent of 5b1f6a69ea9 (kernel: Remove BlockInfo from kernel)
+#include <logging.h>
+=======
+#include <interfaces/types.h>
+#include <logging.h>
+>>>>>>> 5b1f6a69ea9 (kernel: Remove BlockInfo from kernel)
 #include <node/blockstorage.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
