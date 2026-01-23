@@ -7,7 +7,12 @@
 
 #include <blockfilter.h>
 #include <common/settings.h>
+<<<<<<< HEAD
 #include <consensus/amount.h>
+||||||| parent of 551ed9b74a9 (kernel: Remove BlockInfo from kernel)
+=======
+#include <interfaces/types.h>
+>>>>>>> 551ed9b74a9 (kernel: Remove BlockInfo from kernel)
 #include <kernel/chain.h> // IWYU pragma: export
 #include <primitives/transaction.h>
 #include <util/expected.h>
