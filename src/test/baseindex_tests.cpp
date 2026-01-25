@@ -24,7 +24,6 @@
 #include <test/util/mining.h>
 #include <test/util/setup_common.h>
 #include <test/util/time.h>
-#include <test/util/validation.h>
 #include <tinyformat.h>
 #include <util/byte_units.h>
 #include <util/check.h>
@@ -50,9 +49,9 @@ static const std::vector<std::pair<std::string, IndexFactory>> INDEX_FACTORIES{
     {"coinstatsindex", [](node::NodeContext& node) -> std::unique_ptr<BaseIndex> {
         return std::make_unique<CoinStatsIndex>(interfaces::MakeChain(node), /*n_cache_size=*/1_MiB); }},
     {"txindex", [](node::NodeContext& node) -> std::unique_ptr<BaseIndex> {
-        return std::make_unique<TxIndex>(interfaces::MakeChain(node), /*n_cache_size=*/1_MiB); }},
+        return std::make_unique<TxIndex>(interfaces::MakeChain(node), Assert(node.chainman)->m_blockman, /*n_cache_size=*/1_MiB); }},
     {"txospenderindex", [](node::NodeContext& node) -> std::unique_ptr<BaseIndex> {
-        return std::make_unique<TxoSpenderIndex>(interfaces::MakeChain(node), /*n_cache_size=*/1_MiB); }},
+        return std::make_unique<TxoSpenderIndex>(interfaces::MakeChain(node), Assert(node.chainman)->m_blockman, /*n_cache_size=*/1_MiB); }},
     {"blockfilterindex", [](node::NodeContext& node) -> std::unique_ptr<BaseIndex> {
         return std::make_unique<BlockFilterIndex>(interfaces::MakeChain(node), BlockFilterType::BASIC, /*n_cache_size=*/1_MiB); }},
 };
@@ -74,7 +73,8 @@ BOOST_FIXTURE_TEST_CASE(baseindex_no_commit_ahead_of_flush, TestChain100Setup)
         auto sync_index = [&](bool do_flush, int expected_sync_height, int expected_commit_height) {
             auto index{make_index(m_node)};
             BOOST_REQUIRE(index->Init());
-            index->Sync();
+            BOOST_CHECK(index->StartBackgroundSync());
+            index->WaitForBackgroundSync();
             if (do_flush) {
                 chainstate.ForceFlushStateToDisk();
                 m_node.chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
@@ -107,6 +107,20 @@ BOOST_FIXTURE_TEST_CASE(baseindex_no_commit_ahead_of_flush, TestChain100Setup)
     }
 }
 
+class IndexTester
+{
+public:
+    static void BlockConnected(BaseIndex& index, const kernel::ChainstateRole& role, const interfaces::BlockInfo& block)
+    {
+        std::shared_ptr<interfaces::Chain::Notifications> notifications;
+        {
+            LOCK(index.m_mutex);
+            notifications = index.m_notifications;
+        }
+        if (notifications) notifications->blockConnected(role, block);
+    }
+};
+
 // Test shutdown between BlockConnected and ChainStateFlushed notifications,
 // make sure index is not corrupted and is able to reload.
 BOOST_FIXTURE_TEST_CASE(index_unclean_shutdown, TestChain100Setup)
@@ -118,7 +132,8 @@ BOOST_FIXTURE_TEST_CASE(index_unclean_shutdown, TestChain100Setup)
         {
             auto index{make_index(m_node)};
             BOOST_REQUIRE(index->Init());
-            index->Sync();
+            BOOST_CHECK(index->StartBackgroundSync());
+            index->WaitForBackgroundSync();
             std::shared_ptr<const CBlock> new_block;
             CBlockIndex* new_block_index = nullptr;
             {
@@ -137,7 +152,12 @@ BOOST_FIXTURE_TEST_CASE(index_unclean_shutdown, TestChain100Setup)
             // Send block connected notification, then stop the index without
             // sending a chainstate flushed notification. Prior to #24138, this
             // would cause the index to be corrupted and fail to reload.
-            ValidationInterfaceTest::BlockConnected(ChainstateRole{}, *index, new_block, new_block_index);
+            uint256 block_hash = new_block_index->GetBlockHash();
+            uint256 prev_hash = new_block_index->pprev->GetBlockHash();
+            interfaces::BlockInfo block_info{block_hash};
+            block_info.prev_hash = &prev_hash;
+            block_info.height = new_block_index->nHeight;
+            IndexTester::BlockConnected(*index, ChainstateRole{}, block_info);
             index->Stop();
         }
 
