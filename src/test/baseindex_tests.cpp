@@ -68,6 +68,7 @@ BOOST_AUTO_TEST_SUITE(baseindex_tests)
 BOOST_FIXTURE_TEST_CASE(baseindex_no_commit_ahead_of_flush, TestChain100Setup)
 {
     Chainstate& chainstate = Assert(m_node.chainman)->ActiveChainstate();
+<<<<<<< HEAD
     for (const auto& [index_name, make_index] : INDEX_FACTORIES) {
         BOOST_TEST_INFO_SCOPE(index_name);
         const int tip_height{WITH_LOCK(cs_main, return m_node.chainman->ActiveChain().Tip()->nHeight)};
@@ -139,6 +140,24 @@ BOOST_FIXTURE_TEST_CASE(index_unclean_shutdown, TestChain100Setup)
             // would cause the index to be corrupted and fail to reload.
             ValidationInterfaceTest::BlockConnected(ChainstateRole{}, *index, new_block, new_block_index);
             index->Stop();
+||||||| parent of 630301a7da2 (indexes: Move sync thread from index to node)
+    auto sync_index = [&](bool do_flush, int expected_sync_height, int expected_commit_height) {
+        CoinStatsIndex index{interfaces::MakeChain(m_node), /*n_cache_size=*/1_MiB};
+        BOOST_REQUIRE(index.Init());
+        index.Sync();
+        if (do_flush) {
+            chainstate.ForceFlushStateToDisk();
+            m_node.chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
+=======
+    auto sync_index = [&](bool do_flush, int expected_sync_height, int expected_commit_height) {
+        CoinStatsIndex index{interfaces::MakeChain(m_node), /*n_cache_size=*/1_MiB};
+        BOOST_REQUIRE(index.Init());
+        BOOST_CHECK(index.StartBackgroundSync());
+        index.WaitForBackgroundSync();
+        if (do_flush) {
+            chainstate.ForceFlushStateToDisk();
+            m_node.chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
+>>>>>>> 630301a7da2 (indexes: Move sync thread from index to node)
         }
 
         {
