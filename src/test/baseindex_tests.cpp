@@ -74,7 +74,8 @@ BOOST_FIXTURE_TEST_CASE(baseindex_no_commit_ahead_of_flush, TestChain100Setup)
         auto sync_index = [&](bool do_flush, int expected_sync_height, int expected_commit_height) {
             auto index{make_index(m_node)};
             BOOST_REQUIRE(index->Init());
-            index->Sync();
+            BOOST_CHECK(index->StartBackgroundSync());
+            index->WaitForBackgroundSync();
             if (do_flush) {
                 chainstate.ForceFlushStateToDisk();
                 m_node.chain->context()->validation_signals->SyncWithValidationInterfaceQueue();
