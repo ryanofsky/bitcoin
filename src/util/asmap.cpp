@@ -5,12 +5,18 @@
 #include <util/asmap.h>
 
 #include <clientversion.h>
+<<<<<<< HEAD
 #include <hash.h>
 #include <logging.h>
+||||||| parent of 698a05427ed (logging: use util/log.h where possible)
+#include <logging.h>
+=======
+>>>>>>> 698a05427ed (logging: use util/log.h where possible)
 #include <serialize.h>
 #include <streams.h>
 #include <uint256.h>
 #include <util/fs.h>
+#include <util/log.h>
 
 #include <algorithm>
 #include <bit>
