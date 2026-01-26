@@ -174,7 +174,6 @@ namespace BCLog {
         bool m_log_sourcelocations = DEFAULT_LOGSOURCELOCATIONS;
         bool m_always_print_category_level = DEFAULT_LOGLEVELALWAYS;
 
-        util::log::Dispatcher m_dispatcher{};
         fs::path m_file_path;
         std::atomic<bool> m_reopen_file{false};
 
