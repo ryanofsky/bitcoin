@@ -625,7 +625,6 @@ bool util::log::ShouldTraceLog(Category category)
 void util::log::Log(util::log::Entry entry)
 {
     BCLog::Logger& logger{LogInstance()};
-    logger.m_dispatcher.Log(entry);
     if (logger.Enabled()) {
         logger.LogPrint(std::move(entry));
     }
