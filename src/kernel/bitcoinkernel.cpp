@@ -17,7 +17,6 @@
 #include <kernel/context.h>
 #include <kernel/notifications_interface.h>
 #include <kernel/warning.h>
-#include <logging.h>
 #include <node/blockstorage.h>
 #include <node/chainstate.h>
 #include <primitives/block.h>
@@ -31,6 +30,7 @@
 #include <uint256.h>
 #include <undo.h>
 #include <util/fs.h>
+#include <util/log.h>
 #include <util/result.h>
 #include <util/signalinterrupt.h>
 #include <util/string.h>
@@ -41,6 +41,7 @@
 #include <validationinterface.h>
 
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -68,12 +69,37 @@ extern const TranslateFn G_TRANSLATION_FUN{nullptr};
 
 static const kernel::Context btck_context_static{};
 
+struct KernelLogger {
+    std::atomic<util::log::Level> min_level{util::log::Level::Info};
+    util::log::Dispatcher dispatcher{};
+};
+
+// Kernel logging state. Intentionally leaked to avoid use-after-destroy if logging occurs during
+// static destruction.
+static KernelLogger& g_kernel_logger()
+{
+    static KernelLogger* p{new KernelLogger{}};
+    return *p;
+}
+
 namespace util::log {
 Dispatcher& g_dispatcher()
 {
-    return LogInstance().m_dispatcher;
+    return g_kernel_logger().dispatcher;
 }
 } // util::log
+
+namespace util::log::hooks {
+bool ShouldLog(Category category, Level level)
+{
+    return level >= g_kernel_logger().min_level.load(std::memory_order_relaxed);
+}
+
+void Log(Entry entry)
+{
+    util::log::g_dispatcher().Log(entry);
+}
+} // util::log::hooks
 
 namespace {
 
@@ -215,11 +241,6 @@ constexpr auto LOG_CATEGORIES = [] {
     a[btck_LogCategory_VALIDATION] = {BCLog::LogFlags::VALIDATION, "validation"};
     return a;
 }();
-
-constexpr BCLog::LogFlags get_bclog_flag(btck_LogCategory category)
-{
-    return LOG_CATEGORIES[category].bclog;
-}
 
 btck_LogCategory get_btck_category(BCLog::LogFlags flag)
 {
@@ -770,24 +791,9 @@ void btck_txid_destroy(btck_Txid* txid)
     delete txid;
 }
 
-void btck_logging_set_level_category(btck_LogCategory category, btck_LogLevel level)
+void btck_logging_set_min_level(btck_LogLevel level)
 {
-    LOCK(cs_main);
-    if (category == btck_LogCategory_ALL) {
-        LogInstance().SetLogLevel(get_bclog_level(level));
-    }
-
-    LogInstance().AddCategoryLogLevel(get_bclog_flag(category), get_bclog_level(level));
-}
-
-void btck_logging_enable_category(btck_LogCategory category)
-{
-    LogInstance().EnableCategory(get_bclog_flag(category));
-}
-
-void btck_logging_disable_category(btck_LogCategory category)
-{
-    LogInstance().DisableCategory(get_bclog_flag(category));
+    g_kernel_logger().min_level.store(get_bclog_level(level));
 }
 
 btck_LoggingConnection* btck_logging_connection_create(btck_LogCallback callback, void* user_data, btck_DestroyCallback user_data_destroy_callback)
