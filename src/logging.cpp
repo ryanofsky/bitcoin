@@ -620,7 +620,6 @@ bool util::log::ShouldLog(Category category, Level level)
 void util::log::Log(util::log::Entry entry)
 {
     BCLog::Logger& logger{LogInstance()};
-    logger.m_dispatcher.Log(entry);
     if (logger.Enabled()) {
         logger.LogPrintStr(std::move(entry));
     }
