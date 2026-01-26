@@ -75,16 +75,23 @@ struct Entry {
     std::string message;
 };
 
-/// Return whether messages with specified category should be debug logged.
-/// Applications using the logging library need to provide this.
-bool ShouldDebugLog(Category category);
+/// External hooks that logging backends need to implement.
+namespace hooks {
+/// Return whether messages with specified category and level should be logged.
+bool ShouldLog(Category category, Level level);
 
-/// Return whether messages with specified category should be trace logged.
-/// Applications using the logging library need to provide this.
-bool ShouldTraceLog(Category category);
-
-/** Send message to be logged. Applications using the logging library need to provide this. */
+/// Send message to be logged.
 void Log(Entry entry);
+} // namespace hooks
+
+/// Functions to detect when logging is enabled. Note: functions for detecting
+/// if logging is enabled at info/warning/error levels are intentionally not
+/// provided, because these logs are rarely disabled, so allowing code to
+/// condition on them could lead to bugs when they are disabled.
+///@{
+inline bool ShouldDebugLog(Category category) { return hooks::ShouldLog(category, Level::Debug); }
+inline bool ShouldTraceLog(Category category) { return hooks::ShouldLog(category, Level::Trace); }
+///@}
 
 /**
  * Dispatcher is responsible for producing logs. It forwards log entries to one or
@@ -144,7 +151,7 @@ inline void LogPrintFormatInternal_(SourceLocation&& source_loc, BCLog::LogFlags
     } catch (tinyformat::format_error& fmterr) {
         log_msg = "Error \"" + std::string{fmterr.what()} + "\" while formatting log message: " + fmt.fmt;
     }
-    util::log::Log(util::log::Entry{
+    util::log::hooks::Log(util::log::Entry{
         .category = flag,
         .level = level,
         .should_ratelimit = should_ratelimit,
