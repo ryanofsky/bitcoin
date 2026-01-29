@@ -10,12 +10,16 @@
 // Boost.Test's SIGSTKSZ alternate stack can be smaller than Linux requires on musl.
 #define BOOST_TEST_DISABLE_ALT_STACK
 #define BOOST_TEST_MODULE Bitcoin Kernel Test Suite
-#include <boost/test/included/unit_test.hpp>
-
 #include <test/kernel/block_data.h>
 #include <test/util/common.h>
 
+<<<<<<< HEAD
 #include <algorithm>
+||||||| parent of 73fbbe0b12c (kernel: make logging struct-based)
+=======
+#include <boost/test/included/unit_test.hpp>
+
+>>>>>>> 73fbbe0b12c (kernel: make logging struct-based)
 #include <charconv>
 #include <concepts>
 #include <cstdint>
@@ -97,9 +101,13 @@ void check_equal(std::span<const std::byte> _actual, std::span<const std::byte> 
 class TestLog
 {
 public:
-    void LogMessage(std::string_view message)
+    void LogMessage(const LogEntry& entry)
     {
-        std::cout << "kernel: " << message;
+        // TODO: stream Timestamp() directly once minimum gcc version is bumped to 13.1 (required for std::format support)
+        std::cout << "kernel: " << entry.Timestamp().time_since_epoch().count()
+                  << " [" << log_category_get_name(entry.Category()) << ":"
+                  << log_level_get_name(entry.Level()) << "] "
+                  << entry.Message() << "\n";
     }
 };
 
