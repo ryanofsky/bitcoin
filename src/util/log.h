@@ -8,12 +8,24 @@
 // This header works in tandem with `logging/categories.h`
 // to expose the complete logging interface.
 #include <logging/categories.h> // IWYU pragma: export
+#include <threadsafety.h>
 #include <tinyformat.h>
 #include <util/check.h>
+<<<<<<< HEAD
 #include <util/threadnames.h>
 #include <util/time.h>
+||||||| parent of 6c148e8c405 (util: add log::Dispatcher for struct-based log dispatch)
+=======
+#include <util/stdmutex.h>
+#include <util/string.h>
+#include <util/threadnames.h>
+>>>>>>> 6c148e8c405 (util: add log::Dispatcher for struct-based log dispatch)
 
+#include <atomic>
+#include <chrono>
 #include <cstdint>
+#include <functional>
+#include <list>
 #include <source_location>
 #include <string>
 #include <string_view>
@@ -61,9 +73,15 @@ struct Entry {
     Category category;
     Level level;
     bool should_ratelimit{false}; //!< Hint for consumers if this entry should be ratelimited
+<<<<<<< HEAD
     SystemClock::time_point timestamp{SystemClock::now()};
     std::chrono::seconds mocktime{GetMockTime()};
     std::string thread_name{util::ThreadGetInternalName()};
+||||||| parent of 6c148e8c405 (util: add log::Dispatcher for struct-based log dispatch)
+=======
+    std::chrono::system_clock::time_point timestamp{std::chrono::system_clock::now()};
+    std::string thread_name{util::ThreadGetInternalName()};
+>>>>>>> 6c148e8c405 (util: add log::Dispatcher for struct-based log dispatch)
     SourceLocation source_loc;
     std::string message;
 };
@@ -78,6 +96,71 @@ bool ShouldTraceLog(Category category);
 
 /** Send message to be logged. Applications using the logging library need to provide this. */
 void Log(Entry entry);
+<<<<<<< HEAD
+||||||| parent of 6c148e8c405 (util: add log::Dispatcher for struct-based log dispatch)
+} // namespace util::log
+
+namespace BCLog {
+//! Alias for compatibility. Prefer util::log::Level over BCLog::Level in new code.
+using Level = util::log::Level;
+} // namespace BCLog
+=======
+
+/**
+ * Dispatcher is responsible for producing logs. It forwards log entries to one or
+ * multiple logging sinks (e.g. BCLog::Logger) through its registered callbacks.
+ *
+ * Log consumption (including printing and rate limiting) should be implemented by the sink.
+ */
+class Dispatcher
+{
+public:
+    //! Type for callbacks invoked for each log entry.
+    using Callback = std::function<void(const Entry&)>;
+    //! Type for opaque handles returned by RegisterCallback(), used to unregister.
+    using CallbackHandle = std::list<Callback>::iterator;
+
+    /**
+     * Register a callback to receive log entries.
+     * @param[in] callback  Invoked for each log entry.
+     * @return Handle to use with UnregisterCallback().
+     */
+    [[nodiscard]] CallbackHandle RegisterCallback(Callback callback) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+
+    /**
+     * Unregister a previously registered callback.
+     * @param[in] handle  Handle previously returned by RegisterCallback().
+     */
+    void UnregisterCallback(CallbackHandle handle) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+
+    /** @return true if any callbacks are registered. */
+    bool Enabled() const { return m_callback_count.load(std::memory_order_acquire) > 0; }
+
+    /**
+     * Format message and dispatch to all registered callbacks.
+     */
+    void Log(const Entry& entry) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    {
+        StdLockGuard lock{m_mutex};
+        for (const auto& callback : m_callbacks) {
+            callback(entry);
+        }
+    }
+
+private:
+    mutable StdMutex m_mutex;
+    //! Callbacks to be executed when an eligible log statement is produced.
+    std::list<Callback> m_callbacks GUARDED_BY(m_mutex);
+    //! Lock-free size of m_callbacks for fast checks.
+    std::atomic<size_t> m_callback_count{0};
+};
+} // namespace util::log
+
+namespace BCLog {
+//! Alias for compatibility. Prefer util::log::Level over BCLog::Level in new code.
+using Level = util::log::Level;
+} // namespace BCLog
+>>>>>>> 6c148e8c405 (util: add log::Dispatcher for struct-based log dispatch)
 
 template <typename... Args>
 inline void LogPrintFormatInternal_(SourceLocation&& source_loc, BCLog::LogFlags flag, util::log::Level level, bool should_ratelimit, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
