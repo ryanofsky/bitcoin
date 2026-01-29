@@ -8,12 +8,19 @@
 // This header works in tandem with `logging/categories.h`
 // to expose the complete logging interface.
 #include <logging/categories.h> // IWYU pragma: export
+#include <threadsafety.h>
 #include <tinyformat.h>
 #include <util/check.h>
+#include <util/stdmutex.h>
+#include <util/string.h>
 #include <util/threadnames.h>
 #include <util/time.h>
 
+#include <atomic>
+#include <chrono>
 #include <cstdint>
+#include <functional>
+#include <list>
 #include <source_location>
 #include <string>
 #include <string_view>
@@ -78,6 +85,55 @@ bool ShouldTraceLog(Category category);
 
 /** Send message to be logged. Applications using the logging library need to provide this. */
 void Log(Entry entry);
+
+/**
+ * Dispatcher is responsible for producing logs. It forwards log entries to one or
+ * multiple logging sinks (e.g. BCLog::Logger) through its registered callbacks.
+ *
+ * Log consumption (including printing and rate limiting) should be implemented by the sink.
+ */
+class Dispatcher
+{
+public:
+    //! Type for callbacks invoked for each log entry.
+    using Callback = std::function<void(const Entry&)>;
+    //! Type for opaque handles returned by RegisterCallback(), used to unregister.
+    using CallbackHandle = std::list<Callback>::iterator;
+
+    /**
+     * Register a callback to receive log entries.
+     * @param[in] callback  Invoked for each log entry.
+     * @return Handle to use with UnregisterCallback().
+     */
+    [[nodiscard]] CallbackHandle RegisterCallback(Callback callback) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+
+    /**
+     * Unregister a previously registered callback.
+     * @param[in] handle  Handle previously returned by RegisterCallback().
+     */
+    void UnregisterCallback(CallbackHandle handle) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+
+    /** @return true if any callbacks are registered. */
+    bool Enabled() const { return m_callback_count.load(std::memory_order_acquire) > 0; }
+
+    /**
+     * Format message and dispatch to all registered callbacks.
+     */
+    void Log(const Entry& entry) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    {
+        StdMutex::Guard lock{m_mutex};
+        for (const auto& callback : m_callbacks) {
+            callback(entry);
+        }
+    }
+
+private:
+    mutable StdMutex m_mutex;
+    //! Callbacks to be executed when an eligible log statement is produced.
+    std::list<Callback> m_callbacks GUARDED_BY(m_mutex);
+    //! Lock-free size of m_callbacks for fast checks.
+    std::atomic<size_t> m_callback_count{0};
+};
 
 template <typename... Args>
 inline void LogPrintFormatInternal_(SourceLocation&& source_loc, BCLog::LogFlags flag, util::log::Level level, bool should_ratelimit, util::ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
