@@ -88,9 +88,23 @@ class InitTest(BitcoinTestFramework):
             lines_to_terminate_after.append(b'Verifying wallet')
 
         args = ['-txindex=1', '-blockfilterindex=1', '-coinstatsindex=1']
+        index_threads = [
+            b'txindex thread start',
+            b'block filter index thread start',
+            b'coinstatsindex thread start',
+        ]
+        log_start_byte = node.debug_log_size(mode="rb")
         for terminate_line in lines_to_terminate_after:
             self.log.info(f"Starting node and will terminate after line {terminate_line}")
-            with node.busy_wait_for_debug_log([terminate_line]):
+            # Index thread start messages are only printed if index is behind
+            # the current chain tip at startup and needs to sync. If the index
+            # is already in sync during startup no messages will be printed.
+            # Set `start_byte` below for this reason to look for the index
+            # thread start messages, starting earlier, from the begining of this
+            # test, in case the node was not killed quickly enough and an index
+            # was already synced by the time this test was looking for its
+            # thread start message.
+            with node.busy_wait_for_debug_log([terminate_line], start_byte=log_start_byte if terminate_line in index_threads else None):
                 if platform.system() == 'Windows':
                     # CREATE_NEW_PROCESS_GROUP is required in order to be able
                     # to terminate the child without terminating the test.
