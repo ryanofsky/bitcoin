@@ -116,7 +116,7 @@ PSBTAnalysis AnalyzePSBT(PartiallySignedTransaction psbtx)
 
         // Estimate the size
         CMutableTransaction mtx(*psbtx.tx);
-        CCoinsView view_dummy;
+        EmptyCoinsView view_dummy;
         CCoinsViewCache view(&view_dummy);
         bool success = true;
 

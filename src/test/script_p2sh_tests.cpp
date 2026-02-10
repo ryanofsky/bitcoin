@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(switchover)
 
 BOOST_AUTO_TEST_CASE(AreInputsStandard)
 {
-    CCoinsView coinsDummy;
+    EmptyCoinsView coinsDummy;
     CCoinsViewCache coins(&coinsDummy);
     FillableSigningProvider keystore;
     CKey key[6];

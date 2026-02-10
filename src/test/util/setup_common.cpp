@@ -456,7 +456,7 @@ std::pair<CMutableTransaction, CAmount> TestChain100Setup::CreateValidTransactio
         keystore.AddKey(input_signing_key);
     }
     // - Populate a CoinsViewCache with the unspent output
-    CCoinsView coins_view;
+    EmptyCoinsView coins_view;
     CCoinsViewCache coins_cache(&coins_view);
     for (const auto& input_transaction : input_transactions) {
         AddCoins(coins_cache, *input_transaction.get(), input_height);

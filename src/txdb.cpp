@@ -65,17 +65,15 @@ void CCoinsViewDB::ResizeCache(size_t new_cache_size)
     }
 }
 
-std::optional<Coin> CCoinsViewDB::GetCoin(const COutPoint& outpoint) const
+bool CCoinsViewDB::LookupCoin(const COutPoint& outpoint, Coin* coin) const
 {
-    if (Coin coin; m_db->Read(CoinEntry(&outpoint), coin)) {
-        Assert(!coin.IsSpent()); // The UTXO database should never contain spent coins
-        return coin;
-    }
-    return std::nullopt;
-}
+    if (!coin) return m_db->Exists(CoinEntry(&outpoint));
 
-bool CCoinsViewDB::HaveCoin(const COutPoint &outpoint) const {
-    return m_db->Exists(CoinEntry(&outpoint));
+    if (m_db->Read(CoinEntry(&outpoint), *coin)) {
+        Assert(!coin->IsSpent()); // The UTXO database should never contain spent coins
+        return true;
+    }
+    return false;
 }
 
 uint256 CCoinsViewDB::GetBestBlock() const {

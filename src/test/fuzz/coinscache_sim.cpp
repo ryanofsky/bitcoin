@@ -144,13 +144,14 @@ class CoinsViewBottom final : public CCoinsView
     std::map<COutPoint, Coin> m_data;
 
 public:
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const final
+    bool LookupCoin(const COutPoint& outpoint, Coin* coin) const final
     {
         if (auto it{m_data.find(outpoint)}; it != m_data.end()) {
             assert(!it->second.IsSpent());
-            return it->second;
+            if (coin) *coin = it->second;
+            return true;
         }
-        return std::nullopt;
+        return false;
     }
 
     uint256 GetBestBlock() const final { return {}; }

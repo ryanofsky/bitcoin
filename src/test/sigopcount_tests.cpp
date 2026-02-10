@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(GetTxSigOpCost)
     CMutableTransaction spendingTx;
 
     // Create utxo set
-    CCoinsView coinsDummy;
+    EmptyCoinsView coinsDummy;
     CCoinsViewCache coins(&coinsDummy);
     // Create key
     CKey key = GenerateRandomKey();

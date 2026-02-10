@@ -87,7 +87,7 @@ FUZZ_TARGET(transaction, .init = initialize_transaction)
     (void)RecursiveDynamicUsage(tx);
     (void)SignalsOptInRBF(tx);
 
-    CCoinsView coins_view;
+    EmptyCoinsView coins_view;
     const CCoinsViewCache coins_view_cache(&coins_view);
     (void)AreInputsStandard(tx, coins_view_cache);
     (void)IsWitnessStandard(tx, coins_view_cache);

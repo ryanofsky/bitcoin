@@ -391,7 +391,7 @@ BOOST_AUTO_TEST_CASE(basic_transaction_tests)
 BOOST_AUTO_TEST_CASE(test_Get)
 {
     FillableSigningProvider keystore;
-    CCoinsView coinsDummy;
+    EmptyCoinsView coinsDummy;
     CCoinsViewCache coins(&coinsDummy);
     std::vector<CMutableTransaction> dummyTransactions =
         SetupDummyInputs(keystore, coins, {11*CENT, 50*CENT, 21*CENT, 22*CENT});
@@ -748,7 +748,7 @@ BOOST_AUTO_TEST_CASE(test_witness)
 BOOST_AUTO_TEST_CASE(test_IsStandard)
 {
     FillableSigningProvider keystore;
-    CCoinsView coinsDummy;
+    EmptyCoinsView coinsDummy;
     CCoinsViewCache coins(&coinsDummy);
     std::vector<CMutableTransaction> dummyTransactions =
         SetupDummyInputs(keystore, coins, {11*CENT, 50*CENT, 21*CENT, 22*CENT});
@@ -1021,7 +1021,7 @@ BOOST_AUTO_TEST_CASE(test_IsStandard)
 
 BOOST_AUTO_TEST_CASE(max_standard_legacy_sigops)
 {
-    CCoinsView coins_dummy;
+    EmptyCoinsView coins_dummy;
     CCoinsViewCache coins(&coins_dummy);
     CKey key;
     key.MakeNewKey(true);
@@ -1117,7 +1117,7 @@ BOOST_AUTO_TEST_CASE(max_standard_legacy_sigops)
 /** Sanity check the return value of SpendsNonAnchorWitnessProg for various output types. */
 BOOST_AUTO_TEST_CASE(spends_witness_prog)
 {
-    CCoinsView coins_dummy;
+    EmptyCoinsView coins_dummy;
     CCoinsViewCache coins(&coins_dummy);
     CKey key;
     key.MakeNewKey(true);

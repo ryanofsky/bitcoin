@@ -302,15 +302,30 @@ class CCoinsView
 {
 public:
     //! Retrieve the Coin (unspent transaction output) for a given outpoint.
-    virtual std::optional<Coin> GetCoin(const COutPoint& outpoint) const;
-
-    //! Retrieve the Coin (unspent transaction output) for a given outpoint, without caching results.
-    //!
-    //! Unlike CCoinsViewCache::GetCoin(), this method does not populate intermediate CCoinsViewCache layers.
-    virtual std::optional<Coin> PeekCoin(const COutPoint& outpoint) const;
+    //! May populate the cache. Use PeekCoin() to perform a non-caching lookup.
+    std::optional<Coin> GetCoin(const COutPoint& outpoint) const
+    {
+        Coin coin;
+        return MutableLookupCoin(outpoint, &coin) ? std::make_optional(std::move(coin)) : std::nullopt;
+    }
 
     //! Just check whether a given outpoint is unspent.
-    virtual bool HaveCoin(const COutPoint &outpoint) const;
+    //! May populate the cache. Use PeekCoin() to perform a non-caching lookup.
+    bool HaveCoin(const COutPoint &outpoint) const { return MutableLookupCoin(outpoint); }
+
+    //! Retrieve the Coin (unspent transaction output) for a given outpoint, without caching results.
+    //! Does not populate the cache. Use GetCoin() to cache the result.
+    std::optional<Coin> PeekCoin(const COutPoint& outpoint) const
+    {
+        Coin coin;
+        return LookupCoin(outpoint, &coin) ? std::make_optional(std::move(coin)) : std::nullopt;
+    }
+
+    //! Implemention of PeekCoin method not modifying cache.
+    virtual bool LookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const = 0;
+
+    //! Implemention of GetCoin & HaveCoin methods that may modify the cache.
+    virtual bool MutableLookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const { return LookupCoin(outpoint, coin); }
 
     //! Retrieve the block hash whose state this CCoinsView currently represents
     virtual uint256 GetBestBlock() const;
@@ -335,6 +350,10 @@ public:
     virtual size_t EstimateSize() const { return 0; }
 };
 
+class EmptyCoinsView : public CCoinsView
+{
+    bool LookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const override { return false; }
+};
 
 /** CCoinsView backed by another CCoinsView */
 class CCoinsViewBacked : public CCoinsView
@@ -344,9 +363,8 @@ protected:
 
 public:
     CCoinsViewBacked(CCoinsView *viewIn);
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
-    std::optional<Coin> PeekCoin(const COutPoint& outpoint) const override;
-    bool HaveCoin(const COutPoint &outpoint) const override;
+    bool LookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const override;
+    bool MutableLookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const override;
     uint256 GetBestBlock() const override;
     std::vector<uint256> GetHeadBlocks() const override;
     void SetBackend(CCoinsView &viewIn);
@@ -391,9 +409,8 @@ public:
     CCoinsViewCache(const CCoinsViewCache &) = delete;
 
     // Standard CCoinsView methods
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
-    std::optional<Coin> PeekCoin(const COutPoint& outpoint) const override;
-    bool HaveCoin(const COutPoint &outpoint) const override;
+    bool LookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const override;
+    bool MutableLookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const override;
     uint256 GetBestBlock() const override;
     void SetBestBlock(const uint256 &hashBlock);
     void BatchWrite(CoinsViewCacheCursor& cursor, const uint256& hashBlock) override;
@@ -541,9 +558,8 @@ public:
         m_err_callbacks.emplace_back(std::move(f));
     }
 
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
-    bool HaveCoin(const COutPoint &outpoint) const override;
-    std::optional<Coin> PeekCoin(const COutPoint& outpoint) const override;
+    bool LookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const override;
+    bool MutableLookupCoin(const COutPoint& outpoint, Coin* coin = nullptr) const override;
 
 private:
     /** A list of callbacks to execute upon leveldb read error. */

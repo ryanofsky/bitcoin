@@ -768,9 +768,22 @@ protected:
 
 public:
     CCoinsViewMemPool(CCoinsView* baseIn, const CTxMemPool& mempoolIn);
+
+    bool LookupCoin(const COutPoint& outpoint, Coin* coin) const override
+    {
+        if (auto ret{GetMempoolCoin(outpoint, coin)}) return *ret;
+        return base->LookupCoin(outpoint, coin);
+    }
+
+    bool MutableLookupCoin(const COutPoint& outpoint, Coin* coin) const override
+    {
+        if (auto ret{GetMempoolCoin(outpoint, coin)}) return *ret;
+        return base->MutableLookupCoin(outpoint, coin);
+    }
+
     /** GetCoin, returning whether it exists and is not spent. Also updates m_non_base_coins if the
      * coin is not fetched from base. */
-    std::optional<Coin> GetCoin(const COutPoint& outpoint) const override;
+    std::optional<bool> GetMempoolCoin(const COutPoint& outpoint, Coin* coin) const;
     /** Add the coins created by this transaction. These coins are only temporarily stored in
      * m_temp_added and cannot be flushed to the back end. Only used for package validation. */
     void PackageAddTransaction(const CTransactionRef& tx);

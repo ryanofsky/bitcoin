@@ -14,8 +14,6 @@ TRACEPOINT_SEMAPHORE(utxocache, add);
 TRACEPOINT_SEMAPHORE(utxocache, spent);
 TRACEPOINT_SEMAPHORE(utxocache, uncache);
 
-std::optional<Coin> CCoinsView::GetCoin(const COutPoint& outpoint) const { return std::nullopt; }
-std::optional<Coin> CCoinsView::PeekCoin(const COutPoint& outpoint) const { return GetCoin(outpoint); }
 uint256 CCoinsView::GetBestBlock() const { return uint256(); }
 std::vector<uint256> CCoinsView::GetHeadBlocks() const { return std::vector<uint256>(); }
 void CCoinsView::BatchWrite(CoinsViewCacheCursor& cursor, const uint256& hashBlock)
@@ -25,15 +23,9 @@ void CCoinsView::BatchWrite(CoinsViewCacheCursor& cursor, const uint256& hashBlo
 
 std::unique_ptr<CCoinsViewCursor> CCoinsView::Cursor() const { return nullptr; }
 
-bool CCoinsView::HaveCoin(const COutPoint &outpoint) const
-{
-    return GetCoin(outpoint).has_value();
-}
-
 CCoinsViewBacked::CCoinsViewBacked(CCoinsView *viewIn) : base(viewIn) { }
-std::optional<Coin> CCoinsViewBacked::GetCoin(const COutPoint& outpoint) const { return base->GetCoin(outpoint); }
-std::optional<Coin> CCoinsViewBacked::PeekCoin(const COutPoint& outpoint) const { return base->PeekCoin(outpoint); }
-bool CCoinsViewBacked::HaveCoin(const COutPoint &outpoint) const { return base->HaveCoin(outpoint); }
+bool CCoinsViewBacked::LookupCoin(const COutPoint& outpoint, Coin* coin) const { return base->LookupCoin(outpoint, coin); }
+bool CCoinsViewBacked::MutableLookupCoin(const COutPoint& outpoint, Coin* coin) const { return base->MutableLookupCoin(outpoint, coin); }
 uint256 CCoinsViewBacked::GetBestBlock() const { return base->GetBestBlock(); }
 std::vector<uint256> CCoinsViewBacked::GetHeadBlocks() const { return base->GetHeadBlocks(); }
 void CCoinsViewBacked::SetBackend(CCoinsView &viewIn) { base = &viewIn; }
@@ -41,12 +33,14 @@ void CCoinsViewBacked::BatchWrite(CoinsViewCacheCursor& cursor, const uint256& h
 std::unique_ptr<CCoinsViewCursor> CCoinsViewBacked::Cursor() const { return base->Cursor(); }
 size_t CCoinsViewBacked::EstimateSize() const { return base->EstimateSize(); }
 
-std::optional<Coin> CCoinsViewCache::PeekCoin(const COutPoint& outpoint) const
+bool CCoinsViewCache::LookupCoin(const COutPoint& outpoint, Coin* coin) const
 {
     if (auto it{cacheCoins.find(outpoint)}; it != cacheCoins.end()) {
-        return it->second.coin.IsSpent() ? std::nullopt : std::optional{it->second.coin};
+        if (it->second.coin.IsSpent()) return false;
+        if (coin) *coin = it->second.coin;
+        return true;
     }
-    return base->PeekCoin(outpoint);
+    return base->LookupCoin(outpoint, coin);
 }
 
 CCoinsViewCache::CCoinsViewCache(CCoinsView* baseIn, bool deterministic) :
@@ -75,10 +69,13 @@ CCoinsMap::iterator CCoinsViewCache::FetchCoin(const COutPoint &outpoint) const 
     return ret;
 }
 
-std::optional<Coin> CCoinsViewCache::GetCoin(const COutPoint& outpoint) const
+bool CCoinsViewCache::MutableLookupCoin(const COutPoint& outpoint, Coin* coin) const
 {
-    if (auto it{FetchCoin(outpoint)}; it != cacheCoins.end() && !it->second.coin.IsSpent()) return it->second.coin;
-    return std::nullopt;
+    if (auto it{FetchCoin(outpoint)}; it != cacheCoins.end() && !it->second.coin.IsSpent()) {
+        if (coin) *coin = it->second.coin;
+        return true;
+    }
+    return false;
 }
 
 void CCoinsViewCache::AddCoin(const COutPoint &outpoint, Coin&& coin, bool possible_overwrite) {
@@ -173,11 +170,6 @@ const Coin& CCoinsViewCache::AccessCoin(const COutPoint &outpoint) const {
     } else {
         return it->second.coin;
     }
-}
-
-bool CCoinsViewCache::HaveCoin(const COutPoint &outpoint) const {
-    CCoinsMap::const_iterator it = FetchCoin(outpoint);
-    return (it != cacheCoins.end() && !it->second.coin.IsSpent());
 }
 
 bool CCoinsViewCache::HaveCoinInCache(const COutPoint &outpoint) const {
@@ -394,17 +386,12 @@ static ReturnType ExecuteBackedWrapper(Func func, const std::vector<std::functio
     }
 }
 
-std::optional<Coin> CCoinsViewErrorCatcher::GetCoin(const COutPoint& outpoint) const
+bool CCoinsViewErrorCatcher::LookupCoin(const COutPoint& outpoint, Coin* coin) const
 {
-    return ExecuteBackedWrapper<std::optional<Coin>>([&]() { return CCoinsViewBacked::GetCoin(outpoint); }, m_err_callbacks);
+    return ExecuteBackedWrapper<bool>([&]() { return CCoinsViewBacked::LookupCoin(outpoint, coin); }, m_err_callbacks);
 }
 
-bool CCoinsViewErrorCatcher::HaveCoin(const COutPoint& outpoint) const
+bool CCoinsViewErrorCatcher::MutableLookupCoin(const COutPoint& outpoint, Coin* coin) const
 {
-    return ExecuteBackedWrapper<bool>([&]() { return CCoinsViewBacked::HaveCoin(outpoint); }, m_err_callbacks);
-}
-
-std::optional<Coin> CCoinsViewErrorCatcher::PeekCoin(const COutPoint& outpoint) const
-{
-    return ExecuteBackedWrapper<std::optional<Coin>>([&]() { return CCoinsViewBacked::PeekCoin(outpoint); }, m_err_callbacks);
+    return ExecuteBackedWrapper<bool>([&]() { return CCoinsViewBacked::MutableLookupCoin(outpoint, coin); }, m_err_callbacks);
 }

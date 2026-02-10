@@ -623,7 +623,7 @@ static RPCHelpMan combinerawtransaction()
     CMutableTransaction mergedTx(txVariants[0]);
 
     // Fetch previous transactions (inputs):
-    CCoinsView viewDummy;
+    EmptyCoinsView viewDummy;
     CCoinsViewCache view(&viewDummy);
     {
         NodeContext& node = EnsureAnyNodeContext(request.context);
