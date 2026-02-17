@@ -192,7 +192,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         parser.add_argument("--perf", dest="perf", default=False, action="store_true",
                             help="profile running nodes with perf for the duration of the test")
         parser.add_argument("--valgrind", dest="valgrind", default=False, action="store_true",
-                            help="run nodes under the valgrind memory error detector: expect at least a ~10x slowdown. valgrind 3.14 or later required. Does not apply to previous release binaries.")
+                            help="Run binaries under the valgrind memory error detector: Expect at least a ~10x slowdown. Does not apply to previous release binaries or binaries called from the bitcoin wrapper executable.")
         parser.add_argument("--randomseed", type=int,
                             help="set a random seed for deterministically reproducing a previous test run")
         parser.add_argument("--timeout-factor", dest="timeout_factor", type=float, help="adjust test timeouts by a factor. Setting it to 0 disables all timeouts")
@@ -223,7 +223,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         PortSeed.n = self.options.port_seed
 
     def get_binaries(self, bin_dir=None):
-        return Binaries(self.binary_paths, bin_dir)
+        return Binaries(self.binary_paths, bin_dir, use_valgrind=self.options.valgrind)
 
     def setup(self):
         """Call this method to start up the test framework object with options set."""
@@ -493,7 +493,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
                 extra_args=args,
                 use_cli=self.options.usecli,
                 start_perf=self.options.perf,
-                use_valgrind=self.options.valgrind,
                 v2transport=self.options.v2transport,
                 uses_wallet=self.uses_wallet,
             )
