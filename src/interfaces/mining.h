@@ -160,7 +160,7 @@ public:
 };
 
 //! Return implementation of Mining interface.
-std::unique_ptr<Mining> MakeMining(node::NodeContext& node);
+std::unique_ptr<Mining> MakeMining(node::NodeContext& node, bool wait_loaded=true);
 
 } // namespace interfaces
 

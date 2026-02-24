@@ -67,7 +67,7 @@ struct MinerTestingSetup : public TestingSetup {
     }
     std::unique_ptr<Mining> MakeMining()
     {
-        return interfaces::MakeMining(m_node);
+        return interfaces::MakeMining(m_node, /*wait_loaded=*/false);
     }
 };
 } // namespace miner_tests

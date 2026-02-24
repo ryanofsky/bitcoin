@@ -1017,5 +1017,17 @@ public:
 namespace interfaces {
 std::unique_ptr<Node> MakeNode(node::NodeContext& context) { return std::make_unique<node::NodeImpl>(context); }
 std::unique_ptr<Chain> MakeChain(node::NodeContext& context) { return std::make_unique<node::ChainImpl>(context); }
-std::unique_ptr<Mining> MakeMining(node::NodeContext& context) { return std::make_unique<node::MinerImpl>(context); }
+std::unique_ptr<Mining> MakeMining(node::NodeContext& context, bool wait_loaded)
+{
+    if (wait_loaded) {
+        node::KernelNotifications& kernel_notifications(*Assert(context.notifications));
+        util::SignalInterrupt& interrupt(*Assert(context.shutdown_signal));
+        WAIT_LOCK(kernel_notifications.m_tip_block_mutex, lock);
+        kernel_notifications.m_tip_block_cv.wait(lock, [&]() EXCLUSIVE_LOCKS_REQUIRED(kernel_notifications.m_tip_block_mutex) {
+            return kernel_notifications.m_chainstate_loaded || interrupt;
+        });
+        if (interrupt) return nullptr;
+    }
+    return std::make_unique<node::MinerImpl>(context);
+}
 } // namespace interfaces

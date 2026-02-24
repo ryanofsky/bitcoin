@@ -49,6 +49,16 @@ public:
 
     void fatalError(const bilingual_str& message) override;
 
+    void setChainstateLoaded(bool chainstate_loaded) EXCLUSIVE_LOCKS_REQUIRED(!m_tip_block_mutex) {
+        LOCK(m_tip_block_mutex);
+        m_chainstate_loaded = chainstate_loaded;
+        if (!m_chainstate_loaded) {
+            // Drop any state associated with previously loaded chainstate, like the cached tip block
+            m_tip_block.reset();
+        }
+        m_tip_block_cv.notify_all();
+    }
+
     //! Block height after which blockTip notification will return Interrupted{}, if >0.
     int m_stop_at_height{DEFAULT_STOPATHEIGHT};
     //! Useful for tests, can be set to false to avoid shutdown on fatal error.
@@ -56,6 +66,7 @@ public:
 
     Mutex m_tip_block_mutex;
     std::condition_variable m_tip_block_cv GUARDED_BY(m_tip_block_mutex);
+    bool m_chainstate_loaded GUARDED_BY(m_tip_block_mutex);
     //! The block for which the last blockTip notification was received.
     //! It's first set when the tip is connected during node initialization.
     //! Might be unset during an early shutdown.

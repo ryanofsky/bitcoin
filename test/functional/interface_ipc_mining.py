@@ -147,6 +147,34 @@ class IPCMiningTest(BitcoinTestFramework):
 
         asyncio.run(capnp.run(async_routine()))
 
+    def run_early_startup_test(self):
+        """Make sure mining.createNewBlock safely returns on early startup as
+        soon as mining interface is available """
+        self.log.info("Running Mining interface early startup test")
+
+        node = self.nodes[0]
+        self.stop_node(node.index)
+        node.start()
+
+        async def async_routine():
+            while True:
+                try:
+                    ctx, mining = await self.make_mining_ctx()
+                    break
+                except (ConnectionRefusedError, FileNotFoundError):
+                    # Poll quickly to connect as soon as socket becomes
+                    # available but without using a lot of CPU
+                    await asyncio.sleep(0.005)
+
+            opts = self.capnp_modules['mining'].BlockCreateOptions()
+            await mining.createNewBlock(ctx, opts)
+
+        asyncio.run(capnp.run(async_routine()))
+
+        # Reconnect nodes so next tests are happy
+        node.wait_for_rpc_connection()
+        self.connect_nodes(1, 0)
+
     def run_block_template_test(self):
         """Test BlockTemplate interface methods."""
         self.log.info("Running BlockTemplate interface test")
@@ -374,6 +402,7 @@ class IPCMiningTest(BitcoinTestFramework):
         self.miniwallet = MiniWallet(self.nodes[0])
         self.default_block_create_options = self.capnp_modules['mining'].BlockCreateOptions()
         self.run_mining_interface_test()
+        self.run_early_startup_test()
         self.run_block_template_test()
         self.run_coinbase_and_submission_test()
         self.run_ipc_option_override_test()
