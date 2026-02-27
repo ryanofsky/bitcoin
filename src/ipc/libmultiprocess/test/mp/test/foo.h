@@ -9,6 +9,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <set>
 #include <vector>
@@ -21,6 +22,7 @@ struct FooStruct
     std::string name;
     std::set<int> setint;
     std::vector<bool> vbool;
+    std::optional<int> optional_int;
 };
 
 enum class FooEnum : uint8_t { ONE = 1, TWO = 2, };
@@ -83,7 +85,9 @@ public:
     std::shared_ptr<FooCallback> m_callback;
     void callFn() { assert(m_fn); m_fn(); }
     void callFnAsync() { assert(m_fn); m_fn(); }
+    int callIntFnAsync(int arg) { assert(m_int_fn); return m_int_fn(arg); }
     std::function<void()> m_fn;
+    std::function<int(int)> m_int_fn;
 };
 
 } // namespace test
