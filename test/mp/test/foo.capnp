@@ -33,6 +33,7 @@ interface FooInterface $Proxy.wrap("mp::test::FooImplementation") {
     passFn @16 (context :Proxy.Context, fn :FooFn) -> (result :Int32);
     callFn @17 () -> ();
     callFnAsync @18 (context :Proxy.Context) -> ();
+    callIntFnAsync @21 (context :Proxy.Context, arg :Int32) -> (result :Int32);
 }
 
 interface FooCallback $Proxy.wrap("mp::test::FooCallback") {
@@ -53,6 +54,8 @@ struct FooStruct $Proxy.wrap("mp::test::FooStruct") {
     name @0 :Text;
     setint @1 :List(Int32);
     vbool @2 :List(Bool);
+    optionalInt @3 :Int32 $Proxy.name("optional_int");
+    hasOptionalInt @4 :Bool;
 }
 
 struct FooCustom $Proxy.wrap("mp::test::FooCustom") {
