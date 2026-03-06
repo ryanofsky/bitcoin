@@ -168,9 +168,8 @@ namespace BCLog {
         /** Slots that connect to the print signal */
         std::list<std::function<void(const std::string&)>> m_print_callbacks GUARDED_BY(m_cs) {};
 
-        /** Send a string to the log output (internal) */
-        void LogPrintStr_(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
-            EXCLUSIVE_LOCKS_REQUIRED(m_cs);
+        /** Send an entry to the log output (internal) */
+        void LogPrintStr_(const util::log::Entry& log_entry) EXCLUSIVE_LOCKS_REQUIRED(m_cs);
 
         std::string GetLogPrefix(LogFlags category, Level level) const;
 
@@ -184,12 +183,12 @@ namespace BCLog {
         bool m_log_sourcelocations = DEFAULT_LOGSOURCELOCATIONS;
         bool m_always_print_category_level = DEFAULT_LOGLEVELALWAYS;
 
+        util::log::Dispatcher m_dispatcher{};
         fs::path m_file_path;
         std::atomic<bool> m_reopen_file{false};
 
-        /** Send a string to the log output */
-        void LogPrintStr(std::string_view str, SourceLocation&& source_loc, BCLog::LogFlags category, BCLog::Level level, bool should_ratelimit)
-            EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
+        /** Send an entry to the log output */
+        void LogPrintStr(const util::log::Entry& log_entry) EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
 
         /** Returns whether logs will be written to any output */
         bool Enabled() const EXCLUSIVE_LOCKS_REQUIRED(!m_cs)

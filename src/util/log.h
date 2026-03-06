@@ -130,7 +130,11 @@ public:
             .source_loc = std::move(loc),
             .message = std::move(log_msg),
         };
+        Log(entry);
+    }
 
+    void Log(Entry& entry) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    {
         StdLockGuard lock{m_mutex};
         for (const auto& callback : m_callbacks) {
             callback(entry);
