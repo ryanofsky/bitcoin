@@ -171,7 +171,13 @@ void ValidationSignals::SyncWithValidationInterfaceQueue()
     } while (0)
 
 #define LOG_MSG(fmt, ...) \
+<<<<<<< HEAD
     (util::log::ShouldDebugLog(BCLog::VALIDATION) ? tfm::format((fmt), __VA_ARGS__) : std::string{})
+||||||| parent of fb57ce24cc0 (logging: declare LogAcceptCategory in util)
+    (ShouldLog(BCLog::VALIDATION, BCLog::Level::Debug) ? tfm::format((fmt), __VA_ARGS__) : std::string{})
+=======
+    (LogAcceptCategory(BCLog::VALIDATION, BCLog::Level::Debug) ? tfm::format((fmt), __VA_ARGS__) : std::string{})
+>>>>>>> fb57ce24cc0 (logging: declare LogAcceptCategory in util)
 
 #define LOG_EVENT(fmt, ...) \
     LogDebug(BCLog::VALIDATION, fmt, __VA_ARGS__)

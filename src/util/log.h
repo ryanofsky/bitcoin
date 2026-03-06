@@ -143,4 +143,10 @@ using Level = util::log::Level;
 #define LogDebug(category, ...) detail_LogIfCategoryAndLevelEnabled(category, util::log::ShouldDebugLog, util::log::Level::Debug, __VA_ARGS__)
 #define LogTrace(category, ...) detail_LogIfCategoryAndLevelEnabled(category, util::log::ShouldTraceLog, util::log::Level::Trace, __VA_ARGS__)
 
+/** Return true if log accepts specified category, at the specified level. */
+static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level level)
+{
+    return util::log::ShouldLog(category, level);
+}
+
 #endif // BITCOIN_UTIL_LOG_H
