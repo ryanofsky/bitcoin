@@ -344,7 +344,9 @@ std::string BCLog::Logger::GetLogPrefix(BCLog::LogFlags category, BCLog::Level l
 {
     if (category == LogFlags::NONE) category = LogFlags::ALL;
 
-    const bool has_category{m_always_print_category_level || category != LogFlags::ALL};
+    // Only log categories at debug level and below so users cannot use category
+    // filters at these levels and miss important messages.
+    const bool has_category{level <= Level::Debug && (m_always_print_category_level || category != LogFlags::ALL)};
 
     // If there is no category, Info is implied
     if (!has_category && level == Level::Info) return {};
@@ -562,8 +564,7 @@ void BCLog::LogRateLimiter::Reset()
     }
     for (const auto& [source_loc, stats] : source_locations) {
         if (stats.m_dropped_bytes == 0) continue;
-        LogPrintLevel_(
-            LogFlags::ALL, Level::Warning, /*should_ratelimit=*/false,
+        LogPrint((.level = Level::Warning, .ratelimit = false),
             "Restarting logging from %s:%d (%s): %d bytes were dropped during the last %ss.",
             source_loc.file_name(), source_loc.line(), source_loc.function_name_short(),
             stats.m_dropped_bytes, Ticks<std::chrono::seconds>(m_reset_window));
