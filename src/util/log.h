@@ -114,11 +114,15 @@ bool ShouldLog(Logger* logger, Category category, Level level);
 void Log(Logger* logger, Entry entry);
 
 namespace detail {
+template <typename T>
+concept LogContext = requires {
+    requires std::remove_reference_t<T>::log_context;
+};
+
 //! Internal helper to get Context from the first macro argument. Overloaded to
 //! detect case where first macro argument is a string literal and context has
 //! been omitted.
-template <Options options, typename Context>
-requires (Context::log_context)
+template <Options options, LogContext Context>
 Context& GetContext(Context& context LIFETIMEBOUND) { return context; }
 template <Options options>
 Context GetContext(std::string_view fmt)
@@ -182,10 +186,28 @@ using Level = util::log::Level;
 //! called internally, and in special cases to override default behaviors.
 // NOLINTBEGIN(bugprone-lambda-function-name)
 // Allow __func__ to be used in any context without warnings:
+<<<<<<< HEAD
 #define LOG_EMIT(options, ...)                                                                     \
+||||||| parent of 4ecb05a429b (logging: Add LOG_REQUIRE_CONTEXT option)
+#define LogPrint(options, ...)                                                                     \
+=======
+constexpr bool LOG_REQUIRE_CONTEXT = false;
+#define LogPrint(options, ...)                                                                     \
+>>>>>>> 4ecb05a429b (logging: Add LOG_REQUIRE_CONTEXT option)
     do {                                                                                           \
+<<<<<<< HEAD
         constexpr util::log::Options _options{PP_EXPAND_ARGS options};                             \
         auto&& _context{util::log::detail::GetContext<_options>(PP_FIRST_ARG(__VA_ARGS__))};       \
+||||||| parent of 4ecb05a429b (logging: Add LOG_REQUIRE_CONTEXT option)
+        constexpr util::log::Options _options{EXPAND_ARGS options};                                \
+        auto&& _context{util::log::detail::GetContext<_options>(FIRST_ARG(__VA_ARGS__))};          \
+=======
+        static_assert(!LOG_REQUIRE_CONTEXT ||                                                      \
+            util::log::detail::LogContext<decltype(FIRST_ARG(__VA_ARGS__))>,                       \
+            "Log macro call is missing required context argument");                                \
+        constexpr util::log::Options _options{EXPAND_ARGS options};                                \
+        auto&& _context{util::log::detail::GetContext<_options>(FIRST_ARG(__VA_ARGS__))};          \
+>>>>>>> 4ecb05a429b (logging: Add LOG_REQUIRE_CONTEXT option)
         if (util::log::ShouldLog(_context.logger, _context.category, _options.level)) {            \
             util::log::detail::Emit(_options, SourceLocation{__func__}, _context, __VA_ARGS__);    \
         } else if (_options.always_evaluate_arguments) {                                           \
