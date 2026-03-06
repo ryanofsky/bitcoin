@@ -188,11 +188,15 @@ bool ShouldLog(Logger* logger, Category category, Level level);
 void Log(Logger* logger, const Options& options, Entry entry);
 
 namespace detail {
+template <typename T>
+concept LogContext = requires {
+    requires std::remove_reference_t<T>::log_context;
+};
+
 //! Internal helper to get Context from the first macro argument. Overloaded to
 //! detect case where first macro argument is a string literal and context has
 //! been omitted.
-template <Options options, typename Context>
-requires (Context::log_context)
+template <Options options, LogContext Context>
 Context& GetContext(Context& context LIFETIMEBOUND) { return context; }
 template <Options options>
 Context GetContext(std::string_view fmt)
@@ -245,6 +249,152 @@ namespace BCLog {
 using Level = util::log::Level;
 } // namespace BCLog
 
+<<<<<<< HEAD
+||||||| parent of a128a1eae2c (logging: Add LOG_REQUIRE_CONTEXT option)
+//! Return the first argument from a variadic macro argument list.
+#define PP_FIRST_ARG(arg, ...) arg
+
+//! Expand parenthesized macro arguments `(a, b)` into `a, b`.
+#define PP_EXPAND_ARGS(...) __VA_ARGS__
+
+//! Low-level logging macro called with an initial options argument. Meant to be
+//! called internally, and in special cases to override default behaviors.
+// NOLINTBEGIN(bugprone-lambda-function-name)
+// Allow __func__ to be used in any context without warnings:
+#define LOG_EMIT(options, ...)                                                                     \
+    do {                                                                                           \
+        constexpr util::log::Options _options{PP_EXPAND_ARGS options};                             \
+        auto&& _context{util::log::detail::GetContext<_options>(PP_FIRST_ARG(__VA_ARGS__))};       \
+        if (util::log::ShouldLog(_context.logger, _context.category, _options.level)) {            \
+            util::log::detail::Emit(_options, SourceLocation{__func__}, _context, __VA_ARGS__);    \
+        } else if (_options.always_evaluate_arguments) {                                           \
+            [](auto&&...) {}(__VA_ARGS__);                                                         \
+        }                                                                                          \
+    } while (0)
+// NOLINTEND(bugprone-lambda-function-name)
+
+//! Logging macros which output log messages at the specified levels. The
+//! macros accept an optional log context parameter followed by a
+//! printf-style format string and arguments. For Debug and Trace macros,
+//! if a context parameter is not provided, a BCLog::LogFlags category argument
+//! must be provided instead.
+//!
+//! - LogError(), LogWarning(), and LogInfo() are all enabled by default, so
+//!   they should be called infrequently, in cases where they will not spam the
+//!   log and take up disk space.
+//!
+//! - LogDebug() is enabled when debug logging is enabled, and should be used to
+//!   show messages that can help users troubleshoot issues.
+//!
+//! - LogTrace() is enabled when both debug logging AND tracing are enabled, and
+//!   should be used for fine-grained traces that will be helpful to developers.
+//!
+//! For more information about log levels, see the -debug and -loglevel
+//! documentation, or the "Logging" section of /doc/developer-notes.md.
+//!
+//! `LogDebug` and `LogTrace` macros require an initial category argument unless
+//! given a log source (which provides it). That enables Debug and Trace
+//! messages to be filtered by category. Higher levels do not take a category
+//! (but may be passed a log source):
+//!
+//!   LogDebug(BCLog::TXRECONCILIATION, "Forget txreconciliation state of peer=%d", peer_id);
+//!   LogInfo("Important information, no category.");
+//!
+//! Context arguments can also be passed to control log output (see class definition).
+//!
+//!   const util::log::Context m_log{BCLog::TXRECONCILIATION};
+//!   ...
+//!   LogDebug(m_log, "Forget txreconciliation state of peer=%d", peer_id);
+//!
+//! Using context objects also provides the flexibility to add extra information
+//! and custom formatting to log messages, or to divert log messages to a local
+//! logger instead of the global logging instance.
+//!
+//! If severity level is Info or higher, rate limiting is applied to mitigate
+//! disk filling attacks. Users enabling logging at Debug and lower levels are
+//! assumed to be developers or power users who are aware that -debug may cause
+//! excessive disk usage due to logging.
+#define LogError(...) LOG_EMIT((.level = util::log::Level::Error), __VA_ARGS__)
+#define LogWarning(...) LOG_EMIT((.level = util::log::Level::Warning), __VA_ARGS__)
+#define LogInfo(...) LOG_EMIT((.level = util::log::Level::Info), __VA_ARGS__)
+#define LogDebug(...) LOG_EMIT((.level = util::log::Level::Debug), __VA_ARGS__)
+#define LogTrace(...) LOG_EMIT((.level = util::log::Level::Trace), __VA_ARGS__)
+
+=======
+//! Return the first argument from a variadic macro argument list.
+#define PP_FIRST_ARG(arg, ...) arg
+
+//! Expand parenthesized macro arguments `(a, b)` into `a, b`.
+#define PP_EXPAND_ARGS(...) __VA_ARGS__
+
+//! Low-level logging macro called with an initial options argument. Meant to be
+//! called internally, and in special cases to override default behaviors.
+// NOLINTBEGIN(bugprone-lambda-function-name)
+// Allow __func__ to be used in any context without warnings:
+constexpr bool LOG_REQUIRE_CONTEXT = false;
+#define LOG_EMIT(options, ...)                                                                     \
+    do {                                                                                           \
+        static_assert(!LOG_REQUIRE_CONTEXT ||                                                      \
+            util::log::detail::LogContext<decltype(PP_FIRST_ARG(__VA_ARGS__))>,                    \
+            "Log macro call is missing required context argument");                                \
+        constexpr util::log::Options _options{PP_EXPAND_ARGS options};                             \
+        auto&& _context{util::log::detail::GetContext<_options>(PP_FIRST_ARG(__VA_ARGS__))};       \
+        if (util::log::ShouldLog(_context.logger, _context.category, _options.level)) {            \
+            util::log::detail::Emit(_options, SourceLocation{__func__}, _context, __VA_ARGS__);    \
+        } else if (_options.always_evaluate_arguments) {                                           \
+            [](auto&&...) {}(__VA_ARGS__);                                                         \
+        }                                                                                          \
+    } while (0)
+// NOLINTEND(bugprone-lambda-function-name)
+
+//! Logging macros which output log messages at the specified levels. The
+//! macros accept an optional log context parameter followed by a
+//! printf-style format string and arguments. For Debug and Trace macros,
+//! if a context parameter is not provided, a BCLog::LogFlags category argument
+//! must be provided instead.
+//!
+//! - LogError(), LogWarning(), and LogInfo() are all enabled by default, so
+//!   they should be called infrequently, in cases where they will not spam the
+//!   log and take up disk space.
+//!
+//! - LogDebug() is enabled when debug logging is enabled, and should be used to
+//!   show messages that can help users troubleshoot issues.
+//!
+//! - LogTrace() is enabled when both debug logging AND tracing are enabled, and
+//!   should be used for fine-grained traces that will be helpful to developers.
+//!
+//! For more information about log levels, see the -debug and -loglevel
+//! documentation, or the "Logging" section of /doc/developer-notes.md.
+//!
+//! `LogDebug` and `LogTrace` macros require an initial category argument unless
+//! given a log source (which provides it). That enables Debug and Trace
+//! messages to be filtered by category. Higher levels do not take a category
+//! (but may be passed a log source):
+//!
+//!   LogDebug(BCLog::TXRECONCILIATION, "Forget txreconciliation state of peer=%d", peer_id);
+//!   LogInfo("Important information, no category.");
+//!
+//! Context arguments can also be passed to control log output (see class definition).
+//!
+//!   const util::log::Context m_log{BCLog::TXRECONCILIATION};
+//!   ...
+//!   LogDebug(m_log, "Forget txreconciliation state of peer=%d", peer_id);
+//!
+//! Using context objects also provides the flexibility to add extra information
+//! and custom formatting to log messages, or to divert log messages to a local
+//! logger instead of the global logging instance.
+//!
+//! If severity level is Info or higher, rate limiting is applied to mitigate
+//! disk filling attacks. Users enabling logging at Debug and lower levels are
+//! assumed to be developers or power users who are aware that -debug may cause
+//! excessive disk usage due to logging.
+#define LogError(...) LOG_EMIT((.level = util::log::Level::Error), __VA_ARGS__)
+#define LogWarning(...) LOG_EMIT((.level = util::log::Level::Warning), __VA_ARGS__)
+#define LogInfo(...) LOG_EMIT((.level = util::log::Level::Info), __VA_ARGS__)
+#define LogDebug(...) LOG_EMIT((.level = util::log::Level::Debug), __VA_ARGS__)
+#define LogTrace(...) LOG_EMIT((.level = util::log::Level::Trace), __VA_ARGS__)
+
+>>>>>>> a128a1eae2c (logging: Add LOG_REQUIRE_CONTEXT option)
 /** Return true if log accepts specified category, at the specified level. */
 static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level level)
 {
