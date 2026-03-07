@@ -381,11 +381,14 @@ class CCoinsViewBacked : public CCoinsView
 {
 protected:
     CCoinsView* base;
+    //! Called before this class updates the base or writes to it, to allow
+    //! stopping any threads that may be reading from it.
+    virtual void OnMutateBase() {}
 
 public:
     explicit CCoinsViewBacked(CCoinsView* in_view) : base{Assert(in_view)} {}
 
-    void SetBackend(CCoinsView& in_view) { base = &in_view; }
+    void SetBackend(CCoinsView& in_view) { OnMutateBase(); base = &in_view; }
 
     std::optional<Coin> GetCoin(const COutPoint& outpoint) const override { return base->GetCoin(outpoint); }
     std::optional<Coin> PeekCoin(const COutPoint& outpoint) const override { return base->PeekCoin(outpoint); }
@@ -648,6 +651,8 @@ private:
     std::shared_ptr<ThreadPool> m_thread_pool;
 
 protected:
+    void OnMutateBase() override { StopFetching(); }
+
     void Reset() noexcept override
     {
         StopFetching();
