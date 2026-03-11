@@ -211,6 +211,15 @@ KJ_TEST("Call FooInterface methods")
     KJ_EXPECT(mut.message == "init build pass call return read");
 
     KJ_EXPECT(foo->passFn([]{ return 10; }) == 10);
+
+    std::vector<FooDataRef> data_in;
+    data_in.push_back(std::make_shared<FooData>(FooData{'H', 'i'}));
+    data_in.push_back(nullptr);
+    std::vector<FooDataRef> data_out{foo->passDataPointers(data_in)};
+    KJ_EXPECT(data_out.size() == 2);
+    KJ_REQUIRE(data_out[0] != nullptr);
+    KJ_EXPECT(*data_out[0] == *data_in[0]);
+    KJ_EXPECT(!data_out[1]);
 }
 
 KJ_TEST("Call IPC method after client connection is closed")
@@ -314,6 +323,71 @@ KJ_TEST("Calling IPC method, disconnecting and blocking during the call")
     // *before* the TestSetup variable so is not destroyed while
     // signal.get_future().get() is called.
     signal.set_value();
+}
+
+KJ_TEST("Calling async IPC method, with server disconnect racing the call")
+{
+    // Regression test for bitcoin/bitcoin#34777 (heap-use-after-free where
+    // getParams() was called on the worker thread after the event loop thread
+    // freed the RpcCallContext on disconnect). The fix moves getParams() inside
+    // loop->sync() so it always runs on the event loop thread.
+    //
+    // Use testing_hook_before_sync to pause the worker thread just before it
+    // enters loop->sync(), then disconnect the server from a separate thread.
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    setup.server->m_impl->m_fn = [] {};
+
+    std::promise<void> worker_ready;
+    std::promise<void> disconnect_done;
+    auto disconnect_done_future = disconnect_done.get_future().share();
+    setup.server->m_context.testing_hook_before_sync = [&worker_ready, disconnect_done_future] {
+        worker_ready.set_value();
+        disconnect_done_future.wait();
+    };
+
+    std::thread disconnect_thread{[&] {
+        worker_ready.get_future().wait();
+        setup.server_disconnect();
+        disconnect_done.set_value();
+    }};
+
+    try {
+        foo->callFnAsync();
+        KJ_EXPECT(false);
+    } catch (const std::runtime_error& e) {
+        KJ_EXPECT(std::string_view{e.what()} == "IPC client method call interrupted by disconnect.");
+    }
+    disconnect_thread.join();
+}
+
+KJ_TEST("Calling async IPC method, with server disconnect after cleanup")
+{
+    // Regression test for bitcoin/bitcoin#34782 (stack-use-after-return where
+    // the m_on_cancel callback accessed stack-local cancel_mutex and
+    // server_context after the invoke lambda's inner scope exited). The fix
+    // clears m_on_cancel in the cleanup loop->sync() so it is null by the
+    // time the scope exits.
+    //
+    // Use testing_hook_after_cleanup to trigger a server disconnect after the
+    // inner scope exits (cancel_mutex destroyed). Without the fix, the
+    // disconnect fires m_on_cancel which accesses the destroyed mutex.
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    setup.server->m_impl->m_fn = [] {};
+
+    setup.server->m_context.testing_hook_after_cleanup = [&] {
+        setup.server_disconnect();
+    };
+
+    try {
+        foo->callFnAsync();
+        KJ_EXPECT(false);
+    } catch (const std::runtime_error& e) {
+        KJ_EXPECT(std::string_view{e.what()} == "IPC client method call interrupted by disconnect.");
+    }
 }
 
 KJ_TEST("Make simultaneous IPC calls on single remote thread")
