@@ -177,9 +177,15 @@ jobs:
         env:
           HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
         run: |
+<<<<<<< HEAD
           # A workaround for "The `brew link` step did not complete successfully" error.
           brew install --quiet python@3 || brew link --overwrite python@3
           brew install --quiet coreutils ninja pkgconf ccache boost libevent zeromq qt@6 qrencode capnp
+||||||| parent of c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
+          brew install --quiet ninja capnp
+=======
+          brew install --quiet ninja capnp llvm
+>>>>>>> c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
 
       - name: Set Ccache directory
         run: echo "CCACHE_DIR=${RUNNER_TEMP}/ccache_dir" >> "$GITHUB_ENV"
@@ -194,9 +200,16 @@ jobs:
 
       - name: Create git archive
         run: |
+<<<<<<< HEAD
           git log -1
           git archive --format=tar --prefix=repo_archive/ --output=repo.tar HEAD
           tar -xf repo.tar
+||||||| parent of c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
+          CI_CONFIG="ci/configs/macos.bash" bash ci/scripts/ci.sh
+=======
+          export PATH="$(brew --prefix llvm)/bin:$PATH"
+          CI_CONFIG="ci/configs/macos.bash" bash ci/scripts/ci.sh
+>>>>>>> c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
 
       - name: CI script
         run: |
@@ -220,8 +233,22 @@ jobs:
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
 
     env:
+<<<<<<< HEAD
       PYTHONUTF8: 1
       TEST_RUNNER_TIMEOUT_FACTOR: 40
+||||||| parent of c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
+      NIX_EXTRA_CONFIG_ACT: |
+        sandbox = false
+        filter-syscalls = false
+=======
+      NIXPKGS_CHANNEL: nixos-25.05
+      NIX_EXTRA_CONFIG: |
+        keep-env-derivations = true
+        keep-outputs = true
+      NIX_EXTRA_CONFIG_ACT: |
+        sandbox = false
+        filter-syscalls = false
+>>>>>>> c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
 
     strategy:
       fail-fast: false
@@ -236,6 +263,7 @@ jobs:
     steps:
       - *ANNOTATION_PR_NUMBER
 
+<<<<<<< HEAD
       - *CHECKOUT
 
       - &IMPORT_VS_ENV
@@ -256,10 +284,50 @@ jobs:
       - name: Restore vcpkg tools cache
         id: vcpkg-tools-cache
         uses: actions/cache/restore@v5
+||||||| parent of c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31       # 2025-05-27, from https://github.com/cachix/install-nix-action/tags
+=======
+      - name: Determine CI configuration
+        id: config
+        env:
+          CI_CONFIG: ci/configs/${{ matrix.config }}.bash
+        run: ci/scripts/config.sh
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31       # 2025-05-27, from https://github.com/cachix/install-nix-action/tags
+>>>>>>> c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
         with:
+<<<<<<< HEAD
           path: ~/AppData/Local/vcpkg/downloads/tools
           key: ${{ github.job }}-vcpkg-tools-${{ github.run_id }}
           restore-keys: ${{ github.job }}-vcpkg-tools-
+||||||| parent of c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
+          nix_path: nixpkgs=channel:nixos-25.05   # latest release
+          # Act executes inside an unprivileged container (Docker or Podman),
+          # so KVM support isn't available.
+          enable_kvm: "${{ github.actor != 'nektos/act' }}"
+          extra_nix_config: ${{ github.actor == 'nektos/act' && env.NIX_EXTRA_CONFIG_ACT || '' }}
+=======
+          nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/${{ steps.config.outputs.nixpkgs_rev }}.tar.gz
+          # Act executes inside an unprivileged container (Docker or Podman),
+          # so KVM support isn't available.
+          enable_kvm: "${{ github.actor != 'nektos/act' }}"
+          extra_nix_config: |
+            ${{ env.NIX_EXTRA_CONFIG }}
+            ${{ github.actor == 'nektos/act' && env.NIX_EXTRA_CONFIG_ACT || '' }}
+
+      - name: Cache Nix store
+        if: steps.config.outputs.cache_nix_store == 'true'
+        uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ matrix.config }}-${{ steps.config.outputs.nixpkgs_rev }}-${{ hashFiles('shell.nix', 'ci/patches/*.patch', format('ci/configs/{0}.bash', matrix.config)) }}
+          restore-prefixes-first-match: |
+            nix-${{ runner.os }}-${{ matrix.config }}-${{ steps.config.outputs.nixpkgs_rev }}-
+            nix-${{ runner.os }}-${{ matrix.config }}-
+            nix-${{ runner.os }}-
+          gc-max-store-size-linux: 10G
+>>>>>>> c7cdd9dad67 (Squashed 'src/ipc/libmultiprocess/' changes from 1868a84451f..ff0eed1bf18)
 
       - name: Restore vcpkg binary cache
         uses: actions/cache/restore@v5
