@@ -19,4 +19,5 @@ export BITCOIN_CONFIG="\
  -DBUILD_FOR_FUZZING=ON \
  -DCMAKE_C_COMPILER=clang \
  -DCMAKE_CXX_COMPILER=clang++ \
+ -DCMAKE_CXX_FLAGS='-Wno-error=maybe-uninitialized' \
 "
