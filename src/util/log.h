@@ -165,6 +165,20 @@ using Level = util::log::Level;
 //! Expand parenthesized macro arguments `(a, b)` into `a, b`.
 #define PP_EXPAND_ARGS(...) __VA_ARGS__
 
+//! Concatenate two tokens after expanding both arguments.
+#define PP_CAT(a, b) PP_CAT_I(a, b)
+//! Internal: deferred concatenation step for PP_CAT.
+#define PP_CAT_I(a, b) a##b
+
+//! Expand to 1 if x is a parenthesized group, 0 otherwise.
+#define PP_IS_PAREN(x) PP_CHECK(PP_IS_PAREN_PROBE x)
+//! Internal: return 1 if argument contains a PP_IS_PAREN_PROBE result, 0 otherwise.
+#define PP_CHECK(...) PP_CHECK_N(__VA_ARGS__, 0)
+//! Internal: extract second argument; used by PP_CHECK to read a PP_IS_PAREN_PROBE result.
+#define PP_CHECK_N(x, n, ...) n
+//! Internal: expands to ~, 1 when invoked as a function call (argument starts with `(`).
+#define PP_IS_PAREN_PROBE(...) ~, 1
+
 //! Low-level logging macro called with an initial options argument. Meant to be
 //! called internally, and in special cases to override default behaviors.
 // NOLINTBEGIN(bugprone-lambda-function-name)
@@ -181,15 +195,24 @@ using Level = util::log::Level;
     } while (0)
 // NOLINTEND(bugprone-lambda-function-name)
 
-//! Logging macros which output log messages at the specified levels. They
-//! accept printf-style format strings and arguments. The debug and trace macros
-//! also require an initial BCLog::LogFlags category argument.
+//! Low-level logging macro accepting a log level and an optional parenthesized
+//! options argument. Detects parenthesized argument and dispatches to LOG_EMIT.
+#define LOG_EMIT_LEVEL(level, ...) PP_CAT(LOG_EMIT_LEVEL_, PP_IS_PAREN(PP_FIRST_ARG(__VA_ARGS__)))(level, __VA_ARGS__)
+//! Internal: no options present; constructs options from level alone.
+#define LOG_EMIT_LEVEL_0(_level, ...) LOG_EMIT((.level = (_level)),  __VA_ARGS__)
+//! Internal: parenthesized options present as first arg; merges them with level.
+#define LOG_EMIT_LEVEL_1(_level, options, ...) LOG_EMIT((.level = (_level), PP_EXPAND_ARGS options),  __VA_ARGS__)
+
+//! Logging macros which output log messages at the specified levels. They accept
+//! printf-style format strings and arguments. The debug and trace macros also require
+//! an initial BCLog::LogFlags category argument. An optional parenthesized options
+//! argument may be prepended to override defaults, e.g. LogInfo((.ratelimit = false), "msg").
 //! See the "Logging" section of /doc/developer-notes.md for more details.
-#define LogError(...) LOG_EMIT((.level = util::log::Level::Error), __VA_ARGS__)
-#define LogWarning(...) LOG_EMIT((.level = util::log::Level::Warning), __VA_ARGS__)
-#define LogInfo(...) LOG_EMIT((.level = util::log::Level::Info), __VA_ARGS__)
-#define LogDebug(...) LOG_EMIT((.level = util::log::Level::Debug), __VA_ARGS__)
-#define LogTrace(...) LOG_EMIT((.level = util::log::Level::Trace), __VA_ARGS__)
+#define LogError(...) LOG_EMIT_LEVEL(util::log::Level::Error, __VA_ARGS__)
+#define LogWarning(...) LOG_EMIT_LEVEL(util::log::Level::Warning, __VA_ARGS__)
+#define LogInfo(...) LOG_EMIT_LEVEL(util::log::Level::Info, __VA_ARGS__)
+#define LogDebug(...) LOG_EMIT_LEVEL(util::log::Level::Debug, __VA_ARGS__)
+#define LogTrace(...) LOG_EMIT_LEVEL(util::log::Level::Trace, __VA_ARGS__)
 
 /** Return true if log accepts specified category, at the specified level. */
 static inline bool LogAcceptCategory(BCLog::LogFlags category, BCLog::Level level)
