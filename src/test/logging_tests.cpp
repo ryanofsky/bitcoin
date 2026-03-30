@@ -140,15 +140,15 @@ BOOST_FIXTURE_TEST_CASE(logging_macro_args, LogSetup)
     LogDebug(BCLog::NET, "debug %s", "arg");
     LogTrace(BCLog::NET, "trace %s", "arg");
 
-    LOG_EMIT((.level = Level::Info), "options info");
-    LOG_EMIT((.level = Level::Info), "options info %s", "arg");
-    // LOG_EMIT((.level = Level::Info), BCLog::NET, "options info"); // Not allowed because category is forbidden!
-    // LOG_EMIT((.level = Level::Info), BCLog::NET, "options info %s", "arg"); // Not allowed because category is forbidden!
+    LogInfo((.ratelimit = false), "options info");
+    LogInfo((.ratelimit = false), "options info %s", "arg");
+    // LogInfo((.ratelimit = false), BCLog::NET, "options info"); // Not allowed because category is forbidden!
+    // LogInfo((.ratelimit = false), BCLog::NET, "options info %s", "arg"); // Not allowed because category is forbidden!
 
-    // LOG_EMIT((.level = Level::Debug), "options debug"); // Not allowed because category is required!
-    // LOG_EMIT((.level = Level::Debug), "options debug %s", "arg"); // Not allowed because category is required!
-    LOG_EMIT((.level = Level::Debug), BCLog::NET, "options debug");
-    LOG_EMIT((.level = Level::Debug), BCLog::NET, "options debug %s", "arg");
+    // LogDebug((.ratelimit = false), "options debug"); // Not allowed because category is required!
+    // LogDebug((.ratelimit = false), "options debug %s", "arg"); // Not allowed because category is required!
+    LogDebug((.ratelimit = false), BCLog::NET, "options debug");
+    LogDebug((.ratelimit = false), BCLog::NET, "options debug %s", "arg");
 
     const auto log_lines{ReadDebugLogLines()};
     constexpr auto expected{std::to_array({
@@ -436,7 +436,7 @@ void LogFromLocation(Location location, const std::string& message) {
         LogDebug(BCLog::LogFlags::HTTP, "%s\n", message);
         return;
     case Location::INFO_NOLIMIT:
-        LOG_EMIT((.level = Level::Info, .ratelimit = false), "%s\n", message);
+        LogInfo((.ratelimit = false), "%s\n", message);
         return;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
