@@ -11,6 +11,7 @@
 #include <common/messages.h>
 #include <common/url.h>
 #include <compat/compat.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <netbase.h>
 #include <node/interface_ui.h>
@@ -90,6 +91,7 @@ bool HTTPServer::ClientAllowed(const CNetAddr& netaddr) const
 /** Initialize ACL list for HTTP server */
 bool HTTPServer::InitHTTPAllowList()
 {
+<<<<<<< HEAD
     // Must be run before StartSocketThreads() because ThreadSocketHandler()
     // will check m_allow_subnets from the I/O thread.
     Assume(!m_thread_socket_handler.joinable());
@@ -98,6 +100,17 @@ bool HTTPServer::InitHTTPAllowList()
     m_allow_subnets.emplace_back(LookupHost("127.0.0.1", false).value(), 8);  // always allow IPv4 local subnet
     m_allow_subnets.emplace_back(LookupHost("::1", false).value());  // always allow IPv6 localhost
     for (const std::string& strAllow : gArgs.GetArgs("-rpcallowip")) {
+||||||| parent of 0612ffcb492 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    rpc_allow_subnets.clear();
+    rpc_allow_subnets.emplace_back(LookupHost("127.0.0.1", false).value(), 8);  // always allow IPv4 local subnet
+    rpc_allow_subnets.emplace_back(LookupHost("::1", false).value());  // always allow IPv6 localhost
+    for (const std::string& strAllow : gArgs.GetArgs("-rpcallowip")) {
+=======
+    rpc_allow_subnets.clear();
+    rpc_allow_subnets.emplace_back(LookupHost("127.0.0.1", false).value(), 8);  // always allow IPv4 local subnet
+    rpc_allow_subnets.emplace_back(LookupHost("::1", false).value());  // always allow IPv6 localhost
+    for (const std::string& strAllow : RpcAllowIpSetting::Get(gArgs)) {
+>>>>>>> 0612ffcb492 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
         const CSubNet subnet{LookupSubNet(strAllow)};
         if (!subnet.IsValid()) {
             uiInterface.ThreadSafeMessageBox(
@@ -209,7 +222,7 @@ static void RejectRequest(std::unique_ptr<http_bitcoin::HTTPRequest> hreq)
 
 static std::vector<std::pair<std::string, uint16_t>> GetBindAddresses()
 {
-    uint16_t http_port{static_cast<uint16_t>(gArgs.GetIntArg("-rpcport", BaseParams().RPCPort()))};
+    uint16_t http_port{static_cast<uint16_t>(RpcPortSetting::Get(gArgs))};
     std::vector<std::pair<std::string, uint16_t>> endpoints;
 
     // Determine what addresses to bind to
@@ -217,17 +230,17 @@ static std::vector<std::pair<std::string, uint16_t>> GetBindAddresses()
     // interface, require -rpcallowip and -rpcbind to both be specified
     // together. If either is missing, ignore both values, bind to localhost
     // instead, and log warnings.
-    if (gArgs.GetArgs("-rpcallowip").empty() || gArgs.GetArgs("-rpcbind").empty()) { // Default to loopback if not allowing external IPs
+    if (RpcAllowIpSetting::Get(gArgs).empty() || RpcBindSetting::Get(gArgs).empty()) { // Default to loopback if not allowing external IPs
         endpoints.emplace_back("::1", http_port);
         endpoints.emplace_back("127.0.0.1", http_port);
-        if (!gArgs.GetArgs("-rpcallowip").empty()) {
+        if (!RpcAllowIpSetting::Get(gArgs).empty()) {
             LogWarning("Option -rpcallowip was specified without -rpcbind; this doesn't usually make sense");
         }
-        if (!gArgs.GetArgs("-rpcbind").empty()) {
+        if (!RpcBindSetting::Get(gArgs).empty()) {
             LogWarning("Option -rpcbind was ignored because -rpcallowip was not specified, refusing to allow everyone to connect");
         }
     } else { // Specific bind addresses
-        for (const std::string& strRPCBind : gArgs.GetArgs("-rpcbind")) {
+        for (const std::string& strRPCBind : RpcBindSetting::Get(gArgs)) {
             uint16_t port{http_port};
             std::string host;
             if (!SplitHostPort(strRPCBind, port, host)) {
@@ -1228,11 +1241,17 @@ bool InitHTTPServer()
     // Create HTTPServer
     g_http_server = std::make_unique<HTTPServer>(MaybeDispatchRequestToWorker);
 
+<<<<<<< HEAD
     if (!g_http_server->InitHTTPAllowList()) {
         return false;
     }
 
     g_http_server->SetServerTimeout(std::chrono::seconds(gArgs.GetIntArg("-rpcservertimeout", DEFAULT_HTTP_SERVER_TIMEOUT)));
+||||||| parent of 0612ffcb492 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    g_http_server->SetServerTimeout(std::chrono::seconds(gArgs.GetIntArg("-rpcservertimeout", DEFAULT_HTTP_SERVER_TIMEOUT)));
+=======
+    g_http_server->SetServerTimeout(std::chrono::seconds(RpcServerTimeoutSetting::Get(gArgs)));
+>>>>>>> 0612ffcb492 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 
     // Bind HTTP server to specified addresses
     std::vector<std::pair<std::string, uint16_t>> endpoints{GetBindAddresses()};
