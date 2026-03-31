@@ -12,7 +12,14 @@
 #include <rpc/request.h>
 #include <rpc/server.h>
 #include <rpc/util.h>
+<<<<<<< HEAD
 #include <univalue.h>
+||||||| parent of 0ce46d95b55 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+#include <util/strencodings.h>
+=======
+#include <util/strencodings.h>
+#include <wallet/init_settings.h>
+>>>>>>> 0ce46d95b55 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 
 #include <exception>
 #include <string>
@@ -46,7 +53,7 @@ static RPCMethod enumeratesigners()
         },
         [](const RPCMethod& self, const JSONRPCRequest& request) -> UniValue
         {
-            const std::string command = gArgs.GetArg("-signer", "");
+            const std::string command = wallet::SignerSetting::Get(gArgs);
             if (command == "") throw JSONRPCError(RPC_MISC_ERROR, "Error: restart bitcoind with -signer=<cmd>");
             const std::string chain = gArgs.GetChainTypeString();
             UniValue signers_res = UniValue::VARR;

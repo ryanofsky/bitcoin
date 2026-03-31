@@ -14,6 +14,13 @@
 #include <consensus/params.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+<<<<<<< HEAD
+||||||| parent of 0ce46d95b55 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+#include <interfaces/types.h>
+=======
+#include <init_settings.h>
+#include <interfaces/types.h>
+>>>>>>> 0ce46d95b55 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 #include <node/blockstorage.h>
 #include <node/mining_args.h>
 #include <node/mining_types.h>
@@ -145,7 +152,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     // -regtest only: allow overriding block.nVersion with
     // -blockversion=N to test forking scenarios
     if (chainparams.MineBlocksOnDemand()) {
-        pblock->nVersion = gArgs.GetIntArg("-blockversion", pblock->nVersion);
+        pblock->nVersion = BlockVersionSetting::Get(gArgs, pblock->nVersion);
     }
 
     pblock->nTime = TicksSinceEpoch<std::chrono::seconds>(NodeClock::now());

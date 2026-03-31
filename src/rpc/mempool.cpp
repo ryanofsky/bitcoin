@@ -3,8 +3,15 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+<<<<<<< HEAD
 #include <rpc/mempool.h>
 #include <rpc/register.h> // IWYU pragma: associated
+||||||| parent of 0ce46d95b55 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+#include <rpc/blockchain.h>
+=======
+#include <init_settings.h>
+#include <rpc/blockchain.h>
+>>>>>>> 0ce46d95b55 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 
 #include <common/args.h>
 #include <consensus/amount.h>
@@ -147,7 +154,7 @@ static RPCMethod sendrawtransaction()
             std::string err_string;
             AssertLockNotHeld(cs_main);
             NodeContext& node = EnsureAnyNodeContext(request.context);
-            const bool private_broadcast_enabled{gArgs.GetBoolArg("-privatebroadcast", DEFAULT_PRIVATE_BROADCAST)};
+            const bool private_broadcast_enabled{PrivatebroadcastSetting::Get(gArgs, DEFAULT_PRIVATE_BROADCAST)};
             if (private_broadcast_enabled &&
                 !g_reachable_nets.Contains(NET_ONION) &&
                 !g_reachable_nets.Contains(NET_I2P)) {
