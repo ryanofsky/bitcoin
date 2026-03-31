@@ -4,6 +4,7 @@
 
 #include <wallet/wallettool.h>
 
+#include <bitcoin-wallet_settings.h>
 #include <common/args.h>
 #include <util/check.h>
 #include <util/fs.h>
@@ -93,14 +94,15 @@ static void WalletShowInfo(CWallet* wallet_instance)
 
 bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
 {
-    if (args.IsArgSet("-dumpfile") && command != "dump" && command != "createfromdump") {
+    if (!DumpFileSetting::Value(args).isNull() && command != "dump" && command != "createfromdump") {
         tfm::format(std::cerr, "The -dumpfile option can only be used with the \"dump\" and \"createfromdump\" commands.\n");
         return false;
     }
-    if ((command == "create" || command == "createfromdump") && !args.IsArgSet("-wallet")) {
+    if ((command == "create" || command == "createfromdump") && WalletSetting::Value(args).isNull()) {
         tfm::format(std::cerr, "Wallet name must be provided when creating a new wallet.\n");
         return false;
     }
+<<<<<<< HEAD
     const std::string name = args.GetArg("-wallet", "");
     util::Result<fs::path> path_res = GetWalletPath(name);
     if (!path_res) {
@@ -108,6 +110,13 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
         return false;
     }
     const fs::path& path = *path_res;
+||||||| parent of 4bdac9daf93 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    const std::string name = args.GetArg("-wallet", "");
+    const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(), fs::PathFromString(name));
+=======
+    const std::string name = WalletSetting::Get(args);
+    const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(), fs::PathFromString(name));
+>>>>>>> 4bdac9daf93 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 
     if (command == "create") {
         if (name.empty()) {
