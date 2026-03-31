@@ -39,10 +39,16 @@
 #include <node/context.h>
 #include <node/interface_ui.h>
 #include <node/kernel_notifications.h>
+<<<<<<< HEAD
 #include <node/miner.h>
 #include <node/mini_miner.h>
 #include <node/mining_args.h>
 #include <node/mining_types.h>
+||||||| parent of 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+=======
+#include <node/miner.h>
+#include <node/mini_miner.h>
+>>>>>>> 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 #include <node/transaction.h>
 #include <node/types.h>
 #include <node/warnings.h>
@@ -68,6 +74,7 @@
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
+#include <wallet/init_settings.h>
 
 #include <any>
 #include <atomic>
@@ -274,7 +281,7 @@ public:
     {
 #ifdef ENABLE_EXTERNAL_SIGNER
         std::vector<ExternalSigner> signers = {};
-        const std::string command = args().GetArg("-signer", "");
+        const std::string command = wallet::SignerSetting::Get(args());
         if (command == "") return {};
         ExternalSigner::Enumerate(command, signers, Params().GetChainTypeString());
         std::vector<std::unique_ptr<interfaces::ExternalSigner>> result;

@@ -14,8 +14,19 @@
 #include <consensus/params.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+<<<<<<< HEAD
 #include <interfaces/types.h>
 #include <node/blockstorage.h>
+||||||| parent of 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+#include <deploymentstatus.h>
+#include <logging.h>
+#include <node/context.h>
+=======
+#include <deploymentstatus.h>
+#include <init_settings.h>
+#include <logging.h>
+#include <node/context.h>
+>>>>>>> 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 #include <node/kernel_notifications.h>
 #include <node/mining_args.h>
 #include <node/mining_types.h>
@@ -112,6 +123,36 @@ BlockAssembler::BlockAssembler(Chainstate& chainstate,
 {
 }
 
+<<<<<<< HEAD
+||||||| parent of 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+void ApplyArgsManOptions(const ArgsManager& args, BlockAssembler::Options& options)
+{
+    // Block resource limits
+    options.nBlockMaxWeight = args.GetIntArg("-blockmaxweight", options.nBlockMaxWeight);
+    if (const auto blockmintxfee{args.GetArg("-blockmintxfee")}) {
+        if (const auto parsed{ParseMoney(*blockmintxfee)}) options.blockMinFeeRate = CFeeRate{*parsed};
+    }
+    options.print_modified_fee = args.GetBoolArg("-printpriority", options.print_modified_fee);
+    if (!options.block_reserved_weight) {
+        options.block_reserved_weight = args.GetIntArg("-blockreservedweight");
+    }
+}
+
+=======
+void ApplyArgsManOptions(const ArgsManager& args, BlockAssembler::Options& options)
+{
+    // Block resource limits
+    options.nBlockMaxWeight = BlockMaxWeightSetting::Get(args, options.nBlockMaxWeight);
+    if (const auto blockmintxfee{BlockMinTxFeeSetting::Get(args)}) {
+        if (const auto parsed{ParseMoney(*blockmintxfee)}) options.blockMinFeeRate = CFeeRate{*parsed};
+    }
+    options.print_modified_fee = PrintPrioritySetting::Get(args, options.print_modified_fee);
+    if (!options.block_reserved_weight) {
+        options.block_reserved_weight = BlockreservedweightSetting::Get(args);
+    }
+}
+
+>>>>>>> 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 void BlockAssembler::resetBlock()
 {
     // Reserve space for fixed-size block header, txs count, and coinbase tx.
@@ -145,7 +186,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     // -regtest only: allow overriding block.nVersion with
     // -blockversion=N to test forking scenarios
     if (chainparams.MineBlocksOnDemand()) {
-        pblock->nVersion = gArgs.GetIntArg("-blockversion", pblock->nVersion);
+        pblock->nVersion = BlockVersionSetting::Get(gArgs, pblock->nVersion);
     }
 
     pblock->nTime = TicksSinceEpoch<std::chrono::seconds>(NodeClock::now());

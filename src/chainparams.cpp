@@ -6,9 +6,17 @@
 #include <chainparams.h>
 
 #include <chainparamsbase.h>
+#include <chainparamsbase_settings.h>
 #include <common/args.h>
 #include <consensus/params.h>
 #include <deploymentinfo.h>
+<<<<<<< HEAD
+||||||| parent of 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+#include <logging.h>
+=======
+#include <init_settings.h>
+#include <logging.h>
+>>>>>>> 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 #include <tinyformat.h>
 #include <util/chaintype.h>
 #include <util/log.h>
@@ -25,11 +33,11 @@ using util::SplitString;
 
 void ReadSigNetArgs(const ArgsManager& args, CChainParams::SigNetOptions& options)
 {
-    if (!args.GetArgs("-signetseednode").empty()) {
-        options.seeds.emplace(args.GetArgs("-signetseednode"));
+    if (!SignetSeedNodeSetting::Get(args).empty()) {
+        options.seeds.emplace(SignetSeedNodeSetting::Get(args));
     }
-    if (!args.GetArgs("-signetchallenge").empty()) {
-        const auto signet_challenge = args.GetArgs("-signetchallenge");
+    if (!SignetChallengeSetting::Get(args).empty()) {
+        const auto signet_challenge = SignetChallengeSetting::Get(args);
         if (signet_challenge.size() != 1) {
             throw std::runtime_error("-signetchallenge cannot be multiple values.");
         }
@@ -43,10 +51,10 @@ void ReadSigNetArgs(const ArgsManager& args, CChainParams::SigNetOptions& option
 
 void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& options)
 {
-    if (auto value = args.GetBoolArg("-fastprune")) options.fastprune = *value;
+    if (auto value = FastPruneSetting::Get(args)) options.fastprune = *value;
     if (HasTestOption(args, "bip94")) options.enforce_bip94 = true;
 
-    for (const std::string& arg : args.GetArgs("-testactivationheight")) {
+    for (const std::string& arg : TestActivationHeightSetting::Get(args)) {
         const auto found{arg.find('@')};
         if (found == std::string::npos) {
             throw std::runtime_error(strprintf("Invalid format (%s) for -testactivationheight=name@height.", arg));
@@ -66,7 +74,7 @@ void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& opti
         }
     }
 
-    for (const std::string& strDeployment : args.GetArgs("-vbparams")) {
+    for (const std::string& strDeployment : VbParamsSetting::Get(args)) {
         std::vector<std::string> vDeploymentParams = SplitString(strDeployment, ':');
         if (vDeploymentParams.size() < 3 || 4 < vDeploymentParams.size()) {
             throw std::runtime_error("Version bits parameters malformed, expecting deployment:start:end[:min_activation_height]");

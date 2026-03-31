@@ -4,6 +4,7 @@
 
 #include <wallet/wallettool.h>
 
+#include <bitcoin-wallet_settings.h>
 #include <common/args.h>
 #include <util/check.h>
 #include <util/fs.h>
@@ -93,18 +94,28 @@ static void WalletShowInfo(CWallet* wallet_instance)
 
 bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
 {
+<<<<<<< HEAD
     {
         std::vector<std::string> details;
         if (!args.CheckCommandOptions(command, &details)) {
             tfm::format(std::cerr, "Error: Invalid arguments provided:\n%s\n", util::MakeUnorderedList(details));
             return false;
         }
+||||||| parent of 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+    if (args.IsArgSet("-dumpfile") && command != "dump" && command != "createfromdump") {
+        tfm::format(std::cerr, "The -dumpfile option can only be used with the \"dump\" and \"createfromdump\" commands.\n");
+        return false;
+=======
+    if (!DumpFileSetting::Value(args).isNull() && command != "dump" && command != "createfromdump") {
+        tfm::format(std::cerr, "The -dumpfile option can only be used with the \"dump\" and \"createfromdump\" commands.\n");
+        return false;
+>>>>>>> 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
     }
-    if ((command == "create" || command == "createfromdump") && !args.IsArgSet("-wallet")) {
+    if ((command == "create" || command == "createfromdump") && WalletSetting::Value(args).isNull()) {
         tfm::format(std::cerr, "Wallet name must be provided when creating a new wallet.\n");
         return false;
     }
-    const std::string name = args.GetArg("-wallet", "");
+    const std::string name = WalletSetting::Get(args);
     util::Result<fs::path> path_res = GetWalletPath(name);
     if (!path_res) {
         tfm::format(std::cerr, "%s\n", util::ErrorString(path_res).original);

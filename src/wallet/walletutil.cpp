@@ -7,15 +7,22 @@
 #include <chainparams.h>
 #include <common/args.h>
 #include <key_io.h>
+<<<<<<< HEAD
 #include <util/log.h>
+||||||| parent of 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+#include <logging.h>
+=======
+#include <logging.h>
+#include <wallet/init_settings.h>
+>>>>>>> 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 
 namespace wallet {
 fs::path GetWalletDir()
 {
     fs::path path;
 
-    if (gArgs.IsArgSet("-walletdir")) {
-        path = gArgs.GetPathArg("-walletdir");
+    if (!WalletDirSetting::Value(gArgs).isNull()) {
+        path = WalletDirSetting::Get(gArgs);
         if (!fs::is_directory(path)) {
             // If the path specified doesn't exist, we return the deliberately
             // invalid empty string.

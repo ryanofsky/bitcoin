@@ -6,7 +6,12 @@
 #include <chainparams.h>
 #include <common/args.h>
 #include <util/fs.h>
+<<<<<<< HEAD
 #include <util/log.h>
+||||||| parent of 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+=======
+#include <wallet/init_settings.h>
+>>>>>>> 428c537731d (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 #include <wallet/db.h>
 
 #include <algorithm>
@@ -153,7 +158,7 @@ bool IsSQLiteFile(const fs::path& path)
 void ReadDatabaseArgs(const ArgsManager& args, DatabaseOptions& options)
 {
     // Override current options with args values, if any were specified
-    options.use_unsafe_sync = args.GetBoolArg("-unsafesqlitesync", options.use_unsafe_sync);
+    options.use_unsafe_sync = UnsafeSqliteSyncSetting::Get(args, options.use_unsafe_sync);
 }
 
 } // namespace wallet
