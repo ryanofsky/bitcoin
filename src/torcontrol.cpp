@@ -10,6 +10,7 @@
 #include <common/args.h>
 #include <compat/compat.h>
 #include <crypto/hmac_sha256.h>
+#include <init_settings.h>
 #include <logging.h>
 #include <net.h>
 #include <netaddress.h>
@@ -478,7 +479,7 @@ void TorController::get_socks_cb(TorControlConnection& _conn, const TorControlRe
     Proxy addrOnion = Proxy(resolved, /*tor_stream_isolation=*/ true);
     SetProxy(NET_ONION, addrOnion);
 
-    const auto onlynets = gArgs.GetArgs("-onlynet");
+    const auto onlynets = OnlyNetSetting::Get(gArgs);
 
     const bool onion_allowed_by_onlynet{
         onlynets.empty() ||
@@ -553,7 +554,7 @@ void TorController::auth_cb(TorControlConnection& _conn, const TorControlReply& 
 
         // Now that we know Tor is running setup the proxy for onion addresses
         // if -onion isn't set to something else.
-        if (gArgs.GetArg("-onion", "") == "") {
+        if (OnionSetting::Get(gArgs) == "") {
             _conn.Command("GETINFO net/listeners/socks", std::bind_front(&TorController::get_socks_cb, this));
         }
 
@@ -674,7 +675,7 @@ void TorController::protocolinfo_cb(TorControlConnection& _conn, const TorContro
          *   cookie:   hex-encoded ~/.tor/control_auth_cookie
          *   password: "password"
          */
-        std::string torpassword = gArgs.GetArg("-torpassword", "");
+        std::string torpassword = TorPasswordSetting::Get(gArgs);
         if (!torpassword.empty()) {
             if (methods.contains("HASHEDPASSWORD")) {
                 LogDebug(BCLog::TOR, "Using HASHEDPASSWORD authentication");
@@ -739,6 +740,120 @@ fs::path TorController::GetPrivateKeyFile()
     return gArgs.GetDataDirNet() / "onion_v3_private_key";
 }
 
+<<<<<<< HEAD
+||||||| parent of 0eb005fc622 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
+void TorController::reconnect_cb(evutil_socket_t fd, short what, void *arg)
+{
+    TorController *self = static_cast<TorController*>(arg);
+    self->Reconnect();
+}
+
+/****** Thread ********/
+static struct event_base *gBase;
+static std::thread torControlThread;
+
+static void TorControlThread(CService onion_service_target)
+{
+    TorController ctrl(gBase, gArgs.GetArg("-torcontrol", DEFAULT_TOR_CONTROL), onion_service_target);
+
+    event_base_dispatch(gBase);
+}
+
+void StartTorControl(CService onion_service_target)
+{
+    assert(!gBase);
+#ifdef WIN32
+    evthread_use_windows_threads();
+#else
+    evthread_use_pthreads();
+#endif
+    gBase = event_base_new();
+    if (!gBase) {
+        LogWarning("tor: Unable to create event_base");
+        return;
+    }
+
+    torControlThread = std::thread(&util::TraceThread, "torcontrol", [onion_service_target] {
+        TorControlThread(onion_service_target);
+    });
+}
+
+void InterruptTorControl()
+{
+    if (gBase) {
+        LogInfo("tor: Thread interrupt\n");
+        event_base_once(gBase, -1, EV_TIMEOUT, [](evutil_socket_t, short, void*) {
+            event_base_loopbreak(gBase);
+        }, nullptr, nullptr);
+    }
+}
+
+void StopTorControl()
+{
+    if (gBase) {
+        torControlThread.join();
+        event_base_free(gBase);
+        gBase = nullptr;
+    }
+}
+
+=======
+void TorController::reconnect_cb(evutil_socket_t fd, short what, void *arg)
+{
+    TorController *self = static_cast<TorController*>(arg);
+    self->Reconnect();
+}
+
+/****** Thread ********/
+static struct event_base *gBase;
+static std::thread torControlThread;
+
+static void TorControlThread(CService onion_service_target)
+{
+    TorController ctrl(gBase, TorControlSetting::Get(gArgs), onion_service_target);
+
+    event_base_dispatch(gBase);
+}
+
+void StartTorControl(CService onion_service_target)
+{
+    assert(!gBase);
+#ifdef WIN32
+    evthread_use_windows_threads();
+#else
+    evthread_use_pthreads();
+#endif
+    gBase = event_base_new();
+    if (!gBase) {
+        LogWarning("tor: Unable to create event_base");
+        return;
+    }
+
+    torControlThread = std::thread(&util::TraceThread, "torcontrol", [onion_service_target] {
+        TorControlThread(onion_service_target);
+    });
+}
+
+void InterruptTorControl()
+{
+    if (gBase) {
+        LogInfo("tor: Thread interrupt\n");
+        event_base_once(gBase, -1, EV_TIMEOUT, [](evutil_socket_t, short, void*) {
+            event_base_loopbreak(gBase);
+        }, nullptr, nullptr);
+    }
+}
+
+void StopTorControl()
+{
+    if (gBase) {
+        torControlThread.join();
+        event_base_free(gBase);
+        gBase = nullptr;
+    }
+}
+
+>>>>>>> 0eb005fc622 (scripted-diff: Replace AddArgs / GetArgs calls with Setting Register / Get calls)
 CService DefaultOnionServiceTarget(uint16_t port)
 {
     struct in_addr onion_service_target;
