@@ -6,8 +6,19 @@
 #ifndef BITCOIN_NODE_MINER_H
 #define BITCOIN_NODE_MINER_H
 
+<<<<<<< HEAD
 #include <consensus/amount.h>
 #include <node/mining_types.h>
+||||||| parent of 02a4dc9586f (move-only: move node constants to settings header)
+#include <interfaces/types.h>
+#include <node/types.h>
+#include <policy/policy.h>
+=======
+#include <interfaces/types.h>
+#include <node/settings.h>
+#include <node/types.h>
+#include <policy/policy.h>
+>>>>>>> 02a4dc9586f (move-only: move node constants to settings header)
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <threadsafety.h>
