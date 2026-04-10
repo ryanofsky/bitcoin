@@ -9,6 +9,7 @@
 
 #include <arith_uint256.h>
 #include <dbwrapper.h>
+#include <node/settings.h>
 #include <script/sigcache.h>
 #include <txdb.h>
 #include <uint256.h>
@@ -21,8 +22,16 @@
 class CChainParams;
 class ValidationSignals;
 
+<<<<<<< HEAD
 inline constexpr auto DEFAULT_MAX_TIP_AGE{24h};
 inline constexpr int32_t DEFAULT_PREVOUTFETCH_THREADS{8};
+||||||| parent of 56a43d69ea8 (move-only: move node constants to settings header)
+static constexpr auto DEFAULT_MAX_TIP_AGE{24h};
+static constexpr int32_t DEFAULT_PREVOUTFETCH_THREADS{8};
+=======
+static constexpr int32_t DEFAULT_PREVOUTFETCH_THREADS{8};
+>>>>>>> 56a43d69ea8 (move-only: move node constants to settings header)
+
 
 namespace kernel {
 

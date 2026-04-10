@@ -12,8 +12,14 @@ class ArgsManager;
 
 namespace node {
 
+<<<<<<< HEAD
 inline constexpr bool DEFAULT_PRINT_MODIFIED_FEE = false;
 
+||||||| parent of 56a43d69ea8 (move-only: move node constants to settings header)
+static const bool DEFAULT_PRINT_MODIFIED_FEE = false;
+
+=======
+>>>>>>> 56a43d69ea8 (move-only: move node constants to settings header)
 /**
  * Read the mining options set in \p args. Returns an error if one was
  * encountered.

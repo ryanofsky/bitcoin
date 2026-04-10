@@ -10,9 +10,16 @@
 
 class ArgsManager;
 
+<<<<<<< HEAD
 /** -par default (number of script-checking threads, 0 = auto) */
 inline constexpr int DEFAULT_SCRIPTCHECK_THREADS{0};
 
+||||||| parent of 56a43d69ea8 (move-only: move node constants to settings header)
+/** -par default (number of script-checking threads, 0 = auto) */
+static constexpr int DEFAULT_SCRIPTCHECK_THREADS{0};
+
+=======
+>>>>>>> 56a43d69ea8 (move-only: move node constants to settings header)
 namespace node {
 [[nodiscard]] util::Result<void> ApplyArgsManOptions(const ArgsManager& args, ChainstateManager::Options& opts);
 } // namespace node
