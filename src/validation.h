@@ -74,6 +74,7 @@ class SignalInterrupt;
 
 /** Block files containing a block-height within MIN_BLOCKS_TO_KEEP of ActiveChain().Tip() will not be pruned. */
 static const unsigned int MIN_BLOCKS_TO_KEEP = 288;
+<<<<<<< HEAD
 static const signed int DEFAULT_CHECKBLOCKS = 6;
 static constexpr int DEFAULT_CHECKLEVEL{3};
 // Require that user allocate at least 550 MiB for block & undo files (blk???.dat and rev???.dat)
@@ -88,6 +89,23 @@ static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES{550_MiB};
 
 /** Maximum number of dedicated script-checking threads allowed */
 static constexpr int MAX_SCRIPTCHECK_THREADS{15};
+||||||| parent of 8ee6b745bbf (move-only: move node constants to settings header)
+static const signed int DEFAULT_CHECKBLOCKS = 6;
+static constexpr int DEFAULT_CHECKLEVEL{3};
+// Require that user allocate at least 550 MiB for block & undo files (blk???.dat and rev???.dat)
+// At 1MB per block, 288 blocks = 288MB.
+// Add 15% for Undo data = 331MB
+// Add 20% for Orphan block rate = 397MB
+// We want the low water mark after pruning to be at least 397 MB and since we prune in
+// full block file chunks, we need the high water mark which triggers the prune to be
+// one 128MB block file + added 15% undo data = 147MB greater for a total of 545MB
+// Setting the target to >= 550 MiB will make it likely we can respect the target.
+static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 550 * 1024 * 1024;
+
+/** Maximum number of dedicated script-checking threads allowed */
+static constexpr int MAX_SCRIPTCHECK_THREADS{15};
+=======
+>>>>>>> 8ee6b745bbf (move-only: move node constants to settings header)
 
 /** Current sync state passed to tip changed callbacks. */
 enum class SynchronizationState {
@@ -95,9 +113,6 @@ enum class SynchronizationState {
     INIT_DOWNLOAD,
     POST_INIT
 };
-
-/** Documentation for argument 'checklevel'. */
-extern const std::vector<std::string> CHECKLEVEL_DOC;
 
 CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams);
 
