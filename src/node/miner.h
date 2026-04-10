@@ -8,6 +8,7 @@
 
 #include <consensus/amount.h>
 #include <node/mining_types.h>
+#include <node/settings.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
 #include <threadsafety.h>
