@@ -117,11 +117,7 @@ public:
     mp::Stream makeStream(mp::SocketId socket) override
     {
         startLoop();
-#if MP_MAJOR_VERSION < 12
         return socket;
-#else
-        return m_loop->m_io_context.lowLevelProvider->wrapSocketFd(socket, kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
-#endif
     }
     void addCleanup(std::type_index type, void* iface, std::function<void()> cleanup) override
     {
