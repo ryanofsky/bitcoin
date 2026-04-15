@@ -7,8 +7,23 @@ Library versions are tracked with simple
 Versioning policy is described in the [version.h](../include/mp/version.h)
 include.
 
+<<<<<<< HEAD
 ## v13
+||||||| parent of 24e30c5b06c (doc: Bump version 11 > 12)
+## v10
+=======
+## v12
+>>>>>>> 24e30c5b06c (doc: Bump version 11 > 12)
 - Current unstable version.
+- Adds windows support.
+
+## [v11.0](https://github.com/bitcoin-core/libmultiprocess/commits/v11.0)
+- Improves debug output if EventLoop::post callback fails.
+
+## [v10.0](https://github.com/bitcoin-core/libmultiprocess/commits/v10.0)
+- Increases spawn test timeout to avoid spurious failures.
+- Uses `throwRecoverableException` instead of raw `throw` to improve runtime error messages in macOS builds.
+- Used in Bitcoin Core master branch, pulled in by [#34977](https://github.com/bitcoin/bitcoin/pull/34977). Also pulled into Bitcoin Core 31.x stable branch by [#35028](https://github.com/bitcoin/bitcoin/pull/35028).
 
 ## [v12.0](https://github.com/bitcoin-core/libmultiprocess/commits/v12.0)
 - Adds an optional `max_connections` parameter to `ListenConnections` ([#269](https://github.com/bitcoin-core/libmultiprocess/pull/269)).
