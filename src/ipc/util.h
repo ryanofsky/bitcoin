@@ -13,14 +13,12 @@
 #include <functional>
 #include <kj/debug.h>
 #include <mp/util.h>
-#include <mp/version.h>
 #include <sys/socket.h>
 
 namespace mp {
 // Definitions that can be deleted when libmultiprocess subtree is updated to
 // v12. Having these allows Bitcoin Core changes to be decoupled from
 // libmultiprocess changes so they don't have to be reviewed in a single PR.
-#if MP_MAJOR_VERSION < 12
 using ProcessId = int;
 using SocketId = int;
 constexpr SocketId SocketError{-1};
@@ -49,7 +47,6 @@ inline std::tuple<ProcessId, SocketId> SpawnProcess(ConnectInfoToArgsFn&& connec
     SocketId socket = SpawnProcess(pid, [&](int fd) { return connect_info_to_args(strprintf("%d", fd)); });
     return {pid, socket};
 }
-#endif
 } // namespace mp
 
 #endif // BITCOIN_IPC_UTIL_H
