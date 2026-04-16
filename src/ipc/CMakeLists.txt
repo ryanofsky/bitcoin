@@ -31,7 +31,7 @@ if(BUILD_TESTS)
   # compiler only allows importing by relative path when the importing and
   # imported files are underneath the same compilation source prefix, so the
   # source prefix must be src/ipc, not src/ipc/test/
-  add_library(bitcoin_ipc_test STATIC EXCLUDE_FROM_ALL
+  add_library(bitcoin_ipc_test OBJECT EXCLUDE_FROM_ALL
     test/ipc_test.cpp
   )
   target_capnp_sources(bitcoin_ipc_test ${CMAKE_CURRENT_SOURCE_DIR}
