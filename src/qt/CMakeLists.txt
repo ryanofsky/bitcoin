@@ -260,8 +260,7 @@ add_executable(bitcoin-qt
   ../init/bitcoin-qt.cpp
 )
 
-add_windows_resources(bitcoin-qt res/bitcoin-qt-res.rc)
-add_windows_application_manifest(bitcoin-qt)
+add_windows_gui_resources(bitcoin-qt "GUI node for Bitcoin")
 
 target_link_libraries(bitcoin-qt
   core_interface
@@ -280,6 +279,7 @@ if(ENABLE_IPC)
     main.cpp
     ../init/bitcoin-gui.cpp
   )
+  add_windows_gui_resources(bitcoin-gui "GUI node for Bitcoin (IPC)")
   target_link_libraries(bitcoin-gui
     core_interface
     bitcoinqt
