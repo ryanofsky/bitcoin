@@ -318,6 +318,24 @@ void ExecProcess(const std::vector<std::string>& args)
     }
 }
 
+ProcessId SpawnProcess(const std::vector<std::string>& args)
+{
+#ifndef WIN32
+    ProcessId pid;
+    KJ_SYSCALL(pid = fork());
+    if (!pid) ExecProcess(args);
+    return pid;
+#else
+    std::string cmd{CommandLineFromArgv(args)};
+    STARTUPINFOA si{};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi{};
+    KJ_WIN32(CreateProcessA(nullptr, const_cast<char*>(cmd.c_str()), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi), "CreateProcess");
+    KJ_WIN32(CloseHandle(pi.hThread), "CloseHandle(hThread)");
+    return reinterpret_cast<ProcessId>(pi.hProcess);
+#endif
+}
+
 int WaitProcess(ProcessId pid)
 {
 #ifndef WIN32
