@@ -97,7 +97,7 @@ def build(_ci_type):
     ]
     if run(command + ["-j", str(os.process_cpu_count())], check=False).returncode != 0:
         print("Build failure. Verbose build follows.")
-        run(command + ["-j1", "--verbose"])
+        run(command + ["-j1", "--verbose", "--", "/k"])
 
 
 def check_manifests(ci_type):
