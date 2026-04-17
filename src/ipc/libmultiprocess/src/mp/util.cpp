@@ -17,7 +17,6 @@
 #include <string>
 #include <system_error>
 #include <thread> // NOLINT(misc-include-cleaner) // IWYU pragma: keep
-#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -31,6 +30,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 #endif
 
 #ifdef __linux__
@@ -303,9 +303,13 @@ std::array<SocketId, 2> SocketPair()
     return {pair[0], pair[1]};
 }
 
-void ExecProcess(const std::vector<std::string>& args)
+ProcessId ExecProcess(const std::vector<std::string>& args)
 {
+#ifndef WIN32
     const std::vector<char*> argv{MakeArgv(args)};
+    ProcessId pid;
+    KJ_SYSCALL(pid = fork());
+    if (pid) return pid;
     if (execvp(argv[0], argv.data()) != 0) {
         perror("execvp failed");
         if (errno == ENOENT && !args.empty()) {
@@ -313,6 +317,16 @@ void ExecProcess(const std::vector<std::string>& args)
         }
         _exit(1);
     }
+    KJ_UNREACHABLE;
+#else
+    std::string cmd{CommandLineFromArgv(args)};
+    STARTUPINFOA si{};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi{};
+    KJ_WIN32(CreateProcessA(nullptr, const_cast<char*>(cmd.c_str()), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi), "CreateProcess");
+    KJ_WIN32(CloseHandle(pi.hThread), "CloseHandle(hThread)");
+    return reinterpret_cast<ProcessId>(pi.hProcess);
+#endif
 }
 
 int WaitProcess(ProcessId pid)
