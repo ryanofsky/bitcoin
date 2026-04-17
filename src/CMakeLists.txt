@@ -168,7 +168,14 @@ if(ENABLE_WALLET)
       init/bitcoin-wallet.cpp
       wallet/wallettool.cpp
     )
+<<<<<<< HEAD
     add_windows_application_manifest(bitcoin-wallet)
+||||||| parent of 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
+    add_windows_resources(bitcoin-wallet bitcoin-wallet-res.rc)
+    add_windows_application_manifest(bitcoin-wallet)
+=======
+    add_windows_exe_resources(bitcoin-wallet "bitcoin-wallet (CLI tool for Bitcoin wallets)")
+>>>>>>> 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
     target_link_libraries(bitcoin-wallet
       core_interface
       bitcoin_wallet
@@ -302,11 +309,20 @@ endif()
 
 # Bitcoin wrapper executable that can call other executables.
 if(BUILD_BITCOIN_BIN)
+<<<<<<< HEAD
   add_executable(bitcoin
     bitcoin.cpp
     bitcoin-res.rc
   )
   add_windows_application_manifest(bitcoin)
+||||||| parent of 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
+  add_executable(bitcoin bitcoin.cpp)
+  add_windows_resources(bitcoin bitcoin-res.rc)
+  add_windows_application_manifest(bitcoin)
+=======
+  add_executable(bitcoin bitcoin.cpp)
+  add_windows_exe_resources(bitcoin "bitcoin (Bitcoin wrapper executable that can call other executables)")
+>>>>>>> 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
   target_link_libraries(bitcoin core_interface bitcoin_common bitcoin_util)
   install_binary_component(bitcoin HAS_MANPAGE)
 endif()
@@ -318,7 +334,14 @@ if(BUILD_DAEMON)
     bitcoind-res.rc
     init/bitcoind.cpp
   )
+<<<<<<< HEAD
   add_windows_application_manifest(bitcoind)
+||||||| parent of 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
+  add_windows_resources(bitcoind bitcoind-res.rc)
+  add_windows_application_manifest(bitcoind)
+=======
+  add_windows_exe_resources(bitcoind "bitcoind (Bitcoin node with a JSON-RPC server)")
+>>>>>>> 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
   target_link_libraries(bitcoind
     core_interface
     bitcoin_node
@@ -331,6 +354,7 @@ if(ENABLE_IPC AND BUILD_DAEMON)
     bitcoind.cpp
     init/bitcoin-node.cpp
   )
+  add_windows_exe_resources(bitcoin-node "bitcoin-node (Bitcoin node with multiprocess IPC)")
   target_link_libraries(bitcoin-node
     core_interface
     bitcoin_node
@@ -354,12 +378,21 @@ target_link_libraries(bitcoin_cli
 
 # Bitcoin Core RPC client
 if(BUILD_CLI)
+<<<<<<< HEAD
   add_executable(bitcoin-cli
     bitcoin-cli.cpp
     bitcoin-cli-res.rc
     init/basic.cpp
   )
   add_windows_application_manifest(bitcoin-cli)
+||||||| parent of 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
+  add_executable(bitcoin-cli bitcoin-cli.cpp init/basic.cpp)
+  add_windows_resources(bitcoin-cli bitcoin-cli-res.rc)
+  add_windows_application_manifest(bitcoin-cli)
+=======
+  add_executable(bitcoin-cli bitcoin-cli.cpp init/basic.cpp)
+  add_windows_exe_resources(bitcoin-cli "bitcoin-cli (JSON-RPC client for Bitcoin)")
+>>>>>>> 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
   target_link_libraries(bitcoin-cli
     core_interface
     bitcoin_cli
@@ -372,11 +405,20 @@ endif()
 
 
 if(BUILD_TX)
+<<<<<<< HEAD
   add_executable(bitcoin-tx
     bitcoin-tx.cpp
     bitcoin-tx-res.rc
   )
   add_windows_application_manifest(bitcoin-tx)
+||||||| parent of 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
+  add_executable(bitcoin-tx bitcoin-tx.cpp)
+  add_windows_resources(bitcoin-tx bitcoin-tx-res.rc)
+  add_windows_application_manifest(bitcoin-tx)
+=======
+  add_executable(bitcoin-tx bitcoin-tx.cpp)
+  add_windows_exe_resources(bitcoin-tx "bitcoin-tx (CLI Bitcoin transaction editor utility)")
+>>>>>>> 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
   target_link_libraries(bitcoin-tx
     core_interface
     bitcoin_common
@@ -388,11 +430,20 @@ endif()
 
 
 if(BUILD_UTIL)
+<<<<<<< HEAD
   add_executable(bitcoin-util
     bitcoin-util.cpp
     bitcoin-util-res.rc
   )
   add_windows_application_manifest(bitcoin-util)
+||||||| parent of 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
+  add_executable(bitcoin-util bitcoin-util.cpp)
+  add_windows_resources(bitcoin-util bitcoin-util-res.rc)
+  add_windows_application_manifest(bitcoin-util)
+=======
+  add_executable(bitcoin-util bitcoin-util.cpp)
+  add_windows_exe_resources(bitcoin-util "bitcoin-util (CLI Bitcoin utility)")
+>>>>>>> 6378f5800d5 (cmake: Add add_windows_exe_resources() for Windows exe manifest/version)
   target_link_libraries(bitcoin-util
     core_interface
     bitcoin_common
