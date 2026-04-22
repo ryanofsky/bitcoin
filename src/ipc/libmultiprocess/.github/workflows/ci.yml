@@ -156,7 +156,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+<<<<<<< HEAD
         config: [default, llvm, gnu32, sanitize, olddeps, newdeps]
+||||||| parent of cdc422fe76f (ci: add Windows cross-compilation config using MinGW and Wine)
+        config: [default, llvm, gnu32, sanitize, olddeps]
+=======
+        config: [default, llvm, gnu32, sanitize, olddeps, windows]
+>>>>>>> cdc422fe76f (ci: add Windows cross-compilation config using MinGW and Wine)
 
     name: build • ${{ matrix.config }}
 

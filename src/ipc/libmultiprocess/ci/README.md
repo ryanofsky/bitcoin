@@ -21,7 +21,12 @@ CI_CONFIG=ci/configs/llvm.bash     ci/scripts/run.sh
 CI_CONFIG=ci/configs/gnu32.bash    ci/scripts/run.sh
 CI_CONFIG=ci/configs/sanitize.bash ci/scripts/run.sh
 CI_CONFIG=ci/configs/olddeps.bash  ci/scripts/run.sh
+<<<<<<< HEAD
 CI_CONFIG=ci/configs/newdeps.bash  ci/scripts/run.sh
+||||||| parent of cdc422fe76f (ci: add Windows cross-compilation config using MinGW and Wine)
+=======
+CI_CONFIG=ci/configs/windows.bash  ci/scripts/run.sh
+>>>>>>> cdc422fe76f (ci: add Windows cross-compilation config using MinGW and Wine)
 ```
 
 By default CI jobs will reuse their build directories. `CI_CLEAN=1` can be specified to delete them before running instead.
