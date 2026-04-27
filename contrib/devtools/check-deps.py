@@ -49,10 +49,6 @@ SUPPRESS_LIBS = [
     # GUI code should not be using symbols from any of these libraries, and is
     # meant to
     "bitcoinqt",
-
-    # bitcoin_wallet_tool was removed during the autotools > cmake transition
-    # and no longer exists
-    "bitcoin_wallet_tool",
 ]
 
 def parse_library_deps(md_path):
