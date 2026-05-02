@@ -24,6 +24,7 @@
 
 #include <atomic>
 #include <functional>
+#include <future>
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -601,6 +602,7 @@ private:
             Assert(!other.ready.test(std::memory_order_relaxed));
         }
     };
+    //! Must only be mutated when m_futures is empty. Elements may be mutated when m_futures is not empty.
     std::vector<InputToFetch> m_inputs{};
 
     /**
@@ -622,9 +624,21 @@ private:
         return true;
     }
 
-    //! Clear fetching data.
+    //! Stop all worker threads and clear fetching data.
+    //! Calling this is idempotent, and may safely be called if not fetching.
     void StopFetching() noexcept
     {
+        if (m_futures.empty()) {
+            Assert(m_inputs.empty());
+            Assert(m_input_head.load(std::memory_order_relaxed) == 0);
+            Assert(m_input_tail == 0);
+            return;
+        }
+        // Skip fetching the rest of the inputs by moving the head to the end.
+        m_input_head.store(m_inputs.size(), std::memory_order_relaxed);
+        // Wait for all threads to stop.
+        for (auto& future : m_futures) future.wait();
+        m_futures.clear();
         m_inputs.clear();
         m_input_head.store(0, std::memory_order_relaxed);
         m_input_tail = 0;
@@ -647,8 +661,9 @@ private:
         return base->PeekCoin(outpoint);
     }
 
-    //! Non-null.
+    //! Non-null. May have zero workers when input fetching is disabled.
     std::shared_ptr<ThreadPool> m_thread_pool;
+    std::vector<std::future<void>> m_futures{};
 
 protected:
     void OnMutateBase() override { StopFetching(); }
@@ -666,6 +681,8 @@ public:
     {
         Assert(m_thread_pool);
     }
+
+    ~CoinsViewOverlay() noexcept override { StopFetching(); }
 
     //! Start fetching inputs from block.
     [[nodiscard]] ResetGuard StartFetching(const CBlock& block LIFETIMEBOUND) noexcept;
