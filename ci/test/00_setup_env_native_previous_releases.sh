@@ -18,6 +18,7 @@ printf -v BITCOIN_CONFIG "%q " \
  --preset=dev-mode \
  -DREDUCE_EXPORTS=ON \
  -DCMAKE_BUILD_TYPE=Debug \
+<<<<<<< HEAD
  `# Use -Werror as the CMake version does not support CMAKE_COMPILE_WARNING_AS_ERROR` \
  -DCMAKE_C_FLAGS="-funsigned-char -Werror" \
  -DCMAKE_C_FLAGS_DEBUG="-g2 -O2" \
@@ -25,3 +26,18 @@ printf -v BITCOIN_CONFIG "%q " \
  -DCMAKE_CXX_FLAGS_DEBUG="-g2 -O2" \
  -DAPPEND_CPPFLAGS=-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE
 export BITCOIN_CONFIG
+||||||| parent of ca31653e84b (ci: Avoid -Wno-error=maybe-uninitialized false positives)
+ -DCMAKE_C_FLAGS='-funsigned-char -Werror' \
+ -DCMAKE_C_FLAGS_DEBUG='-g2 -O2' \
+ -DCMAKE_CXX_FLAGS='-funsigned-char -Werror' \
+ -DCMAKE_CXX_FLAGS_DEBUG='-g2 -O2' \
+ -DAPPEND_CPPFLAGS='-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE' \
+"
+=======
+ -DCMAKE_C_FLAGS='-funsigned-char -Werror' \
+ -DCMAKE_C_FLAGS_DEBUG='-g2 -O2' \
+ -DCMAKE_CXX_FLAGS='-funsigned-char -Werror -Wno-error=maybe-uninitialized' \
+ -DCMAKE_CXX_FLAGS_DEBUG='-g2 -O2' \
+ -DAPPEND_CPPFLAGS='-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE' \
+"
+>>>>>>> ca31653e84b (ci: Avoid -Wno-error=maybe-uninitialized false positives)
