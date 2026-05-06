@@ -94,7 +94,6 @@ enum class Level {
 struct Entry {
     Category category;
     Level level;
-    bool should_ratelimit{false}; //!< Hint for consumers if this entry should be ratelimited
     SystemClock::time_point timestamp{SystemClock::now()};
     std::chrono::seconds mocktime{GetMockTime()};
     std::string thread_name{util::ThreadGetInternalName()};
@@ -159,6 +158,7 @@ bool ShouldLog(Category category, Level level);
 >>>>>>> af3ca8272d2 (log refactor: log macro rewrite)
 
 /** Send message to be logged. Applications using the logging library need to provide this. */
+<<<<<<< HEAD
 void Log(Entry entry);
 <<<<<<< HEAD
 ||||||| parent of af3ca8272d2 (log refactor: log macro rewrite)
@@ -169,6 +169,11 @@ namespace BCLog {
 using Level = util::log::Level;
 } // namespace BCLog
 =======
+||||||| parent of 0c090593e8b (log refactor: Drop Entry::should_ratelimit field)
+void Log(Entry entry);
+=======
+void Log(const Options& options, Entry entry);
+>>>>>>> 0c090593e8b (log refactor: Drop Entry::should_ratelimit field)
 
 namespace detail {
 //! Internal helper to get Context from the first macro argument. Overloaded to
@@ -205,10 +210,9 @@ Context GetContext(Category category)
 template <typename Context, typename... Args>
 void Emit(Options options, SourceLocation&& source_loc, Context&& context, ConstevalFormatString<sizeof...(Args)> fmt, const Args&... args)
 {
-    Log(Entry{
+    Log(options, Entry{
         .category = context.category,
         .level = options.level,
-        .should_ratelimit = options.ratelimit,
         .source_loc = std::move(source_loc),
         .message = context.Format(fmt, args...)});
 }
