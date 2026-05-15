@@ -211,6 +211,7 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
         BOOST_REQUIRE(args.ParseParameters(argv_test.size(), argv_test.data(), err));
         BOOST_REQUIRE(init::SetLoggingCategories(args));
         BOOST_REQUIRE(init::SetLoggingLevel(args));
+        BOOST_REQUIRE(init::SetLoggingExcludes(args));
         BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::NET, BCLog::Level::Trace));
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::HTTP, BCLog::Level::Trace));
     }
@@ -258,10 +259,8 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
 
         auto result = init::SetLoggingLevel(args);
         BOOST_REQUIRE(result);
-        const auto& category_levels{LogInstance().CategoryLevels()};
-        const auto qt_it{category_levels.find(BCLog::LogFlags::QT)};
-        BOOST_REQUIRE(qt_it != category_levels.end());
-        BOOST_CHECK_EQUAL(qt_it->second, BCLog::Level::Debug);
+        BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::QT, BCLog::Level::Debug));
+        BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::QT, BCLog::Level::Trace));
     }
 }
 
