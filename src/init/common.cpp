@@ -60,7 +60,7 @@ void SetLoggingOptions(const ArgsManager& args)
 util::Result<void> SetLoggingLevel(const ArgsManager& args)
 {
         for (const std::string& level_str : args.GetArgs("-loglevel")) {
-            if (level_str.find_first_of(':', 3) == std::string::npos) {
+            if (level_str.find(':') == std::string::npos) {
                 // user passed a global log level, i.e. -loglevel=<level>
                 const auto level{BCLog::Logger::GetLogLevel(level_str)};
                 if (!level || *level >  BCLog::Level::Info) {
