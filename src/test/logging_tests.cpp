@@ -246,6 +246,23 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::NET, BCLog::Level::Trace));
         BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::HTTP, BCLog::Level::Debug));
     }
+
+    // Bugfix: -loglevel=qt:debug was previously rejected because "qt" is a 2-char category
+    {
+        ResetLogger();
+        ArgsManager args;
+        args.AddArg("-loglevel", "...", ArgsManager::ALLOW_ANY, OptionsCategory::DEBUG_TEST);
+        const char* argv_test[] = {"bitcoind", "-loglevel=qt:debug"};
+        std::string err;
+        BOOST_REQUIRE(args.ParseParameters(2, argv_test, err));
+
+        auto result = init::SetLoggingLevel(args);
+        BOOST_REQUIRE(result);
+        const auto& category_levels{LogInstance().CategoryLevels()};
+        const auto qt_it{category_levels.find(BCLog::LogFlags::QT)};
+        BOOST_REQUIRE(qt_it != category_levels.end());
+        BOOST_CHECK_EQUAL(qt_it->second, BCLog::Level::Debug);
+    }
 }
 
 struct ScopedScheduler {
