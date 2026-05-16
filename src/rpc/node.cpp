@@ -201,17 +201,11 @@ static void EnableOrDisableLogCategories(UniValue cats, bool enable) {
     cats = cats.get_array();
     for (unsigned int i = 0; i < cats.size(); ++i) {
         std::string cat = cats[i].get_str();
-
-        bool success;
-        if (enable) {
-            success = LogInstance().EnableCategory(cat);
-        } else {
-            success = LogInstance().DisableCategory(cat);
-        }
-
-        if (!success) {
+        const auto flag{GetLogCategory(cat)};
+        if (!flag) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "unknown logging category " + cat);
         }
+        LogInstance().SetCategoryLogLevel(*flag, enable ? BCLog::Level::Debug : BCLog::Level::Info);
     }
 }
 
@@ -249,19 +243,17 @@ static RPCMethod logging()
                 },
         [](const RPCMethod& self, const JSONRPCRequest& request) -> UniValue
 {
-    BCLog::CategoryMask original_log_categories = LogInstance().GetCategoryMask();
+    bool original_libevent = LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug);
     if (request.params[0].isArray()) {
         EnableOrDisableLogCategories(request.params[0], true);
     }
     if (request.params[1].isArray()) {
         EnableOrDisableLogCategories(request.params[1], false);
     }
-    BCLog::CategoryMask updated_log_categories = LogInstance().GetCategoryMask();
-    BCLog::CategoryMask changed_log_categories = original_log_categories ^ updated_log_categories;
 
     // Update libevent logging if BCLog::LIBEVENT has changed.
-    if (changed_log_categories & BCLog::LIBEVENT) {
-        UpdateHTTPServerLogging(LogInstance().WillLogCategory(BCLog::LIBEVENT));
+    if (original_libevent != LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug)) {
+        UpdateHTTPServerLogging(LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug));
     }
 
     UniValue result(UniValue::VOBJ);
