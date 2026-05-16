@@ -14,6 +14,7 @@
 #include <compat/compat.h>
 #include <init.h>
 #include <interfaces/chain.h>
+#include <logging.h>
 #include <interfaces/init.h>
 #include <kernel/context.h>
 #include <node/context.h>

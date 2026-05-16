@@ -7,7 +7,6 @@
 
 #include <common/settings.h>
 #include <consensus/amount.h>
-#include <logging.h>
 #include <net.h>
 #include <net_types.h>
 #include <netaddress.h>
@@ -84,8 +83,8 @@ public:
     //! Get exit status.
     virtual int getExitStatus() = 0;
 
-    // Get log flags.
-    virtual BCLog::CategoryMask getLogCategories() = 0;
+    //! Returns true if any debug logging categories are enabled.
+    virtual bool isAnyDebugLoggingEnabled() = 0;
 
     //! Initialize app dependencies.
     virtual bool baseInitialize() = 0;
