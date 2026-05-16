@@ -62,9 +62,11 @@ util::Result<void> SetLoggingLevel(const ArgsManager& args)
         for (const std::string& level_str : args.GetArgs("-loglevel")) {
             if (level_str.find_first_of(':', 3) == std::string::npos) {
                 // user passed a global log level, i.e. -loglevel=<level>
-                if (!LogInstance().SetLogLevel(level_str)) {
+                const auto level{BCLog::Logger::GetLogLevel(level_str)};
+                if (!level || *level >  BCLog::Level::Info) {
                     return util::Error{strprintf(_("Unsupported global logging level %s=%s. Valid values: %s."), "-loglevel", level_str, LogInstance().LogLevelsString())};
                 }
+                LogInstance().SetCategoryLogLevel(LogInstance().GetLogLevels().back(), *level);
             } else {
                 // user passed a category-specific log level, i.e. -loglevel=<category>:<level>
                 const auto& toks = SplitString(level_str, ':');
@@ -87,16 +89,20 @@ util::Result<void> SetLoggingCategories(const ArgsManager& args)
     const auto categories_to_process = (last_negated == categories.rend()) ? categories : std::ranges::subrange(last_negated.base(), categories.end());
 
     for (const auto& cat : categories_to_process) {
-        if (!LogInstance().EnableCategory(cat)) {
+        const auto flag{GetLogCategory(cat)};
+        if (!flag) {
             return util::Error{strprintf(_("Unsupported logging category %s=%s."), "-debug", cat)};
         }
+        LogInstance().SetCategoryLogLevel(*flag, BCLog::Level::Debug);
     }
 
     // Now remove the logging categories which were explicitly excluded
     for (const std::string& cat : args.GetArgs("-debugexclude")) {
-        if (!LogInstance().DisableCategory(cat)) {
+        const auto flag{GetLogCategory(cat)};
+        if (!flag) {
             return util::Error{strprintf(_("Unsupported logging category %s=%s."), "-debugexclude", cat)};
         }
+        LogInstance().SetCategoryLogLevel(*flag, BCLog::Level::Info);
     }
 
     LogInfo("Log output may contain privacy-sensitive information. Be cautious when sharing logs.");
@@ -107,7 +113,10 @@ util::Result<void> SetLoggingCategories(const ArgsManager& args)
 bool StartLogging(const ArgsManager& args)
 {
     if (LogInstance().m_print_to_file) {
-        if (args.GetBoolArg("-shrinkdebugfile", LogInstance().DefaultShrinkDebugFile())) {
+        // Default to shrinking the log file only when no debug categories are
+        // enabled, since the file is unlikely to grow large without debug logging.
+        const bool shrink_by_default{!LogInstance().WillLogCategoryLevel(BCLog::ALL, BCLog::Level::Debug)};
+        if (args.GetBoolArg("-shrinkdebugfile", shrink_by_default)) {
             // Do this first since it both loads a bunch of debug.log into memory,
             // and because this needs to happen before any other debug.log printing
             LogInstance().ShrinkDebugFile();
