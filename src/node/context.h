@@ -5,7 +5,7 @@
 #ifndef BITCOIN_NODE_CONTEXT_H
 #define BITCOIN_NODE_CONTEXT_H
 
-#include <node/mining_args.h>
+#include <node/mining_types.h>
 
 #include <atomic>
 #include <cstdlib>
@@ -84,10 +84,10 @@ struct NodeContext {
     //! opened by the gui.
     std::unique_ptr<interfaces::Mining> mining;
     //! Mining options used to create block templates. This value member is an
-    //! exception to the dependency guidance above because MiningArgs is a
-    //! minimal dependency. It could be moved to the BlockTemplateCache
+    //! exception to the dependency guidance above because BlockCreateOptions is
+    //! a minimal dependency. It could be moved to the BlockTemplateCache
     //! proposed in bitcoin/bitcoin#33421.
-    MiningArgs mining_args;
+    BlockCreateOptions mining_args;
     interfaces::WalletLoader* wallet_loader{nullptr};
     std::unique_ptr<CScheduler> scheduler;
     std::function<void()> rpc_interruption_point = [] {};

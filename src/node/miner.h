@@ -7,7 +7,6 @@
 #define BITCOIN_NODE_MINER_H
 
 #include <consensus/amount.h>
-#include <node/mining_args.h>
 #include <node/mining_types.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
@@ -80,7 +79,6 @@ private:
 public:
     explicit BlockAssembler(Chainstate& chainstate,
                             const CTxMemPool* mempool,
-                            MiningArgs mining_args,
                             BlockCreateOptions create_options);
 
     /** Construct a new block template */
@@ -92,7 +90,6 @@ public:
     inline static std::optional<int64_t> m_last_block_weight{};
 
 private:
-    const MiningArgs m_mining_args;
     const BlockCreateOptions m_options;
 
     // utility functions
@@ -129,9 +126,6 @@ int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParam
 /** Update an old GenerateCoinbaseCommitment from CreateNewBlock after the block txs have changed */
 void RegenerateCommitments(CBlock& block, ChainstateManager& chainman);
 
-/** Apply -blockmaxweight and -blockreservedweight arguments from MiningArgs to BlockCreateOptions options. */
-void ApplyMiningDefaults(const MiningArgs& args, BlockCreateOptions& options);
-
 /* Compute the block's merkle root, insert or replace the coinbase transaction and the merkle root into the block */
 void AddMerkleRootAndCoinbase(CBlock& block, CTransactionRef coinbase, uint32_t version, uint32_t timestamp, uint32_t nonce);
 
@@ -147,7 +141,6 @@ std::unique_ptr<CBlockTemplate> WaitAndCreateNewBlock(ChainstateManager& chainma
                                                       CTxMemPool* mempool,
                                                       const std::unique_ptr<CBlockTemplate>& block_template,
                                                       const BlockWaitOptions& wait_options,
-                                                      const MiningArgs& mining_args,
                                                       const BlockCreateOptions& create_options,
                                                       bool& interrupt_wait);
 

@@ -21,7 +21,6 @@
 #include <node/mining_args.h>
 #include <node/mining_types.h>
 #include <policy/feerate.h>
-#include <policy/policy.h>
 #include <pow.h>
 #include <primitives/block.h>
 #include <primitives/transaction.h>
@@ -36,7 +35,6 @@
 #include <util/result.h>
 #include <util/signalinterrupt.h>
 #include <util/time.h>
-#include <util/translation.h>
 #include <validation.h>
 #include <versionbits.h>
 
@@ -96,50 +94,19 @@ void RegenerateCommitments(CBlock& block, ChainstateManager& chainman)
     block.hashMerkleRoot = BlockMerkleRoot(block);
 }
 
-static BlockCreateOptions ApplyBlockCreateOptions(BlockCreateOptions options)
-{
-    // Typically block_reserved_weight and block_max_weight are set by
-    // ApplyMiningDefaults before the constructor calls this; value_or(DEFAULT_...)
-    // only affects (test) call sites that don't go through the Mining interface.
-    const size_t reserved_weight{options.block_reserved_weight.value_or(DEFAULT_BLOCK_RESERVED_WEIGHT)};
-    if (auto result{CheckBlockReservedWeight(reserved_weight)}; !result) {
-        throw std::runtime_error(util::ErrorString(result).original);
-    }
-    options.block_reserved_weight = reserved_weight;
-    if (auto result{CheckCoinbaseOutputMaxAdditionalSigops(options.coinbase_output_max_additional_sigops)}; !result) {
-        throw std::runtime_error(util::ErrorString(result).original);
-    }
-    const size_t max_weight{options.block_max_weight.value_or(DEFAULT_BLOCK_MAX_WEIGHT)};
-    // block_reserved_weight can safely exceed block_max_weight, but the rest
-    // of the block template will be empty.
-    if (auto result{CheckBlockMaxWeight(max_weight)}; !result) {
-        throw std::runtime_error(util::ErrorString(result).original);
-    }
-    options.block_max_weight = max_weight;
-    return options;
-}
-
 BlockAssembler::BlockAssembler(Chainstate& chainstate,
                                const CTxMemPool* mempool,
-                               MiningArgs mining_args,
                                BlockCreateOptions options)
     : chainparams{chainstate.m_chainman.GetParams()},
       m_mempool{options.use_mempool ? mempool : nullptr},
       m_chainstate{chainstate},
-      m_mining_args{mining_args},
-      m_options{ApplyBlockCreateOptions(options)}
+      m_options{[&] {
+          if (auto result{Check(options)}; !result) {
+              throw std::runtime_error(util::ErrorString(result).original);
+          }
+          return Flatten(std::move(options));
+      }()}
 {
-}
-
-void ApplyMiningDefaults(const MiningArgs& args, BlockCreateOptions& options)
-{
-    // Block resource limits
-    if (!options.block_max_weight) {
-        options.block_max_weight = args.default_block_max_weight;
-    }
-    if (!options.block_reserved_weight) {
-        options.block_reserved_weight = args.default_block_reserved_weight;
-    }
 }
 
 void BlockAssembler::resetBlock()
@@ -303,7 +270,7 @@ void BlockAssembler::AddToBlock(const CTxMemPoolEntry& entry)
     nBlockSigOpsCost += entry.GetSigOpCost();
     nFees += entry.GetFee();
 
-    if (m_mining_args.print_modified_fee) {
+    if (*m_options.print_modified_fee) {
         LogInfo("fee rate %s txid %s\n",
                   CFeeRate(entry.GetModifiedFee(), entry.GetTxSize()).ToString(),
                   entry.GetTx().GetHash().ToString());
@@ -329,7 +296,7 @@ void BlockAssembler::addChunks()
 
     while (selected_transactions.size() > 0) {
         // Check to see if min fee rate is still respected.
-        if (ByRatio{chunk_feerate_vsize} < ByRatio{m_mining_args.block_min_fee_rate.GetFeePerVSize()}) {
+        if (ByRatio{chunk_feerate_vsize} < ByRatio{m_options.block_min_fee_rate->GetFeePerVSize()}) {
             // Everything else we might consider has a lower feerate
             return;
         }
@@ -397,7 +364,6 @@ std::unique_ptr<CBlockTemplate> WaitAndCreateNewBlock(ChainstateManager& chainma
                                                       CTxMemPool* mempool,
                                                       const std::unique_ptr<CBlockTemplate>& block_template,
                                                       const BlockWaitOptions& wait_options,
-                                                      const MiningArgs& mining_args,
                                                       const BlockCreateOptions& create_options,
                                                       bool& interrupt_wait)
 {
@@ -459,7 +425,6 @@ std::unique_ptr<CBlockTemplate> WaitAndCreateNewBlock(ChainstateManager& chainma
             auto new_tmpl{BlockAssembler{
                 chainman.ActiveChainstate(),
                 mempool,
-                mining_args,
                 create_options
                 }.CreateNewBlock()};
 

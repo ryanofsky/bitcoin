@@ -26,7 +26,6 @@
 #include <node/blockstorage.h>
 #include <node/context.h>
 #include <node/miner.h>
-#include <node/mining_args.h>
 #include <node/mining_types.h>
 #include <node/warnings.h>
 #include <policy/feerate.h>
@@ -502,7 +501,7 @@ static RPCMethod getmininginfo()
     obj.pushKV("target", GetTarget(tip, chainman.GetConsensus().powLimit).GetHex());
     obj.pushKV("networkhashps",    getnetworkhashps().HandleRequest(request));
     obj.pushKV("pooledtx", mempool.size());
-    obj.pushKV("blockmintxfee", ValueFromAmount(node.mining_args.block_min_fee_rate.GetFeePerK()));
+    obj.pushKV("blockmintxfee", ValueFromAmount(Assert(node.mining_args.block_min_fee_rate)->GetFeePerK()));
     obj.pushKV("chain", chainman.GetParams().GetChainTypeString());
 
     UniValue next(UniValue::VOBJ);

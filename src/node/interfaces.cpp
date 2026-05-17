@@ -930,7 +930,6 @@ public:
                                                   m_node.mempool.get(),
                                                   m_block_template,
                                                   /*wait_options=*/options,
-                                                  /*mining_args=*/m_node.mining_args,
                                                   /*create_options=*/m_create_options,
                                                   /*interrupt_wait=*/m_interrupt_wait);
         if (new_template) return std::make_unique<BlockTemplateImpl>(m_create_options, std::move(new_template), m_node);
@@ -998,14 +997,13 @@ public:
             // Also wait during the final catch-up moments after IBD.
             if (!CooldownIfHeadersAhead(chainman(), notifications(), *maybe_tip, m_interrupt_mining)) return {};
         }
-        ApplyMiningDefaults(m_node.mining_args, options);
+        options = Merge(options, m_node.mining_args);
         return std::make_unique<BlockTemplateImpl>(options,
                                                    BlockAssembler{
                                                        chainman().ActiveChainstate(),
                                                        context()->mempool.get(),
-                                                       context()->mining_args,
                                                        options,
-                                                    }.CreateNewBlock(),
+                                                   }.CreateNewBlock(),
                                                    m_node);
     }
 

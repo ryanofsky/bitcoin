@@ -1075,7 +1075,7 @@ bool AppInitParameterInteraction(const ArgsManager& args)
         return InitError(Untranslated("peertimeout must be a positive integer."));
     }
 
-    node::MiningArgs mining_args_dummy;
+    node::BlockCreateOptions mining_args_dummy;
     auto mining_result{node::ReadMiningArgs(args, mining_args_dummy)};
     if (!mining_result) {
         return InitError(util::ErrorString(mining_result));

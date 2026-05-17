@@ -13,7 +13,6 @@
 #include <interfaces/types.h>
 #include <kernel/chainparams.h>
 #include <node/miner.h>
-#include <node/mining_args.h>
 #include <node/mining_types.h>
 #include <policy/feerate.h>
 #include <policy/policy.h>
@@ -200,7 +199,6 @@ void MinerTestingSetup::TestPackageSelection(const CScript& scriptPubKey, const 
         m_node.chainman->ActiveChainstate(),
         &tx_mempool,
         m_node.mining_args,
-        BlockCreateOptions{}
     }.CreateNewBlock()->m_package_feerates;
     BOOST_CHECK(block_package_feerates.size() == 2);
 
