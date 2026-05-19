@@ -94,7 +94,7 @@ util::Result<void> SetLoggingLevel(const ArgsManager& args)
                 if (!(toks.size() == 2 && LogInstance().SetCategoryLogLevel(toks[0], toks[1]))) {
                     return util::Error{strprintf(_("Unsupported category-specific logging level %1$s=%2$s. Expected %1$s=<category>:<loglevel>. Valid categories: %3$s. Valid loglevels: %4$s."), "-loglevel", token, LogInstance().LogCategoriesString(), LogInstance().LogLevelsString())};
                 }
-                if (const auto flag = GetLogCategory(toks[0])) {
+                if (const auto flag = BCLog::Logger::GetLogCategory(toks[0])) {
                     LogInstance().EnableCategory(*flag);
                 }
                 seen_per_category = true;
