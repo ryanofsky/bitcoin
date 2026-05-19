@@ -57,7 +57,7 @@ struct SourceLocationHasher {
 
 struct LogCategory {
     std::string category;
-    bool active;
+    BCLog::Level level;
 };
 
 namespace BCLog {

@@ -197,16 +197,89 @@ static RPCMethod getmemoryinfo()
     };
 }
 
-static void EnableOrDisableLogCategories(UniValue cats, bool enable) {
-    cats = cats.get_array();
-    for (unsigned int i = 0; i < cats.size(); ++i) {
-        std::string cat = cats[i].get_str();
-        const auto flag{GetLogCategory(cat)};
-        if (!flag) {
-            throw JSONRPCError(RPC_INVALID_PARAMETER, "unknown logging category " + cat);
-        }
-        LogInstance().SetCategoryLogLevel(*flag, enable ? BCLog::Level::Debug : BCLog::Level::Info);
+// Apply a list of (category flag, level) changes and update libevent logging if needed.
+static void UpdateLogCategories(std::vector<std::pair<BCLog::LogFlags, BCLog::Level>> changes)
+{
+    bool original_libevent = LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug);
+    for (const auto& [flag, level] : changes) {
+        LogInstance().SetCategoryLogLevel(flag, level);
     }
+    // Update libevent logging if BCLog::LIBEVENT has changed.
+    if (original_libevent != LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug)) {
+        UpdateHTTPServerLogging(LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug));
+    }
+}
+
+static RPCMethod loglevels()
+{
+    return RPCMethod{"loglevels",
+            "Gets and sets per-category log levels.\n"
+            "When called without an argument, returns all log categories with their current log level.\n"
+            "When called with a dictionary argument, sets the log level for each specified category,\n"
+            "then returns the updated state of all categories.\n"
+            "The valid logging categories are: " + LogInstance().LogCategoriesString() + "\n"
+            "The valid log levels are: " + LogInstance().LogLevelsString() + "\n"
+            "In addition, the following is available as a category name with special meaning:\n"
+            "  - \"all\" : set the level for all logging categories at once.\n"
+            "When \"all\" is specified alongside other categories, \"all\" is applied first so that\n"
+            "individual category overrides take effect.\n"
+            ,
+                {
+                    {"levels", RPCArg::Type::OBJ_USER_KEYS, RPCArg::Optional::OMITTED, "Category-to-level mapping. Omit to query without changing anything.",
+                        {
+                            {"category", RPCArg::Type::STR, RPCArg::Optional::NO, "log level (\"trace\", \"debug\", or \"info\") to set for the given category"},
+                        }},
+                },
+                RPCResult{
+                    RPCResult::Type::OBJ_DYN, "", "keys are the logging categories, values are their current log levels",
+                    {
+                        {RPCResult::Type::STR, "category", "current log level: \"trace\", \"debug\", or \"info\" (info means inactive)"},
+                    }
+                },
+                RPCExamples{
+                    HelpExampleCli("loglevels", "'{\"all\": \"debug\", \"net\": \"trace\"}'")
+            + HelpExampleRpc("loglevels", "{\"all\": \"debug\", \"net\": \"trace\"}")
+                },
+        [](const RPCMethod& self, const JSONRPCRequest& request) -> UniValue
+{
+    if (!request.params[0].isNull()) {
+        const UniValue& levels_obj = request.params[0].get_obj();
+
+        // Parse and validate all entries before applying any changes.
+        // Track whether "all" is present so it can be applied first.
+        std::optional<BCLog::Level> all_level;
+        std::vector<std::pair<BCLog::LogFlags, BCLog::Level>> changes;
+
+        for (const std::string& cat : levels_obj.getKeys()) {
+            const std::string level_str = levels_obj[cat].get_str();
+            const auto level = BCLog::Logger::GetLogLevel(level_str);
+            if (!level || *level > BCLog::UNCONDITIONAL_LOG_LEVEL) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "unknown log level \"" + level_str + "\". Valid values: " + LogInstance().LogLevelsString());
+            }
+            const auto flag = GetLogCategory(cat);
+            if (!flag) {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "unknown logging category \"" + cat + "\"");
+            }
+            if (*flag == BCLog::ALL) {
+                all_level = *level;
+            } else {
+                changes.emplace_back(*flag, *level);
+            }
+        }
+
+        // Apply "all" first so per-category overrides take effect after.
+        if (all_level) changes.emplace(changes.begin(), BCLog::ALL, *all_level);
+        UpdateLogCategories(std::move(changes));
+    }
+
+    UniValue result(UniValue::VOBJ);
+    for (const auto& logCat : LogInstance().LogCategoriesList()) {
+        result.pushKV(logCat.category, BCLog::Logger::LogLevelToStr(logCat.level));
+    }
+
+    return result;
+},
+    };
 }
 
 static RPCMethod logging()
@@ -220,6 +293,7 @@ static RPCMethod logging()
             "The valid logging categories are: " + LogInstance().LogCategoriesString() + "\n"
             "In addition, the following are available as category names with special meanings:\n"
             "  - \"all\",  \"1\" : represent all logging categories.\n"
+            "See also: the \"loglevels\" RPC, which provides a superset of functionality, allowing trace logs to be enabled in addition to debug logs.\n"
             ,
                 {
                     {"include", RPCArg::Type::ARR, RPCArg::Optional::OMITTED, "The categories to add to debug logging",
@@ -243,22 +317,22 @@ static RPCMethod logging()
                 },
         [](const RPCMethod& self, const JSONRPCRequest& request) -> UniValue
 {
-    bool original_libevent = LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug);
-    if (request.params[0].isArray()) {
-        EnableOrDisableLogCategories(request.params[0], true);
-    }
-    if (request.params[1].isArray()) {
-        EnableOrDisableLogCategories(request.params[1], false);
-    }
-
-    // Update libevent logging if BCLog::LIBEVENT has changed.
-    if (original_libevent != LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug)) {
-        UpdateHTTPServerLogging(LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug));
-    }
+    std::vector<std::pair<BCLog::LogFlags, BCLog::Level>> changes;
+    auto parse_categories = [&](const UniValue& cats, BCLog::Level level) {
+        for (const UniValue& cat_val : cats.get_array().getValues()) {
+            const std::string cat = cat_val.get_str();
+            const auto flag{GetLogCategory(cat)};
+            if (!flag) throw JSONRPCError(RPC_INVALID_PARAMETER, "unknown logging category " + cat);
+            changes.emplace_back(*flag, level);
+        }
+    };
+    if (request.params[0].isArray()) parse_categories(request.params[0], BCLog::Level::Debug);
+    if (request.params[1].isArray()) parse_categories(request.params[1], BCLog::Level::Info);
+    UpdateLogCategories(std::move(changes));
 
     UniValue result(UniValue::VOBJ);
-    for (const auto& logCatActive : LogInstance().LogCategoriesList()) {
-        result.pushKV(logCatActive.category, logCatActive.active);
+    for (const auto& logCat : LogInstance().LogCategoriesList()) {
+        result.pushKV(logCat.category, logCat.level < BCLog::Level::Info);
     }
 
     return result;
@@ -407,6 +481,7 @@ void RegisterNodeRPCCommands(CRPCTable& t)
 {
     static const CRPCCommand commands[]{
         {"control", &getmemoryinfo},
+        {"control", &loglevels},
         {"control", &logging},
         {"util", &getindexinfo},
         {"hidden", &setmocktime},
