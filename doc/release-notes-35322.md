@@ -1,3 +1,21 @@
+RPC
+---
+- Categories enabled at runtime via the `logging` RPC are now always enabled
+  at `debug` level, even if `-loglevel=trace` was set at startup.
+  A new `loglevels` RPC can be used to enable `trace` logging at runtime.
+
+- The `logging` RPC now checks category names earlier, so if any invalid
+  categories are specified, no changes will be applied, rather than being
+  partially applied.
+
+- A new `loglevels` RPC has been added, which provides a superset of
+  functionality of the `logging` RPC, and allows enabling `trace` logs as well
+  as `debug` logs. When called without arguments, it returns all categories with
+  their current level. When called with a `{category: level}` dictionary, it sets
+  the specified levels and returns the updated state. The special key `"all"`
+  sets the level for every category at once; when combined with per-category
+  keys, `"all"` is applied first so individual overrides take effect.
+
 Logging
 -------
 
@@ -15,9 +33,3 @@ Logging
 - Fixed a bug where `-loglevel=qt:debug` was silently ignored. Log categories
   with short names (such as `qt`, which is two characters) were incorrectly
   treated as invalid global level strings and rejected without an error message.
-
-- Categories enabled at runtime via the `logging` RPC are now always enabled
-  at debug level, regardless of whether `-loglevel=trace` was set at startup.
-  In practice this only matters if you use the `logging` RPC to enable a
-  category that has trace-level messages you want to see, in which case you
-  will still need to start the node with `-loglevel=<category>:trace`.

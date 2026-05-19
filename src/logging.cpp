@@ -269,7 +269,14 @@ std::vector<LogCategory> BCLog::Logger::LogCategoriesList() const
     std::vector<LogCategory> ret;
     ret.reserve(LOG_CATEGORIES_BY_STR.size());
     for (const auto& [category, flag] : LOG_CATEGORIES_BY_STR) {
-        ret.push_back(LogCategory{.category = category, .active = WillLogCategoryLevel(flag, BCLog::Level::Debug)});
+        BCLog::Level level = BCLog::Level::Info;
+        for (BCLog::Level l : {BCLog::Level::Trace, BCLog::Level::Debug}) {
+            if (WillLogCategoryLevel(flag, l)) {
+                level = l;
+                break;
+            }
+        }
+        ret.push_back(LogCategory{.category = category, .level = level});
     }
     return ret;
 }
