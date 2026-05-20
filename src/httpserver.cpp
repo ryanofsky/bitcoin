@@ -387,7 +387,7 @@ bool InitHTTPServer(const util::SignalInterrupt& interrupt)
     // Redirect libevent's logging to our own log
     event_set_log_callback(&libevent_log_cb);
     // Update libevent's log handling.
-    UpdateHTTPServerLogging(LogInstance().WillLogCategory(BCLog::LIBEVENT));
+    UpdateHTTPServerLogging(LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug));
 
 #ifdef WIN32
     evthread_use_windows_threads();

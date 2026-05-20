@@ -22,7 +22,6 @@ using util::Join;
 using util::RemovePrefixView;
 
 const char * const DEFAULT_DEBUGLOGFILE = "debug.log";
-constexpr auto MAX_USER_SETABLE_SEVERITY_LEVEL{BCLog::Level::Info};
 
 BCLog::Logger& LogInstance()
 {
@@ -126,45 +125,10 @@ void BCLog::Logger::DisableLogging()
     StartLogging();
 }
 
-void BCLog::Logger::EnableCategory(BCLog::LogFlags flag)
+void BCLog::Logger::SetCategoryLogLevel(CategoryMask category, BCLog::Level level)
 {
-    m_categories |= flag;
-}
-
-bool BCLog::Logger::EnableCategory(std::string_view str)
-{
-    if (const auto flag{GetLogCategory(str)}) {
-        EnableCategory(*flag);
-        return true;
-    }
-    return false;
-}
-
-void BCLog::Logger::DisableCategory(BCLog::LogFlags flag)
-{
-    m_categories &= ~flag;
-}
-
-bool BCLog::Logger::DisableCategory(std::string_view str)
-{
-    if (const auto flag{GetLogCategory(str)}) {
-        DisableCategory(*flag);
-        return true;
-    }
-    return false;
-}
-
-bool BCLog::Logger::WillLogCategory(BCLog::LogFlags category) const
-{
-    return (m_categories.load(std::memory_order_relaxed) & category) != 0;
-}
-
-void BCLog::Logger::AddCategoryLogLevel(BCLog::LogFlags category, BCLog::Level level)
-{
-    // Store the exact level override for this category (non-cumulative: each category
-    // appears in at most one m_levels entry).
     for (size_t i = 0; i < m_levels.size(); ++i) {
-        if (static_cast<BCLog::Level>(i) == level) {
+        if (level <= static_cast<BCLog::Level>(i)) {
             m_levels[i].fetch_or(category, std::memory_order_relaxed);
         } else {
             m_levels[i].fetch_and(~category, std::memory_order_relaxed);
@@ -177,24 +141,7 @@ bool BCLog::Logger::WillLogCategoryLevel(BCLog::LogFlags category, BCLog::Level 
     // Log messages at Info, Warning and Error level unconditionally, so that
     // important troubleshooting information doesn't get lost.
     if (level >= BCLog::UNCONDITIONAL_LOG_LEVEL) return true;
-
-    if (!WillLogCategory(category)) return false;
-
-    // Check for a category-specific level override in m_levels.
-    for (size_t i = 0; i < m_levels.size(); ++i) {
-        if (m_levels[i].load(std::memory_order_relaxed) & category) {
-            // Category has an explicit override at Level(i); log iff level >= Level(i).
-            return level >= static_cast<BCLog::Level>(i);
-        }
-    }
-
-    // No override: fall back to the global log level.
-    return level >= m_log_level.load();
-}
-
-bool BCLog::Logger::DefaultShrinkDebugFile() const
-{
-    return m_categories == BCLog::NONE;
+    return (m_levels[static_cast<size_t>(level)].load(std::memory_order_relaxed) & category) != 0;
 }
 
 BCLog::Logger::LogLevels BCLog::Logger::GetLogLevels() const
@@ -300,7 +247,7 @@ static std::string LogCategoryToStr(BCLog::LogFlags category)
     return it->second;
 }
 
-static std::optional<BCLog::Level> GetLogLevel(std::string_view level_str)
+std::optional<BCLog::Level> BCLog::Logger::GetLogLevel(std::string_view level_str)
 {
     if (level_str == "trace") {
         return BCLog::Level::Trace;
@@ -322,7 +269,7 @@ std::vector<LogCategory> BCLog::Logger::LogCategoriesList() const
     std::vector<LogCategory> ret;
     ret.reserve(LOG_CATEGORIES_BY_STR.size());
     for (const auto& [category, flag] : LOG_CATEGORIES_BY_STR) {
-        ret.push_back(LogCategory{.category = category, .active = WillLogCategory(flag)});
+        ret.push_back(LogCategory{.category = category, .active = WillLogCategoryLevel(flag, BCLog::Level::Debug)});
     }
     return ret;
 }
@@ -620,23 +567,15 @@ bool BCLog::LogRateLimiter::Stats::Consume(uint64_t bytes)
     return true;
 }
 
-bool BCLog::Logger::SetLogLevel(std::string_view level_str)
-{
-    const auto level = GetLogLevel(level_str);
-    if (!level.has_value() || level.value() > MAX_USER_SETABLE_SEVERITY_LEVEL) return false;
-    m_log_level = level.value();
-    return true;
-}
-
 bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::string_view level_str)
 {
     const auto flag{GetLogCategory(category_str)};
     if (!flag) return false;
 
     const auto level = GetLogLevel(level_str);
-    if (!level.has_value() || level.value() > MAX_USER_SETABLE_SEVERITY_LEVEL) return false;
+    if (!level.has_value() || level.value() > BCLog::UNCONDITIONAL_LOG_LEVEL) return false;
 
-    AddCategoryLogLevel(*flag, level.value());
+    SetCategoryLogLevel(*flag, level.value());
     return true;
 }
 
