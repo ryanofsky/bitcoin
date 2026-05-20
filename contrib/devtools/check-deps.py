@@ -144,6 +144,8 @@ def main():
                         help="Show full dependency matrix")
     parser.add_argument("--show-suppressions", action="store_true",
                         help="Show suppress directives for each error")
+    parser.add_argument("--dump-transitive", action="store_true",
+                        help="Parse libraries.md and dump dependencies allowed via transitivity, then exit")
     args = parser.parse_args()
 
     build_dir = Path(args.build_dir)
@@ -156,6 +158,25 @@ def main():
     declared_deps = parse_library_deps(md_path)
     for lib in SUPPRESS_LIBS:
         del declared_deps[lib]
+
+    if args.dump_transitive:
+        print("Implicit transitive dependencies (allowed transitively, not declared directly):")
+        for consumer in sorted(declared_deps):
+            direct = declared_deps[consumer]
+            for provider in sorted(transitive_deps(consumer, declared_deps)):
+                if provider not in direct:
+                    print(f"  {consumer} -> {provider}")
+
+        print()
+        print("Redundant direct dependencies (declared in libraries.md but implied transitively via another path):")
+        for consumer in sorted(declared_deps):
+            direct = declared_deps[consumer]
+            for provider in sorted(direct):
+                # Check if provider is still reachable without the direct edge
+                reduced = {k: (v - {provider} if k == consumer else v) for k, v in declared_deps.items()}
+                if provider in transitive_deps(consumer, reduced):
+                    print(f"  {consumer} -> {provider}")
+        return
 
     # Derive expected library filenames from libraries.md
     lib_paths = {}
