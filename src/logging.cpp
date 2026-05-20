@@ -15,6 +15,7 @@
 #include <cstring>
 #include <map>
 #include <optional>
+#include <unordered_map>
 #include <utility>
 
 using util::Join;
@@ -158,22 +159,58 @@ bool BCLog::Logger::WillLogCategory(BCLog::LogFlags category) const
     return (m_categories.load(std::memory_order_relaxed) & category) != 0;
 }
 
+void BCLog::Logger::AddCategoryLogLevel(BCLog::LogFlags category, BCLog::Level level)
+{
+    // Store the exact level override for this category (non-cumulative: each category
+    // appears in at most one m_levels entry).
+    for (size_t i = 0; i < m_levels.size(); ++i) {
+        if (static_cast<BCLog::Level>(i) == level) {
+            m_levels[i].fetch_or(category, std::memory_order_relaxed);
+        } else {
+            m_levels[i].fetch_and(~category, std::memory_order_relaxed);
+        }
+    }
+}
+
 bool BCLog::Logger::WillLogCategoryLevel(BCLog::LogFlags category, BCLog::Level level) const
 {
     // Log messages at Info, Warning and Error level unconditionally, so that
     // important troubleshooting information doesn't get lost.
-    if (level >= BCLog::Level::Info) return true;
+    if (level >= BCLog::UNCONDITIONAL_LOG_LEVEL) return true;
 
     if (!WillLogCategory(category)) return false;
 
-    STDLOCK(m_cs);
-    const auto it{m_category_log_levels.find(category)};
-    return level >= (it == m_category_log_levels.end() ? LogLevel() : it->second);
+    // Check for a category-specific level override in m_levels.
+    for (size_t i = 0; i < m_levels.size(); ++i) {
+        if (m_levels[i].load(std::memory_order_relaxed) & category) {
+            // Category has an explicit override at Level(i); log iff level >= Level(i).
+            return level >= static_cast<BCLog::Level>(i);
+        }
+    }
+
+    // No override: fall back to the global log level.
+    return level >= m_log_level.load();
 }
 
 bool BCLog::Logger::DefaultShrinkDebugFile() const
 {
     return m_categories == BCLog::NONE;
+}
+
+BCLog::Logger::LogLevels BCLog::Logger::GetLogLevels() const
+{
+    LogLevels snapshot;
+    for (size_t i = 0; i < m_levels.size(); ++i) {
+        snapshot[i] = m_levels[i].load(std::memory_order_relaxed);
+    }
+    return snapshot;
+}
+
+void BCLog::Logger::SetLogLevels(const LogLevels& levels)
+{
+    for (size_t i = 0; i < m_levels.size(); ++i) {
+        m_levels[i].store(levels[i], std::memory_order_relaxed);
+    }
 }
 
 static const std::map<std::string, BCLog::LogFlags, std::less<>> LOG_CATEGORIES_BY_STR{
@@ -599,8 +636,7 @@ bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::stri
     const auto level = GetLogLevel(level_str);
     if (!level.has_value() || level.value() > MAX_USER_SETABLE_SEVERITY_LEVEL) return false;
 
-    STDLOCK(m_cs);
-    m_category_log_levels[*flag] = level.value();
+    AddCategoryLogLevel(*flag, level.value());
     return true;
 }
 
