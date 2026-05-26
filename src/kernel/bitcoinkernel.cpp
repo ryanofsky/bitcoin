@@ -981,7 +981,18 @@ bool ShouldDebugLog(Category /*category*/)
 
 bool ShouldTraceLog(Category /*category*/)
 {
+<<<<<<< HEAD
     return GetKernelLogger().ShouldLog(Level::Trace);
+||||||| parent of 6ba09f77d34 (logging refactor: replace AddCategoryLogLevel with SetCategoryLogLevel)
+    LOCK(cs_main);
+    if (category == btck_LogCategory_ALL) {
+        LogInstance().SetLogLevel(get_bclog_level(level));
+    }
+
+    LogInstance().AddCategoryLogLevel(get_bclog_flag(category), get_bclog_level(level));
+=======
+    LogInstance().SetCategoryLogLevel(get_bclog_flag(category), get_bclog_level(level));
+>>>>>>> 6ba09f77d34 (logging refactor: replace AddCategoryLogLevel with SetCategoryLogLevel)
 }
 
 void Log(Entry entry)
