@@ -750,16 +750,16 @@ BOOST_AUTO_TEST_CASE(logging_connection_tests)
 =======
     logging_set_options(logging_options);
 
-    // Behavior: logging_set_level_category does NOT enable the category; logging_enable_category
-    // is required separately. Enabling a category uses the previously-assigned level.
+    // Behavior: setting the level is sufficient to enable logging. No need for a separate enable call.
     logging_set_level_category(LogCategory::BENCH, LogLevel::TRACE_LEVEL);
-    BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::BENCH, BCLog::Level::Debug)); // not yet enabled
+    BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::BENCH, BCLog::Level::Trace)); // enabled at Trace
     logging_disable_category(LogCategory::BENCH);
     logging_enable_category(LogCategory::VALIDATION);
     logging_disable_category(LogCategory::VALIDATION);
 >>>>>>> 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
 
     {
+<<<<<<< HEAD
 <<<<<<< HEAD
         // At the default minimum level (INFO), the DEBUG entries are not delivered.
         Logger logger{std::make_unique<CountingLog>(messages, destroyed)};
@@ -770,9 +770,15 @@ BOOST_AUTO_TEST_CASE(logging_connection_tests)
         Logger logger_2{std::make_unique<TestLog>()};
 =======
         // Set level first, then enable: the category is enabled at the previously-assigned level (Trace).
+||||||| parent of 29736648761 (logging: replace m_categories/m_log_level/m_category_log_levels with m_levels array)
+        // Set level first, then enable: the category is enabled at the previously-assigned level (Trace).
+=======
+        // Set level first, then enable. Enabling is equivalent to setting debug level.
+>>>>>>> 29736648761 (logging: replace m_categories/m_log_level/m_category_log_levels with m_levels array)
         logging_set_level_category(LogCategory::KERNEL, LogLevel::TRACE_LEVEL);
         logging_enable_category(LogCategory::KERNEL);
-        BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::KERNEL, BCLog::Level::Trace));
+        BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::KERNEL, BCLog::Level::Trace));
+        BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::KERNEL, BCLog::Level::Debug));
         Logger logger{std::make_unique<TestLog>()};
         Logger logger_2{std::make_unique<TestLog>()};
 >>>>>>> 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
