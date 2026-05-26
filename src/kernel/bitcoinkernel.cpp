@@ -998,6 +998,18 @@ void Log(Entry entry)
 }
 } // namespace util::log
 
+<<<<<<< HEAD
+||||||| parent of 78225ec5f87 (logging refactor: replace DisableCategory with SetCategoryLogLevel)
+void btck_logging_disable_category(btck_LogCategory category)
+{
+    LogInstance().DisableCategory(get_bclog_flag(category));
+}
+=======
+void btck_logging_disable_category(btck_LogCategory category)
+{
+    LogInstance().SetCategoryLogLevel(get_bclog_flag(category), BCLog::Level::Info);
+}
+>>>>>>> 78225ec5f87 (logging refactor: replace DisableCategory with SetCategoryLogLevel)
 
 void btck_logging_set_min_level(btck_LogLevel level)
 {
