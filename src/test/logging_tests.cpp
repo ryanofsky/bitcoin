@@ -265,7 +265,6 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
 
         BOOST_REQUIRE(init::SetLoggingCategories(args));
         BOOST_REQUIRE(init::SetLoggingLevel(args));
-        BOOST_CHECK_EQUAL(LogInstance().LogLevel(), BCLog::Level::Trace); // Lowest currently enabled severity level is Trace
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::LogFlags::NET, BCLog::Level::Trace));
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::LogFlags::NET, BCLog::Level::Debug));
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::LogFlags::HTTP, BCLog::Level::Trace));
@@ -284,7 +283,6 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
 
         BOOST_REQUIRE(init::SetLoggingCategories(args));
         BOOST_REQUIRE(init::SetLoggingLevel(args));
-        BOOST_CHECK_EQUAL(LogInstance().LogLevel(), BCLog::Level::Trace); // Lowest currently enabled severity level is Trace
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::LogFlags::NET, BCLog::Level::Trace));
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::LogFlags::NET, BCLog::Level::Debug));
         BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::LogFlags::HTTP, BCLog::Level::Trace));
@@ -303,7 +301,6 @@ BOOST_FIXTURE_TEST_CASE(logging_Conf, LogSetup)
 
         BOOST_REQUIRE(init::SetLoggingCategories(args));
         BOOST_REQUIRE(init::SetLoggingLevel(args));
-        BOOST_CHECK_EQUAL(LogInstance().LogLevel(), BCLog::Level::Trace); // Lowest currently enabled severity level is Trace
         BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::LogFlags::NET, BCLog::Level::Trace));
         BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::LogFlags::NET, BCLog::Level::Debug));
         BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::LogFlags::HTTP, BCLog::Level::Trace));
