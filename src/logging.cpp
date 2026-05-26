@@ -22,7 +22,6 @@ using util::Join;
 using util::RemovePrefixView;
 
 const char * const DEFAULT_DEBUGLOGFILE = "debug.log";
-constexpr auto MAX_USER_SETABLE_SEVERITY_LEVEL{BCLog::Level::Info};
 
 BCLog::Logger& LogInstance()
 {
@@ -590,6 +589,7 @@ bool BCLog::LogRateLimiter::Stats::Consume(uint64_t bytes)
 }
 
 // Backwards-compatible wrapper. Removed in subsequent commit.
+<<<<<<< HEAD
 bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::string_view level_str)
 {
     const auto flag{GetLogCategory(category_str)};
@@ -610,6 +610,28 @@ BCLog::CategoryMask BCLog::Logger::GetCategoryMask() const
 }
 
 // Backwards-compatible wrapper. Removed in subsequent commit.
+||||||| parent of d16d663b5d6 (logging refactor: drop SetCategoryLogLevel(string_view))
+bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::string_view level_str)
+{
+    const auto flag{GetLogCategory(category_str)};
+    if (!flag) return false;
+
+    const auto level = GetLogLevel(level_str);
+    if (!level.has_value() || level.value() > MAX_USER_SETABLE_SEVERITY_LEVEL) return false;
+
+    SetCategoryLogLevel(GetCategoryMask() & *flag, level.value());
+    return true;
+}
+
+// Backwards-compatible wrapper. Removed in subsequent commit.
+BCLog::CategoryMask BCLog::Logger::GetCategoryMask() const
+{
+    return m_levels[static_cast<size_t>(BCLog::Level::Debug)].load(std::memory_order_relaxed);
+}
+
+// Backwards-compatible wrapper. Removed in subsequent commit.
+=======
+>>>>>>> d16d663b5d6 (logging refactor: drop SetCategoryLogLevel(string_view))
 BCLog::Level BCLog::Logger::LogLevel() const
 {
     // Return lowest currently-enabled severity level.
