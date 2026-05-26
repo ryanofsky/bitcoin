@@ -265,7 +265,6 @@ namespace BCLog {
         Level LogLevel() const;
         void SetLogLevel(Level level);
         bool SetLogLevel(std::string_view level);
-        bool DefaultShrinkDebugFile() const;
     };
 } // namespace BCLog
 
