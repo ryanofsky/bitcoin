@@ -588,6 +588,7 @@ bool BCLog::LogRateLimiter::Stats::Consume(uint64_t bytes)
     return true;
 }
 
+<<<<<<< HEAD
 // Backwards-compatible wrapper. Removed in subsequent commit.
 <<<<<<< HEAD
 bool BCLog::Logger::SetCategoryLogLevel(std::string_view category_str, std::string_view level_str)
@@ -640,6 +641,18 @@ BCLog::Level BCLog::Logger::LogLevel() const
     return static_cast<BCLog::Level>(i);
 }
 
+||||||| parent of 42d98b7aad1 (logging refactor: drop LogLevel)
+// Backwards-compatible wrapper. Removed in subsequent commit.
+BCLog::Level BCLog::Logger::LogLevel() const
+{
+    // Return lowest currently-enabled severity level.
+    size_t i = 0;
+    for (; i < m_levels.size() && !m_levels[i].load(std::memory_order_relaxed); ++i);
+    return static_cast<BCLog::Level>(i);
+}
+
+=======
+>>>>>>> 42d98b7aad1 (logging refactor: drop LogLevel)
 bool util::log::ShouldDebugLog(Category category)
 {
     return LogInstance().WillLogCategoryLevel(static_cast<BCLog::LogFlags>(category), util::log::Level::Debug);
