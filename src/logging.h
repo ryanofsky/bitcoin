@@ -265,7 +265,6 @@ namespace BCLog {
         bool WillLogCategory(LogFlags category) const;
         CategoryMask GetCategoryMask() const;
         bool SetCategoryLogLevel(std::string_view category_str, std::string_view level_str);
-        void AddCategoryLogLevel(LogFlags category, Level level) EXCLUSIVE_LOCKS_REQUIRED(!m_cs);
         Level LogLevel() const;
         void SetLogLevel(Level level);
         bool SetLogLevel(std::string_view level);
