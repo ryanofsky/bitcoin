@@ -986,9 +986,15 @@ bool ShouldTraceLog(Category /*category*/)
 
 void Log(Entry entry)
 {
+<<<<<<< HEAD
     // Conditional logging, because the util::log framework doesn't allow us to check if the
     // minimum level exceeds Info.
     GetKernelLogger().MaybeLog(entry);
+||||||| parent of 7e806e33f87 (logging refactor: replace EnableCategory with SetCategoryLogLevel)
+    LogInstance().EnableCategory(get_bclog_flag(category));
+=======
+    LogInstance().SetCategoryLogLevel(get_bclog_flag(category), BCLog::Level::Debug);
+>>>>>>> 7e806e33f87 (logging refactor: replace EnableCategory with SetCategoryLogLevel)
 }
 } // namespace util::log
 
