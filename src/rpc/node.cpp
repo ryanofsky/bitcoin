@@ -249,20 +249,17 @@ static RPCMethod logging()
                 },
         [](const RPCMethod& self, const JSONRPCRequest& request) -> UniValue
 {
-    BCLog::CategoryMask original_log_categories = LogInstance().GetCategoryMask();
+    bool original_libevent{LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug)};
     if (request.params[0].isArray()) {
         EnableOrDisableLogCategories(request.params[0], true);
     }
     if (request.params[1].isArray()) {
         EnableOrDisableLogCategories(request.params[1], false);
     }
-    BCLog::CategoryMask updated_log_categories = LogInstance().GetCategoryMask();
-    BCLog::CategoryMask changed_log_categories = original_log_categories ^ updated_log_categories;
 
     // Update libevent logging if BCLog::LIBEVENT has changed.
-    if (changed_log_categories & BCLog::LIBEVENT) {
-        UpdateHTTPServerLogging(LogInstance().WillLogCategory(BCLog::LIBEVENT));
-    }
+    bool is_libevent_enabled{LogInstance().WillLogCategoryLevel(BCLog::LIBEVENT, BCLog::Level::Debug)};
+    if (original_libevent != is_libevent_enabled) UpdateHTTPServerLogging(is_libevent_enabled);
 
     UniValue result(UniValue::VOBJ);
     for (const auto& logCatActive : LogInstance().LogCategoriesList()) {
