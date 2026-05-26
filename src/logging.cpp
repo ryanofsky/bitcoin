@@ -126,6 +126,7 @@ void BCLog::Logger::DisableLogging()
     StartLogging();
 }
 
+<<<<<<< HEAD
 // Backwards-compatible wrapper. Removed in subsequent commit.
 void BCLog::Logger::EnableCategory(BCLog::LogFlags flag)
 {
@@ -168,6 +169,41 @@ bool BCLog::Logger::DisableCategory(std::string_view str)
     return false;
 }
 
+||||||| parent of cd9c75f3dac (logging refactor: drop EnableCategory/DisableCategory)
+// Backwards-compatible wrapper. Removed in subsequent commit.
+void BCLog::Logger::EnableCategory(BCLog::LogFlags flag)
+{
+    SetCategoryLogLevel(flag, BCLog::Level::Debug);
+}
+
+// Backwards-compatible wrapper. Removed in subsequent commit.
+bool BCLog::Logger::EnableCategory(std::string_view str)
+{
+    if (const auto flag{GetLogCategory(str)}) {
+        EnableCategory(*flag);
+        return true;
+    }
+    return false;
+}
+
+// Backwards-compatible wrapper. Removed in subsequent commit.
+void BCLog::Logger::DisableCategory(BCLog::LogFlags flag)
+{
+    SetCategoryLogLevel(flag, BCLog::Level::Info);
+}
+
+// Backwards-compatible wrapper. Removed in subsequent commit.
+bool BCLog::Logger::DisableCategory(std::string_view str)
+{
+    if (const auto flag{GetLogCategory(str)}) {
+        DisableCategory(*flag);
+        return true;
+    }
+    return false;
+}
+
+=======
+>>>>>>> cd9c75f3dac (logging refactor: drop EnableCategory/DisableCategory)
 void BCLog::Logger::SetCategoryLogLevel(CategoryMask category, BCLog::Level level)
 {
     // Enable the category at the requested level and all more-severe levels,
