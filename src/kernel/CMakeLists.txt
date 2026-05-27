@@ -108,6 +108,14 @@ target_link_libraries(bitcoinkernel
 
 target_include_directories(bitcoinkernel PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/leveldb/include>)
 
+# logging.cpp symbols (LogInstance, WillLogCategoryLevel, etc.) are needed by
+# test_kernel for behavioral assertions. When REDUCE_EXPORTS=ON, the global
+# -fvisibility=hidden setting would hide them from the shared library; override
+# it here so they remain accessible. This only affects the kernel build scope.
+if(NOT MSVC)
+  set_source_files_properties(../logging.cpp PROPERTIES COMPILE_OPTIONS "-fvisibility=default")
+endif()
+
 # Add a convenience libbitcoinkernel target as a synonym for bitcoinkernel.
 add_custom_target(libbitcoinkernel)
 add_dependencies(libbitcoinkernel bitcoinkernel)
