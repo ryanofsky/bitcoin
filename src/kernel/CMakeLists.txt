@@ -108,6 +108,19 @@ target_link_libraries(bitcoinkernel
 
 target_include_directories(bitcoinkernel PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/leveldb/include>)
 
+# Make logging symbols visible so test_kernel can verify logging behavior
+# without link errors when building a DLL or when REDUCE_EXPORTS=ON. Can be
+# removed once the kernel logging API is simplified (#34374) to no longer
+# require special test coverage.
+if(BUILD_SHARED_LIBS AND MINGW)
+  target_link_options(bitcoinkernel PRIVATE
+    "-Wl,--export-dynamic-symbol=_Z11LogInstancev"
+    "-Wl,--export-dynamic-symbol=_ZNK5BCLog6Logger20WillLogCategoryLevelENS_8LogFlagsEN4util3log5LevelE"
+  )
+elseif(NOT MSVC)
+  set_source_files_properties(../logging.cpp PROPERTIES COMPILE_OPTIONS "-fvisibility=default")
+endif()
+
 # Add a convenience libbitcoinkernel target as a synonym for bitcoinkernel.
 add_custom_target(libbitcoinkernel)
 add_dependencies(libbitcoinkernel bitcoinkernel)
