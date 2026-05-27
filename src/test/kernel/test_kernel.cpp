@@ -4,6 +4,7 @@
 
 #include <kernel/bitcoinkernel.h>
 #include <kernel/bitcoinkernel_wrapper.h>
+#include <logging.h>
 #include <util/byte_units.h>
 #include <util/fs.h>
 
@@ -703,9 +704,29 @@ BOOST_AUTO_TEST_CASE(btck_script_verify_tests)
 //! the user_data_destroy_callback when the connection is destroyed.
 class CountingLog
 {
+<<<<<<< HEAD
     std::map<std::string, int>& m_messages;
     int& m_destroyed;
+||||||| parent of 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
+    btck_LoggingOptions logging_options = {
+        .log_timestamps = true,
+        .log_time_micros = true,
+        .log_threadnames = false,
+        .log_sourcelocations = false,
+        .always_print_category_levels = true,
+    };
+=======
+    using btck::LogCategory; // Avoid ambiguity with LogCategory struct from logging.h
+    btck_LoggingOptions logging_options = {
+        .log_timestamps = true,
+        .log_time_micros = true,
+        .log_threadnames = false,
+        .log_sourcelocations = false,
+        .always_print_category_levels = true,
+    };
+>>>>>>> 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
 
+<<<<<<< HEAD
 public:
     CountingLog(std::map<std::string, int>& messages, int& destroyed)
         : m_messages{messages}, m_destroyed{destroyed} {}
@@ -720,10 +741,41 @@ BOOST_AUTO_TEST_CASE(logging_connection_tests)
     std::map<std::string, int> messages;
     int destroyed{0};
     logging_set_min_level(LogLevel::INFO_LEVEL);
+||||||| parent of 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
+    logging_set_options(logging_options);
+    logging_set_level_category(LogCategory::BENCH, LogLevel::TRACE_LEVEL);
+    logging_disable_category(LogCategory::BENCH);
+    logging_enable_category(LogCategory::VALIDATION);
+    logging_disable_category(LogCategory::VALIDATION);
+=======
+    logging_set_options(logging_options);
+
+    // Behavior: logging_set_level_category does NOT enable the category; logging_enable_category
+    // is required separately. Enabling a category uses the previously-assigned level.
+    logging_set_level_category(LogCategory::BENCH, LogLevel::TRACE_LEVEL);
+    BOOST_CHECK(!LogInstance().WillLogCategoryLevel(BCLog::BENCH, BCLog::Level::Debug)); // not yet enabled
+    logging_disable_category(LogCategory::BENCH);
+    logging_enable_category(LogCategory::VALIDATION);
+    logging_disable_category(LogCategory::VALIDATION);
+>>>>>>> 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
 
     {
+<<<<<<< HEAD
         // At the default minimum level (INFO), the DEBUG entries are not delivered.
         Logger logger{std::make_unique<CountingLog>(messages, destroyed)};
+||||||| parent of 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
+        logging_set_level_category(LogCategory::KERNEL, LogLevel::TRACE_LEVEL);
+        logging_enable_category(LogCategory::KERNEL);
+        Logger logger{std::make_unique<TestLog>()};
+        Logger logger_2{std::make_unique<TestLog>()};
+=======
+        // Set level first, then enable: the category is enabled at the previously-assigned level (Trace).
+        logging_set_level_category(LogCategory::KERNEL, LogLevel::TRACE_LEVEL);
+        logging_enable_category(LogCategory::KERNEL);
+        BOOST_CHECK(LogInstance().WillLogCategoryLevel(BCLog::KERNEL, BCLog::Level::Trace));
+        Logger logger{std::make_unique<TestLog>()};
+        Logger logger_2{std::make_unique<TestLog>()};
+>>>>>>> 47fba16a23c (logging test: add behavior assertions to kernel logging_tests)
     }
     BOOST_CHECK(messages.empty());
     BOOST_CHECK_EQUAL(destroyed, 1);
