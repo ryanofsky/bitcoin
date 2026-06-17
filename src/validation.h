@@ -1007,6 +1007,30 @@ public:
     const CChainParams& GetParams() const { return m_options.chainparams; }
     const Consensus::Params& GetConsensus() const { return m_options.chainparams.GetConsensus(); }
     bool ShouldCheckBlockIndex() const;
+
+    /**
+     * Return the current time for use in validation and IBD checks. Uses a
+     * mock value if one has been set via SetMockTime, otherwise the real clock.
+     * Prefer this over NodeClock::now() in all validation paths so that kernel
+     * library users can control time without touching global state.
+     */
+    NodeSeconds Now() const
+    {
+        const auto mock{m_mock_now_seconds.load(std::memory_order_relaxed)};
+        return mock != std::chrono::seconds{0} ? NodeSeconds{mock} : ::Now<NodeSeconds>();
+    }
+
+    /**
+     * Override the current time used by this chainstate manager. Affects the
+     * future-time block header check, the IBD latch, and progress estimates.
+     * Pass std::nullopt to restore real-time behavior.
+     * Safe to call concurrently with Now().
+     */
+    void SetMockTime(std::optional<NodeSeconds> now)
+    {
+        m_mock_now_seconds.store(now ? now->time_since_epoch() : std::chrono::seconds{0},
+                                 std::memory_order_relaxed);
+    }
     const arith_uint256& MinimumChainWork() const { return *Assert(m_options.minimum_chain_work); }
     const uint256& AssumedValidBlock() const { return *Assert(m_options.assumed_valid_block); }
     kernel::Notifications& GetNotifications() const { return m_options.notifications; };
@@ -1047,6 +1071,13 @@ public:
      * enough work and is recent.
      */
     std::atomic_bool m_cached_is_ibd{true};
+
+    /**
+     * Mock time for testing, scoped to this chainstate manager.
+     * Zero means "use the real clock"; any other value is seconds since epoch.
+     * Stored as an atomic so Now() can be called lock-free from any thread.
+     */
+    std::atomic<std::chrono::seconds> m_mock_now_seconds{};
 
     /**
      * Every received block is assigned a unique and increasing identifier, so we
