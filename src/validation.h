@@ -1012,6 +1012,21 @@ public:
     kernel::Notifications& GetNotifications() const { return m_options.notifications; };
 
     /**
+     * Return the current time for use in validation and IBD checks. Uses the
+     * mock value from m_options.mock_time if set and non-zero, otherwise the
+     * real clock. Prefer this over NodeClock::now() in validation paths so
+     * callers can control time without touching global state.
+     */
+    NodeSeconds Now() const
+    {
+        if (const auto* p{m_options.mock_time}) {
+            const auto t{p->load(std::memory_order_relaxed)};
+            if (t != std::chrono::seconds{0}) return NodeSeconds{t};
+        }
+        return ::Now<NodeSeconds>();
+    }
+
+    /**
      * Make various assertions about the state of the block index.
      *
      * By default this only executes fully when using the Regtest chain; see: m_options.check_block_index.

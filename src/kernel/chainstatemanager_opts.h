@@ -14,6 +14,8 @@
 #include <uint256.h>
 #include <util/time.h>
 
+#include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -48,6 +50,11 @@ struct ChainstateManagerOpts {
     int worker_threads_num{0};
     size_t script_execution_cache_bytes{DEFAULT_SCRIPT_EXECUTION_CACHE_BYTES};
     size_t signature_cache_bytes{DEFAULT_SIGNATURE_CACHE_BYTES};
+    //! If non-null, pointer to an atomic seconds-since-epoch value used by
+    //! ChainstateManager::Now() to override the current time in validation
+    //! paths. Zero means "use the real clock". Owned by the caller (e.g.
+    //! NodeContext or the kernel library's Context); must outlive the manager.
+    std::atomic<std::chrono::seconds>* mock_time{nullptr};
 };
 
 } // namespace kernel

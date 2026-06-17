@@ -39,10 +39,13 @@
 #include <validation.h>
 #include <validationinterface.h>
 
+#include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstring>
 #include <exception>
 #include <functional>
+#include <limits>
 #include <list>
 #include <memory>
 #include <span>
@@ -407,6 +410,11 @@ public:
 
     std::shared_ptr<KernelValidationInterface> m_validation_interface;
 
+    //! Mock time for testing. Zero means "use the real clock". When non-zero,
+    //! ChainstateManager::Now() returns this value instead of NodeClock::now()
+    //! for all chainstate managers created from this context.
+    mutable std::atomic<std::chrono::seconds> m_mock_time{};
+
     Context(const ContextOptions* options, bool& sane)
         : m_context{std::make_unique<kernel::Context>()},
           m_interrupt{std::make_unique<util::SignalInterrupt>()}
@@ -460,7 +468,8 @@ struct ChainstateManagerOptions {
               .chainparams = *context->m_chainparams,
               .datadir = data_dir,
               .notifications = *context->m_notifications,
-              .signals = context->m_signals.get()}},
+              .signals = context->m_signals.get(),
+              .mock_time = &context->m_mock_time}},
           m_blockman_options{node::BlockManager::Options{
               .chainparams = *context->m_chainparams,
               .blocks_dir = blocks_dir,
@@ -892,6 +901,15 @@ int btck_context_interrupt(btck_Context* context)
 void btck_context_destroy(btck_Context* context)
 {
     delete context;
+}
+
+int btck_context_set_mock_time(btck_Context* context, int64_t now_seconds)
+{
+    constexpr int64_t max_time{std::numeric_limits<uint32_t>::max()};
+    if (now_seconds < 0 || now_seconds > max_time) return -1;
+    btck_Context::get(context)->m_mock_time.store(std::chrono::seconds{now_seconds},
+                                                  std::memory_order_relaxed);
+    return 0;
 }
 
 const btck_BlockTreeEntry* btck_block_tree_entry_get_previous(const btck_BlockTreeEntry* entry)

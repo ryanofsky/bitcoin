@@ -1348,6 +1348,7 @@ static ChainstateLoadResult InitAndLoadChainstate(
         .datadir = args.GetDataDirNet(),
         .notifications = *node.notifications,
         .signals = node.validation_signals.get(),
+        .mock_time = &node.mock_time,
     };
     Assert(ApplyArgsManOptions(args, chainman_opts)); // no error can happen, already checked in AppInitParameterInteraction
 

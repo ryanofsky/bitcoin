@@ -1073,6 +1073,23 @@ BITCOINKERNEL_API int BITCOINKERNEL_WARN_UNUSED_RESULT btck_context_interrupt(
  */
 BITCOINKERNEL_API void btck_context_destroy(btck_Context* context);
 
+/**
+ * @brief Override the current time used by all chainstate managers created
+ * from this context. Affects time-sensitive validation paths:
+ * - @ref btck_chainstate_manager_process_block_header: future-time check
+ * - IBD latch (IsTipRecent) and verification progress estimates
+ *
+ * Pass 0 to restore real-time behavior.
+ *
+ * @param[in] context     Non-null.
+ * @param[in] now_seconds Seconds since epoch in [1, 4294967295], or 0 to
+ *                        restore the real clock.
+ * @return                0 on success, non-zero if out of range.
+ */
+BITCOINKERNEL_API int BITCOINKERNEL_WARN_UNUSED_RESULT btck_context_set_mock_time(
+    btck_Context* context,
+    int64_t now_seconds) BITCOINKERNEL_ARG_NONNULL(1);
+
 ///@}
 
 /** @name BlockTreeEntry

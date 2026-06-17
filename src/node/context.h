@@ -8,6 +8,7 @@
 #include <node/mining_types.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstdlib>
 #include <functional>
 #include <memory>
@@ -96,6 +97,10 @@ struct NodeContext {
     //! Issues calls about blocks and transactions
     std::unique_ptr<ValidationSignals> validation_signals;
     std::atomic<int> exit_status{EXIT_SUCCESS};
+    //! Mock time for testing. Zero means "use the real clock". When non-zero,
+    //! ChainstateManager::Now() returns this value instead of NodeClock::now().
+    //! Requires chainman_opts.mock_time = &mock_time when creating ChainstateManager.
+    std::atomic<std::chrono::seconds> mock_time{};
     //! Manages all the node warnings
     std::unique_ptr<node::Warnings> warnings;
     std::thread background_init_thread;

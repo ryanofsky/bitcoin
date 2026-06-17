@@ -8,6 +8,7 @@
 #include <kernel/bitcoinkernel.h>
 
 #include <array>
+#include <chrono>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -1127,6 +1128,18 @@ public:
     bool interrupt()
     {
         return btck_context_interrupt(get()) == 0;
+    }
+
+    /**
+     * Override the current time for all chainstate managers created from this
+     * context. Pass std::nullopt to restore real-time behavior.
+     * @throws std::runtime_error if now is out of the valid range.
+     */
+    void SetMockTime(std::optional<std::chrono::seconds> now)
+    {
+        if (btck_context_set_mock_time(get(), now ? now->count() : 0) != 0) {
+            throw std::runtime_error("timestamp out of range");
+        }
     }
 };
 
