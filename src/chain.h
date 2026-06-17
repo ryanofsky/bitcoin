@@ -428,12 +428,12 @@ public:
     }
 
     /** Check whether this chain's tip exists, has enough work, and is recent. */
-    bool IsTipRecent(const arith_uint256& min_chain_work, std::chrono::seconds max_tip_age) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
+    bool IsTipRecent(const arith_uint256& min_chain_work, std::chrono::seconds max_tip_age, NodeClock::time_point now) const EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
         const auto tip{Tip()};
         return tip &&
                tip->nChainWork >= min_chain_work &&
-               tip->Time() >= Now<NodeSeconds>() - max_tip_age;
+               tip->Time() >= now - max_tip_age;
     }
 
     /** Set/initialize a chain with a given tip. */
