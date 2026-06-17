@@ -8,6 +8,7 @@
 #include <kernel/bitcoinkernel.h>
 
 #include <array>
+#include <chrono>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -1319,9 +1320,10 @@ public:
         return res == 0;
     }
 
-    BlockValidationState ProcessBlockHeader(const BlockHeader& header)
+    BlockValidationState ProcessBlockHeader(const BlockHeader& header, std::optional<std::chrono::seconds> now = std::nullopt)
     {
-        auto state = btck_chainstate_manager_process_block_header(get(), header.get());
+        int64_t now_seconds{now ? now->count() : 0};
+        auto state = btck_chainstate_manager_process_block_header(get(), header.get(), now_seconds);
         return BlockValidationState{state};
     }
 

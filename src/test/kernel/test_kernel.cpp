@@ -1386,3 +1386,30 @@ BOOST_AUTO_TEST_CASE(btck_transaction_check_tests)
         "ffffffff00ffffffff000100000000000000000000000000000000000000000000000000000000"
         "00000000000000ffffffff010000000000000000015100000000");
 }
+
+BOOST_AUTO_TEST_CASE(btck_process_block_header_explicit_time_tests)
+{
+    // Confirm that passing explicit time to ProcessBlockHeader controls the
+    // future-time check without touching any global state.
+    auto test_directory{TestDirectory{"explicit_time_test_bitcoin_kernel"}};
+    auto notifications{std::make_shared<TestKernelNotifications>()};
+    auto context{create_context(notifications, ChainType::REGTEST)};
+    auto chainman{create_chainman(
+        test_directory, /*reindex=*/false, /*wipe_chainstate=*/false,
+        /*block_tree_db_in_memory=*/true, /*chainstate_db_in_memory=*/true, context)};
+
+    Block block{hex_string_to_byte_vec(REGTEST_BLOCK_DATA[0])};
+    BlockHeader header{block.GetHeader()};
+    const std::chrono::seconds block_time{header.Timestamp()};
+
+    // With the time set 3h before the header, the kernel must see the header as >2h in the future and reject it
+    BlockValidationState future_state{chainman->ProcessBlockHeader(header, block_time - std::chrono::hours{3})};
+    BOOST_CHECK(future_state.GetValidationMode() == ValidationMode::INVALID);
+    BOOST_CHECK(future_state.GetBlockValidationResult() == BlockValidationResult::TIME_FUTURE);
+
+    // At the upper bound the header is far in the past and must be accepted.
+    constexpr std::chrono::seconds max_time{std::numeric_limits<uint32_t>::max()};
+    BlockValidationState ok_state{chainman->ProcessBlockHeader(header, max_time)};
+    BOOST_CHECK(ok_state.GetValidationMode() == ValidationMode::VALID);
+    BOOST_CHECK(ok_state.GetBlockValidationResult() == BlockValidationResult::UNSET);
+}

@@ -1251,11 +1251,15 @@ BITCOINKERNEL_API const btck_BlockTreeEntry* btck_chainstate_manager_get_best_en
  *
  * @param[in] chainstate_manager        Non-null.
  * @param[in] header                    Non-null btck_BlockHeader to be validated.
+ * @param[in] now_seconds               The current time as Unix epoch seconds, used for the
+ *                                      block header future-time check and IBD progress
+ *                                      estimates. Pass 0 to use the system clock.
  * @return                              The btck_BlockValidationState containing validation result, or null on error.
  */
 BITCOINKERNEL_API btck_BlockValidationState* BITCOINKERNEL_WARN_UNUSED_RESULT btck_chainstate_manager_process_block_header(
     btck_ChainstateManager* chainstate_manager,
-    const btck_BlockHeader* header) BITCOINKERNEL_ARG_NONNULL(1, 2);
+    const btck_BlockHeader* header,
+    int64_t now_seconds) BITCOINKERNEL_ARG_NONNULL(1, 2);
 
 /**
  * @brief Triggers the start of a reindex if the wipe options were previously
