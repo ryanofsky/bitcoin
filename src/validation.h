@@ -1017,7 +1017,7 @@ public:
     NodeSeconds Now() const
     {
         const auto clock{m_clock_now_seconds.load(std::memory_order_relaxed)};
-        return clock != std::chrono::seconds{0} ? NodeSeconds{clock} : std::chrono::time_point_cast<std::chrono::seconds>(NodeClock::now());
+        return clock != std::chrono::seconds{0} ? NodeSeconds{clock} : std::chrono::time_point_cast<std::chrono::seconds>(NodeClock::now_global());
     }
 
     const arith_uint256& MinimumChainWork() const { return *Assert(m_options.minimum_chain_work); }

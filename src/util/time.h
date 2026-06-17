@@ -26,7 +26,13 @@ using namespace std::chrono_literals;
 /// FakeNodeClock or ::SetMockTime), otherwise the system clock.
 struct NodeClock : public std::chrono::system_clock {
     using time_point = std::chrono::time_point<NodeClock>;
-    /** Return current system time or mocked time, if set */
+    /** Return current system time or mocked time if set via SetMockTime.
+     *  Reads global g_mock_time state; call this only when explicitly intending
+     *  to read global mock state. Defined in time.cpp (linked into bitcoinkernel). */
+    static time_point now_global() noexcept;
+    /** Return current system time or mocked time, if set.
+     *  Defined in time_global.cpp; not linked into bitcoinkernel, so calls from
+     *  libbitcoinkernel source files produce a link error by design. */
     static time_point now() noexcept;
     static std::time_t to_time_t(const time_point&) = delete; // unused
     static time_point from_time_t(std::time_t) = delete;      // unused
@@ -50,7 +56,12 @@ struct MockableSteadyClock : public std::chrono::steady_clock {
     using mock_time_point = std::chrono::time_point<MockableSteadyClock, std::chrono::milliseconds>;
     static constexpr mock_time_point::duration INITIAL_MOCK_TIME{1};
 
-    /** Return current system time or mocked time, if set */
+    /** Return current system steady time or mocked time if set via SetMockTime.
+     *  Reads global g_mock_steady_time state; call this only when explicitly
+     *  intending to read global mock state. Defined in time.cpp. */
+    static time_point now_global() noexcept;
+    /** Return current system steady time or mocked time, if set.
+     *  Defined in time_global.cpp; not linked into bitcoinkernel. */
     static time_point now() noexcept;
     static std::time_t to_time_t(const time_point&) = delete; // unused
     static time_point from_time_t(std::time_t) = delete;      // unused
@@ -65,6 +76,13 @@ struct MockableSteadyClock : public std::chrono::steady_clock {
     /** Clear mock time, go back to system steady clock. */
     static void ClearMockTime();
 };
+
+/** Convert a time point into a duration of specified precision. */
+template <typename Duration, typename Timepoint>
+constexpr auto DurationSinceEpoch(Timepoint t)
+{
+    return std::chrono::duration_cast<Duration>(t.time_since_epoch());
+}
 
 void UninterruptibleSleep(const std::chrono::microseconds& n);
 
@@ -142,6 +160,7 @@ T GetTime()
 {
     return Now<std::chrono::time_point<NodeClock, T>>().time_since_epoch();
 }
+inline int64_t GetTime() { return GetTime<std::chrono::seconds>().count(); }
 
 /**
  * ISO 8601 formatting is preferred. Use the FormatISO8601{DateTime,Date}

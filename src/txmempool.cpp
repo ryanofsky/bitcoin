@@ -423,7 +423,7 @@ void CTxMemPool::removeForBlock(const std::vector<CTransactionRef>& vtx, unsigne
     if (m_opts.signals) {
         m_opts.signals->MempoolTransactionsRemovedForBlock(txs_removed_for_block, nBlockHeight);
     }
-    lastRollingFeeUpdate = GetTime();
+    lastRollingFeeUpdate = TicksSinceEpoch<std::chrono::seconds>(NodeClock::now_global());
     blockSinceLastRollingFeeBump = true;
     if (!m_txgraph->DoWork(/*max_cost=*/POST_CHANGE_COST)) {
         LogDebug(BCLog::MEMPOOL, "Mempool in non-optimal ordering after block.");
@@ -831,7 +831,7 @@ CFeeRate CTxMemPool::GetMinFee(size_t sizelimit) const {
     if (!blockSinceLastRollingFeeBump || rollingMinimumFeeRate == 0)
         return CFeeRate(llround(rollingMinimumFeeRate));
 
-    int64_t time = GetTime();
+    int64_t time = TicksSinceEpoch<std::chrono::seconds>(NodeClock::now_global());
     if (time > lastRollingFeeUpdate + 10) {
         double halflife = ROLLING_FEE_HALFLIFE;
         if (DynamicMemoryUsage() < sizelimit / 4)

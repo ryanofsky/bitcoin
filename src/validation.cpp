@@ -267,7 +267,7 @@ static void LimitMempoolSize(CTxMemPool& pool, CCoinsViewCache& coins_cache)
 {
     AssertLockHeld(::cs_main);
     AssertLockHeld(pool.cs);
-    int expired = pool.Expire(GetTime<std::chrono::seconds>() - pool.m_opts.expiry);
+    int expired = pool.Expire(DurationSinceEpoch<std::chrono::seconds>(NodeClock::now_global()) - pool.m_opts.expiry);
     if (expired != 0) {
         LogDebug(BCLog::MEMPOOL, "Expired %i transactions from the memory pool\n", expired);
     }
@@ -284,7 +284,7 @@ static bool IsCurrentForFeeEstimation(Chainstate& active_chainstate) EXCLUSIVE_L
     if (active_chainstate.m_chainman.IsInitialBlockDownload()) {
         return false;
     }
-    if (active_chainstate.m_chain.Tip()->GetBlockTime() < count_seconds(GetTime<std::chrono::seconds>() - MAX_FEE_ESTIMATION_TIP_AGE))
+    if (active_chainstate.m_chain.Tip()->GetBlockTime() < count_seconds(DurationSinceEpoch<std::chrono::seconds>(NodeClock::now_global()) - MAX_FEE_ESTIMATION_TIP_AGE))
         return false;
     if (active_chainstate.m_chain.Height() < active_chainstate.m_chainman.m_best_header->nHeight - 1) {
         return false;
@@ -312,7 +312,7 @@ void Chainstate::MaybeUpdateMempoolForReorg(
         while (it != queuedTx.rend()) {
             // ignore validation errors in resurrected transactions
             if (!fAddToMempool || (*it)->IsCoinBase() ||
-                AcceptToMemoryPool(*this, *it, GetTime(),
+                AcceptToMemoryPool(*this, *it, TicksSinceEpoch<std::chrono::seconds>(NodeClock::now_global()),
                     /*bypass_limits=*/true, /*test_accept=*/false).m_result_type !=
                         MempoolAcceptResult::ResultType::VALID) {
                 // If the transaction doesn't make it in to the mempool, remove any
@@ -1815,10 +1815,10 @@ PackageMempoolAcceptResult ProcessNewPackage(Chainstate& active_chainstate, CTxM
     auto result = [&]() EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
         AssertLockHeld(cs_main);
         if (test_accept) {
-            auto args = MemPoolAccept::ATMPArgs::PackageTestAccept(chainparams, GetTime(), coins_to_uncache);
+            auto args = MemPoolAccept::ATMPArgs::PackageTestAccept(chainparams, TicksSinceEpoch<std::chrono::seconds>(NodeClock::now_global()), coins_to_uncache);
             return MemPoolAccept(pool, active_chainstate).AcceptMultipleTransactionsAndCleanup(package, args);
         } else {
-            auto args = MemPoolAccept::ATMPArgs::PackageChildWithParents(chainparams, GetTime(), coins_to_uncache, client_maxfeerate);
+            auto args = MemPoolAccept::ATMPArgs::PackageChildWithParents(chainparams, TicksSinceEpoch<std::chrono::seconds>(NodeClock::now_global()), coins_to_uncache, client_maxfeerate);
             return MemPoolAccept(pool, active_chainstate).AcceptPackage(package, args);
         }
     }();
@@ -2756,7 +2756,7 @@ bool Chainstate::FlushStateToDisk(
                 }
             }
         }
-        const auto nNow{NodeClock::now()};
+        const auto nNow{NodeClock::now_global()};
         // The cache is large and we're within 10% and 10 MiB of the limit, but we have time now (not in the middle of a block processing).
         bool fCacheLarge = mode == FlushStateMode::PERIODIC && cache_state >= CoinsCacheSizeState::LARGE;
         // The cache is over the limit, we have to write now.
@@ -2812,7 +2812,7 @@ bool Chainstate::FlushStateToDisk(
                 empty_cache ? CoinsTip().Flush() : CoinsTip().Sync();
                 full_flush_completed = true;
                 TRACEPOINT(utxocache, flush,
-                    int64_t{Ticks<std::chrono::microseconds>(NodeClock::now() - nNow)},
+                    int64_t{Ticks<std::chrono::microseconds>(NodeClock::now_global() - nNow)},
                     (uint32_t)mode,
                     (uint64_t)coins_count,
                     (uint64_t)coins_mem_usage,
@@ -2822,7 +2822,7 @@ bool Chainstate::FlushStateToDisk(
 
         if (should_write || m_next_write == NodeClock::time_point::max()) {
             constexpr auto range{DATABASE_WRITE_INTERVAL_MAX - DATABASE_WRITE_INTERVAL_MIN};
-            m_next_write = FastRandomContext().rand_uniform_delay(NodeClock::now() + DATABASE_WRITE_INTERVAL_MIN, range);
+            m_next_write = FastRandomContext().rand_uniform_delay(NodeClock::now_global() + DATABASE_WRITE_INTERVAL_MIN, range);
         }
     }
     if (full_flush_completed && m_chainman.m_options.signals) {
@@ -4270,7 +4270,7 @@ void ChainstateManager::ReportHeadersPresync(int64_t height, int64_t timestamp)
         if (m_best_header->nChainWork >= UintToArith256(GetConsensus().nMinimumChainWork)) return;
         // Rate limit headers presync updates to 4 per second, as these are not subject to DoS
         // protection.
-        auto now = MockableSteadyClock::now();
+        auto now = MockableSteadyClock::now_global();
         if (now < m_last_presync_update + std::chrono::milliseconds{250}) return;
         m_last_presync_update = now;
     }
@@ -4444,7 +4444,7 @@ MempoolAcceptResult ChainstateManager::ProcessTransaction(const CTransactionRef&
         state.Invalid(TxValidationResult::TX_NO_MEMPOOL, "no-mempool");
         return MempoolAcceptResult::Failure(state);
     }
-    auto result = AcceptToMemoryPool(active_chainstate, tx, GetTime(), /*bypass_limits=*/ false, test_accept);
+    auto result = AcceptToMemoryPool(active_chainstate, tx, TicksSinceEpoch<std::chrono::seconds>(NodeClock::now_global()), /*bypass_limits=*/ false, test_accept);
     active_chainstate.GetMempool()->check(active_chainstate.CoinsTip(), active_chainstate.m_chain.Height() + 1);
     return result;
 }

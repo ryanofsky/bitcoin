@@ -192,7 +192,7 @@ protected:
     CAmount m_total_fee GUARDED_BY(cs){0};       //!< sum of all mempool tx's fees (NOT modified fee)
     uint64_t cachedInnerUsage GUARDED_BY(cs){0}; //!< sum of dynamic memory usage of all the map elements (NOT the maps themselves)
 
-    mutable int64_t lastRollingFeeUpdate GUARDED_BY(cs){GetTime()};
+    mutable int64_t lastRollingFeeUpdate GUARDED_BY(cs){TicksSinceEpoch<std::chrono::seconds>(NodeClock::now_global())};
     mutable bool blockSinceLastRollingFeeBump GUARDED_BY(cs){false};
     mutable double rollingMinimumFeeRate GUARDED_BY(cs){0}; //!< minimum fee to get into the pool, decreases exponentially
 
