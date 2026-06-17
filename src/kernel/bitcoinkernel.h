@@ -1257,6 +1257,32 @@ BITCOINKERNEL_API btck_BlockValidationState* BITCOINKERNEL_WARN_UNUSED_RESULT bt
     btck_ChainstateManager* chainstate_manager,
     const btck_BlockHeader* header) BITCOINKERNEL_ARG_NONNULL(1, 2);
 
+/** @name Testing
+ * Functions intended for testing purposes only.
+ */
+///@{
+
+/**
+ * @brief Override the current time used by this chainstate manager for
+ * deterministic testing.
+ *
+ * Affects all time-sensitive operations scoped to this chainstate manager:
+ * the block header future-time check, the IBD latch (IsTipRecent), header
+ * sync progress estimates, and the verification progress value passed to
+ * block tip callbacks. Unlike a global mock time, this only affects the
+ * specific chainstate manager instance, so concurrent test instances do
+ * not interfere with each other.
+ *
+ * @param[in] chainstate_manager  Non-null.
+ * @param[in] now_seconds         Unix epoch seconds, or 0 to restore the
+ *                                system clock.
+ */
+BITCOINKERNEL_API void btck_chainstate_manager_set_mock_time(
+    btck_ChainstateManager* chainstate_manager,
+    int64_t now_seconds) BITCOINKERNEL_ARG_NONNULL(1);
+
+///@}
+
 /**
  * @brief Triggers the start of a reindex if the wipe options were previously
  * set for the chainstate manager. Can also import an array of existing block

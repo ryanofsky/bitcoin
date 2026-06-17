@@ -1007,6 +1007,21 @@ public:
     const CChainParams& GetParams() const { return m_options.chainparams; }
     const Consensus::Params& GetConsensus() const { return m_options.chainparams.GetConsensus(); }
     bool ShouldCheckBlockIndex() const;
+
+    /**
+     * Return the current time for use in validation and IBD checks. Uses a
+     * mock value if one has been set via SetMockTime, otherwise the real clock.
+     * Prefer this over NodeClock::now() in all validation paths so that kernel
+     * library users can control time without touching global state.
+     */
+    NodeSeconds Now() const { return m_mock_now.value_or(::Now<NodeSeconds>()); }
+
+    /**
+     * Override the current time used by this chainstate manager. Affects the
+     * future-time block header check, the IBD latch, and progress estimates.
+     * Pass std::nullopt to restore real-time behavior.
+     */
+    void SetMockTime(std::optional<NodeSeconds> now) { m_mock_now = now; }
     const arith_uint256& MinimumChainWork() const { return *Assert(m_options.minimum_chain_work); }
     const uint256& AssumedValidBlock() const { return *Assert(m_options.assumed_valid_block); }
     kernel::Notifications& GetNotifications() const { return m_options.notifications; };
@@ -1047,6 +1062,9 @@ public:
      * enough work and is recent.
      */
     std::atomic_bool m_cached_is_ibd{true};
+
+    /** Mock time for testing, scoped to this chainstate manager. */
+    std::optional<NodeSeconds> m_mock_now;
 
     /**
      * Every received block is assigned a unique and increasing identifier, so we

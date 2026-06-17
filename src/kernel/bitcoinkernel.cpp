@@ -35,6 +35,7 @@
 #include <util/result.h>
 #include <util/signalinterrupt.h>
 #include <util/task_runner.h>
+#include <util/time.h>
 #include <util/translation.h>
 #include <validation.h>
 #include <validationinterface.h>
@@ -45,6 +46,7 @@
 #include <functional>
 #include <list>
 #include <memory>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -1351,6 +1353,16 @@ btck_BlockValidationState* btck_chainstate_manager_process_block_header(
     } catch (const std::exception& e) {
         LogError("Failed to process block header: %s", e.what());
         return nullptr;
+    }
+}
+
+void btck_chainstate_manager_set_mock_time(btck_ChainstateManager* chainstate_manager, int64_t now_seconds)
+{
+    auto& chainman = btck_ChainstateManager::get(chainstate_manager).m_chainman;
+    if (now_seconds == 0) {
+        chainman->SetMockTime(std::nullopt);
+    } else {
+        chainman->SetMockTime(NodeSeconds{std::chrono::seconds{now_seconds}});
     }
 }
 
