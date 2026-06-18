@@ -269,6 +269,7 @@ BOOST_FIXTURE_TEST_CASE(improves_feerate, TestChain100Setup)
     // Now test ImprovesFeerateDiagram with various levels of "package rbf" feerates
 
     // It doesn't improve itself
+<<<<<<< HEAD
     {
         auto changeset{pool.GetChangeSet()};
         changeset->StageRemoval(entry1);
@@ -280,8 +281,30 @@ BOOST_FIXTURE_TEST_CASE(improves_feerate, TestChain100Setup)
         BOOST_CHECK(res1.value().first == DiagramCheckError::FAILURE);
         BOOST_CHECK(res1.value().second == "insufficient feerate: does not improve feerate diagram");
     }
+||||||| parent of d5312e63167 (mempool: Use NodeClock::time_point to represent times)
+    auto changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee, 0, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(tx3, tx2_fee, 0, 1, 0, false, 4, LockPoints());
+    const auto res1 = ImprovesFeerateDiagram(*changeset);
+    BOOST_CHECK(res1.has_value());
+    BOOST_CHECK(res1.value().first == DiagramCheckError::FAILURE);
+    BOOST_CHECK(res1.value().second == "insufficient feerate: does not improve feerate diagram");
+=======
+    auto changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee, {}, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(tx3, tx2_fee, {}, 1, 0, false, 4, LockPoints());
+    const auto res1 = ImprovesFeerateDiagram(*changeset);
+    BOOST_CHECK(res1.has_value());
+    BOOST_CHECK(res1.value().first == DiagramCheckError::FAILURE);
+    BOOST_CHECK(res1.value().second == "insufficient feerate: does not improve feerate diagram");
+>>>>>>> d5312e63167 (mempool: Use NodeClock::time_point to represent times)
 
     // With one more satoshi it does
+<<<<<<< HEAD
     {
         auto changeset{pool.GetChangeSet()};
         changeset->StageRemoval(entry1);
@@ -290,9 +313,27 @@ BOOST_FIXTURE_TEST_CASE(improves_feerate, TestChain100Setup)
         changeset->StageAddition(tx3, tx2_fee, 0, 1, 0, false, 4, LockPoints());
         BOOST_CHECK(ImprovesFeerateDiagram(*changeset) == std::nullopt);
     }
+||||||| parent of d5312e63167 (mempool: Use NodeClock::time_point to represent times)
+    changeset.reset();
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee+1, 0, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(tx3, tx2_fee, 0, 1, 0, false, 4, LockPoints());
+    BOOST_CHECK(ImprovesFeerateDiagram(*changeset) == std::nullopt);
+=======
+    changeset.reset();
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee+1, {}, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(tx3, tx2_fee, {}, 1, 0, false, 4, LockPoints());
+    BOOST_CHECK(ImprovesFeerateDiagram(*changeset) == std::nullopt);
+>>>>>>> d5312e63167 (mempool: Use NodeClock::time_point to represent times)
 
     // With prioritisation of in-mempool conflicts, it affects the results of the comparison using the same args as just above
     pool.PrioritiseTransaction(entry1->GetSharedTx()->GetHash(), /*nFeeDelta=*/1);
+<<<<<<< HEAD
     {
         auto changeset{pool.GetChangeSet()};
         changeset->StageRemoval(entry1);
@@ -304,12 +345,38 @@ BOOST_FIXTURE_TEST_CASE(improves_feerate, TestChain100Setup)
         BOOST_CHECK(res2.value().first == DiagramCheckError::FAILURE);
         BOOST_CHECK(res2.value().second == "insufficient feerate: does not improve feerate diagram");
     }
+||||||| parent of d5312e63167 (mempool: Use NodeClock::time_point to represent times)
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee+1, 0, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(tx3, tx2_fee, 0, 1, 0, false, 4, LockPoints());
+    const auto res2 = ImprovesFeerateDiagram(*changeset);
+    BOOST_CHECK(res2.has_value());
+    BOOST_CHECK(res2.value().first == DiagramCheckError::FAILURE);
+    BOOST_CHECK(res2.value().second == "insufficient feerate: does not improve feerate diagram");
+    changeset.reset();
+
+=======
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee+1, {}, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(tx3, tx2_fee, {}, 1, 0, false, 4, LockPoints());
+    const auto res2 = ImprovesFeerateDiagram(*changeset);
+    BOOST_CHECK(res2.has_value());
+    BOOST_CHECK(res2.value().first == DiagramCheckError::FAILURE);
+    BOOST_CHECK(res2.value().second == "insufficient feerate: does not improve feerate diagram");
+    changeset.reset();
+
+>>>>>>> d5312e63167 (mempool: Use NodeClock::time_point to represent times)
     pool.PrioritiseTransaction(entry1->GetSharedTx()->GetHash(), /*nFeeDelta=*/-1);
 
     // With fewer vbytes it does
     CMutableTransaction tx4{entry3.GetTx()};
     tx4.vin[0].scriptWitness = CScriptWitness(); // Clear out the witness, to reduce size
     auto entry4 = entry.FromTx(MakeTransactionRef(tx4));
+<<<<<<< HEAD
     {
         auto changeset{pool.GetChangeSet()};
         changeset->StageRemoval(entry1);
@@ -318,11 +385,29 @@ BOOST_FIXTURE_TEST_CASE(improves_feerate, TestChain100Setup)
         changeset->StageAddition(entry4.GetSharedTx(), tx2_fee, 0, 1, 0, false, 4, LockPoints());
         BOOST_CHECK(ImprovesFeerateDiagram(*changeset) == std::nullopt);
     }
+||||||| parent of d5312e63167 (mempool: Use NodeClock::time_point to represent times)
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee, 0, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(entry4.GetSharedTx(), tx2_fee, 0, 1, 0, false, 4, LockPoints());
+    BOOST_CHECK(ImprovesFeerateDiagram(*changeset) == std::nullopt);
+    changeset.reset();
+=======
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageAddition(tx1_conflict, tx1_fee, {}, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(entry4.GetSharedTx(), tx2_fee, {}, 1, 0, false, 4, LockPoints());
+    BOOST_CHECK(ImprovesFeerateDiagram(*changeset) == std::nullopt);
+    changeset.reset();
+>>>>>>> d5312e63167 (mempool: Use NodeClock::time_point to represent times)
 
     // Adding a grandchild makes the cluster size 3, which is also calculable
     const auto tx5 = make_tx(/*inputs=*/{tx2}, /*output_values=*/{995 * CENT});
     TryAddToMempool(pool, entry.Fee(normal_fee).FromTx(tx5));
     const auto entry5 = pool.GetIter(tx5->GetHash()).value();
+<<<<<<< HEAD
     {
         auto changeset{pool.GetChangeSet()};
         changeset->StageRemoval(entry1);
@@ -333,6 +418,27 @@ BOOST_FIXTURE_TEST_CASE(improves_feerate, TestChain100Setup)
         const auto res3 = ImprovesFeerateDiagram(*changeset);
         BOOST_CHECK(res3 == std::nullopt);
     }
+||||||| parent of d5312e63167 (mempool: Use NodeClock::time_point to represent times)
+
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageRemoval(entry5);
+    changeset->StageAddition(tx1_conflict, tx1_fee, 0, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(entry4.GetSharedTx(), tx2_fee + entry5->GetModifiedFee() + 1, 0, 1, 0, false, 4, LockPoints());
+    const auto res3 = ImprovesFeerateDiagram(*changeset);
+    BOOST_CHECK(res3 == std::nullopt);
+=======
+
+    changeset = pool.GetChangeSet();
+    changeset->StageRemoval(entry1);
+    changeset->StageRemoval(entry2);
+    changeset->StageRemoval(entry5);
+    changeset->StageAddition(tx1_conflict, tx1_fee, {}, 1, 0, false, 4, LockPoints());
+    changeset->StageAddition(entry4.GetSharedTx(), tx2_fee + entry5->GetModifiedFee() + 1, {}, 1, 0, false, 4, LockPoints());
+    const auto res3 = ImprovesFeerateDiagram(*changeset);
+    BOOST_CHECK(res3 == std::nullopt);
+>>>>>>> d5312e63167 (mempool: Use NodeClock::time_point to represent times)
 }
 
 BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
@@ -359,7 +465,7 @@ BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
     {
         auto changeset = pool.GetChangeSet();
         changeset->StageRemoval(entry_low);
-        changeset->StageAddition(replacement_tx, 0, 0, 1, 0, false, 4, LockPoints());
+        changeset->StageAddition(replacement_tx, 0, {}, 1, 0, false, 4, LockPoints());
         const auto replace_one{changeset->CalculateChunksForRBF()};
         BOOST_CHECK(replace_one.has_value());
         std::vector<FeeFrac> expected_old_chunks{{low_fee, low_size}};
@@ -372,7 +478,7 @@ BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
     {
         auto changeset = pool.GetChangeSet();
         changeset->StageRemoval(entry_low);
-        changeset->StageAddition(replacement_tx, high_fee, 0, 1, 0, false, 4, LockPoints());
+        changeset->StageAddition(replacement_tx, high_fee, {}, 1, 0, false, 4, LockPoints());
         const auto replace_one_fee{changeset->CalculateChunksForRBF()};
         BOOST_CHECK(replace_one_fee.has_value());
         std::vector<FeeFrac> expected_old_diagram{{low_fee, low_size}};
@@ -391,7 +497,7 @@ BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
         auto changeset = pool.GetChangeSet();
         changeset->StageRemoval(entry_low);
         changeset->StageRemoval(entry_high);
-        changeset->StageAddition(replacement_tx, high_fee, 0, 1, 0, false, 4, LockPoints());
+        changeset->StageAddition(replacement_tx, high_fee, {}, 1, 0, false, 4, LockPoints());
         const auto replace_single_chunk{changeset->CalculateChunksForRBF()};
         BOOST_CHECK(replace_single_chunk.has_value());
         std::vector<FeeFrac> expected_old_chunks{{low_fee + high_fee, low_size + high_size}};
@@ -404,7 +510,7 @@ BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
     {
         auto changeset = pool.GetChangeSet();
         changeset->StageRemoval(entry_high);
-        changeset->StageAddition(replacement_tx, high_fee, 0, 1, 0, false, 4, LockPoints());
+        changeset->StageAddition(replacement_tx, high_fee, {}, 1, 0, false, 4, LockPoints());
         const auto replace_cpfp_child{changeset->CalculateChunksForRBF()};
         BOOST_CHECK(replace_cpfp_child.has_value());
         std::vector<FeeFrac> expected_old_chunks{{low_fee + high_fee, low_size + high_size}};
@@ -428,7 +534,7 @@ BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
         auto changeset = pool.GetChangeSet();
         changeset->StageRemoval(entry_high_2);
         changeset->StageRemoval(entry_low_2);
-        changeset->StageAddition(replacement_tx, high_fee, 0, 1, 0, false, 4, LockPoints());
+        changeset->StageAddition(replacement_tx, high_fee, {}, 1, 0, false, 4, LockPoints());
         const auto replace_two_chunks_single_cluster{changeset->CalculateChunksForRBF()};
         BOOST_CHECK(replace_two_chunks_single_cluster.has_value());
         std::vector<FeeFrac> expected_old_chunks{{high_fee, high_size_2}, {low_fee, low_size_2}};
@@ -455,7 +561,7 @@ BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
         changeset->StageRemoval(conflict_1_entry);
         changeset->StageRemoval(conflict_2_entry);
         changeset->StageRemoval(conflict_3_entry);
-        changeset->StageAddition(replacement_tx, high_fee, 0, 1, 0, false, 4, LockPoints());
+        changeset->StageAddition(replacement_tx, high_fee, {}, 1, 0, false, 4, LockPoints());
         const auto replace_multiple_clusters{changeset->CalculateChunksForRBF()};
         BOOST_CHECK(replace_multiple_clusters.has_value());
         BOOST_CHECK(replace_multiple_clusters->first.size() == 3);
@@ -473,7 +579,7 @@ BOOST_FIXTURE_TEST_CASE(calc_feerate_diagram_rbf, TestChain100Setup)
         changeset->StageRemoval(conflict_2_entry);
         changeset->StageRemoval(conflict_3_entry);
         changeset->StageRemoval(conflict_1_child_entry);
-        changeset->StageAddition(replacement_tx, high_fee, 0, 1, 0, false, 4, LockPoints());
+        changeset->StageAddition(replacement_tx, high_fee, {}, 1, 0, false, 4, LockPoints());
         const auto replace_multiple_clusters_2{changeset->CalculateChunksForRBF()};
 
         BOOST_CHECK(replace_multiple_clusters_2.has_value());
