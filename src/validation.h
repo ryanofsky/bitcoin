@@ -1027,7 +1027,7 @@ public:
     NodeClock::time_point Now() const
     {
         const NodeSeconds clock{m_clock_now_seconds.load(std::memory_order_relaxed)};
-        return clock != NodeSeconds{} ? clock : NodeClock::now();
+        return clock != NodeSeconds{} ? clock : NodeClock::_now_nondet();
     }
 
     const arith_uint256& MinimumChainWork() const { return *Assert(m_options.minimum_chain_work); }
