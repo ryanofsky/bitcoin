@@ -275,7 +275,7 @@ static void LimitMempoolSize(CTxMemPool& pool, CCoinsViewCache& coins_cache)
 {
     AssertLockHeld(::cs_main);
     AssertLockHeld(pool.cs);
-    int expired = pool.Expire(GetTime<std::chrono::seconds>() - pool.m_opts.expiry);
+    int expired = pool.Expire(pool.Now() - pool.m_opts.expiry);
     if (expired != 0) {
         LogDebug(BCLog::MEMPOOL, "Expired %i transactions from the memory pool\n", expired);
     }
@@ -320,7 +320,7 @@ void Chainstate::MaybeUpdateMempoolForReorg(
         while (it != queuedTx.rend()) {
             // ignore validation errors in resurrected transactions
             if (!fAddToMempool || (*it)->IsCoinBase() ||
-                AcceptToMemoryPool(*this, *it, GetTime(),
+                AcceptToMemoryPool(*this, *it, m_mempool->Now(),
                     /*bypass_limits=*/true, /*test_accept=*/false).m_result_type !=
                         MempoolAcceptResult::ResultType::VALID) {
                 // If the transaction doesn't make it in to the mempool, remove any
@@ -455,7 +455,15 @@ public:
     // We put the arguments we're handed into a struct, so we can pass them
     // around easier.
     struct ATMPArgs {
+<<<<<<< HEAD
         const int64_t m_accept_time;
+||||||| parent of 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
+        const CChainParams& m_chainparams;
+        const int64_t m_accept_time;
+=======
+        const CChainParams& m_chainparams;
+        const MempoolTime m_accept_time;
+>>>>>>> 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
         const bool m_bypass_limits;
         /*
          * Return any outpoints which were not previously present in the coins
@@ -487,7 +495,13 @@ public:
         const std::optional<CFeeRate> m_client_maxfeerate;
 
         /** Parameters for single transaction mempool validation. */
+<<<<<<< HEAD
         static ATMPArgs SingleAccept(int64_t accept_time,
+||||||| parent of 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
+        static ATMPArgs SingleAccept(const CChainParams& chainparams, int64_t accept_time,
+=======
+        static ATMPArgs SingleAccept(const CChainParams& chainparams, MempoolTime accept_time,
+>>>>>>> 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
                                      bool bypass_limits, std::vector<COutPoint>& coins_to_uncache,
                                      bool test_accept) {
             return ATMPArgs{/*accept_time=*/ accept_time,
@@ -503,7 +517,13 @@ public:
         }
 
         /** Parameters for test package mempool validation through testmempoolaccept. */
+<<<<<<< HEAD
         static ATMPArgs PackageTestAccept(int64_t accept_time,
+||||||| parent of 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
+        static ATMPArgs PackageTestAccept(const CChainParams& chainparams, int64_t accept_time,
+=======
+        static ATMPArgs PackageTestAccept(const CChainParams& chainparams, MempoolTime accept_time,
+>>>>>>> 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
                                           std::vector<COutPoint>& coins_to_uncache) {
             return ATMPArgs{/*accept_time=*/ accept_time,
                             /*bypass_limits=*/ false,
@@ -518,7 +538,13 @@ public:
         }
 
         /** Parameters for child-with-parents package validation. */
+<<<<<<< HEAD
         static ATMPArgs PackageChildWithParents(int64_t accept_time,
+||||||| parent of 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
+        static ATMPArgs PackageChildWithParents(const CChainParams& chainparams, int64_t accept_time,
+=======
+        static ATMPArgs PackageChildWithParents(const CChainParams& chainparams, MempoolTime accept_time,
+>>>>>>> 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
                                                 std::vector<COutPoint>& coins_to_uncache, const std::optional<CFeeRate>& client_maxfeerate) {
             return ATMPArgs{/*accept_time=*/ accept_time,
                             /*bypass_limits=*/ false,
@@ -549,7 +575,15 @@ public:
     private:
         // Private ctor to avoid exposing details to clients and allowing the possibility of
         // mixing up the order of the arguments. Use static functions above instead.
+<<<<<<< HEAD
         ATMPArgs(int64_t accept_time,
+||||||| parent of 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
+        ATMPArgs(const CChainParams& chainparams,
+                 int64_t accept_time,
+=======
+        ATMPArgs(const CChainParams& chainparams,
+                 MempoolTime accept_time,
+>>>>>>> 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
                  bool bypass_limits,
                  std::vector<COutPoint>& coins_to_uncache,
                  bool test_accept,
@@ -785,7 +819,7 @@ bool MemPoolAccept::PreChecks(ATMPArgs& args, Workspace& ws)
     const Txid& hash = ws.m_hash;
 
     // Copy/alias what we need out of args
-    const int64_t nAcceptTime = args.m_accept_time;
+    const MempoolTime nAcceptTime = args.m_accept_time;
     const bool bypass_limits = args.m_bypass_limits;
     std::vector<COutPoint>& coins_to_uncache = args.m_coins_to_uncache;
 
@@ -1221,7 +1255,7 @@ void MemPoolAccept::FinalizeSubpackage(const ATMPArgs& args)
                 it->GetTx().GetHash().data(),
                 it->GetTxSize(),
                 it->GetFee(),
-                std::chrono::duration_cast<std::chrono::duration<std::uint64_t>>(it->GetTime()).count(),
+                TicksSinceEpoch<std::chrono::duration<std::uint64_t>>(it->GetTime()),
                 tx_or_package_hash.data(),
                 feerate.size,
                 feerate.fee,
@@ -1769,7 +1803,7 @@ PackageMempoolAcceptResult MemPoolAccept::AcceptPackage(const Package& package, 
 } // anon namespace
 
 MempoolAcceptResult AcceptToMemoryPool(Chainstate& active_chainstate, const CTransactionRef& tx,
-                                       int64_t accept_time, bool bypass_limits, bool test_accept)
+                                       MempoolTime accept_time, bool bypass_limits, bool test_accept)
 {
     AssertLockHeld(::cs_main);
     assert(active_chainstate.GetMempool() != nullptr);
@@ -1810,10 +1844,22 @@ PackageMempoolAcceptResult ProcessNewPackage(Chainstate& active_chainstate, CTxM
     auto result = [&]() EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
         AssertLockHeld(cs_main);
         if (test_accept) {
+<<<<<<< HEAD
             auto args = MemPoolAccept::ATMPArgs::PackageTestAccept(GetTime(), coins_to_uncache);
+||||||| parent of 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
+            auto args = MemPoolAccept::ATMPArgs::PackageTestAccept(chainparams, GetTime(), coins_to_uncache);
+=======
+            auto args = MemPoolAccept::ATMPArgs::PackageTestAccept(chainparams, pool.Now(), coins_to_uncache);
+>>>>>>> 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
             return MemPoolAccept(pool, active_chainstate).AcceptMultipleTransactionsAndCleanup(package, args);
         } else {
+<<<<<<< HEAD
             auto args = MemPoolAccept::ATMPArgs::PackageChildWithParents(GetTime(), coins_to_uncache, client_maxfeerate);
+||||||| parent of 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
+            auto args = MemPoolAccept::ATMPArgs::PackageChildWithParents(chainparams, GetTime(), coins_to_uncache, client_maxfeerate);
+=======
+            auto args = MemPoolAccept::ATMPArgs::PackageChildWithParents(chainparams, pool.Now(), coins_to_uncache, client_maxfeerate);
+>>>>>>> 6f59d9453eb (mempool: Use NodeClock::time_point to represent times)
             return MemPoolAccept(pool, active_chainstate).AcceptPackage(package, args);
         }
     }();
@@ -4469,7 +4515,7 @@ MempoolAcceptResult ChainstateManager::ProcessTransaction(const CTransactionRef&
         state.Invalid(TxValidationResult::TX_NO_MEMPOOL, "no-mempool");
         return MempoolAcceptResult::Failure(state);
     }
-    auto result = AcceptToMemoryPool(active_chainstate, tx, GetTime(), /*bypass_limits=*/ false, test_accept);
+    auto result = AcceptToMemoryPool(active_chainstate, tx, active_chainstate.m_mempool->Now(), /*bypass_limits=*/ false, test_accept);
     active_chainstate.GetMempool()->check(active_chainstate.CoinsTip(), active_chainstate.m_chain.Height() + 1);
     return result;
 }
