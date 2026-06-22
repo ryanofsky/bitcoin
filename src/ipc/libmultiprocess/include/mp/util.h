@@ -29,6 +29,17 @@
 #include <memory>
 #endif
 
+#ifdef WIN32
+// WIN32_LEAN_AND_MEAN excludes commdlg.h which defines `#define INTERFACE
+// IPrintDialogServices` — this conflicts with capnp::Kind::INTERFACE used
+// in CAPNP_DECLARE_INTERFACE_HEADER. Must be defined before winsock2.h.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <winsock2.h>
+#endif
+
 namespace mp {
 
 //! Generic utility functions used by capnp code.
@@ -315,9 +326,19 @@ std::string CommandLineFromArgv(const std::vector<std::string>& argv);
 >>>>>>> ca188607937 (util: Add Windows CommandLineFromArgv escaping function)
 using Stream = kj::Own<kj::AsyncIoStream>;
 
+#ifdef WIN32
+// On Windows, ProcessId is defined to be the local process HANDLE rather than
+// global process ID, because handles are more useful for controlling and
+// waiting for processes. It it possible to obtain the actual process ID from
+// handles by calling the GetProcessId API.
+using ProcessId = HANDLE;
+using SocketId = SOCKET;
+constexpr SocketId SocketError{INVALID_SOCKET};
+#else
 using ProcessId = int;
 using SocketId = int;
 constexpr SocketId SocketError{-1};
+#endif
 
 <<<<<<< HEAD
 //! Information about parent process passed to child process as a command-line
@@ -343,8 +364,10 @@ using SpawnConnectInfoToArgsFn = std::function<std::vector<std::string>(const Sp
 //! passed to the child process, and executes the argv command line it returns.
 //! Returns child process id and socket id.
 //!
-//! The connection string is just a file descriptor number on unix, and the
-//! child process can call StartSpawned to parse it.
+//! The connection string is just a file descriptor number on unix. On windows,
+//! it is a path to a named pipe the parent process will write
+//! WSADuplicateSocket info to. In both cases, the child process can call
+//! StartSpawned to get a socket handle from the connection string.
 std::tuple<ProcessId, SocketId> SpawnProcess(const std::function<std::vector<std::string>(std::string)>& spawn_argv);
 
 //! Initialize spawned child process. The connect_info argument is the
