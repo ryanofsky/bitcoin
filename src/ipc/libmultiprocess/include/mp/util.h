@@ -290,6 +290,7 @@ std::string ThreadName(const char* exe_name);
 std::string LogEscape(const kj::StringTree& string, size_t max_size);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 using Stream = kj::Own<kj::AsyncIoStream>;
 
 using ProcessId = int;
@@ -302,6 +303,16 @@ using SpawnConnectInfo = std::string;
 
 ||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
 =======
+||||||| parent of ca188607937 (util: Add Windows CommandLineFromArgv escaping function)
+=======
+//! Convert an argument vector into a single command line string suitable for
+//! CreateProcess, following the quoting rules of CommandLineToArgvW, which
+//! executables use to split the command line back into arguments. Declared
+//! unconditionally (not just on windows) so it can be unit tested on any
+//! platform.
+std::string CommandLineFromArgv(const std::vector<std::string>& argv);
+
+>>>>>>> ca188607937 (util: Add Windows CommandLineFromArgv escaping function)
 using Stream = kj::Own<kj::AsyncIoStream>;
 
 using ProcessId = int;
