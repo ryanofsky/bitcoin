@@ -121,6 +121,7 @@ class RpcMiscTest(BitcoinTestFramework):
         assert_equal(node.getindexinfo("foo"), {})
 
         # Test a deprecated category
+<<<<<<< HEAD
         all_result = node.logging(include=['all'])
         assert_equal(True, all(enabled is True for category, enabled in all_result.items()))
         assert_equal(True, 'libevent' not in all_result)
@@ -132,6 +133,29 @@ class RpcMiscTest(BitcoinTestFramework):
         with self.nodes[0].assert_debug_log([libevent_warning]):
             assert_equal(all_result, node.logging(exclude=['libevent']))
         assert_equal(all_result, node.logging())
+||||||| parent of d38170a4eb1 (logging: More fully remove libevent log category)
+        node.logging(include=['all'])
+        for category, value in node.logging().items():
+            # Everything True except one...
+            assert_equal(value, category != "libevent")
+        with self.nodes[0].assert_debug_log(["The logging category `libevent` is deprecated"]):
+            node.logging(include=['libevent'])
+        assert_equal(node.logging()['libevent'], False)
+        with self.nodes[0].assert_debug_log(["The logging category `libevent` is deprecated"]):
+            node.logging(exclude=['libevent'])
+        assert_equal(node.logging()['libevent'], False)
+=======
+        all_result = node.logging(include=['all'])
+        assert_equal(True, all(value is True for category, value in all_result.items()))
+        assert_equal(True, 'libevent' not in all_result)
+        assert_equal(all_result, node.logging())
+        with self.nodes[0].assert_debug_log(["The logging category `libevent` is deprecated"]):
+            assert_equal(all_result, node.logging(include=['libevent']))
+        assert_equal(all_result, node.logging())
+        with self.nodes[0].assert_debug_log(["The logging category `libevent` is deprecated"]):
+            assert_equal(all_result, node.logging(exclude=['libevent']))
+        assert_equal(all_result, node.logging())
+>>>>>>> d38170a4eb1 (logging: More fully remove libevent log category)
 
 
 if __name__ == '__main__':

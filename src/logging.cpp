@@ -232,10 +232,18 @@ std::optional<BCLog::LogFlags> BCLog::Logger::GetLogCategory(std::string_view st
     if (it != LOG_CATEGORIES_BY_STR.end()) {
         return it->second;
     }
+<<<<<<< HEAD
     if (str == "libevent") {
        LogWarning("The logging category `%s` is deprecated, does nothing, and will be removed in a future version", str);
        return BCLog::NONE;
     }
+||||||| parent of d38170a4eb1 (logging: More fully remove libevent log category)
+=======
+    if (str == "libevent") {
+       LogWarning("The logging category `%s` is deprecated, can not be enabled, and will be removed in a future version", str);
+       return BCLog::NONE;
+    }
+>>>>>>> d38170a4eb1 (logging: More fully remove libevent log category)
     return std::nullopt;
 }
 
