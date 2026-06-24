@@ -121,16 +121,16 @@ class RpcMiscTest(BitcoinTestFramework):
         assert_equal(node.getindexinfo("foo"), {})
 
         # Test a deprecated category
-        node.logging(include=['all'])
-        for category, value in node.logging().items():
-            # Everything True except one...
-            assert_equal(value, category != "libevent")
+        all_result = node.logging(include=['all'])
+        assert_equal(True, all(value is True for category, value in all_result.items()))
+        assert_equal(True, 'libevent' not in all_result)
+        assert_equal(all_result, node.logging())
         with self.nodes[0].assert_debug_log(["The logging category `libevent` is deprecated"]):
-            node.logging(include=['libevent'])
-        assert_equal(node.logging()['libevent'], False)
+            assert_equal(all_result, node.logging(include=['libevent']))
+        assert_equal(all_result, node.logging())
         with self.nodes[0].assert_debug_log(["The logging category `libevent` is deprecated"]):
-            node.logging(exclude=['libevent'])
-        assert_equal(node.logging()['libevent'], False)
+            assert_equal(all_result, node.logging(exclude=['libevent']))
+        assert_equal(all_result, node.logging())
 
 
 if __name__ == '__main__':
