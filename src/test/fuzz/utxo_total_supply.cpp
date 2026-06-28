@@ -17,7 +17,6 @@
 #include <test/util/mining.h>
 #include <test/util/random.h>
 #include <test/util/setup_common.h>
-#include <test/util/time.h>
 #include <txdb.h>
 #include <uint256.h>
 #include <util/check.h>
@@ -35,7 +34,7 @@ FUZZ_TARGET(utxo_total_supply)
 {
     SeedRandomStateForTest(SeedRand::ZEROS);
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
-    FakeNodeClock clock{ConsumeTime(fuzzed_data_provider, /*min=*/1296688602)}; // regtest genesis block timestamp
+    const auto fuzzed_time{ConsumeTime(fuzzed_data_provider, /*min=*/1296688602)}; // regtest genesis block timestamp
     /** The testing setup that creates a chainman only (no chainstate) */
     ChainTestingSetup test_setup{
         ChainType::REGTEST,
@@ -49,6 +48,7 @@ FUZZ_TARGET(utxo_total_supply)
     test_setup.LoadVerifyActivateChainstate();
     auto& node{test_setup.m_node};
     auto& chainman{*Assert(test_setup.m_node.chainman)};
+    chainman.m_clock_now_seconds.store(fuzzed_time.time_since_epoch(), std::memory_order_relaxed);
 
     const auto ActiveHeight = [&]() {
         LOCK(chainman.GetMutex());
