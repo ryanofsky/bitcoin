@@ -4,6 +4,7 @@
 
 #include <coins.h>
 
+#include <clientversion.h>
 #include <consensus/consensus.h>
 #include <primitives/block.h>
 #include <random.h>
@@ -46,11 +47,6 @@ size_t CCoinsViewCache::DynamicMemoryUsage() const {
 
 std::optional<Coin> CCoinsViewCache::FetchCoinFromBase(const COutPoint& outpoint) const
 {
-    // Depending on the base view, the base->GetCoin() call below could mutate its internal cache
-    // and interfere with concurrent readers. It could therefore be useful to call OnMutateBase()
-    // here, but it is deliberately not called: we don't want to assume a get is always a mutation,
-    // and callers that need to synchronize concurrent readers have other ways to do so (e.g.
-    // CoinsViewOverlay overrides this to read via the concurrency-safe base->PeekCoin()).
     return base->GetCoin(outpoint);
 }
 
@@ -269,7 +265,6 @@ void CCoinsViewCache::BatchWrite(CoinsViewCacheCursor& cursor, const uint256& in
 
 void CCoinsViewCache::Flush(bool reallocate_cache)
 {
-    OnMutateBase();
     auto cursor{CoinsViewCacheCursor(m_dirty_count, m_sentinel, cacheCoins, /*will_erase=*/true)};
     base->BatchWrite(cursor, m_block_hash);
     Assume(m_dirty_count == 0);
@@ -282,7 +277,6 @@ void CCoinsViewCache::Flush(bool reallocate_cache)
 
 void CCoinsViewCache::Sync()
 {
-    OnMutateBase();
     auto cursor{CoinsViewCacheCursor(m_dirty_count, m_sentinel, cacheCoins, /*will_erase=*/false)};
     base->BatchWrite(cursor, m_block_hash);
     Assume(m_dirty_count == 0);
@@ -373,12 +367,21 @@ void CCoinsViewCache::SanityCheck() const
     assert(recomputed_usage == cachedCoinsUsage);
 }
 
+void CoinsViewOverlay::CheckAllInputsConsumed() noexcept
+{
+    if (!Assume(AllInputsConsumed())) {
+        LogWarning("Internal bug detected: block %s input prefetch queue was not fully consumed (%s %s). Please report this issue here: %s\n",
+            m_fetch_block_hash.ToString(), CLIENT_NAME, FormatFullVersion(), CLIENT_BUGREPORT);
+    }
+}
+
 CCoinsViewCache::ResetGuard CoinsViewOverlay::StartFetching(const CBlock& block LIFETIMEBOUND) noexcept
 {
     Assert(m_futures.empty());
     Assert(m_inputs.empty());
     Assert(m_input_head.load(std::memory_order_relaxed) == 0);
     Assert(m_input_tail == 0);
+    m_fetch_block_hash = block.GetHash();
     if (const auto workers_count{m_thread_pool->WorkersCount()}; workers_count > 0) {
         // Loop through the block inputs and set their prevouts in the queue.
         // Filter inputs that spend outputs created earlier in the same block. These outputs will be created

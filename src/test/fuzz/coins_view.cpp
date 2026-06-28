@@ -146,6 +146,7 @@ void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& co
     const bool is_db{db != nullptr};
     bool good_data{true};
     auto* original_backend{backend_coins_view};
+    auto* const overlay{dynamic_cast<CoinsViewOverlay*>(&coins_view_cache)};
 
     if (is_db) coins_view_cache.SetBestBlock(uint256::ONE);
     COutPoint random_out_point;
@@ -170,9 +171,11 @@ void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& co
                 }
             },
             [&] {
+                if (overlay) overlay->CancelFetch(); // Fetch threads read from base via PeekCoin(); stop before Flush writes to it.
                 coins_view_cache.Flush(/*reallocate_cache=*/fuzzed_data_provider.ConsumeBool());
             },
             [&] {
+                if (overlay) overlay->CancelFetch(); // Fetch threads read from base via PeekCoin(); stop before Sync writes to it.
                 coins_view_cache.Sync();
             },
             [&] {
@@ -185,6 +188,7 @@ void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& co
                 coins_view_cache.SetBestBlock(best_block);
             },
             [&] {
+                if (overlay) overlay->CancelFetch(); // Not all inputs will be consumed in the fuzz test; cancel before Reset().
                 (void)coins_view_cache.CreateResetGuard();
                 // Reset() clears the best block, so reseed db-backed caches.
                 if (is_db) {
@@ -208,11 +212,13 @@ void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& co
                 if (use_original_backend && backend_coins_view != original_backend) {
                     // FRESH flags valid against the empty backend may be invalid
                     // against the original backend, so reset before restoring it.
+                    if (overlay) overlay->CancelFetch(); // Not all inputs will be consumed in the fuzz test; cancel before Reset().
                     (void)coins_view_cache.CreateResetGuard();
                     // Reset() clears the best block; db backends require a non-null hash.
                     if (is_db) coins_view_cache.SetBestBlock(uint256::ONE);
                 }
                 backend_coins_view = use_original_backend ? original_backend : &CoinsViewEmpty::Get();
+                if (overlay) overlay->CancelFetch(); // Fetch threads read from base via PeekCoin(); stop before base is replaced.
                 coins_view_cache.SetBackend(*backend_coins_view);
             },
             [&] {
@@ -408,6 +414,8 @@ void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& co
             assert(!exists_using_have_coin_in_backend);
         }
     }
+    // Not all inputs will be consumed in the fuzz test; cancel so the caller's reset guard can destruct cleanly.
+    if (overlay) overlay->CancelFetch();
 }
 
 FUZZ_TARGET(coins_view, .init = initialize_coins_view)

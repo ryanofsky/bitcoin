@@ -3059,14 +3059,12 @@ bool Chainstate::ConnectTip(
             m_chainman.m_options.signals->BlockChecked(block_to_connect, state);
         }
         if (!rv) {
-            if (state.IsInvalid())
+            if (state.IsInvalid()) {
                 InvalidBlockFound(pindexNew, state);
+                view.CancelFetch(); // Fetch threads read from base via PeekCoin(); stop before reset guard destructs and calls Flush on base.
+            }
             LogError("%s: ConnectBlock %s failed, %s\n", __func__, pindexNew->GetBlockHash().ToString(), state.ToString());
             return false;
-        }
-        if (!Assume(view.AllInputsConsumed())) {
-            LogWarning("Internal bug detected: block %s input prefetch queue was not fully consumed (%s %s). Please report this issue here: %s\n",
-                pindexNew->GetBlockHash().ToString(), CLIENT_NAME, FormatFullVersion(), CLIENT_BUGREPORT);
         }
         time_3 = SteadyClock::now();
         m_chainman.time_connect_total += time_3 - time_2;

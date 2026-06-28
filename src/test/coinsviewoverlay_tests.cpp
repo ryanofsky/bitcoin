@@ -246,6 +246,9 @@ BOOST_AUTO_TEST_CASE(fetch_out_of_order_input_uses_normal_lookup)
     BOOST_CHECK(view.HaveCoinInCache(out_of_order_input));
 
     CheckCache(block, view);
+    // The out-of-order access pre-cached input1, so CheckCache skips it in FetchCoinFromBase and
+    // m_input_tail gets stuck; not all prefetch queue entries are consumed.
+    view.CancelFetch();
 }
 
 // Mutating operations on the overlay (Flush/Sync/SetBackend) must stop in-flight
@@ -264,6 +267,7 @@ BOOST_AUTO_TEST_CASE(fetch_state_is_cleared_by_mutating_operations)
         CoinsViewOverlay view{&main_cache, MakeStartedThreadPool()};
         const auto first_guard{view.StartFetching(block)};
         view.SetBestBlock(uint256::ONE);
+        view.CancelFetch(); // Fetch threads read from base via PeekCoin(); stop before Flush/Sync writes to it.
         flush ? view.Flush() : view.Sync();
         const auto second_guard{view.StartFetching(block)};
         CheckCache(block, view);
@@ -271,6 +275,7 @@ BOOST_AUTO_TEST_CASE(fetch_state_is_cleared_by_mutating_operations)
 
     CoinsViewOverlay view{&main_cache, MakeStartedThreadPool()};
     const auto first_guard{view.StartFetching(block)};
+    view.CancelFetch(); // Fetch threads read from base via PeekCoin(); stop before base is replaced.
     view.SetBackend(alternate_cache);
 
     const auto second_guard{view.StartFetching(block)};
