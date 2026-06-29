@@ -216,41 +216,6 @@ BOOST_AUTO_TEST_CASE(access_non_input_coins)
     BOOST_CHECK(!view.HaveCoinInCache(missing_outpoint));
 }
 
-// Access a fetched input out of order (i.e. not the next one in m_inputs).
-// FetchCoinFromBase must fall back to base->PeekCoin, and the coin must still
-// be inserted into the cache.
-BOOST_AUTO_TEST_CASE(fetch_out_of_order_input_uses_normal_lookup)
-{
-    const auto block{CreateBlock()};
-    CCoinsViewDB db{{.path = "", .cache_bytes = 1_MiB, .memory_only = true}, {}};
-    CCoinsViewCache main_cache{&db};
-    PopulateView(block, main_cache);
-
-    std::vector<COutPoint> fetched_inputs;
-    std::unordered_set<Txid, SaltedTxidHasher> txids;
-    txids.reserve(block.vtx.size() - 1);
-    for (const auto& tx : block.vtx | std::views::drop(1)) {
-        for (const auto& input : tx->vin) {
-            if (!txids.contains(input.prevout.hash)) fetched_inputs.push_back(input.prevout);
-        }
-        txids.emplace(tx->GetHash());
-    }
-    BOOST_REQUIRE_GE(fetched_inputs.size(), 2U);
-
-    CoinsViewOverlay view{&main_cache, MakeStartedThreadPool()};
-    const auto reset_guard{view.StartFetching(block)};
-
-    const auto& out_of_order_input{fetched_inputs[1]};
-    BOOST_CHECK(!view.HaveCoinInCache(out_of_order_input));
-    BOOST_CHECK(!view.AccessCoin(out_of_order_input).IsSpent());
-    BOOST_CHECK(view.HaveCoinInCache(out_of_order_input));
-
-    CheckCache(block, view);
-    // The out-of-order access pre-cached input1, so CheckCache skips it in FetchCoinFromBase and
-    // m_input_tail gets stuck; not all prefetch queue entries are consumed.
-    view.CancelFetch();
-}
-
 // Mutating operations on the overlay (Flush/Sync/SetBackend) must stop in-flight
 // fetching and clear all per-block state, so a second StartFetching on the same
 // overlay starts from clean preconditions.

@@ -38,20 +38,25 @@ struct PrecomputedData
     //! Randomly generated Coin values.
     Coin coins[NUM_COINS];
 
-    //! Block with a tx containing as inputs the above outpoints.
-    CBlock block;
+    //! Block used for CoinsViewOverlay::StartFetching. Its inputs use a different hash prefix
+    //! from outpoints[] so the simulation's coin operations (which use outpoints[]) can run in
+    //! arbitrary order without violating FetchCoinFromBase's sequential access invariant. The
+    //! ConsumeNextFetchInput operation explicitly consumes these inputs in order to exercise the
+    //! FetchCoinFromBase fast path.
+    CBlock fetch_block;
 
     PrecomputedData()
     {
         static const uint8_t PREFIX_O[1] = {'o'}; /** Hash prefix for outpoint hashes. */
+        static const uint8_t PREFIX_F[1] = {'f'}; /** Hash prefix for fetch_block outpoint hashes. */
         static const uint8_t PREFIX_S[1] = {'s'}; /** Hash prefix for coins scriptPubKeys. */
         static const uint8_t PREFIX_M[1] = {'m'}; /** Hash prefix for coins nValue/fCoinBase. */
 
         CMutableTransaction coinbase;
         coinbase.vin.emplace_back();
-        block.vtx.push_back(MakeTransactionRef(coinbase));
+        fetch_block.vtx.push_back(MakeTransactionRef(coinbase));
 
-        CMutableTransaction tx;
+        CMutableTransaction fetch_tx;
         for (uint32_t i = 0; i < NUM_OUTPOINTS; ++i) {
             uint32_t idx = (i * 1200U) >> 12; /* Map 3 or 4 entries to same txid. */
             const uint8_t ser[4] = {uint8_t(idx), uint8_t(idx >> 8), uint8_t(idx >> 16), uint8_t(idx >> 24)};
@@ -59,9 +64,11 @@ struct PrecomputedData
             CSHA256().Write(PREFIX_O, 1).Write(ser, sizeof(ser)).Finalize(txid.begin());
             outpoints[i].hash = Txid::FromUint256(txid);
             outpoints[i].n = i;
-            tx.vin.emplace_back(outpoints[i]);
+            uint256 fetch_txid;
+            CSHA256().Write(PREFIX_F, 1).Write(ser, sizeof(ser)).Finalize(fetch_txid.begin());
+            fetch_tx.vin.emplace_back(Txid::FromUint256(fetch_txid), i);
         }
-        block.vtx.push_back(MakeTransactionRef(tx));
+        fetch_block.vtx.push_back(MakeTransactionRef(fetch_tx));
 
         for (uint32_t i = 0; i < NUM_COINS; ++i) {
             const uint8_t ser[4] = {uint8_t(i), uint8_t(i >> 8), uint8_t(i >> 16), uint8_t(i >> 24)};
@@ -230,6 +237,8 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
     std::vector<std::unique_ptr<CCoinsViewCache>> caches;
     /** Long-lived StartFetching guard (nullptr unless corresponding level is a CoinsViewOverlay). */
     std::unique_ptr<OverlayFetchScope> overlay_fetch_scope;
+    /** How many fetch_block inputs have been consumed since the last StartFetching call. */
+    uint32_t fetch_tail{0};
     /** Simulated cache data (sim_caches[0] matches bottom, sim_caches[i+1] matches caches[i]). */
     CacheLevel sim_caches[MAX_CACHES + 1];
     /** Current height in the simulation. */
@@ -403,6 +412,16 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
                 caches.back()->Uncache(data.outpoints[outpointidx]);
             },
 
+            [&]() { // ConsumeNextFetchInput: exercises CoinsViewOverlay::FetchCoinFromBase fast path.
+                if (!overlay_fetch_scope) return;
+                const auto& fetch_inputs{data.fetch_block.vtx[1]->vin};
+                if (fetch_tail >= fetch_inputs.size()) return;
+                auto& overlay{static_cast<CoinsViewOverlay&>(*caches.back())};
+                // fetch_block outpoints are not seeded in the view, so GetCoin should always
+                // return nullopt (whether via the fast path or the fallback after CancelFetch).
+                assert(!overlay.GetCoin(fetch_inputs[fetch_tail++].prevout));
+            },
+
             [&]() { // Add a cache level (if not already at the max).
                 if (caches.size() != MAX_CACHES) {
                     if (overlay_fetch_scope) {
@@ -417,7 +436,8 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
                     } else {
                         caches.emplace_back(new CoinsViewOverlay(&*caches.back(), g_thread_pool, /*deterministic=*/true));
                         auto& overlay{static_cast<CoinsViewOverlay&>(*caches.back())};
-                        overlay_fetch_scope = std::make_unique<OverlayFetchScope>(overlay, data.block);
+                        overlay_fetch_scope = std::make_unique<OverlayFetchScope>(overlay, data.fetch_block);
+                        fetch_tail = 0;
                     }
                     // Apply to simulation data.
                     sim_caches[caches.size()].Wipe();
@@ -459,7 +479,8 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
                 if (overlay_fetch_scope && provider.ConsumeBool()) {
                     overlay_fetch_scope.reset();
                     auto& overlay{static_cast<CoinsViewOverlay&>(*caches.back())};
-                    overlay_fetch_scope = std::make_unique<OverlayFetchScope>(overlay, data.block);
+                    overlay_fetch_scope = std::make_unique<OverlayFetchScope>(overlay, data.fetch_block);
+                    fetch_tail = 0;
                 } else {
                     (void)caches.back()->CreateResetGuard();
                 }
