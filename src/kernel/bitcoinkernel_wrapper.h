@@ -1290,6 +1290,19 @@ public:
     MAKE_RANGE_METHOD(TxsSpentOutputs, BlockSpentOutputs, &BlockSpentOutputs::Count, &BlockSpentOutputs::GetTxSpentOutputs, *this)
 };
 
+class Clock : public UniqueHandle<btck_Clock, btck_clock_destroy>
+{
+public:
+    Clock() : UniqueHandle{btck_clock_create()} {}
+
+    void SetTime(std::optional<std::chrono::seconds> now)
+    {
+        if (btck_clock_set_time(get(), now ? now->count() : 0) != 0) {
+            throw std::runtime_error("timestamp out of range");
+        }
+    }
+};
+
 class ChainMan : UniqueHandle<btck_ChainstateManager, btck_chainstate_manager_destroy>
 {
 public:
@@ -1326,11 +1339,9 @@ public:
         return BlockValidationState{state};
     }
 
-    void SetClockTime(std::optional<std::chrono::seconds> now)
+    void SetClock(const btck_Clock* clock)
     {
-        if (btck_chainstate_manager_set_clock_time(get(), now ? now->count() : 0) != 0) {
-            throw std::runtime_error("timestamp out of range");
-        }
+        btck_chainstate_manager_set_clock(get(), clock);
     }
 
     ChainView GetChain() const

@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -1009,15 +1010,14 @@ public:
     bool ShouldCheckBlockIndex() const;
 
     /**
-     * Return the current time for use in validation and IBD checks. Uses the
-     * m_clock_now_seconds value if one has been set, otherwise uses NodeClock.
-     * Prefer this over NodeClock::now() in all validation paths so that kernel
-     * library users can control clock times used for validation.
+     * Return the current time for use in validation and IBD checks. Calls
+     * m_clock if set, otherwise uses NodeClock. Prefer this over
+     * NodeClock::now() in all validation paths so that kernel library users
+     * can control clock times used for validation.
      */
     NodeClock::time_point Now() const
     {
-        const auto clock{m_clock_now_seconds.load(std::memory_order_relaxed)};
-        return clock != std::chrono::seconds{0} ? NodeSeconds{clock} : NodeClock::_now_nondet();
+        return m_clock ? m_clock() : NodeClock::_now_nondet();
     }
 
     const arith_uint256& MinimumChainWork() const { return *Assert(m_options.minimum_chain_work); }
@@ -1062,11 +1062,10 @@ public:
     std::atomic_bool m_cached_is_ibd{true};
 
     /**
-     * Clock time for validation, scoped to this chainstate manager.
-     * Zero means use NodeClock; any other value is seconds since epoch.
-     * Stored as an atomic so Now() can be called lock-free from any thread.
+     * Clock for validation, scoped to this chainstate manager. If set,
+     * Now() calls it instead of NodeClock. Set via the kernel API.
      */
-    std::atomic<std::chrono::seconds> m_clock_now_seconds{};
+    std::function<NodeClock::time_point()> m_clock;
 
     /**
      * Every received block is assigned a unique and increasing identifier, so we

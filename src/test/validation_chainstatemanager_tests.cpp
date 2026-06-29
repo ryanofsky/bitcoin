@@ -180,7 +180,7 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_ibd_exit_after_loading_blocks, ChainTe
     // across a second boundary that would cause the tip_recent=true case to
     // spuriously fail.
     const NodeSeconds frozen_now{Now<NodeSeconds>()};
-    chainman.m_clock_now_seconds.store(frozen_now.time_since_epoch(), std::memory_order_relaxed);
+    chainman.m_clock = [frozen_now]() { return frozen_now; };
 
     auto apply{[&](bool cached_is_ibd, bool loading_blocks, bool tip_exists, bool enough_work, bool tip_recent) {
         LOCK(::cs_main);

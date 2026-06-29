@@ -49,7 +49,7 @@ FUZZ_TARGET(utxo_total_supply)
     auto& node{test_setup.m_node};
     auto& chainman{*Assert(test_setup.m_node.chainman)};
     // Set per-chainman clock before loading chainstate so IBD checks use it
-    chainman.m_clock_now_seconds.store(fuzzed_time.time_since_epoch(), std::memory_order_relaxed);
+    chainman.m_clock = [fuzzed_time]() { return fuzzed_time; };
     // Create chainstate
     test_setup.LoadVerifyActivateChainstate();
 

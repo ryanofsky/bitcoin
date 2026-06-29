@@ -227,6 +227,20 @@ typedef struct btck_ChainstateManagerOptions btck_ChainstateManagerOptions;
 typedef struct btck_ChainstateManager btck_ChainstateManager;
 
 /**
+ * Opaque data structure for a clock that provides the current time.
+ *
+ * A clock wraps a user-supplied callback and can be attached to one or more
+ * chainstate managers via @ref btck_chainstate_manager_set_clock. All
+ * managers sharing the same clock will use it as their time source, so a
+ * single update (e.g. advancing the callback's state) is reflected everywhere.
+ *
+ * The clock's lifetime must exceed that of every chainstate manager it is
+ * attached to, or until replaced by another @ref btck_chainstate_manager_set_clock
+ * call.
+ */
+typedef struct btck_Clock btck_Clock;
+
+/**
  * Opaque data structure for holding a block.
  */
 typedef struct btck_Block btck_Block;
@@ -1251,7 +1265,7 @@ BITCOINKERNEL_API const btck_BlockTreeEntry* btck_chainstate_manager_get_best_en
  *
  * Time-sensitive checks (e.g. the future-time check) use the chainstate
  * manager's current time, which can be overridden via
- * @ref btck_chainstate_manager_set_clock_time.
+ * @ref btck_chainstate_manager_set_clock.
  *
  * @param[in] chainstate_manager        Non-null.
  * @param[in] header                    Non-null btck_BlockHeader to be validated.
@@ -1262,24 +1276,59 @@ BITCOINKERNEL_API btck_BlockValidationState* BITCOINKERNEL_WARN_UNUSED_RESULT bt
     const btck_BlockHeader* header) BITCOINKERNEL_ARG_NONNULL(1, 2);
 
 /**
- * @brief Override the current time used by this chainstate manager.
+ * @brief Create a clock.
  *
- * Affects all time-sensitive operations scoped to this chainstate manager:
- * the block header future-time check, the IBD latch (IsTipRecent), header
- * sync progress estimates, and the verification progress value passed to
- * block tip callbacks.
+ * The clock stores a time value that drives all time-sensitive operations in
+ * any chainstate manager it is attached to (block header future-time check,
+ * IBD latch, header sync progress estimates, verification progress callbacks).
+ *
+ * A single clock may be attached to multiple chainstate managers. Updating
+ * the clock's time via @ref btck_clock_set_time is immediately visible to all
+ * of them without needing to call @ref btck_chainstate_manager_set_clock again.
+ *
+ * The clock's lifetime must exceed that of every chainstate manager it is
+ * attached to, or until replaced by another @ref btck_chainstate_manager_set_clock
+ * call.
+ *
+ * @return The clock, or null on allocation failure.
+ */
+BITCOINKERNEL_API btck_Clock* BITCOINKERNEL_WARN_UNUSED_RESULT btck_clock_create();
+
+/**
+ * @brief Set the time returned by a clock.
+ *
+ * @param[in] clock       Non-null.
+ * @param[in] now_seconds Unix epoch seconds in the range [1, 4294967295], or 0
+ *                        to revert this clock to system time. The upper bound
+ *                        matches the maximum value of a block header timestamp.
+ * @return                0 on success, non-zero if now_seconds is negative or
+ *                        exceeds 4294967295.
+ */
+BITCOINKERNEL_API int BITCOINKERNEL_WARN_UNUSED_RESULT btck_clock_set_time(
+    btck_Clock* clock,
+    int64_t now_seconds) BITCOINKERNEL_ARG_NONNULL(1);
+
+/**
+ * @brief Destroy a clock.
+ *
+ * Must not be called while the clock is still attached to a chainstate manager.
+ */
+BITCOINKERNEL_API void btck_clock_destroy(btck_Clock* clock);
+
+/**
+ * @brief Set the clock used by this chainstate manager for all time-sensitive
+ * operations.
+ *
+ * The same clock may be passed to multiple chainstate managers. The clock
+ * must outlive the chainstate manager (or until replaced by another call to
+ * this function).
  *
  * @param[in] chainstate_manager  Non-null.
- * @param[in] now_seconds         Unix epoch seconds in the range
- *                                [1, 4294967295], or 0 to restore the
- *                                system clock. The upper bound matches the
- *                                maximum value of a block header timestamp.
- * @return                        0 on success, non-zero if now_seconds is
- *                                negative or exceeds 4294967295.
+ * @param[in] clock               Clock to use, or null to restore the system clock.
  */
-BITCOINKERNEL_API int BITCOINKERNEL_WARN_UNUSED_RESULT btck_chainstate_manager_set_clock_time(
+BITCOINKERNEL_API void btck_chainstate_manager_set_clock(
     btck_ChainstateManager* chainstate_manager,
-    int64_t now_seconds) BITCOINKERNEL_ARG_NONNULL(1);
+    const btck_Clock* clock) BITCOINKERNEL_ARG_NONNULL(1);
 
 /**
  * @brief Triggers the start of a reindex if the wipe options were previously
@@ -1308,7 +1357,7 @@ BITCOINKERNEL_API int BITCOINKERNEL_WARN_UNUSED_RESULT btck_chainstate_manager_i
  *
  * Time-sensitive checks (e.g. the future-time check) and the IBD latch use
  * the chainstate manager's current time, which can be overridden
- * via @ref btck_chainstate_manager_set_clock_time.
+ * via @ref btck_chainstate_manager_set_clock.
  *
  * @param[in] chainstate_manager Non-null.
  * @param[in] block              Non-null, block to be validated.
