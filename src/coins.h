@@ -701,8 +701,8 @@ private:
 
     std::optional<Coin> FetchCoinFromBase(const COutPoint& outpoint) const override
     {
-        // This assumes ConnectBlock accesses all inputs in the same order as
-        // they are added to m_inputs in StartFetching.
+        // ConnectBlock must access inputs in the same order they are added to m_inputs
+        // in StartFetching; the assert below enforces this.
         if (m_input_tail < m_inputs.size() && m_inputs[m_input_tail].outpoint == outpoint) {
             // We advance the tail since the input is cached and not accessed through this method again.
             auto& input{m_inputs[m_input_tail++]};
@@ -712,7 +712,11 @@ private:
             return std::move(input.coin);
         }
 
-        // We will only get here for BIP30 checks, an invalid block, or if the threadpool has not been started.
+        // Only BIP30 checks and non-input lookups should reach here; a queued input accessed
+        // out of order would violate the ordering invariant ConnectBlock relies on. Check only
+        // the unconsumed range: absent/spent coins aren't cached, so an already-consumed input
+        // may be re-looked-up legitimately via the fallback path.
+        CheckInputFetchOrder(outpoint);
         return base->PeekCoin(outpoint);
     }
 
@@ -721,6 +725,7 @@ private:
     std::vector<std::future<void>> m_futures{};
 
     void CheckAllInputsConsumed() noexcept;
+    void CheckInputFetchOrder(const COutPoint& outpoint) const noexcept;
 
 protected:
     void Reset() noexcept override

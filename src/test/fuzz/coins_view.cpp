@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <coins.h>
+#include <crypto/sha256.h>
 #include <consensus/amount.h>
 #include <consensus/tx_check.h>
 #include <consensus/tx_verify.h>
@@ -29,6 +30,7 @@
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -99,9 +101,16 @@ void StartPoolIfNeeded() EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
     if (!g_thread_pool->WorkersCount()) g_thread_pool->Start(DEFAULT_PREVOUTFETCH_THREADS);
 }
 
-//! Build a random block and seed a view with utxos for its inputs.
-CBlock BuildRandomBlock(FuzzedDataProvider& fuzzed_data_provider, CCoinsView& view)
+//! Build a deterministic block with fixed outpoints (derived from a hash prefix, not fuzz data)
+//! and seed the view with coins for its inputs. Used for StartFetching so that the fetch block's
+//! outpoints are not in the fuzz-data address space: FetchCoinFromBase asserts that no unconsumed
+//! queued input is accessed via the fallback path, and the fuzzer cannot construct a random_out_point
+//! that collides with a SHA256-derived outpoint without guessing specific hash outputs.
+CBlock BuildFetchBlock(CCoinsView& view)
 {
+    static const uint8_t PREFIX[1] = {'f'};
+    static constexpr uint32_t NUM_FETCH_INPUTS{20};
+
     CBlock block;
     CMutableTransaction coinbase;
     coinbase.vin.emplace_back();
@@ -110,24 +119,18 @@ CBlock BuildRandomBlock(FuzzedDataProvider& fuzzed_data_provider, CCoinsView& vi
     CCoinsViewCache seed_cache{&view, /*deterministic=*/true};
     seed_cache.SetBestBlock(uint256::ONE);
 
-    Txid prevhash{Txid::FromUint256(ConsumeUInt256(fuzzed_data_provider))};
-    LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 100)
-    {
-        CMutableTransaction tx;
-        LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 100)
-        {
-            const Txid txid{fuzzed_data_provider.ConsumeBool()
-                                ? Txid::FromUint256(ConsumeUInt256(fuzzed_data_provider))
-                                : prevhash};
-            const COutPoint outpoint{txid, fuzzed_data_provider.ConsumeIntegral<uint32_t>()};
-            if (auto coin{ConsumeDeserializable<Coin>(fuzzed_data_provider)}; coin && !coin->IsSpent()) {
-                seed_cache.AddCoin(outpoint, std::move(*coin), /*possible_overwrite=*/true);
-            }
-            tx.vin.emplace_back(outpoint);
-        }
-        prevhash = tx.GetHash();
-        block.vtx.push_back(MakeTransactionRef(tx));
+    CMutableTransaction tx;
+    for (uint32_t i = 0; i < NUM_FETCH_INPUTS; ++i) {
+        const uint8_t ser[4] = {uint8_t(i), uint8_t(i >> 8), uint8_t(i >> 16), uint8_t(i >> 24)};
+        uint256 txid;
+        CSHA256().Write(PREFIX, 1).Write(ser, sizeof(ser)).Finalize(txid.begin());
+        const COutPoint outpoint{Txid::FromUint256(txid), i};
+        Coin coin;
+        coin.out.nValue = i + 1;
+        seed_cache.AddCoin(outpoint, std::move(coin), /*possible_overwrite=*/false);
+        tx.vin.emplace_back(outpoint);
     }
+    block.vtx.push_back(MakeTransactionRef(tx));
 
     seed_cache.Flush();
     return block;
@@ -140,7 +143,7 @@ void initialize_coins_view()
     static const auto testing_setup = MakeNoLogFileContext<>();
 }
 
-void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& coins_view_cache, CCoinsView* backend_coins_view)
+void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& coins_view_cache, CCoinsView* backend_coins_view, std::span<const COutPoint> fetch_outpoints = {})
 {
     auto* const db{dynamic_cast<CCoinsViewDB*>(backend_coins_view)};
     auto* const overlay{dynamic_cast<CoinsViewOverlay*>(&coins_view_cache)};
@@ -152,6 +155,7 @@ void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& co
     COutPoint random_out_point;
     Coin random_coin;
     CMutableTransaction random_mutable_transaction;
+    size_t fetch_tail{0};
     LIMITED_WHILE(good_data && fuzzed_data_provider.ConsumeBool(), 10'000)
     {
         CallOneOf(
@@ -205,6 +209,14 @@ void TestCoinsView(FuzzedDataProvider& fuzzed_data_provider, CCoinsViewCache& co
             },
             [&] {
                 coins_view_cache.Uncache(random_out_point);
+            },
+            [&] {
+                // Consume the next prefetched input in order, exercising the fast path in
+                // CoinsViewOverlay::FetchCoinFromBase (including the input.ready.wait() call).
+                // After CancelFetch or SetBackend, the lookup falls through to the base instead,
+                // but no assert fires since fetch_outpoints never collide with random_out_point.
+                if (fetch_tail >= fetch_outpoints.size()) return;
+                (void)coins_view_cache.GetCoin(fetch_outpoints[fetch_tail++]);
             },
             [&] {
                 const bool use_original_backend{fuzzed_data_provider.ConsumeBool()};
@@ -448,9 +460,11 @@ FUZZ_TARGET(coins_view_overlay, .init = initialize_coins_view) EXCLUSIVE_LOCKS_R
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
     MutationGuardCoinsViewCache backend_cache{&CoinsViewEmpty::Get(), /*deterministic=*/true};
     CoinsViewOverlay coins_view_cache{&backend_cache, g_thread_pool, /*deterministic=*/true};
-    CBlock block{BuildRandomBlock(fuzzed_data_provider, backend_cache)};
-    const auto reset_guard{coins_view_cache.StartFetching(block)};
-    TestCoinsView(fuzzed_data_provider, coins_view_cache, &backend_cache);
+    CBlock fetch_block{BuildFetchBlock(backend_cache)};
+    std::vector<COutPoint> fetch_outpoints;
+    for (const auto& input : fetch_block.vtx[1]->vin) fetch_outpoints.emplace_back(input.prevout);
+    const auto reset_guard{coins_view_cache.StartFetching(fetch_block)};
+    TestCoinsView(fuzzed_data_provider, coins_view_cache, &backend_cache, fetch_outpoints);
 }
 
 FUZZ_TARGET(coins_view_stacked, .init = initialize_coins_view) EXCLUSIVE_LOCKS_REQUIRED(!g_thread_pool_mutex)
@@ -467,10 +481,12 @@ FUZZ_TARGET(coins_view_stacked, .init = initialize_coins_view) EXCLUSIVE_LOCKS_R
     CCoinsViewCache backend_cache{&backend_base_coins_view, /*deterministic=*/true};
     TestCoinsView(fuzzed_data_provider, backend_cache, &backend_base_coins_view);
     CoinsViewOverlay coins_view_cache{&backend_cache, g_thread_pool, /*deterministic=*/true};
-    CBlock block{BuildRandomBlock(fuzzed_data_provider, backend_base_coins_view)};
+    CBlock fetch_block{BuildFetchBlock(backend_cache)};
+    std::vector<COutPoint> fetch_outpoints;
+    for (const auto& input : fetch_block.vtx[1]->vin) fetch_outpoints.emplace_back(input.prevout);
     {
-        const auto reset_guard{coins_view_cache.StartFetching(block)};
-        TestCoinsView(fuzzed_data_provider, coins_view_cache, &backend_cache);
+        const auto reset_guard{coins_view_cache.StartFetching(fetch_block)};
+        TestCoinsView(fuzzed_data_provider, coins_view_cache, &backend_cache, fetch_outpoints);
     }
     TestCoinsView(fuzzed_data_provider, backend_cache, &backend_base_coins_view);
 }

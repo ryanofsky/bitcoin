@@ -375,6 +375,15 @@ void CoinsViewOverlay::CheckAllInputsConsumed() noexcept
     }
 }
 
+void CoinsViewOverlay::CheckInputFetchOrder(const COutPoint& outpoint) const noexcept
+{
+    if (!Assume(std::none_of(m_inputs.begin() + m_input_tail, m_inputs.end(),
+            [&](const InputToFetch& i) { return i.outpoint == outpoint; }))) {
+        LogWarning("Internal bug detected: block %s input was fetched out of order (%s %s). Please report this issue here: %s\n",
+            m_fetch_block_hash.ToString(), CLIENT_NAME, FormatFullVersion(), CLIENT_BUGREPORT);
+    }
+}
+
 CCoinsViewCache::ResetGuard CoinsViewOverlay::StartFetching(const CBlock& block LIFETIMEBOUND) noexcept
 {
     Assert(m_futures.empty());
