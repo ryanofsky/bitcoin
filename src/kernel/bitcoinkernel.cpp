@@ -477,6 +477,16 @@ struct ChainstateManagerOptions {
     }
 };
 
+struct ClockData {
+    std::atomic<std::chrono::seconds> m_seconds{};
+
+    NodeClock::time_point now() const
+    {
+        const auto t{m_seconds.load(std::memory_order_relaxed)};
+        return t != std::chrono::seconds{0} ? NodeSeconds{t} : NodeClock::_now_nondet();
+    }
+};
+
 struct ChainMan {
     std::unique_ptr<ChainstateManager> m_chainman;
     std::shared_ptr<const Context> m_context;
@@ -491,6 +501,7 @@ struct btck_Transaction : Handle<btck_Transaction, std::shared_ptr<const CTransa
 struct btck_TransactionOutput : Handle<btck_TransactionOutput, CTxOut> {};
 struct btck_ScriptPubkey : Handle<btck_ScriptPubkey, CScript> {};
 struct btck_LoggingConnection : Handle<btck_LoggingConnection, LoggingConnection> {};
+struct btck_Clock : Handle<btck_Clock, ClockData> {};
 struct btck_ContextOptions : Handle<btck_ContextOptions, ContextOptions> {};
 struct btck_Context : Handle<btck_Context, std::shared_ptr<const Context>> {};
 struct btck_ChainParameters : Handle<btck_ChainParameters, CChainParams> {};
@@ -1357,13 +1368,37 @@ btck_BlockValidationState* btck_chainstate_manager_process_block_header(
     }
 }
 
-int btck_chainstate_manager_set_clock_time(btck_ChainstateManager* chainstate_manager, int64_t now_seconds)
+btck_Clock* btck_clock_create()
+{
+    try {
+        return btck_Clock::create();
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+int btck_clock_set_time(btck_Clock* clock, int64_t now_seconds)
 {
     constexpr int64_t max_time{std::numeric_limits<uint32_t>::max()};
     if (now_seconds < 0 || now_seconds > max_time) return -1;
-    auto& chainman = btck_ChainstateManager::get(chainstate_manager).m_chainman;
-    chainman->m_clock_now_seconds.store(std::chrono::seconds{now_seconds}, std::memory_order_relaxed);
+    btck_Clock::get(clock).m_seconds.store(std::chrono::seconds{now_seconds}, std::memory_order_relaxed);
     return 0;
+}
+
+void btck_clock_destroy(btck_Clock* clock)
+{
+    delete clock;
+}
+
+void btck_chainstate_manager_set_clock(btck_ChainstateManager* chainstate_manager, const btck_Clock* clock)
+{
+    auto& chainman = btck_ChainstateManager::get(chainstate_manager).m_chainman;
+    if (clock) {
+        const ClockData* data{&btck_Clock::get(clock)};
+        chainman->m_clock = [data]() { return data->now(); };
+    } else {
+        chainman->m_clock = nullptr;
+    }
 }
 
 const btck_Chain* btck_chainstate_manager_get_active_chain(const btck_ChainstateManager* chainman)
