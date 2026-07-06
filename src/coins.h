@@ -498,7 +498,7 @@ public:
      * If reallocate_cache is false, the cache will retain the same memory footprint
      * after flushing and should be destroyed to deallocate.
      */
-    virtual void Flush(bool reallocate_cache = true);
+    void Flush(bool reallocate_cache = true);
 
     /**
      * Push the modifications applied to this cache to its base while retaining
@@ -591,9 +591,11 @@ private:
  * coin is then moved out and returned. Since the main thread is the only consumer of validation results, it blocks
  * on the specific input it needs rather than racing workers for other inputs.
  *
- * StopFetching() is called in Flush() and in Reset() (the per-block teardown) so workers stop before the block they
- * reference goes away. It stops fetching by moving m_input_head to the end of m_inputs (so workers quickly exit),
- * then waits for all futures to complete and clears the per-block state (m_inputs and the head/tail counters).
+ * Fetch threads read from base via PeekCoin(). It is not safe to write to or replace base while fetching is
+ * in progress. Call CancelFetch() before any operation that mutates base (Flush/Sync/SetBackend). StopFetching()
+ * is also called in Reset() (the per-block teardown) so threads stop before the block they reference goes away.
+ * It moves m_input_head to the end of m_inputs (so workers quickly exit), waits for all futures to complete,
+ * and clears per-block state (m_inputs and the head/tail counters).
  *
  *       Workers advance m_input_head to fetch inputs. Main thread advances m_input_tail to consume.
  *
@@ -628,6 +630,8 @@ private:
     std::atomic_uint32_t m_input_head{0};
     //! The latest input not yet accessed by a consumer. Only the main thread increments this.
     mutable uint32_t m_input_tail{0};
+    //! Hash of the block currently being fetched, for use in log messages.
+    uint256 m_fetch_block_hash{};
 
     //! The inputs of the block which is being fetched.
     struct InputToFetch {
@@ -671,9 +675,11 @@ private:
         return true;
     }
 
-    //! Stop all worker threads and clear fetching data.
-    //! Calling this is idempotent, and may safely be called if not fetching.
-    void StopFetching() noexcept
+    //! Stop all worker threads and clear fetching data. After this returns, no threads are
+    //! reading from base via PeekCoin(), so it is safe to write to or replace it. Idempotent.
+    //! Pass cancel=false (the default) for a normal end-of-block stop; pass cancel=true when
+    //! abandoning a block before all its inputs have been consumed.
+    void StopFetching(bool cancel = false) noexcept
     {
         if (m_futures.empty()) {
             Assert(m_inputs.empty());
@@ -681,6 +687,7 @@ private:
             Assert(m_input_tail == 0);
             return;
         }
+        if (!cancel) CheckAllInputsConsumed();
         // Skip fetching the rest of the inputs by moving the head to the end.
         m_input_head.store(m_inputs.size(), std::memory_order_relaxed);
         // Wait for all threads to stop.
@@ -689,6 +696,7 @@ private:
         m_inputs.clear();
         m_input_head.store(0, std::memory_order_relaxed);
         m_input_tail = 0;
+        m_fetch_block_hash = uint256{};
     }
 
     std::optional<Coin> FetchCoinFromBase(const COutPoint& outpoint) const override
@@ -712,10 +720,12 @@ private:
     std::shared_ptr<ThreadPool> m_thread_pool;
     std::vector<std::future<void>> m_futures{};
 
+    void CheckAllInputsConsumed() noexcept;
+
 protected:
     void Reset() noexcept override
     {
-        StopFetching();
+        StopFetching(/*cancel=*/false);
         CCoinsViewCache::Reset();
     }
 
@@ -727,19 +737,14 @@ public:
         Assert(m_thread_pool);
     }
 
-    ~CoinsViewOverlay() noexcept override { StopFetching(); }
+    ~CoinsViewOverlay() noexcept override { StopFetching(/*cancel=*/true); }
 
     //! Start fetching inputs from block.
     [[nodiscard]] ResetGuard StartFetching(const CBlock& block LIFETIMEBOUND) noexcept;
 
-    void Flush(bool reallocate_cache = true) override
-    {
-        if (!Assume(AllInputsConsumed())) {
-            LogWarning("Block %s input prevout prefetch queue was not fully consumed; inputs were accessed out of order, so prefetching degraded to serial lookups for this block.", GetBestBlock().ToString());
-        }
-        StopFetching();
-        CCoinsViewCache::Flush(reallocate_cache);
-    }
+    //! Stop in-progress input fetching. Fetch threads read from base via PeekCoin(); call this
+    //! before any operation that writes to or replaces base (Flush/Sync/SetBackend).
+    void CancelFetch() noexcept { StopFetching(/*cancel=*/true); }
 
     //! Verify that all parallel fetched input prevouts have been consumed.
     bool AllInputsConsumed() const noexcept { return m_input_tail == m_inputs.size(); }

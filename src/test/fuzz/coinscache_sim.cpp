@@ -406,6 +406,8 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
             [&]() { // Add a cache level (if not already at the max).
                 if (caches.size() != MAX_CACHES) {
                     if (overlay_fetch_scope) {
+                        // Not all inputs consumed in the simulation; cancel before Reset().
+                        static_cast<CoinsViewOverlay&>(*caches.back()).CancelFetch();
                         overlay_fetch_scope.reset();
                         sim_caches[caches.size()].Wipe();
                     }
@@ -425,26 +427,26 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
             [&]() { // Remove a cache level.
                 // Apply to real caches (this reduces caches.size(), implicitly doing the same on the simulation data).
                 caches.back()->SanityCheck();
+                // Not all inputs consumed in the simulation; cancel before Reset().
+                if (overlay_fetch_scope) static_cast<CoinsViewOverlay&>(*caches.back()).CancelFetch();
                 overlay_fetch_scope.reset();
                 caches.pop_back();
             },
 
             [&]() { // Flush.
-                // CoinsViewOverlay::Flush() must have all inputs consumed before being called
-                if (auto* overlay{dynamic_cast<CoinsViewOverlay*>(caches.back().get())};
-                    overlay && !overlay->AllInputsConsumed()) {
-                    return;
-                }
                 // Apply to simulation data.
                 flush();
+                // Fetch threads read from base via PeekCoin(); stop before Flush writes to it.
+                if (overlay_fetch_scope) static_cast<CoinsViewOverlay&>(*caches.back()).CancelFetch();
                 // Apply to real caches.
                 caches.back()->Flush(/*reallocate_cache=*/provider.ConsumeBool());
             },
 
             [&]() { // Sync.
-                if (overlay_fetch_scope) return; // CoinsViewOverlay::Sync() is never called in production
                 // Apply to simulation data (note that in our simulation, syncing and flushing is the same thing).
                 flush();
+                // Fetch threads read from base via PeekCoin(); stop before Sync writes to it.
+                if (overlay_fetch_scope) static_cast<CoinsViewOverlay&>(*caches.back()).CancelFetch();
                 // Apply to real caches.
                 caches.back()->Sync();
             },
@@ -452,6 +454,8 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
             [&]() { // Reset.
                 sim_caches[caches.size()].Wipe();
                 // Apply to real caches. Optionally start fetching again.
+                // Not all inputs consumed in the simulation; cancel before Reset().
+                if (overlay_fetch_scope) static_cast<CoinsViewOverlay&>(*caches.back()).CancelFetch();
                 if (overlay_fetch_scope && provider.ConsumeBool()) {
                     overlay_fetch_scope.reset();
                     auto& overlay{static_cast<CoinsViewOverlay&>(*caches.back())};
@@ -516,4 +520,6 @@ FUZZ_TARGET(coinscache_sim, .init = [] { static auto setup{MakeNoLogFileContext<
             assert(realcoin->nHeight == sim->second);
         }
     }
+    // Not all inputs consumed in the simulation; cancel so overlay_fetch_scope can destruct cleanly.
+    if (overlay_fetch_scope) static_cast<CoinsViewOverlay&>(*caches.back()).CancelFetch();
 }

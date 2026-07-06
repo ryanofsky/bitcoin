@@ -3059,8 +3059,10 @@ bool Chainstate::ConnectTip(
             m_chainman.m_options.signals->BlockChecked(block_to_connect, state);
         }
         if (!rv) {
-            if (state.IsInvalid())
+            if (state.IsInvalid()) {
                 InvalidBlockFound(pindexNew, state);
+                view.CancelFetch(); // Fetch threads read from base via PeekCoin(); stop before reset guard destructs and calls Reset on base.
+            }
             LogError("%s: ConnectBlock %s failed, %s\n", __func__, pindexNew->GetBlockHash().ToString(), state.ToString());
             return false;
         }

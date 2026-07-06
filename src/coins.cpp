@@ -4,6 +4,7 @@
 
 #include <coins.h>
 
+#include <clientversion.h>
 #include <consensus/consensus.h>
 #include <primitives/block.h>
 #include <random.h>
@@ -366,12 +367,21 @@ void CCoinsViewCache::SanityCheck() const
     assert(recomputed_usage == cachedCoinsUsage);
 }
 
+void CoinsViewOverlay::CheckAllInputsConsumed() noexcept
+{
+    if (!Assume(AllInputsConsumed())) {
+        LogWarning("Internal bug detected: block %s input prefetch queue was not fully consumed (%s %s). Please report this issue here: %s\n",
+            m_fetch_block_hash.ToString(), CLIENT_NAME, FormatFullVersion(), CLIENT_BUGREPORT);
+    }
+}
+
 CCoinsViewCache::ResetGuard CoinsViewOverlay::StartFetching(const CBlock& block LIFETIMEBOUND) noexcept
 {
     Assert(m_futures.empty());
     Assert(m_inputs.empty());
     Assert(m_input_head.load(std::memory_order_relaxed) == 0);
     Assert(m_input_tail == 0);
+    m_fetch_block_hash = block.GetHash();
     if (const auto workers_count{m_thread_pool->WorkersCount()}; workers_count > 0) {
         // Loop through the block inputs and set their prevouts in the queue.
         // Filter inputs that spend outputs created earlier in the same block. These outputs will be created

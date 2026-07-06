@@ -244,6 +244,9 @@ BOOST_AUTO_TEST_CASE(fetch_out_of_order_input_uses_normal_lookup)
     BOOST_CHECK(view.HaveCoinInCache(out_of_order_input));
 
     CheckCache(block, view);
+    // The out-of-order access pre-cached input1, so CheckCache skips it in FetchCoinFromBase and
+    // m_input_tail gets stuck; not all prefetch queue entries are consumed.
+    view.CancelFetch();
 }
 
 // The ResetGuard returned by StartFetching must clear all per-block state when
