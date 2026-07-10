@@ -67,6 +67,7 @@ public:
     virtual int callExtended(int arg) = 0;
 };
 
+<<<<<<< HEAD
 class FooInit
 {
 };
@@ -88,6 +89,13 @@ public:
     int value() override { return m_value; }
     int m_value;
 };
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+=======
+class FooInit
+{
+};
+
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
 class FooImplementation
 {
 public:

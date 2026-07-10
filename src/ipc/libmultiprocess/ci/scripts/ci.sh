@@ -40,6 +40,7 @@ fi
 src_dir=$PWD
 mkdir -p "$CI_DIR"
 cd "$CI_DIR"
+<<<<<<< HEAD
 export CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)"
 git --no-pager log -1 || true
 cmake_args=("${CMAKE_ARGS[@]+"${CMAKE_ARGS[@]}"}")
@@ -58,6 +59,12 @@ if ! cmake "$src_dir" "${cmake_args[@]}"; then
   find . -ls || true
   false
 fi
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+cmake "$src_dir" "${CMAKE_ARGS[@]+"${CMAKE_ARGS[@]}"}"
+=======
+export CMAKE_BUILD_PARALLEL_LEVEL="$(nproc)"
+cmake "$src_dir" "${CMAKE_ARGS[@]+"${CMAKE_ARGS[@]}"}"
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
 if ver_ge "$cmake_ver" "3.15"; then
   cmake --build . -t "${BUILD_TARGETS[@]}" -- "${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"}"
 else

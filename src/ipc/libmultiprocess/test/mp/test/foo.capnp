@@ -45,6 +45,10 @@ interface FooInit $Proxy.wrap("mp::test::FooInit") {
     construct @0 () -> ();
 }
 
+interface FooInit $Proxy.wrap("mp::test::FooInit") {
+    construct @0 () -> ();
+}
+
 interface FooCallback $Proxy.wrap("mp::test::FooCallback") {
     destroy @0 (context :Proxy.Context) -> ();
     call @1 (context :Proxy.Context, arg :Int32) -> (result :Int32);

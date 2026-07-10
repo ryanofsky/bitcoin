@@ -289,6 +289,7 @@ std::string ThreadName(const char* exe_name);
 //! errors in python unit tests.
 std::string LogEscape(const kj::StringTree& string, size_t max_size);
 
+<<<<<<< HEAD
 using Stream = kj::Own<kj::AsyncIoStream>;
 
 using ProcessId = int;
@@ -299,6 +300,19 @@ inline constexpr SocketId SocketError{-1};
 //! argument. On unix this is the child socket fd number formatted as a string.
 using SpawnConnectInfo = std::string;
 
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+=======
+using Stream = kj::Own<kj::AsyncIoStream>;
+
+using ProcessId = int;
+using SocketId = int;
+constexpr SocketId SocketError{-1};
+
+//! Information about parent process passed to child process as a command-line
+//! argument. On unix this is the child socket fd number formatted as a string.
+using SpawnConnectInfo = std::string;
+
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
 //! Callback type used by SpawnProcess below.
 using SpawnConnectInfoToArgsFn = std::function<std::vector<std::string>(const SpawnConnectInfo&)>;
 

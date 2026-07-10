@@ -204,6 +204,13 @@ add_executable(mpgen src/mp/gen.cpp $<TARGET_OBJECTS:mputil>)
 add_executable(Libmultiprocess::mpgen ALIAS mpgen)
 target_include_directories(mpgen PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
 target_include_directories(mpgen PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+<<<<<<< HEAD
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+target_link_libraries(mpgen PRIVATE CapnProto::capnp)
+target_link_libraries(mpgen PRIVATE CapnProto::capnp-rpc)
+=======
+target_link_libraries(mpgen PRIVATE CapnProto::capnp)
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
 target_link_libraries(mpgen PRIVATE CapnProto::capnpc)
 target_link_libraries(mpgen PRIVATE CapnProto::capnp)
 target_link_libraries(mpgen PRIVATE CapnProto::kj)

@@ -137,8 +137,16 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+<<<<<<< HEAD
       CI_NIXPKGS_CHANNEL: nixos-26.05
       CI_NIX_CONFIG: |
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+      NIXPKGS_CHANNEL: nixos-25.05
+      NIX_EXTRA_CONFIG: |
+=======
+      NIXPKGS_CHANNEL: nixos-26.05
+      NIX_EXTRA_CONFIG: |
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
         keep-env-derivations = true
         keep-outputs = true
       CI_NIX_CONFIG_ACT: |

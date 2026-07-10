@@ -18,8 +18,15 @@ concurrency:
 
 env:
   BITCOIN_REPO: bitcoin/bitcoin
+<<<<<<< HEAD
   BITCOIN_CORE_REF: refs/heads/master
   LLVM_VERSION: 23
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+  LLVM_VERSION: 22
+=======
+  BITCOIN_CORE_REF: refs/heads/master
+  LLVM_VERSION: 22
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
   LIBCXX_DIR: /tmp/libcxx-build/
 
 jobs:

@@ -314,8 +314,16 @@ void EventLoop::loop()
             m_sync_fn = nullptr;
             m_cv.notify_all();
         } else if (done()) {
+<<<<<<< HEAD
             // Intentionally do not break if m_sync_fn was set, even if done()
             // would return true, to ensure that the sync() m_post_writer->write()
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+            // Intentionally do not break if m_post_fn was set, even if done()
+            // would return true, to ensure that the EventLoopRef write(post_fd)
+=======
+            // Intentionally do not break if m_post_fn was set, even if done()
+            // would return true, to ensure that the post() m_post_writer->write()
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
             // call always succeeds and the loop does not exit between the time
             // that the done condition is set and the write call is made.
             break;
@@ -341,8 +349,17 @@ void EventLoop::sync(kj::FunctionParam<void()> fn)
     }
     Lock lock(m_mutex);
     EventLoopRef ref(*this, &lock);
+<<<<<<< HEAD
     m_cv.wait(lock.m_lock, [this]() MP_REQUIRES(m_mutex) { return m_sync_fn == nullptr; });
     m_sync_fn = &fn;
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+    m_cv.wait(lock.m_lock, [this]() MP_REQUIRES(m_mutex) { return m_post_fn == nullptr; });
+    m_post_fn = &fn;
+    int post_fd{m_post_fd};
+=======
+    m_cv.wait(lock.m_lock, [this]() MP_REQUIRES(m_mutex) { return m_post_fn == nullptr; });
+    m_post_fn = &fn;
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
     Unlock(lock, [&] {
         char buffer = 0;
         m_post_writer->write(&buffer, 1);

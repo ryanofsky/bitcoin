@@ -66,6 +66,7 @@ size_t MaxFd()
     }
 }
 
+<<<<<<< HEAD
 //! Report an error and exit from the post-fork child of a multi-threaded
 //! process, where only async-signal-safe calls (like write and _exit) are
 //! allowed. Accepting only a reference to a char array (in practice a string
@@ -174,6 +175,117 @@ void KillAndReapChild(ProcessId pid)
     while (::waitpid(pid, /*status=*/nullptr, /*options=*/0) == -1 && errno == EINTR) {}
 }
 
+||||||| parent of 5fee9dcffdf (sync with libmultiprocess master)
+=======
+//! Report an error and exit from the post-fork child of a multi-threaded
+//! process, where only async-signal-safe calls (like write and _exit) are
+//! allowed. Accepting only a reference to a char array (in practice a string
+//! literal) ensures no allocation is needed at the call site.
+template <std::size_t N>
+[[noreturn]] void ChildFail(const char (&msg)[N]) noexcept
+{
+    const ssize_t written = ::write(STDERR_FILENO, msg, N - 1);
+    (void)written;
+    _exit(126);
+}
+
+enum class SpawnErrorOp
+{
+    CLOSE,
+    EXECVP,
+    READ,
+    FCNTL,
+};
+
+struct SpawnError {
+    SpawnErrorOp which;
+    int err;
+};
+
+const char* SpawnErrorName(SpawnErrorOp which)
+{
+    switch (which) {
+    case SpawnErrorOp::CLOSE: return "close";
+    case SpawnErrorOp::EXECVP: return "execvp";
+    case SpawnErrorOp::READ: return "read";
+    case SpawnErrorOp::FCNTL: return "fcntl";
+    }
+    return "unknown";
+}
+
+// Read the child's error report. Returns nullopt on success, or a SpawnError to
+// throw on failure. Success is a clean EOF: read() returns 0 with nothing
+// buffered because the child's write end was closed by a successful exec (via
+// FD_CLOEXEC). A fully-read struct is the failure the child reported. A read()
+// error, or an EOF partway through the struct (the child died mid-report), is
+// surfaced as a SpawnErrorOp::READ failure rather than being mistaken for
+// success. A single read() is not guaranteed to return all sizeof(SpawnError)
+// bytes (the socket is SOCK_STREAM, which has no message boundaries) and may be
+// interrupted by a signal, so loop until the whole struct is read.
+//
+// Note that a clean EOF is also what happens if the child is killed before it
+// reaches exec, so this function reports success in that case. There is no good
+// way to distinguish the two here, but callers will still see the failure when
+// they call WaitProcess and get the child's exit status.
+std::optional<SpawnError> ReadSpawnResult(int fd)
+{
+    SpawnError error{};
+    char* buf = reinterpret_cast<char*>(&error);
+    size_t remaining = sizeof(error);
+    while (remaining > 0) {
+        const ssize_t n = ::read(fd, buf, remaining);
+        if (n < 0) {
+            if (errno == EINTR) continue;
+            return SpawnError{.which = SpawnErrorOp::READ, .err = errno};
+        }
+        if (n == 0) {
+            if (remaining == sizeof(error)) return std::nullopt; // clean EOF: success
+            return SpawnError{.which = SpawnErrorOp::READ, .err = EPROTO}; // torn report
+        }
+        buf += n;
+        remaining -= static_cast<size_t>(n);
+    }
+    return error;
+}
+
+// Write the whole SpawnError to fd, retrying short writes and EINTR so the
+// parent never sees a torn struct. Runs in the post-fork child, so it must stay
+// async-signal-safe: it only calls write() and does not allocate or throw. This
+// is best-effort -- if the write cannot complete there is nothing useful the
+// child can do, so it stops and lets the caller _exit().
+void WriteSpawnError(int fd, const SpawnError& error)
+{
+    const char* buf = reinterpret_cast<const char*>(&error);
+    size_t remaining = sizeof(error);
+    while (remaining > 0) {
+        const ssize_t n = ::write(fd, buf, remaining);
+        if (n < 0) {
+            if (errno == EINTR) continue;
+            break;
+        }
+        buf += n;
+        remaining -= static_cast<size_t>(n);
+    }
+    if (remaining > 0) {
+        // The parent's read end is gone (e.g. the parent exited before the
+        // child could report), so the structured error can't be delivered.
+        // Leave a breadcrumb on stderr and exit. The exit code is irrelevant
+        // here since no live parent remains to wait on it.
+        ChildFail("SpawnProcess(child): failed and could not report error to parent\n");
+    }
+}
+
+// Get rid of a child process the parent is abandoning because SpawnProcess is
+// about to throw, so it is not left behind as a zombie. The child may still be
+// alive, so kill it first: waiting without that could block for as long as the 
+// spawned program runs.
+void KillAndReapChild(ProcessId pid)
+{
+    (void)::kill(pid, SIGKILL);
+    while (::waitpid(pid, /*status=*/nullptr, /*options=*/0) == -1 && errno == EINTR) {}
+}
+
+>>>>>>> 5fee9dcffdf (sync with libmultiprocess master)
 } // namespace
 
 // Copied from https://github.com/bitcoin/bitcoin/blob/d3e40af2597/src/util/threadnames.cpp#L21-L36
