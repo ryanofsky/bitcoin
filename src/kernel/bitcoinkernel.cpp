@@ -163,20 +163,130 @@ namespace {
 constexpr util::log::Level to_util(btck_LogLevel level)
 {
     switch (level) {
+<<<<<<< HEAD
     case btck_LogLevel_TRACE: {
         return util::log::Level::Trace;
+||||||| parent of 3a72f3040c2 (kernel: add missing log levels and categories)
+    case btck_LogLevel_INFO: {
+        return BCLog::Level::Info;
+=======
+    case btck_LogLevel_TRACE: {
+        return BCLog::Level::Trace;
+>>>>>>> 3a72f3040c2 (kernel: add missing log levels and categories)
     }
     case btck_LogLevel_DEBUG: {
         return util::log::Level::Debug;
     }
+<<<<<<< HEAD
     case btck_LogLevel_INFO: {
         return util::log::Level::Info;
+||||||| parent of 3a72f3040c2 (kernel: add missing log levels and categories)
+    case btck_LogLevel_TRACE: {
+        return BCLog::Level::Trace;
+=======
+    case btck_LogLevel_INFO: {
+        return BCLog::Level::Info;
+    }
+    case btck_LogLevel_WARNING: {
+        return BCLog::Level::Warning;
+    }
+    case btck_LogLevel_ERROR: {
+        return BCLog::Level::Error;
+>>>>>>> 3a72f3040c2 (kernel: add missing log levels and categories)
     }
     case btck_LogLevel_WARNING: {
         return util::log::Level::Warning;
     }
+<<<<<<< HEAD
     case btck_LogLevel_ERROR: {
         return util::log::Level::Error;
+||||||| parent of 3a72f3040c2 (kernel: add missing log levels and categories)
+    assert(false);
+}
+
+BCLog::LogFlags get_bclog_flag(btck_LogCategory category)
+{
+    switch (category) {
+    case btck_LogCategory_BENCH: {
+        return BCLog::LogFlags::BENCH;
+    }
+    case btck_LogCategory_BLOCKSTORAGE: {
+        return BCLog::LogFlags::BLOCKSTORAGE;
+    }
+    case btck_LogCategory_COINDB: {
+        return BCLog::LogFlags::COINDB;
+    }
+    case btck_LogCategory_LEVELDB: {
+        return BCLog::LogFlags::LEVELDB;
+    }
+    case btck_LogCategory_MEMPOOL: {
+        return BCLog::LogFlags::MEMPOOL;
+    }
+    case btck_LogCategory_PRUNE: {
+        return BCLog::LogFlags::PRUNE;
+    }
+    case btck_LogCategory_RAND: {
+        return BCLog::LogFlags::RAND;
+    }
+    case btck_LogCategory_REINDEX: {
+        return BCLog::LogFlags::REINDEX;
+    }
+    case btck_LogCategory_VALIDATION: {
+        return BCLog::LogFlags::VALIDATION;
+    }
+    case btck_LogCategory_KERNEL: {
+        return BCLog::LogFlags::KERNEL;
+    }
+    case btck_LogCategory_ALL: {
+        return BCLog::LogFlags::ALL;
+=======
+    assert(false);
+}
+
+BCLog::LogFlags get_bclog_flag(btck_LogCategory category)
+{
+    switch (category) {
+    case btck_LogCategory_BENCH: {
+        return BCLog::LogFlags::BENCH;
+    }
+    case btck_LogCategory_BLOCKSTORAGE: {
+        return BCLog::LogFlags::BLOCKSTORAGE;
+    }
+    case btck_LogCategory_COINDB: {
+        return BCLog::LogFlags::COINDB;
+    }
+    case btck_LogCategory_LEVELDB: {
+        return BCLog::LogFlags::LEVELDB;
+    }
+    case btck_LogCategory_MEMPOOL: {
+        return BCLog::LogFlags::MEMPOOL;
+    }
+    case btck_LogCategory_PRUNE: {
+        return BCLog::LogFlags::PRUNE;
+    }
+    case btck_LogCategory_RAND: {
+        return BCLog::LogFlags::RAND;
+    }
+    case btck_LogCategory_REINDEX: {
+        return BCLog::LogFlags::REINDEX;
+    }
+    case btck_LogCategory_VALIDATION: {
+        return BCLog::LogFlags::VALIDATION;
+    }
+    case btck_LogCategory_KERNEL: {
+        return BCLog::LogFlags::KERNEL;
+    }
+    case btck_LogCategory_TXPACKAGES: {
+        return BCLog::LogFlags::TXPACKAGES;
+    }
+#ifdef DEBUG_LOCKCONTENTION
+    case btck_LogCategory_LOCK: {
+        return BCLog::LogFlags::LOCK;
+    }
+#endif
+    case btck_LogCategory_ALL: {
+        return BCLog::LogFlags::ALL;
+>>>>>>> 3a72f3040c2 (kernel: add missing log levels and categories)
     }
     }
     assert(false);
