@@ -63,6 +63,7 @@ public:
     std::unique_ptr<interfaces::Init> spawnProcess(const char* new_exe_name) override
     {
 <<<<<<< HEAD
+<<<<<<< HEAD
         const auto [pid, socket] = m_process->spawn(new_exe_name, m_process_argv0);
 ||||||| parent of 2ee9b69c7a1 (ipc, refactor: Add ProcessId type alias and use it)
         int pid;
@@ -77,7 +78,14 @@ public:
 =======
         mp::SocketId fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
 >>>>>>> 3859805f05e (ipc, refactor: Add SocketId type alias and use it)
+||||||| parent of 2d3f72fd3fa (ipc, refactor: Update mp::SpawnProcess call)
+        mp::ProcessId pid;
+        mp::SocketId fd = m_process->spawn(new_exe_name, m_process_argv0, pid);
+=======
+        const auto [pid, socket] = m_process->spawn(new_exe_name, m_process_argv0);
+>>>>>>> 2d3f72fd3fa (ipc, refactor: Update mp::SpawnProcess call)
         LogDebug(::BCLog::IPC, "Process %s pid %i launched\n", new_exe_name, pid);
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
         auto init = m_protocol->connect(m_protocol->makeStream(socket));
@@ -91,6 +99,11 @@ public:
 =======
         auto init = m_protocol->connect(m_protocol->makeStream(fd));
 >>>>>>> e9f19815caa (ipc, refactor: Add Stream type alias and use it)
+||||||| parent of 2d3f72fd3fa (ipc, refactor: Update mp::SpawnProcess call)
+        auto init = m_protocol->connect(m_protocol->makeStream(fd));
+=======
+        auto init = m_protocol->connect(m_protocol->makeStream(socket));
+>>>>>>> 2d3f72fd3fa (ipc, refactor: Update mp::SpawnProcess call)
         Ipc::addCleanup(*init, [this, new_exe_name, pid] {
             int status = m_process->waitSpawned(pid);
             LogDebug(::BCLog::IPC, "Process %s pid %i exited with status %i\n", new_exe_name, pid, status);
