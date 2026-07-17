@@ -1,7 +1,6 @@
 // Copyright (c) The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#include "unixlistener.h"
 #include <kj/async.h>
 #include <kj/common.h>
 #include <kj/debug.h>
@@ -12,8 +11,10 @@
 #include <mp/util.h>
 #include <mp/test/foo.capnp.h>
 #include <mp/test/foo.capnp.proxy.h>
+#include <mp/test/socketlistener.h>
 #include <sys/socket.h>
 
+#include <array>
 #include <chrono>
 #include <condition_variable>
 #include <cstring> // IWYU pragma: keep
@@ -160,7 +161,7 @@ KJ_TEST("ConnectStream throws when the socket disconnects after receiving data")
     std::thread server_thread([&]() {
         char buf[128];
 
-        ssize_t bytes_received =
+        int bytes_received =
             recv(server_fd, buf, sizeof(buf), 0);
 
         if (bytes_received > 0) {
@@ -183,7 +184,7 @@ KJ_TEST("ConnectStream throws when the socket disconnects after receiving data")
 
 KJ_TEST("ConnectStream throws when a connection accepted from a listener disconnects after receiving data")
 {
-    UnixListener listener;
+    SocketListener listener;
     TestSetup setup;
     SocketId client_fd = listener.MakeConnectedSocket();
     SocketId server_fd = listener.release();
@@ -194,7 +195,7 @@ KJ_TEST("ConnectStream throws when a connection accepted from a listener disconn
         SocketId connection_fd = accept(server_fd, nullptr, nullptr);
 
         if (connection_fd != SocketError) {
-            ssize_t bytes_received =
+            int bytes_received =
                 recv(connection_fd, buf, sizeof(buf), 0);
 
             if (bytes_received > 0) {

@@ -2,9 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "unixlistener.h"
 #include <mp/test/foo.capnp.h>
 #include <mp/test/foo.capnp.proxy.h>
+#include <mp/test/socketlistener.h>
 
 #include <chrono>
 #include <compare>
@@ -141,7 +141,7 @@ public:
         KJ_REQUIRE(matched);
     }
 
-    UnixListener listener;
+    SocketListener listener;
     std::promise<void> ready_promise;
     std::optional<EventLoopRef> m_loop_ref;
     Mutex counter_mutex;
