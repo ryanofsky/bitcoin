@@ -179,19 +179,17 @@ def run_tests(ci_type):
         for var, exe in test_envs.items():
             os.environ[var] = str(release_bin / exe)
 
-        ctest_cmd = [
-            "ctest",
-            "--test-dir",
-            str(build_dir),
-            "--output-on-failure",
-            "--stop-on-failure",
-            "-j",
-            num_procs,
-            "--build-config",
-            "Release",
-        ]
-        run(ctest_cmd)
+        # TEMP: skip unit tests to speed up Windows IPC debugging
+        # run(["ctest", "--test-dir", str(build_dir), "--output-on-failure",
+        #      "--stop-on-failure", "-j", num_procs, "--build-config", "Release"])
 
+        # TEMP: run only the 4 IPC-related tests to speed up Windows IPC debugging
+        ipc_tests = [
+            "interface_ipc.py",
+            "interface_ipc_cli.py",
+            "interface_ipc_mining.py",
+            "tool_bitcoin.py",
+        ]
         test_cmd = [
             sys.executable,
             str(build_dir / "test" / "functional" / "test_runner.py"),
@@ -201,6 +199,7 @@ def run_tests(ci_type):
             f"--tmpdirprefix={workspace / '_ _'}",
             "--combinedlogslen=99999999",
             *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
+            *ipc_tests,
         ]
         run(test_cmd)
 

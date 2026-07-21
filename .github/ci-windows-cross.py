@@ -90,6 +90,13 @@ def prepare_tests():
 def run_functional_tests():
     workspace = Path.cwd()
     num_procs = str(os.process_cpu_count())
+    # TEMP: run only the 4 IPC-related tests to speed up Windows IPC debugging
+    ipc_tests = [
+        "interface_ipc.py",
+        "interface_ipc_cli.py",
+        "interface_ipc_mining.py",
+        "tool_bitcoin.py",
+    ]
     test_runner_cmd = [
         sys.executable,
         str(workspace / "test" / "functional" / "test_runner.py"),
@@ -99,23 +106,9 @@ def run_functional_tests():
         f"--tmpdirprefix={workspace / '_ _'}",
         "--combinedlogslen=99999999",
         *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
-        # feature_unsupported_utxo_db.py fails on Windows because of emojis in the test data directory.
-        "--exclude",
-        "feature_unsupported_utxo_db.py",
+        *ipc_tests,
     ]
     run(test_runner_cmd)
-
-    # Run feature_unsupported_utxo_db sequentially in ASCII-only tmp dir,
-    # because it is excluded above due to lack of UTF-8 support in the
-    # ancient release.
-    cmd_feature_unsupported_db = [
-        sys.executable,
-        str(workspace / "test" / "functional" / "feature_unsupported_utxo_db.py"),
-        "--previous-releases",
-        "--tmpdir",
-        str(Path(workspace) / "test_feature_unsupported_utxo_db"),
-    ]
-    run(cmd_feature_unsupported_db)
 
 
 def run_unit_tests():

@@ -410,6 +410,7 @@ jobs:
         run: py -3 .github/ci-windows-cross.py prepare_tests
 
       - name: Run unit tests
+        if: false  # TEMP: disabled to speed up Windows IPC debugging
         run: py -3 .github/ci-windows-cross.py run_unit_tests
 
       - name: Run functional tests
