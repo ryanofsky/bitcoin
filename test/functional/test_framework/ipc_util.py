@@ -144,7 +144,15 @@ async def wait_and_do(wait_fn, do_fn):
         if inspect.isawaitable(do_fn):
             await do_fn
         else:
-            do_fn()
+            # Run blocking callables in a thread executor so the asyncio event
+            # loop stays free to process I/O completions while do_fn() runs.
+            # On Windows with ProactorEventLoop this is required: if do_fn()
+            # blocks the event loop thread, IOCP completions for the IPC socket
+            # cannot be delivered until do_fn() returns, creating a race
+            # between when the server sends the waitTipChanged response and
+            # when the event loop gets to check for it.
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, do_fn)
 
     await asyncio.gather(wait(), do())
     return result
