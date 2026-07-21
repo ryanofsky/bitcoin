@@ -11,6 +11,7 @@ from test_framework.util import (
 )
 
 import subprocess
+import sys
 
 class TestBitcoinIpcCli(BitcoinTestFramework):
     def set_test_params(self):
@@ -42,7 +43,13 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
 
         http_auth_error = "error: Authorization failed: Incorrect rpcuser or rpcpassword were specified."
         http_connect_error = f"error: Error while attempting to communicate with server 127.0.0.1:{rpc_port(node.index)} (Could not connect to the server)\n\nMake sure the bitcoind server is running and that you are connecting to the correct RPC port.\nUse \"bitcoin-cli -help\" for more info.\n"
-        ipc_connect_error = "error: Connection refused\n\nProbably bitcoin-node is not running or not listening on a unix socket. Can be started with:\n\n    bitcoin-node -chain=regtest -ipcbind=unix\n"
+        # The OS error message for ECONNREFUSED (POSIX) vs WSAECONNREFUSED (Windows) differs.
+        # Use startswith so the test doesn't need to match the full help text on each platform.
+        ipc_connect_error = (
+            "error: No connection could be made because the target machine actively refused it."
+            if sys.platform == 'win32' else
+            "error: Connection refused\n\nProbably bitcoin-node is not running or not listening on a unix socket. Can be started with:\n\n    bitcoin-node -chain=regtest -ipcbind=unix\n"
+        )
         ipc_http_conflict = "error: -rpcconnect and -ipcconnect options cannot both be enabled\n"
 
         for started in (True, False):

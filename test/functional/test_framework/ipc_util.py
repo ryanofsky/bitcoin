@@ -10,7 +10,37 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 import shutil
+import sys
 from typing import Optional
+
+if sys.platform == 'win32':
+    import asyncio.selector_events as _sel
+    import socket as _socket
+
+    # Neither ProactorEventLoop (Python's default on Windows) nor SelectorEventLoop
+    # implements create_unix_connection — Python documents it as Unix-only. However,
+    # Windows 10 1803+ supports AF_UNIX via Winsock, so we can implement it manually:
+    # create an AF_UNIX socket, connect it with sock_connect, then hand the connected
+    # socket to create_connection. Switch to SelectorEventLoop (which can monitor
+    # Winsock sockets via select) and patch in the missing method.
+    async def _win32_create_unix_connection(self, protocol_factory, path=None, *,
+                                            ssl=None, sock=None,
+                                            server_hostname=None,
+                                            ssl_handshake_timeout=None,
+                                            ssl_shutdown_timeout=None):
+        if sock is None:
+            sock = _socket.socket(_socket.AF_UNIX, _socket.SOCK_STREAM)
+            try:
+                sock.setblocking(False)
+                await self.sock_connect(sock, path)
+            except:
+                sock.close()
+                raise
+        return await self.create_connection(protocol_factory, sock=sock, ssl=ssl,
+                                            server_hostname=server_hostname)
+
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    _sel.BaseSelectorEventLoop.create_unix_connection = _win32_create_unix_connection
 
 from test_framework.messages import CBlock
 from test_framework.util import (
