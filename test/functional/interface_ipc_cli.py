@@ -10,6 +10,7 @@ from test_framework.util import (
     rpc_port
 )
 
+import os
 import subprocess
 import sys
 
@@ -29,6 +30,7 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
         # Intentionally set wrong RPC password so only IPC not HTTP connections work
         args = [self.binary_paths.bitcoincli, f"-datadir={self.nodes[0].datadir_path}", "-rpcpassword=wrong"] + args + ["echo", "foo"]
         result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        self.log.debug(f"bitcoin-cli returncode={result.returncode} stdout={result.stdout!r}")
         if error is None:
             assert_equal(result.stdout, '[\n  "foo"\n]\n')
         else:
@@ -38,7 +40,14 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
 
     def run_test(self):
         node = self.nodes[0]
+        # Log IPC socket path details to diagnose Windows path/slash issues.
+        ipc_path_str = str(node.ipc_socket_path)
+        ipc_path_fwd = ipc_path_str.replace('\\', '/')
+        ipc_path_enc_len = len(os.fsencode(node.ipc_socket_path))
+        self.log.info(f"ipc_socket_path={ipc_path_str!r} fwd={ipc_path_fwd!r} encoded_len={ipc_path_enc_len}")
+        self.log.info(f"ipc_socket_path parent exists={node.ipc_socket_path.parent.exists()} socket exists={node.ipc_socket_path.exists()}")
         if node.ipc_tmp_dir:
+            self.log.info(f"ipc_tmp_dir={node.ipc_tmp_dir.name!r}")
             self.log.info("Skipping a few checks because temporary directory path is too long")
 
         http_auth_error = "error: Authorization failed: Incorrect rpcuser or rpcpassword were specified."
@@ -64,6 +73,7 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
                 self.test_cli(["-ipcconnect=auto", "-rpcconnect=127.0.0.1"], http_error)
                 self.test_cli(["-ipcconnect=unix"], ipc_error)
 
+            self.log.info(f"started={started} socket exists={node.ipc_socket_path.exists()}")
             self.test_cli([f"-ipcconnect=unix:{node.ipc_socket_path}"], ipc_error)
             self.test_cli(["-noipcconnect"], http_error)
             self.test_cli(["-ipcconnect=unix", "-rpcconnect=127.0.0.1"], ipc_http_conflict)

@@ -29,7 +29,12 @@ if sys.platform == 'win32':
                                             ssl_handshake_timeout=None,
                                             ssl_shutdown_timeout=None):
         if sock is None:
-            sock = _socket.socket(_socket.AF_UNIX, _socket.SOCK_STREAM)
+            # AF_UNIX may not be exposed in Python's socket module on Windows even
+            # when the OS supports it (depends on SDK version at Python compile time).
+            # Fall back to the raw integer constant 1, which is AF_UNIX on all platforms;
+            # socket.socket() passes the value through to winsock.socket() directly.
+            _af_unix = getattr(_socket, 'AF_UNIX', 1)
+            sock = _socket.socket(_af_unix, _socket.SOCK_STREAM)
             try:
                 sock.setblocking(False)
                 await self.sock_connect(sock, path)
