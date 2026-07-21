@@ -30,6 +30,8 @@ GENERATE_OPTIONS = {
         "-DBUILD_KERNEL_LIB=ON",
         "-DBUILD_UTIL_CHAINSTATE=ON",
         "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON",
+        "-DENABLE_WALLET=OFF",  # TEMP: disabled to speed up Windows IPC debugging
+        "-DBUILD_GUI=OFF",      # TEMP: disabled to speed up Windows IPC debugging
     ],
     "fuzz": [
         "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",

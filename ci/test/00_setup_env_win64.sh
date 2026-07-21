@@ -18,4 +18,7 @@ export BITCOIN_CONFIG="\
   -DWITH_USDT=OFF \
   -DREDUCE_EXPORTS=ON \
   -DCMAKE_CXX_FLAGS='-Wno-error=maybe-uninitialized' \
+  -DENABLE_WALLET=OFF \
+  -DBUILD_GUI=OFF \
 "
+# TEMP: wallet and GUI disabled to speed up Windows IPC debugging
