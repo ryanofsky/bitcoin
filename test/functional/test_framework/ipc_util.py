@@ -14,25 +14,34 @@ import sys
 from typing import Optional
 
 if sys.platform == 'win32':
-    import asyncio.proactor_events as _proactor
     import ctypes as _ctypes
+    import os as _os
     import socket as _socket
 
     # Windows 10 1803+ supports AF_UNIX via Winsock, but Python's asyncio
-    # documents create_unix_connection() as Unix-only (both ProactorEventLoop and
-    # SelectorEventLoop raise NotImplementedError). Implement it manually on the
-    # default ProactorEventLoop: create an AF_UNIX socket, connect it via ctypes,
-    # then hand the connected socket to create_connection(). ProactorEventLoop uses
-    # IOCP (overlapped I/O), which works correctly with AF_UNIX Winsock sockets.
-    # SelectorEventLoop was tried first but select() does not reliably detect
-    # incoming data on AF_UNIX sockets on Windows, causing asyncio reads to hang.
+    # documents create_unix_connection() as Unix-only; both SelectorEventLoop and
+    # ProactorEventLoop raise NotImplementedError. Implement it manually by patching
+    # ProactorEventLoop (the default Windows asyncio event loop since Python 3.8).
+    #
+    # Why ProactorEventLoop and not SelectorEventLoop: SelectorEventLoop uses
+    # select(), but Winsock requires all sockets in one select() call to belong to
+    # the same service provider. The event loop always adds an internal AF_INET
+    # wakeup socket, so mixing it with our AF_UNIX socket violates that restriction
+    # and produces WSAEINVAL. ProactorEventLoop instead registers each socket
+    # independently with an IOCP completion port and uses overlapped WSARecv, which
+    # has no such restriction.
     #
     # Why ctypes for connect(): Python's socket module C code uses getsockaddrarg()
-    # to parse addresses, which switches on the socket family. AF_UNIX support is
-    # compiled in only when the socket.AF_UNIX constant is defined. The Python
-    # build in CI's hostedtoolcache does not expose socket.AF_UNIX even though the
-    # OS supports it, so getsockaddrarg() falls through to the "bad family" default
-    # case. Calling ws2_32.connect() via ctypes bypasses this check entirely.
+    # to parse addresses, switching on the socket family. AF_UNIX support is compiled
+    # in only when socket.AF_UNIX is defined. The Python build in CI's
+    # hostedtoolcache does not expose socket.AF_UNIX even though the OS supports it,
+    # so getsockaddrarg() falls through to the "bad family" default. Calling
+    # ws2_32.connect() via ctypes bypasses this check entirely.
+    #
+    # Note: ws2_32.connect() is a blocking call. For a local AF_UNIX socket the
+    # kernel returns immediately, so blocking the event loop thread is acceptable
+    # here. A future improvement could run just the connect step in a thread pool
+    # worker via loop.run_in_executor() if this ever needs to handle slow paths.
 
     class _SOCKADDR_UN(_ctypes.Structure):
         _fields_ = [("sun_family", _ctypes.c_ushort), ("sun_path", _ctypes.c_char * 108)]
@@ -49,6 +58,8 @@ if sys.platform == 'win32':
                                             server_hostname=None,
                                             ssl_handshake_timeout=None,
                                             ssl_shutdown_timeout=None):
+        if (path is None) == (sock is None):
+            raise ValueError("exactly one of path and sock must be specified")
         if sock is None:
             # AF_UNIX may not be exposed in Python's socket module on Windows even
             # when the OS supports it (depends on SDK version at Python compile time).
@@ -57,7 +68,13 @@ if sys.platform == 'win32':
             _af_unix = getattr(_socket, 'AF_UNIX', 1)
             sock = _socket.socket(_af_unix, _socket.SOCK_STREAM)
             try:
-                _path_bytes = str(path).encode()
+                # os.fsencode(os.fspath()) handles str, bytes, and PathLike correctly.
+                # str(path).encode() would mangle bytes paths as "b'...'" strings.
+                _path_bytes = _os.fsencode(_os.fspath(path))
+                if b"\x00" in _path_bytes:
+                    raise ValueError("AF_UNIX path must not contain a NUL byte")
+                if len(_path_bytes) >= 108:
+                    raise ValueError(f"AF_UNIX path too long ({len(_path_bytes)} >= 108 bytes)")
                 _addr = _SOCKADDR_UN(sun_family=1, sun_path=_path_bytes)
                 _ret = _ws2_32.connect(_ctypes.c_size_t(sock.fileno()),
                                        _ctypes.byref(_addr), _ctypes.sizeof(_addr))
@@ -68,12 +85,13 @@ if sys.platform == 'win32':
                 sock.close()
                 raise
         return await self.create_connection(protocol_factory, sock=sock, ssl=ssl,
-                                            server_hostname=server_hostname)
+                                            server_hostname=server_hostname,
+                                            ssl_handshake_timeout=ssl_handshake_timeout,
+                                            ssl_shutdown_timeout=ssl_shutdown_timeout)
 
-    # Patch ProactorEventLoop (the default Windows asyncio event loop since Python 3.8)
-    # to support AF_UNIX connections. ProactorEventLoop.create_connection() internally
-    # calls sock.setblocking(False) and uses WSARecv overlapped I/O via IOCP.
-    _proactor.BaseProactorEventLoop.create_unix_connection = _win32_create_unix_connection
+    # Patch the concrete ProactorEventLoop class (public API, not the private base)
+    # so every event loop instance created by asyncio.run() gets the patched method.
+    asyncio.ProactorEventLoop.create_unix_connection = _win32_create_unix_connection
 
 from test_framework.messages import CBlock
 from test_framework.util import (
