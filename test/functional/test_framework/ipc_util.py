@@ -14,16 +14,18 @@ import sys
 from typing import Optional
 
 if sys.platform == 'win32':
-    import asyncio.selector_events as _sel
+    import asyncio.proactor_events as _proactor
     import ctypes as _ctypes
     import socket as _socket
 
     # Windows 10 1803+ supports AF_UNIX via Winsock, but Python's asyncio
     # documents create_unix_connection() as Unix-only (both ProactorEventLoop and
-    # SelectorEventLoop raise NotImplementedError). Implement it manually: create
-    # an AF_UNIX socket, connect it, then hand the connected socket to
-    # create_connection. Switch to SelectorEventLoop (which can monitor Winsock
-    # sockets via select()) and patch in the missing method.
+    # SelectorEventLoop raise NotImplementedError). Implement it manually on the
+    # default ProactorEventLoop: create an AF_UNIX socket, connect it via ctypes,
+    # then hand the connected socket to create_connection(). ProactorEventLoop uses
+    # IOCP (overlapped I/O), which works correctly with AF_UNIX Winsock sockets.
+    # SelectorEventLoop was tried first but select() does not reliably detect
+    # incoming data on AF_UNIX sockets on Windows, causing asyncio reads to hang.
     #
     # Why ctypes for connect(): Python's socket module C code uses getsockaddrarg()
     # to parse addresses, which switches on the socket family. AF_UNIX support is
@@ -62,15 +64,16 @@ if sys.platform == 'win32':
                 if _ret != 0:
                     _err = _ws2_32.WSAGetLastError()
                     raise OSError(_err, f"AF_UNIX connect() failed (WSA error {_err})")
-                sock.setblocking(False)
             except:
                 sock.close()
                 raise
         return await self.create_connection(protocol_factory, sock=sock, ssl=ssl,
                                             server_hostname=server_hostname)
 
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    _sel.BaseSelectorEventLoop.create_unix_connection = _win32_create_unix_connection
+    # Patch ProactorEventLoop (the default Windows asyncio event loop since Python 3.8)
+    # to support AF_UNIX connections. ProactorEventLoop.create_connection() internally
+    # calls sock.setblocking(False) and uses WSARecv overlapped I/O via IOCP.
+    _proactor.BaseProactorEventLoop.create_unix_connection = _win32_create_unix_connection
 
 from test_framework.messages import CBlock
 from test_framework.util import (
