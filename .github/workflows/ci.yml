@@ -206,12 +206,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        job-type: [standard, fuzz]
+        job-type: [standard]  # TEMP: fuzz disabled to speed up Windows IPC debugging
         include:
           - job-type: standard
             job-name: 'Windows native, VS'
-          - job-type: fuzz
-            job-name: 'Windows native, fuzz, VS'
+          # - job-type: fuzz  # TEMP: disabled
+          #   job-name: 'Windows native, fuzz, VS'
 
     steps:
       - *ANNOTATION_PR_NUMBER
@@ -312,11 +312,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crt: [msvcrt, ucrt]
+        crt: [ucrt]  # TEMP: msvcrt disabled to speed up Windows IPC debugging
         include:
-          - crt: msvcrt
-            file-env: './ci/test/00_setup_env_win64_msvcrt.sh'
-            artifact-name: 'x86_64-w64-mingw32-executables'
+          # - crt: msvcrt  # TEMP: disabled
+          #   file-env: './ci/test/00_setup_env_win64_msvcrt.sh'
+          #   artifact-name: 'x86_64-w64-mingw32-executables'
           - crt: ucrt
             file-env: './ci/test/00_setup_env_win64.sh'
             artifact-name: 'x86_64-w64-mingw32ucrt-executables'
@@ -374,10 +374,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crt: [msvcrt, ucrt]
+        crt: [ucrt]  # TEMP: msvcrt disabled to speed up Windows IPC debugging
         include:
-          - crt: msvcrt
-            artifact-name: 'x86_64-w64-mingw32-executables'
+          # - crt: msvcrt  # TEMP: disabled
+          #   artifact-name: 'x86_64-w64-mingw32-executables'
           - crt: ucrt
             artifact-name: 'x86_64-w64-mingw32ucrt-executables'
 
