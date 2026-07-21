@@ -13,6 +13,7 @@ export PACKAGES="g++-mingw-w64-ucrt64 nsis"
 export RUN_UNIT_TESTS=false
 export RUN_FUNCTIONAL_TESTS=false
 export GOAL="deploy"
+export DEP_OPTS="NO_QT=1 NO_WALLET=1"  # TEMP: skip Qt/wallet in depends build to speed up Windows IPC debugging
 export BITCOIN_CONFIG="\
   --preset=dev-mode \
   -DWITH_USDT=OFF \
@@ -21,4 +22,3 @@ export BITCOIN_CONFIG="\
   -DENABLE_WALLET=OFF \
   -DBUILD_GUI=OFF \
 "
-# TEMP: wallet and GUI disabled to speed up Windows IPC debugging

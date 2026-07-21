@@ -30,8 +30,10 @@ GENERATE_OPTIONS = {
         "-DBUILD_KERNEL_LIB=ON",
         "-DBUILD_UTIL_CHAINSTATE=ON",
         "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON",
-        "-DENABLE_WALLET=OFF",  # TEMP: disabled to speed up Windows IPC debugging
-        "-DBUILD_GUI=OFF",      # TEMP: disabled to speed up Windows IPC debugging
+        "-DENABLE_WALLET=OFF",               # TEMP: disabled to speed up Windows IPC debugging
+        "-DBUILD_GUI=OFF",                   # TEMP: disabled to speed up Windows IPC debugging
+        "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",  # TEMP: stop vcpkg from installing qt/wallet
+        "-DVCPKG_MANIFEST_FEATURES=ipc;tests;zeromq",  # TEMP: only install what IPC needs
     ],
     "fuzz": [
         "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",
