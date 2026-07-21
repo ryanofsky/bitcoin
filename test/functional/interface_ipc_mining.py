@@ -133,30 +133,33 @@ class IPCMiningTest(BitcoinTestFramework):
         block_hash_size = 32
 
         async def async_routine():
-            ctx, mining = await make_mining_ctx(self)
-            blockref = await mining.getTip(ctx)
-            current_block_height = self.nodes[0].getchaintips()[0]["height"]
-            assert_equal(blockref.result.height, current_block_height)
+            # TEMP: 30s timeout so hangs produce a traceback + combined log instead of
+            # waiting forever. Remove once Windows IPC asyncio issues are resolved.
+            async with asyncio.timeout(30):
+                ctx, mining = await make_mining_ctx(self)
+                blockref = await mining.getTip(ctx)
+                current_block_height = self.nodes[0].getchaintips()[0]["height"]
+                assert_equal(blockref.result.height, current_block_height)
 
-            self.log.debug("Mine a block")
-            newblockref = (await wait_and_do(
-                mining.waitTipChanged(ctx, blockref.result.hash, self.default_ipc_timeout),
-                lambda: self.generate(self.nodes[0], 1))).result
-            assert_equal(len(newblockref.hash), block_hash_size)
-            assert_equal(newblockref.height, current_block_height + 1)
-            self.log.debug("Wait for timeout")
-            oldblockref = (await mining.waitTipChanged(ctx, newblockref.hash, self.default_ipc_timeout)).result
-            assert_equal(len(newblockref.hash), block_hash_size)
-            assert_equal(oldblockref.hash, newblockref.hash)
-            assert_equal(oldblockref.height, newblockref.height)
+                self.log.debug("Mine a block")
+                newblockref = (await wait_and_do(
+                    mining.waitTipChanged(ctx, blockref.result.hash, self.default_ipc_timeout),
+                    lambda: self.generate(self.nodes[0], 1))).result
+                assert_equal(len(newblockref.hash), block_hash_size)
+                assert_equal(newblockref.height, current_block_height + 1)
+                self.log.debug("Wait for timeout")
+                oldblockref = (await mining.waitTipChanged(ctx, newblockref.hash, self.default_ipc_timeout)).result
+                assert_equal(len(newblockref.hash), block_hash_size)
+                assert_equal(oldblockref.hash, newblockref.hash)
+                assert_equal(oldblockref.height, newblockref.height)
 
-            self.log.debug("interrupt() should abort waitTipChanged()")
-            async def wait_for_tip():
-                long_timeout = max(self.default_ipc_timeout, 60000.0)  # at least 1 minute
-                result = (await mining.waitTipChanged(ctx, newblockref.hash, long_timeout)).result
-                # Unlike a timeout, interrupt() returns an empty BlockRef.
-                assert_equal(len(result.hash), 0)
-            await wait_and_do(wait_for_tip(), mining.interrupt())
+                self.log.debug("interrupt() should abort waitTipChanged()")
+                async def wait_for_tip():
+                    long_timeout = max(self.default_ipc_timeout, 60000.0)  # at least 1 minute
+                    result = (await mining.waitTipChanged(ctx, newblockref.hash, long_timeout)).result
+                    # Unlike a timeout, interrupt() returns an empty BlockRef.
+                    assert_equal(len(result.hash), 0)
+                await wait_and_do(wait_for_tip(), mining.interrupt())
 
         asyncio.run(capnp.run(async_routine()))
 

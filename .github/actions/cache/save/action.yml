@@ -16,7 +16,8 @@ runs:
 
     - name: Save Ccache cache
       uses: ./.github/actions/cache/save/internal
-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) }}
+      # TEMP: removed default_branch restriction so caches are saved on win-work pushes too
+      if: ${{ (github.event_name == 'push') }}
       with:
         path: ${{ env.CCACHE_DIR }}
         key: ccache-${{ env.CONTAINER_NAME }}-${{ github.run_id }}
@@ -24,7 +25,8 @@ runs:
 
     - name: Save depends sources cache
       uses: ./.github/actions/cache/save/internal
-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) && (env.depends-sources-cache-hit != 'true') }}
+      # TEMP: removed default_branch restriction so caches are saved on win-work pushes too
+      if: ${{ (github.event_name == 'push') && (env.depends-sources-cache-hit != 'true') }}
       with:
         path: ${{ env.SOURCES_PATH }}
         key: depends-sources-${{ env.CONTAINER_NAME }}-${{ env.DEPENDS_HASH }}
@@ -32,7 +34,8 @@ runs:
 
     - name: Save built depends cache
       uses: ./.github/actions/cache/save/internal
-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) && (env.depends-built-cache-hit != 'true' )}}
+      # TEMP: removed default_branch restriction so caches are saved on win-work pushes too
+      if: ${{ (github.event_name == 'push') && (env.depends-built-cache-hit != 'true') }}
       with:
         path: ${{ env.BASE_CACHE }}
         key: depends-built-${{ env.CONTAINER_NAME }}-${{ env.DEPENDS_HASH }}
@@ -40,7 +43,8 @@ runs:
 
     - name: Save previous releases cache
       uses: ./.github/actions/cache/save/internal
-      if: ${{ (github.event_name == 'push') && (github.ref_name == github.event.repository.default_branch) && (env.previous-releases-cache-hit != 'true' )}}
+      # TEMP: removed default_branch restriction so caches are saved on win-work pushes too
+      if: ${{ (github.event_name == 'push') && (env.previous-releases-cache-hit != 'true') }}
       with:
         path: ${{ env.PREVIOUS_RELEASES_DIR }}
         key: previous-releases-${{ env.CONTAINER_NAME }}-${{ env.PREVIOUS_RELEASES_HASH }}

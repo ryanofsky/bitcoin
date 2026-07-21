@@ -108,9 +108,10 @@ def run_functional_tests():
         *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
         *ipc_tests,
     ]
-    # TEMP: hard 120s watchdog — test_runner has no kill timer of its own, so a hung
-    # test waits forever. All 4 IPC tests should complete in < 1 minute when working.
-    run(test_runner_cmd, timeout=120)
+    # TEMP: 60s watchdog — test_runner has no kill timer of its own, so a hung
+    # test waits forever. Tests have per-test asyncio timeouts that fire first (~30s);
+    # this is a fallback safety net. All 4 IPC tests should complete in < 1 minute.
+    run(test_runner_cmd, timeout=60)
 
 
 def run_unit_tests():
