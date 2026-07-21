@@ -15,14 +15,33 @@ from typing import Optional
 
 if sys.platform == 'win32':
     import asyncio.selector_events as _sel
+    import ctypes as _ctypes
     import socket as _socket
 
-    # Neither ProactorEventLoop (Python's default on Windows) nor SelectorEventLoop
-    # implements create_unix_connection — Python documents it as Unix-only. However,
-    # Windows 10 1803+ supports AF_UNIX via Winsock, so we can implement it manually:
-    # create an AF_UNIX socket, connect it with sock_connect, then hand the connected
-    # socket to create_connection. Switch to SelectorEventLoop (which can monitor
-    # Winsock sockets via select) and patch in the missing method.
+    # Windows 10 1803+ supports AF_UNIX via Winsock, but Python's asyncio
+    # documents create_unix_connection() as Unix-only (both ProactorEventLoop and
+    # SelectorEventLoop raise NotImplementedError). Implement it manually: create
+    # an AF_UNIX socket, connect it, then hand the connected socket to
+    # create_connection. Switch to SelectorEventLoop (which can monitor Winsock
+    # sockets via select()) and patch in the missing method.
+    #
+    # Why ctypes for connect(): Python's socket module C code uses getsockaddrarg()
+    # to parse addresses, which switches on the socket family. AF_UNIX support is
+    # compiled in only when the socket.AF_UNIX constant is defined. The Python
+    # build in CI's hostedtoolcache does not expose socket.AF_UNIX even though the
+    # OS supports it, so getsockaddrarg() falls through to the "bad family" default
+    # case. Calling ws2_32.connect() via ctypes bypasses this check entirely.
+
+    class _SOCKADDR_UN(_ctypes.Structure):
+        _fields_ = [("sun_family", _ctypes.c_ushort), ("sun_path", _ctypes.c_char * 108)]
+
+    _ws2_32 = _ctypes.windll.ws2_32
+    # SOCKET is UINT_PTR (pointer-sized) on Windows; use c_size_t so the handle
+    # is not truncated to 32 bits on 64-bit processes.
+    _ws2_32.connect.argtypes = [_ctypes.c_size_t, _ctypes.POINTER(_SOCKADDR_UN), _ctypes.c_int]
+    _ws2_32.connect.restype = _ctypes.c_int
+    _ws2_32.WSAGetLastError.restype = _ctypes.c_int
+
     async def _win32_create_unix_connection(self, protocol_factory, path=None, *,
                                             ssl=None, sock=None,
                                             server_hostname=None,
@@ -36,8 +55,14 @@ if sys.platform == 'win32':
             _af_unix = getattr(_socket, 'AF_UNIX', 1)
             sock = _socket.socket(_af_unix, _socket.SOCK_STREAM)
             try:
+                _path_bytes = str(path).encode()
+                _addr = _SOCKADDR_UN(sun_family=1, sun_path=_path_bytes)
+                _ret = _ws2_32.connect(_ctypes.c_size_t(sock.fileno()),
+                                       _ctypes.byref(_addr), _ctypes.sizeof(_addr))
+                if _ret != 0:
+                    _err = _ws2_32.WSAGetLastError()
+                    raise OSError(_err, f"AF_UNIX connect() failed (WSA error {_err})")
                 sock.setblocking(False)
-                await self.sock_connect(sock, path)
             except:
                 sock.close()
                 raise
