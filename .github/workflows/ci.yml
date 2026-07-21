@@ -201,7 +201,7 @@ jobs:
 
     env:
       PYTHONUTF8: 1
-      TEST_RUNNER_TIMEOUT_FACTOR: 40
+      TEST_RUNNER_TIMEOUT_FACTOR: 5  # TEMP: reduced from 40 to catch hangs faster during IPC debugging
 
     strategy:
       fail-fast: false
@@ -383,7 +383,7 @@ jobs:
 
     env:
       PYTHONUTF8: 1
-      TEST_RUNNER_TIMEOUT_FACTOR: 40
+      TEST_RUNNER_TIMEOUT_FACTOR: 5  # TEMP: reduced from 40 to catch hangs faster during IPC debugging
 
     steps:
       - *ANNOTATION_PR_NUMBER
