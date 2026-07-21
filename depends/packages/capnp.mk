@@ -9,6 +9,7 @@ define $(package)_set_vars
   $(package)_config_opts := -DBUILD_TESTING=OFF
   $(package)_config_opts += -DWITH_OPENSSL=OFF
   $(package)_config_opts += -DWITH_ZLIB=OFF
+  $(package)_config_opts += -DBUILD_SHARED_LIBS=OFF # TODO: test without this; the heap corruption diagnosis was made without a debugger and it's unclear if capnproto actually builds shared by default in this depends setup
   $(package)_cxxflags += -fdebug-prefix-map=$($(package)_extract_dir)=/usr -fmacro-prefix-map=$($(package)_extract_dir)=/usr
   $(package)_cppflags += -D_WIN32_WINNT=0x0602
 endef
