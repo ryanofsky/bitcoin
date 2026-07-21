@@ -292,11 +292,7 @@ static void Generate(kj::StringPtr src_prefix,
     args.emplace_back(src_file);
     const int status = mp::WaitProcess(mp::StartProcess(args));
     if (status) {
-#ifdef CAPNP_EXECUTABLE
-        throw std::runtime_error("Invoking " CAPNP_EXECUTABLE " failed");
-#else
-        throw std::runtime_error("Invoking " capnp_PREFIX "/bin/capnp failed");
-#endif
+        throw std::runtime_error("Invoking " + args.front() + " failed");
     }
 
     const capnp::SchemaParser parser;
