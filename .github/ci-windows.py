@@ -197,13 +197,15 @@ def run_tests(ci_type):
             str(build_dir / "test" / "functional" / "test_runner.py"),
             "--jobs",
             num_procs,
-            "--quiet",
+            # TEMP: no --quiet so per-test results print as they complete (helps identify hangs)
             f"--tmpdirprefix={workspace / '_ _'}",
             "--combinedlogslen=99999999",
             *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
             *ipc_tests,
         ]
-        run(test_cmd)
+        # TEMP: hard 120s watchdog — test_runner has no kill timer of its own, so a hung
+        # test waits forever. All 4 IPC tests should complete in < 1 minute when working.
+        run(test_cmd, timeout=120)
 
     elif ci_type == "fuzz":
         os.environ["BITCOINFUZZ"] = str(release_bin / "fuzz.exe")
