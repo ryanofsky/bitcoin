@@ -97,6 +97,10 @@ static inline bool exists(const path& p)
 {
     return std::filesystem::exists(p);
 }
+static inline bool exists(const path& p, std::error_code& ec)
+{
+    return std::filesystem::exists(p, ec);
+}
 static inline bool exists(const std::filesystem::file_status& s)
 {
     return std::filesystem::exists(s);
