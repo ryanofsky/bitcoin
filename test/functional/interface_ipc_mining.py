@@ -162,23 +162,7 @@ class IPCMiningTest(BitcoinTestFramework):
                 assert_equal(len(result.hash), 0)
             await wait_and_do(wait_for_tip(), mining.interrupt())
 
-        # TEMP: asyncio.timeout() cannot fire when the ProactorEventLoop is frozen
-        # inside a Windows IOCP syscall (GetQueuedCompletionStatusEx). Use a daemon
-        # thread timer instead: after 30s dump all Python thread stacks so CI logs
-        # show exactly where the event loop is stuck, then exit(1) so test_runner
-        # prints combined logs. Remove once Windows IPC asyncio issues are resolved.
-        def _timeout_dump():
-            faulthandler.dump_traceback(sys.stderr, all_threads=True)
-            sys.stderr.flush()
-            os._exit(1)
-
-        _timer = threading.Timer(30.0, _timeout_dump)
-        _timer.daemon = True
-        _timer.start()
-        try:
-            asyncio.run(capnp.run(async_routine()))
-        finally:
-            _timer.cancel()
+        asyncio.run(capnp.run(async_routine()))
 
     def run_early_startup_test(self):
         """Make sure mining.createNewBlock safely returns on early startup as
@@ -774,17 +758,33 @@ class IPCMiningTest(BitcoinTestFramework):
         self.default_block_wait_options = self.capnp_modules['mining'].BlockWaitOptions()
         self.default_block_wait_options.timeout = self.default_ipc_timeout
         self.default_block_wait_options.feeThreshold = 1
-        self.run_mining_interface_test()
-        self.run_early_startup_test()
-        self.run_block_template_test()
-        self.run_coinbase_and_submission_test()
-        self.run_waitnext_mining_policy_test()
-        self.run_block_max_weight_test()
-        self.run_ipc_option_override_test()
-        self.run_transaction_lookup_test()
 
-        # Needs to run last because it resets the chain.
-        self.run_low_height_test()
+        # TEMP: if the asyncio ProactorEventLoop freezes inside a Windows IOCP
+        # syscall, asyncio.timeout() cannot fire. Use a daemon thread timer to dump
+        # all Python thread stacks after 30s (shows where the event loop is blocked)
+        # and exit so test_runner prints the combined log. The first sub-test takes
+        # ~7s, so 30s gives enough headroom before the 60s outer watchdog.
+        def _timeout_dump():
+            faulthandler.dump_traceback(sys.stderr, all_threads=True)
+            sys.stderr.flush()
+            os._exit(1)
+        _timer = threading.Timer(30.0, _timeout_dump)
+        _timer.daemon = True
+        _timer.start()
+        try:
+            self.run_mining_interface_test()
+            self.run_early_startup_test()
+            self.run_block_template_test()
+            self.run_coinbase_and_submission_test()
+            self.run_waitnext_mining_policy_test()
+            self.run_block_max_weight_test()
+            self.run_ipc_option_override_test()
+            self.run_transaction_lookup_test()
+
+            # Needs to run last because it resets the chain.
+            self.run_low_height_test()
+        finally:
+            _timer.cancel()
 
 
 if __name__ == '__main__':
