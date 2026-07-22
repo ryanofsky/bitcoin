@@ -827,7 +827,18 @@ static std::optional<UniValue> CallIPC(BaseRequestHandler* rh, const std::string
     assert(rpc);
     UniValue request{rh->PrepareRequest(strMethod, args)};
     UniValue reply{rpc->executeRpc(std::move(request), endpoint, username)};
-    return rh->ProcessReply(reply);
+    auto result = rh->ProcessReply(reply);
+    // TEMP: step-by-step destruction to find which step causes STATUS_HEAP_CORRUPTION
+    // (0xC0000374) in MinGW cross-builds. Observed in CI windows-native-test job
+    // interface_ipc_cli.py: 4th IPC connection crashes with empty stdout.
+    fprintf(stderr, "[ipc-teardown] destroying rpc\n"); fflush(stderr);
+    rpc.reset();
+    fprintf(stderr, "[ipc-teardown] destroying node_init\n"); fflush(stderr);
+    node_init.reset();
+    fprintf(stderr, "[ipc-teardown] destroying local_init\n"); fflush(stderr);
+    local_init.reset();
+    fprintf(stderr, "[ipc-teardown] done\n"); fflush(stderr);
+    return result;
 }
 
 /**
