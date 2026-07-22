@@ -39,6 +39,17 @@
 #include <sys/un.h>
 #endif
 
+#ifdef WIN32
+// Initialize Winsock before any tests run. The mp library's WSAStartup call is
+// inside ConnectSocketToProcess() which is not reached by these tests since they
+// create sockets directly.
+namespace {
+struct WsaInit {
+    WsaInit() { WSADATA data; WSAStartup(MAKEWORD(2, 2), &data); }
+} g_wsa_init;
+} // namespace
+#endif
+
 namespace mp {
 namespace test {
 namespace {
