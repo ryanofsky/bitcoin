@@ -163,12 +163,18 @@ public:
     {
         assert(!m_loop);
 <<<<<<< HEAD
+<<<<<<< HEAD
         mp::CurrentThread().thread_name = mp::ThreadName(m_exe_name);
 ||||||| parent of 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
         mp::g_thread_context.thread_name = mp::ThreadName(exe_name);
 =======
         mp::g_thread_context.thread_name = mp::ThreadName(m_exe_name);
 >>>>>>> 33d37f3c35e (ipc, refactor: Drop connect/listen/serve exe_name parameters)
+||||||| parent of efe01d8ee91 (workaround: MinGW thread_local use-after-free in ThreadContext)
+        mp::g_thread_context.thread_name = mp::ThreadName(m_exe_name);
+=======
+        mp::GThreadContext().thread_name = mp::ThreadName(m_exe_name);
+>>>>>>> efe01d8ee91 (workaround: MinGW thread_local use-after-free in ThreadContext)
         mp::LogOptions opts = {
             .log_fn = IpcLogFn,
             .log_level = GetRequestedIPCLogLevel()
