@@ -287,7 +287,7 @@ class TestNode():
         # On Windows, AF_UNIX socket files are not auto-deleted when a process
         # exits (unlike Linux where the kernel reclaims them). A stale socket file
         # causes EADDRINUSE on rebind. Remove it here so that node restarts work.
-        if sys.platform == 'win32' and hasattr(self, 'ipc_socket_path') and self.ipc_socket_path.exists():
+        if sys.platform == 'win32' and 'ipc_socket_path' in self.__dict__ and self.ipc_socket_path.exists():
             self.ipc_socket_path.unlink()
 
         # add environment variable LIBC_FATAL_STDERR_=1 so that libc errors are written to stderr and not the terminal
