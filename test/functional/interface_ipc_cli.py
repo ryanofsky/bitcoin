@@ -66,8 +66,12 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
         # sees ENOENT ("No such file or directory") instead; accept either Windows string.
         # TODO: clarify whether bitcoind explicitly removes the socket on shutdown on all
         # platforms, or only Windows, and whether the POSIX test could also see ENOENT.
+        # Note: no trailing period after "refused it" — MinGW libstdc++'s
+        # system_category message for WSAECONNREFUSED renders the Windows
+        # FormatMessage text without the final "." (observed in CI:
+        # "...actively refused it\n\nProbably bitcoin-node is not running...").
         ipc_connect_error = (
-            ("error: No connection could be made because the target machine actively refused it.",
+            ("error: No connection could be made because the target machine actively refused it",
              "error: No such file or directory")
             if sys.platform == 'win32' else
             "error: Connection refused\n\nProbably bitcoin-node is not running or not listening on a unix socket. Can be started with:\n\n    bitcoin-node -chain=regtest -ipcbind=unix\n"
