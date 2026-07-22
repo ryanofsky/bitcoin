@@ -322,6 +322,11 @@ public:
     //! Synchronous writer used to write to m_post_stream.
     kj::Own<kj::OutputStream> m_post_writer;
 
+    //! Set to true in EventLoop::loop() teardown before m_post_writer is freed.
+    //! Tells EventLoopRef::reset() to skip the post-pipe wakeup write (the kj
+    //! event loop has already exited; no one is waiting on the pipe).
+    bool m_loop_exited MP_GUARDED_BY(m_mutex) = false;
+
     //! Number of EventLoopRef instances referencing this event loop. This is a
     //! sum of the number of client and server objects (Connection, ProxyClient,
     //! ProxyServer) using the loop, plus temporary references held while
