@@ -306,12 +306,13 @@ constexpr SocketId SocketError{-1};
 //! The connection string is just a file descriptor number on unix. On windows,
 //! it is a path to a named pipe the parent process will write
 //! WSADuplicateSocket info to. In both cases, the child process can call
-//! SpawnProcess to get a socket handle from the connection string.
+//! StartSpawned to get a socket handle from the connection string.
 std::tuple<ProcessId, SocketId> SpawnProcess(const std::function<std::vector<std::string>(std::string)>& spawn_argv);
 
-//! Initialize spawned child process using the connection string passed by
-//! SpawnProcess through its command line arguments. Returns socket id for
-//! communicating with the parent process.
+//! Initialize spawned child process. The connect_info argument is the
+//! connection string SpawnProcess generated in the parent process and passed
+//! to the child on its command line. Returns socket id for communicating with
+//! the parent process.
 SocketId StartSpawned(const std::string& connect_info);
 
 //! Create a socket pair that can be used to communicate within a process or

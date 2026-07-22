@@ -80,9 +80,7 @@ static void initialize_ipc()
 
     // Ensure the thread's ThreadContext is created before the IPC setup, so
     // it is destroyed after it, since C++ destroys thread_local objects in
-    // reverse construction order. (On MinGW GThreadContext() returns a
-    // deliberately leaked object with no destruction order to worry about,
-    // but on other platforms it is an ordinary thread_local.)
+    // reverse construction order.
     mp::ThreadContext& thread_context{mp::GThreadContext()};
     (void)thread_context;
 
