@@ -199,8 +199,11 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
     // Try to call ExecVp with given exe path.
     auto try_exec = [&](fs::path exe_path, bool allow_notfound = true) {
 #ifdef WIN32
-        // On Windows with msvcrt, _wspawnvp does not automatically add ".exe"
-        // when searching for executables. Append ".exe" explicitly.
+        // _wspawnvp requires the full filename including ".exe"; unlike POSIX execvp
+        // it does not add the extension automatically. Without ".exe" it returns EINVAL
+        // rather than ENOENT, which bypasses the allow_notfound check below.
+        // TODO: even with ".exe" appended, a missing file may still return EINVAL instead
+        // of ENOENT on Windows, so allow_notfound may not work correctly in that case.
         if (exe_path.extension().empty()) exe_path = fs::PathFromString(fs::PathToString(exe_path) + ".exe");
 #endif
         std::string exe_path_str{fs::PathToString(exe_path)};

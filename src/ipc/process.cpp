@@ -131,6 +131,8 @@ mp::SocketId ProcessImpl::connect(const fs::path& data_dir,
     // return a WSA error that doesn't map to std::errc::no_such_file_or_directory
     // via std::system_category(). Check if the path exists and throw the
     // appropriate POSIX-compatible error if not.
+    // TODO: There may be a better way to map the WSA error directly to the
+    // right exception without needing to call fs::exists.
     if (addr.sun_family == AF_UNIX) {
         std::error_code ec;
         if (!fs::exists(fs::PathFromString(addr.sun_path), ec) && !ec) {

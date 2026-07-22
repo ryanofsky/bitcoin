@@ -39,11 +39,11 @@ if sys.platform == 'win32':
     # so getsockaddrarg() falls through to the "bad family" default. Calling
     # ws2_32.connect() via ctypes bypasses this check entirely.
     #
-    # Note: socket.socket() and ws2_32.connect() are blocking calls. On Python 3.14+
-    # Windows with ProactorEventLoop, calling socket.socket() from an asyncio callback
-    # caused a >30s hang inside socket.py (deadlock with IOCP). The implementation below
-    # runs both socket creation and connect in a thread pool via loop.run_in_executor().
-    # Observed in CI (windows-native-test, interface_ipc_mining.py run_early_startup_test).
+    # Note: socket.socket() is a blocking call. On Python 3.14+ Windows with
+    # ProactorEventLoop, calling socket.socket() from an asyncio callback caused a >30s
+    # hang inside socket.py (deadlock with IOCP). All socket setup (creation and connect)
+    # runs together in a thread pool via loop.run_in_executor() to keep the event loop
+    # free. Observed in CI (windows-native-test, interface_ipc_mining.py run_early_startup_test).
 
     class _SOCKADDR_UN(_ctypes.Structure):
         _fields_ = [("sun_family", _ctypes.c_ushort), ("sun_path", _ctypes.c_char * 108)]
@@ -98,10 +98,20 @@ if sys.platform == 'win32':
                             # should complete near-instantly; timeout means server not ready.
                             _, writable, _ = _select.select([], [s], [], 0.1)
                             wsa_err = s.getsockopt(_socket.SOL_SOCKET, _socket.SO_ERROR) if writable else 10035
+                        # Map both to ConnectionRefusedError so the caller's retry loop
+                        # (which catches ConnectionRefusedError) retries without special-
+                        # casing Windows. WSAEWOULDBLOCK means the 100ms select() timed
+                        # out with no server ready; WSAECONNREFUSED means active refusal.
+                        # TODO: consider raising a distinct error for the timeout case to
+                        # make it easier to distinguish "not ready yet" from "refused".
                         if wsa_err in (10035, 10061):  # WSAEWOULDBLOCK / WSAECONNREFUSED
                             raise ConnectionRefusedError(wsa_err, "AF_UNIX connect() not ready or refused")
                         if wsa_err != 0:
                             raise OSError(wsa_err, f"AF_UNIX connect() failed (WSA error {wsa_err})")
+                    # Restore blocking mode after the non-blocking connect sequence.
+                    # TODO: this is likely redundant — create_connection() calls
+                    # sock.setblocking(False) in _create_connection_transport() before
+                    # doing anything with the socket. Verify and remove if so.
                     s.setblocking(True)
                 except:
                     s.close()

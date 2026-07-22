@@ -44,7 +44,9 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
 
     def run_test(self):
         node = self.nodes[0]
-        # Log IPC socket path details to diagnose Windows path/slash issues.
+        # Diagnostic logging retained for debugging Windows IPC path issues.
+        # fwd= logs the forward-slash form separately since MinGW may need forward
+        # slashes where MSVC uses backslashes; encoded_len= checks the 108-byte limit.
         ipc_path_str = str(node.ipc_socket_path)
         ipc_path_fwd = ipc_path_str.replace('\\', '/')
         ipc_path_enc_len = len(os.fsencode(node.ipc_socket_path))
@@ -56,10 +58,14 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
 
         http_auth_error = "error: Authorization failed: Incorrect rpcuser or rpcpassword were specified."
         http_connect_error = f"error: Error while attempting to communicate with server 127.0.0.1:{rpc_port(node.index)} (Could not connect to the server)\n\nMake sure the bitcoind server is running and that you are connecting to the correct RPC port.\nUse \"bitcoin-cli -help\" for more info.\n"
-        # The OS error message for ECONNREFUSED (POSIX) vs WSAECONNREFUSED (Windows) differs.
-        # Use startswith so the test doesn't need to match the full help text on each platform.
-        # On Windows, node shutdown may delete the socket file so the error is ENOENT
-        # ("No such file or directory") instead of WSAECONNREFUSED; accept either.
+        # On POSIX, connect() to a stopped node returns ECONNREFUSED and bitcoin-cli
+        # appends help text; match the full expected output. On Windows, WSAECONNREFUSED
+        # produces a different OS string with no appended help text, so match only a prefix.
+        # Also on Windows, bitcoind removes the socket file on clean shutdown (on Linux the
+        # file persists and connect() still returns ECONNREFUSED), so a subsequent connect
+        # sees ENOENT ("No such file or directory") instead; accept either Windows string.
+        # TODO: clarify whether bitcoind explicitly removes the socket on shutdown on all
+        # platforms, or only Windows, and whether the POSIX test could also see ENOENT.
         ipc_connect_error = (
             ("error: No connection could be made because the target machine actively refused it.",
              "error: No such file or directory")
@@ -80,6 +86,7 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
                 self.test_cli(["-ipcconnect=auto", "-rpcconnect=127.0.0.1"], http_error)
                 self.test_cli(["-ipcconnect=unix"], ipc_error)
 
+            # Log socket state to diagnose ENOENT vs ECONNREFUSED behaviour on Windows.
             self.log.info(f"started={started} socket exists={node.ipc_socket_path.exists()}")
             self.test_cli([f"-ipcconnect=unix:{node.ipc_socket_path}"], ipc_error)
             self.test_cli(["-noipcconnect"], http_error)
