@@ -198,6 +198,11 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
 
     // Try to call ExecVp with given exe path.
     auto try_exec = [&](fs::path exe_path, bool allow_notfound = true) {
+#ifdef WIN32
+        // On Windows with msvcrt, _wspawnvp does not automatically add ".exe"
+        // when searching for executables. Append ".exe" explicitly.
+        if (exe_path.extension().empty()) exe_path = fs::PathFromString(fs::PathToString(exe_path) + ".exe");
+#endif
         std::string exe_path_str{fs::PathToString(exe_path)};
         exec_args[0] = exe_path_str.c_str();
         if (util::ExecVp(exec_args[0], (char*const*)exec_args.data()) == -1) {
@@ -226,27 +231,15 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
     // (https://github.com/bitcoin/bitcoin/pull/31375#discussion_r1861814807)
     const bool fallback_os_search{!fs::PathFromString(std::string{wrapper_argv0}).has_parent_path()};
 
-#ifdef WIN32
-    // On Windows with msvcrt, _wspawnvp does not automatically add ".exe"
-    // when searching for executables. Append ".exe" explicitly.
-    // Use std::filesystem::path (not fs::path) to avoid operator/ ambiguity.
-    const auto stem{arg0.filename()};
-    const std::filesystem::path exe_filename{
-        stem.extension().empty() ? stem.string() + ".exe" : stem.string()
-    };
-#else
-    const std::filesystem::path& exe_filename{arg0.filename()};
-#endif
-
     // If wrapper is installed in a bin/ directory, look for target executable
     // in libexec/
-    (wrapper_dir.filename() == "bin" && try_exec(wrapper_dir.parent_path() / "libexec" / exe_filename)) ||
+    (wrapper_dir.filename() == "bin" && try_exec(wrapper_dir.parent_path() / "libexec" / arg0.filename())) ||
 #ifdef WIN32
     // Otherwise check the "daemon" subdirectory in a windows install.
-    (!wrapper_dir.empty() && try_exec(wrapper_dir / "daemon" / exe_filename)) ||
+    (!wrapper_dir.empty() && try_exec(wrapper_dir / "daemon" / arg0.filename())) ||
 #endif
     // Otherwise look for target executable next to current wrapper
-    (!wrapper_dir.empty() && try_exec(wrapper_dir / exe_filename, fallback_os_search)) ||
+    (!wrapper_dir.empty() && try_exec(wrapper_dir / arg0.filename(), fallback_os_search)) ||
     // Otherwise just look on the system path.
-    (fallback_os_search && try_exec(exe_filename, false));
+    (fallback_os_search && try_exec(arg0.filename(), false));
 }
