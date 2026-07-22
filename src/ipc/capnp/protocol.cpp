@@ -18,6 +18,8 @@
 
 #include <cassert>
 #include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -82,9 +84,23 @@ public:
     CapnpProtocol(const char* exe_name) : m_exe_name{exe_name} {}
     ~CapnpProtocol() noexcept(true)
     {
+        // TEMP: step-by-step logging to find where STATUS_HEAP_CORRUPTION (0xC0000374)
+        // hits in MinGW cross-builds. Reads IPC_DIAG_LOG env var for debug.log path.
+        auto diag = [](const char* step) {
+            if (const char* path = getenv("IPC_DIAG_LOG")) {
+                if (FILE* fp = fopen(path, "a")) {
+                    fprintf(fp, "[capnp-dtor] %s\n", step);
+                    fclose(fp);
+                }
+            }
+        };
+        diag("before loop_ref.reset");
         m_loop_ref.reset();
+        diag("after loop_ref.reset, before join");
         if (m_loop_thread.joinable()) m_loop_thread.join();
+        diag("after join");
         assert(!m_loop);
+        diag("done");
     };
     std::unique_ptr<interfaces::Init> connect(mp::Stream stream) override
     {

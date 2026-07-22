@@ -28,6 +28,8 @@
 #include <kj/memory.h>
 #include <kj/string.h>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <optional>
@@ -306,13 +308,26 @@ EventLoop::EventLoop(const char* exe_name, LogOptions log_opts, void* context)
 
 EventLoop::~EventLoop()
 {
+    // TEMP: step-by-step logging to find STATUS_HEAP_CORRUPTION in MinGW builds.
+    // Uses IPC_DIAG_LOG env var (set by bitcoin-cli before teardown) for debug.log path.
+    auto diag = [](const char* step) {
+        if (const char* path = getenv("IPC_DIAG_LOG")) {
+            if (FILE* fp = fopen(path, "a")) {
+                fprintf(fp, "[eventloop-dtor] %s\n", step);
+                fclose(fp);
+            }
+        }
+    };
+    diag("joining async_thread");
     if (m_async_thread.joinable()) m_async_thread.join();
+    diag("async_thread done, checking asserts");
     const Lock lock(m_mutex);
     KJ_ASSERT(m_post_fn == nullptr);
     KJ_ASSERT(!m_async_fns);
     KJ_ASSERT(!m_wait_stream);
     KJ_ASSERT(!m_post_stream);
     KJ_ASSERT(m_num_refs == 0);
+    diag("done (m_io_context about to be destroyed)");
 
     // Spin event loop. wait for any promises triggered by RPC shutdown.
     // auto cleanup = kj::evalLater([]{});
@@ -354,15 +369,30 @@ void EventLoop::loop()
             break;
         }
     }
-    MP_LOG(*this, Log::Info) << "EventLoop::loop done, cancelling event listeners.";
+    // TEMP: step-by-step teardown logging to find STATUS_HEAP_CORRUPTION location.
+    // Uses IPC_DIAG_LOG env var (set by bitcoin-cli before teardown) for debug.log path.
+    auto loop_diag = [](const char* step) {
+        if (const char* path = getenv("IPC_DIAG_LOG")) {
+            if (FILE* fp = fopen(path, "a")) {
+                fprintf(fp, "[eventloop-loop] %s\n", step);
+                fclose(fp);
+            }
+        }
+    };
+    loop_diag("resetting task_set");
     m_task_set.reset();
-    MP_LOG(*this, Log::Info) << "EventLoop::loop bye.";
+    loop_diag("task_set done, nulling wait_stream");
     wait_stream = nullptr;
     const Lock lock(m_mutex);
+    loop_diag("wait_stream done, nulling post_writer");
     m_post_writer = nullptr;
+    loop_diag("post_writer done, nulling m_wait_stream");
     m_wait_stream = nullptr;
+    loop_diag("m_wait_stream done, nulling post_stream");
     m_post_stream = nullptr;
+    loop_diag("post_stream done, resetting async_fns");
     m_async_fns.reset();
+    loop_diag("bye");
     m_cv.notify_all();
 }
 

@@ -842,6 +842,15 @@ static std::optional<UniValue> CallIPC(BaseRequestHandler* rh, const std::string
             fclose(fp);
         }
     };
+    // Expose debug.log path via env var so CapnpProtocol/EventLoop teardown
+    // code can write step-by-step diagnostics to the same file.
+    // Use _putenv_s on Windows (not SetEnvironmentVariableA) so the CRT's
+    // getenv() sees the value, not just the Win32 environment block.
+#ifdef WIN32
+    _putenv_s("IPC_DIAG_LOG", diag_log.c_str());
+#else
+    setenv("IPC_DIAG_LOG", diag_log.c_str(), /*overwrite=*/1);
+#endif
     diag("destroying rpc");
     rpc.reset();
     diag("destroying node_init");
