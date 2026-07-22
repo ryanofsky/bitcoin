@@ -130,6 +130,9 @@ void EventLoopRef::reset(bool relock) MP_NO_TSA
             // It safe to access post_writer here because the loop can't
             // exit until this write takes place. See "Intentionally do not
             // break..."  comment in EventLoop::loop
+            // TODO: The statement above is not true for refs created by the
+            // async thread after the loop has already exited — see the
+            // latent-race TODO above EventLoop::startAsyncThread().
             post_writer->write(&buffer, 1);
             DiagLog("[eventloop-ref]", "wakeup written"); // TEMP: diagnostic
             // By default, do not try to relock `loop_lock` after writing,
@@ -439,6 +442,51 @@ void EventLoop::post(kj::Function<void()> fn)
     m_cv.wait(lock.m_lock, [this, &fn]() MP_REQUIRES(m_mutex) { return m_post_fn != &fn; });
 }
 
+// TODO: Fix a latent use-after-free race between the async thread started
+// below and the EventLoop::loop() teardown sequence.
+//
+// EventLoopRef::reset() relies on the invariant that the loop thread is
+// parked in m_wait_stream->read() until it reads the wakeup byte written to
+// m_post_writer, which orders the write before the code in loop() that frees
+// m_post_writer (see the "It is safe to access post_writer" comment in
+// reset()). That invariant holds for refs released while the kj event loop
+// is still running, but not for refs created by the async thread when
+// cleanup functions are queued *during* teardown: m_task_set.reset() can
+// destroy ProxyServer objects whose destructors call addAsyncCleanup() —
+// this happens when a disconnect occurs while asynchronous IPC calls are
+// still executing, so capnp destroys the ProxyServers late (see the comment
+// in ~Connection). At that point the loop has already broken out of read(),
+// so nothing orders the async thread's decrement/done()/write sequence
+// against the frees of m_post_writer/m_wait_stream/m_post_stream a few lines
+// later in loop() — the write can hit a freed SocketOutputStream /
+// FdOutputStream. A related problem is that done() dereferences m_async_fns
+// unconditionally, which is UB if the teardown has already reset it when the
+// async thread calls done().
+//
+// Sketch of a fix: an EventLoopRef's purpose is to keep the event loop
+// alive, and once the loop has exited it cannot be kept alive, so the
+// EventLoopRef created in the async thread below should not increment
+// m_num_refs (or later write any wakeup byte) once teardown has begun. The
+// EventLoopRef constructor could detect this and become a no-op — e.g. by
+// checking m_task_set == nullptr, though m_task_set is currently reset
+// outside m_mutex, so a dedicated mutex-guarded flag set in loop() right
+// after the for(;;) loop breaks would be a safer thing for the
+// constructor and reset() to check. reset() would skip the decrement and
+// the m_post_writer write correspondingly. For complete safety the teardown
+// must also not free the streams while an already-started write is still in
+// flight, so loop() should signal the async thread to exit (m_async_fns
+// .reset() + notify) and join it *before* freeing m_post_writer /
+// m_wait_stream / m_post_stream, rather than leaving the join to
+// ~EventLoop, which runs after they are freed. That reordering also forces
+// a decision about cleanup functions still queued at that point: currently
+// m_async_fns.reset() destroys unrun callbacks silently, which is probably
+// wrong — they should likely be drained (run) before the streams are freed.
+//
+// Note: an incomplete version of this fix (mutex-guarded m_loop_exited flag
+// checked in reset() before the write, but with the check/unlock/write
+// TOCTOU still present and no join reordering) was tried and reverted while
+// debugging a Windows STATUS_HEAP_CORRUPTION crash; it did not change that
+// crash, so this race is believed latent rather than the cause of it.
 void EventLoop::startAsyncThread()
 {
     assert (std::this_thread::get_id() == m_thread_id);
