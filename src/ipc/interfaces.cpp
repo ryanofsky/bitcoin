@@ -103,11 +103,19 @@ public:
                     return nullptr;
                 }
 #ifdef WIN32
-                // MinGW libstdc++'s system_category() does not map Winsock
-                // error values to std::errc conditions, so the checks above
-                // miss WSAECONNREFUSED thrown by ProcessImpl::connect when the
-                // socket file exists but nothing is listening. (MSVC's STL
-                // does map it, making this check redundant there.)
+                // Workaround: ProcessImpl::connect throws
+                // std::system_error(WSAECONNREFUSED, std::system_category()),
+                // but MinGW libstdc++'s system_category() does not map Winsock
+                // codes to std::errc values, so the connection_refused check
+                // above misses it. The proper fix is for ProcessImpl::connect
+                // to throw with std::errc::connection_refused (generic_category)
+                // instead of relying on system_category() to map Winsock codes.
+                // TODO: once ProcessImpl::connect is fixed to throw the right errc,
+                // remove this block; the Windows-specific error string handling in
+                // "test: Fix interface_ipc_cli.py error assertions on Windows" may
+                // then also be simplifiable.
+                // (MSVC's STL does map WSAECONNREFUSED to errc::connection_refused,
+                // so this check is redundant but harmless there.)
                 if (e.code().category() == std::system_category() && e.code().value() == WSAECONNREFUSED) {
                     return nullptr;
                 }
