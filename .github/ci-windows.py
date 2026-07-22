@@ -34,6 +34,16 @@ GENERATE_OPTIONS = {
         "-DBUILD_GUI=OFF",                   # TEMP: disabled to speed up Windows IPC debugging
         "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",  # TEMP: stop vcpkg from installing qt/wallet
         "-DVCPKG_MANIFEST_FEATURES=ipc;tests;zeromq",  # TEMP: only install what IPC needs
+        # TEMP: enable ASAN to catch heap corruption in bitcoin-cli IPC teardown.
+        # MinGW cross-build shows STATUS_HEAP_CORRUPTION (0xC0000374) in bitcoin-cli
+        # after successful IPC echo call; MSVC currently passes without crash, but
+        # ASAN may reveal the same latent bug. ASAN is unavailable in MinGW on Windows
+        # (GCC ASAN does not support Windows targets), so MSVC is the only option.
+        # Note: vcpkg packages (capnproto, libmultiprocess) are NOT recompiled with
+        # ASAN; only the bitcoin binaries are instrumented. This still detects bugs
+        # in our own IPC teardown code paths.
+        "-DCMAKE_CXX_FLAGS=/fsanitize=address",
+        "-DCMAKE_C_FLAGS=/fsanitize=address",
     ],
     "fuzz": [
         "-DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON",
