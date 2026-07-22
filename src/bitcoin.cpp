@@ -226,15 +226,27 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
     // (https://github.com/bitcoin/bitcoin/pull/31375#discussion_r1861814807)
     const bool fallback_os_search{!fs::PathFromString(std::string{wrapper_argv0}).has_parent_path()};
 
+#ifdef WIN32
+    // On Windows, _wspawnvp (especially with msvcrt) does not automatically
+    // add ".exe" when searching for executables, unlike CreateProcessW.
+    // Append ".exe" explicitly so we look for bitcoin-node.exe, not bitcoin-node.
+    const auto add_exe = [](const fs::path& p) {
+        return p.extension().empty() ? p.parent_path() / (p.filename().string() + ".exe") : p;
+    };
+    const fs::path exe_filename{add_exe(arg0.filename())};
+#else
+    const fs::path& exe_filename{arg0.filename()};
+#endif
+
     // If wrapper is installed in a bin/ directory, look for target executable
     // in libexec/
-    (wrapper_dir.filename() == "bin" && try_exec(wrapper_dir.parent_path() / "libexec" / arg0.filename())) ||
+    (wrapper_dir.filename() == "bin" && try_exec(wrapper_dir.parent_path() / "libexec" / exe_filename)) ||
 #ifdef WIN32
     // Otherwise check the "daemon" subdirectory in a windows install.
-    (!wrapper_dir.empty() && try_exec(wrapper_dir / "daemon" / arg0.filename())) ||
+    (!wrapper_dir.empty() && try_exec(wrapper_dir / "daemon" / exe_filename)) ||
 #endif
     // Otherwise look for target executable next to current wrapper
-    (!wrapper_dir.empty() && try_exec(wrapper_dir / arg0.filename(), fallback_os_search)) ||
+    (!wrapper_dir.empty() && try_exec(wrapper_dir / exe_filename, fallback_os_search)) ||
     // Otherwise just look on the system path.
-    (fallback_os_search && try_exec(arg0.filename(), false));
+    (fallback_os_search && try_exec(exe_filename, false));
 }
