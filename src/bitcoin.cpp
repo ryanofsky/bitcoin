@@ -227,15 +227,15 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
     const bool fallback_os_search{!fs::PathFromString(std::string{wrapper_argv0}).has_parent_path()};
 
 #ifdef WIN32
-    // On Windows, _wspawnvp (especially with msvcrt) does not automatically
-    // add ".exe" when searching for executables, unlike CreateProcessW.
-    // Append ".exe" explicitly so we look for bitcoin-node.exe, not bitcoin-node.
-    const auto add_exe = [](const fs::path& p) {
-        return p.extension().empty() ? p.parent_path() / (p.filename().string() + ".exe") : p;
+    // On Windows with msvcrt, _wspawnvp does not automatically add ".exe"
+    // when searching for executables. Append ".exe" explicitly.
+    // Use std::filesystem::path (not fs::path) to avoid operator/ ambiguity.
+    const auto stem{arg0.filename()};
+    const std::filesystem::path exe_filename{
+        stem.extension().empty() ? stem.string() + ".exe" : stem.string()
     };
-    const fs::path exe_filename{add_exe(arg0.filename())};
 #else
-    const fs::path& exe_filename{arg0.filename()};
+    const std::filesystem::path& exe_filename{arg0.filename()};
 #endif
 
     // If wrapper is installed in a bin/ directory, look for target executable
