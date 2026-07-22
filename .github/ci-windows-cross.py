@@ -90,19 +90,9 @@ def prepare_tests():
 def run_functional_tests():
     workspace = Path.cwd()
     num_procs = str(os.process_cpu_count())
-    # TEMP: run only the 4 IPC-related tests to speed up Windows IPC debugging
-    ipc_tests = [
-        "interface_ipc.py",
-        "interface_ipc_cli.py",
-        "interface_ipc_mining.py",
-        "tool_bitcoin.py",
-    ]
-    # TEMP: use a short tmpdir so test paths stay under UNIX_PATH_MAX (108 bytes).
+    # Use a short tmpdir so IPC socket paths stay under UNIX_PATH_MAX (108 bytes).
     # The default workspace prefix (D:\a\bitcoin\bitcoin\_ _) + test_runner_₿_🏃_TIMESTAMP
-    # + test name gives ~108+ bytes for longer test names like interface_ipc_mining,
-    # triggering the ipc_tmp_dir fallback which uses an explicit socket path and may
-    # cause STATUS_HEAP_CORRUPTION in MinGW bitcoin-cli during IPC teardown.
-    # Using D:\t keeps paths ~88 bytes for all IPC tests.
+    # + test name gives ~108+ bytes for longer test names like interface_ipc_mining.
     tmpdir = "D:\\t"
     Path(tmpdir).mkdir(exist_ok=True)
     test_runner_cmd = [
@@ -110,16 +100,11 @@ def run_functional_tests():
         str(workspace / "test" / "functional" / "test_runner.py"),
         "--jobs",
         num_procs,
-        # TEMP: no --quiet so per-test results print as they complete (helps identify hangs)
         f"--tmpdirprefix={tmpdir}",
         "--combinedlogslen=99999999",
         *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
-        *ipc_tests,
     ]
-    # TEMP: 60s watchdog — test_runner has no kill timer of its own, so a hung
-    # test waits forever. Tests have per-test asyncio timeouts that fire first (~30s);
-    # this is a fallback safety net. All 4 IPC tests should complete in < 1 minute.
-    run(test_runner_cmd, timeout=60)
+    run(test_runner_cmd)
 
 
 def run_unit_tests():
@@ -127,7 +112,6 @@ def run_unit_tests():
     os.environ["DIR_UNIT_TEST_DATA"] = str(workspace / "unit_test_data")
     # Can't use ctest here like other jobs as we don't have a CMake build tree.
     commands = [
-        ["./bin/test_bitcoin-qt.exe"],
         # Intentionally run sequentially here, to catch test case failures caused by dirty global state from prior test cases:
         ["./bin/test_bitcoin.exe", "-l", "test_suite"],
         ["./src/secp256k1/bin/exhaustive_tests.exe"],

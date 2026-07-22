@@ -181,22 +181,12 @@ def run_tests(ci_type):
         for var, exe in test_envs.items():
             os.environ[var] = str(release_bin / exe)
 
-        # TEMP: skip unit tests to speed up Windows IPC debugging
-        # run(["ctest", "--test-dir", str(build_dir), "--output-on-failure",
-        #      "--stop-on-failure", "-j", num_procs, "--build-config", "Release"])
+        run(["ctest", "--test-dir", str(build_dir), "--output-on-failure",
+             "--stop-on-failure", "-j", num_procs, "--build-config", "Release"])
 
-        # TEMP: run only the 4 IPC-related tests to speed up Windows IPC debugging
-        ipc_tests = [
-            "interface_ipc.py",
-            "interface_ipc_cli.py",
-            "interface_ipc_mining.py",
-            "tool_bitcoin.py",
-        ]
-        # TEMP: use a short tmpdir so test paths stay under UNIX_PATH_MAX (108 bytes).
+        # Use a short tmpdir so IPC socket paths stay under UNIX_PATH_MAX (108 bytes).
         # The default workspace prefix (D:\a\bitcoin\bitcoin\_ _) + test_runner_₿_🏃_TIMESTAMP
-        # + test name gives ~108+ bytes for longer test names like interface_ipc_mining,
-        # triggering the ipc_tmp_dir fallback which uses an explicit socket path and may
-        # cause issues. Using D:\t keeps paths ~88 bytes for all IPC tests.
+        # + test name gives ~108+ bytes for longer test names like interface_ipc_mining.
         tmpdir = "D:\\t"
         Path(tmpdir).mkdir(exist_ok=True)
         test_cmd = [
@@ -204,16 +194,11 @@ def run_tests(ci_type):
             str(build_dir / "test" / "functional" / "test_runner.py"),
             "--jobs",
             num_procs,
-            # TEMP: no --quiet so per-test results print as they complete (helps identify hangs)
             f"--tmpdirprefix={tmpdir}",
             "--combinedlogslen=99999999",
             *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
-            *ipc_tests,
         ]
-        # TEMP: 60s watchdog — test_runner has no kill timer of its own, so a hung
-        # test waits forever. Tests have per-test asyncio timeouts that fire first (~30s);
-        # this is a fallback safety net. All 4 IPC tests should complete in < 1 minute.
-        run(test_cmd, timeout=60)
+        run(test_cmd)
 
     elif ci_type == "fuzz":
         os.environ["BITCOINFUZZ"] = str(release_bin / "fuzz.exe")

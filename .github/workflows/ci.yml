@@ -206,12 +206,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        job-type: [standard]  # TEMP: fuzz disabled to speed up Windows IPC debugging
+        job-type: [standard, fuzz]
         include:
           - job-type: standard
             job-name: 'Windows native, VS'
-          # - job-type: fuzz  # TEMP: disabled
-          #   job-name: 'Windows native, fuzz, VS'
+          - job-type: fuzz
+            job-name: 'Windows native, fuzz, VS'
 
     steps:
       - *ANNOTATION_PR_NUMBER
@@ -314,11 +314,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crt: [ucrt]  # TEMP: msvcrt disabled to speed up Windows IPC debugging
+        crt: [ucrt, msvcrt]
         include:
-          # - crt: msvcrt  # TEMP: disabled
-          #   file-env: './ci/test/00_setup_env_win64_msvcrt.sh'
-          #   artifact-name: 'x86_64-w64-mingw32-executables'
+          - crt: msvcrt
+            file-env: './ci/test/00_setup_env_win64_msvcrt.sh'
+            artifact-name: 'x86_64-w64-mingw32-executables'
           - crt: ucrt
             file-env: './ci/test/00_setup_env_win64.sh'
             artifact-name: 'x86_64-w64-mingw32ucrt-executables'
@@ -376,10 +376,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        crt: [ucrt]  # TEMP: msvcrt disabled to speed up Windows IPC debugging
+        crt: [ucrt, msvcrt]
         include:
-          # - crt: msvcrt  # TEMP: disabled
-          #   artifact-name: 'x86_64-w64-mingw32-executables'
+          - crt: msvcrt
+            artifact-name: 'x86_64-w64-mingw32-executables'
           - crt: ucrt
             artifact-name: 'x86_64-w64-mingw32ucrt-executables'
 
@@ -412,7 +412,6 @@ jobs:
         run: py -3 .github/ci-windows-cross.py prepare_tests
 
       - name: Run unit tests
-        if: false  # TEMP: disabled to speed up Windows IPC debugging
         run: py -3 .github/ci-windows-cross.py run_unit_tests
 
       - name: Run functional tests
