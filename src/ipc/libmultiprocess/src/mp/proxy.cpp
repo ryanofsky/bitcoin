@@ -366,6 +366,17 @@ EventLoop::~EventLoop()
     KJ_ASSERT(m_num_refs == 0);
     diag("done (m_io_context about to be destroyed)");
 
+    // TEMP: destroy the kj::AsyncIoContext pieces one at a time instead of
+    // letting the implicit member destructor run, to localize which part of kj
+    // teardown triggers STATUS_HEAP_CORRUPTION. This matches the implicit
+    // destruction order (members destroyed in reverse declaration order:
+    // provider first, then lowLevelProvider). The WaitScope, kj::EventLoop and
+    // Win32 IOCP event port all live inside lowLevelProvider.
+    m_io_context.provider = nullptr;
+    diag("m_io_context.provider destroyed");
+    m_io_context.lowLevelProvider = nullptr;
+    diag("m_io_context.lowLevelProvider destroyed");
+
     // Spin event loop. wait for any promises triggered by RPC shutdown.
     // auto cleanup = kj::evalLater([]{});
     // cleanup.wait(m_io_context.waitScope);
