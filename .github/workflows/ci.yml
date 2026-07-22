@@ -412,11 +412,21 @@ jobs:
         run: py -3 .github/ci-windows-cross.py prepare_tests
 
       - name: Run unit tests
+        if: false  # TEMP: skipped (they pass) to speed up heap-corruption debug iteration
         run: py -3 .github/ci-windows-cross.py run_unit_tests
+
+      - name: IPC teardown crash repro under gdb
+        # TEMP: standalone STATUS_HEAP_CORRUPTION reproducer; continue-on-error
+        # so the functional tests below still run and give the node-shutdown
+        # crash signal even when the repro catches a bitcoin-cli crash.
+        continue-on-error: true
+        run: py -3 .github/ci-windows-cross.py run_ipc_repro
 
       - name: Run functional tests
         env:
-          TEST_RUNNER_EXTRA: "--timeout-factor=${{ env.TEST_RUNNER_TIMEOUT_FACTOR }} ${{ case(github.event_name == 'pull_request', '', '--extended') }}"
+          # TEMP: only the two tests that reproduce STATUS_HEAP_CORRUPTION, to
+          # speed up debug iteration (was: full suite plus --extended off-PR)
+          TEST_RUNNER_EXTRA: "--timeout-factor=${{ env.TEST_RUNNER_TIMEOUT_FACTOR }} interface_ipc_cli.py interface_ipc_mining.py"
         run: |
           py -3 .github/ci-windows-cross.py run_functional_tests
 

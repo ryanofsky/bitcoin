@@ -8,6 +8,7 @@ import os
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "test"))
@@ -99,6 +100,95 @@ def run_functional_tests():
     run(test_runner_cmd)
 
 
+def run_ipc_repro():
+    # TEMP: standalone reproducer for the STATUS_HEAP_CORRUPTION (0xC0000374)
+    # teardown crash seen in interface_ipc_cli.py / interface_ipc_mining.py on
+    # msvcrt builds. Mirrors the interface_ipc_cli.py invocation (bitcoind with
+    # -ipcbind=unix, bitcoin-cli with -rpcpassword=wrong so only the IPC path
+    # can succeed) but runs bitcoin-cli under gdb in batch mode, so a crash
+    # produces a symbolized (DWARF) backtrace directly in the CI log, which
+    # WinDbg/cdb could not provide for MinGW binaries.
+    workspace = Path.cwd()
+    bitcoind = workspace / "bin" / "bitcoind.exe"
+    cli = workspace / "bin" / "bitcoin-cli.exe"
+    gdb = Path("C:/msys64/mingw64/bin/gdb.exe")
+    if not gdb.exists():
+        run(["C:/msys64/usr/bin/pacman.exe", "-Sy", "--noconfirm", "--needed", "mingw-w64-x86_64-gdb"])
+
+    # Short datadir keeps the unix socket path well under UNIX_PATH_MAX.
+    datadir = Path("D:/r")
+    datadir.mkdir(exist_ok=True)
+    node_log_path = datadir / "node-stdout.log"
+    # IPC_DIAG_LOG makes the TEMP EventLoop/CapnpProtocol teardown diag lines in
+    # the node process go to its debug.log (normally only bitcoin-cli sets it
+    # for itself), so a node-side shutdown crash is localized too.
+    node_env = {**os.environ, "IPC_DIAG_LOG": str(datadir / "regtest" / "debug.log")}
+    with open(node_log_path, "w") as node_log:
+        node = subprocess.Popen(
+            [str(bitcoind), "-regtest", f"-datadir={datadir}", "-ipcbind=unix",
+             "-listen=0", "-connect=0", "-debug=ipc", "-loglevel=trace"],
+            stdout=node_log, stderr=subprocess.STDOUT, env=node_env)
+    sock = datadir / "regtest" / "node.sock"
+    for _ in range(300):
+        if sock.exists():
+            break
+        if node.poll() is not None:
+            print(node_log_path.read_text(errors="replace"))
+            sys.exit(f"bitcoind exited early with code {node.returncode:#x}")
+        time.sleep(0.2)
+    else:
+        sys.exit("timed out waiting for node.sock to appear")
+
+    iterations = 50
+    crashes = 0
+    cli_cmd = [str(cli), "-regtest", f"-datadir={datadir}", "-rpcpassword=wrong", "echo", "foo"]
+    gdb_cmd = [str(gdb), "-q", "-batch", "-return-child-result",
+               "-ex", "run", "-ex", "bt", "-ex", "thread apply all bt",
+               "--args"] + cli_cmd
+    print("+ " + shlex.join(gdb_cmd), flush=True)
+    for i in range(1, iterations + 1):
+        try:
+            result = subprocess.run(gdb_cmd, capture_output=True, text=True,
+                                    errors="replace", timeout=120)
+        except subprocess.TimeoutExpired as e:
+            crashes += 1
+            print(f"iteration {i}/{iterations}: TIMEOUT")
+            print(e.stdout or "")
+            continue
+        crashed = result.returncode != 0 or "received signal" in result.stdout
+        print(f"iteration {i}/{iterations}: {'CRASH' if crashed else 'ok'} "
+              f"exit={result.returncode & 0xFFFFFFFF:#010x}", flush=True)
+        if crashed:
+            crashes += 1
+            print(result.stdout)
+            print(result.stderr, file=sys.stderr)
+
+    # Show the IPC diag checkpoint lines (written by the TEMP instrumentation
+    # in bitcoin-cli.cpp / protocol.cpp / mp proxy.cpp) for context.
+    debug_log = datadir / "regtest" / "debug.log"
+    if debug_log.exists():
+        diag_lines = [line for line in debug_log.read_text(errors="replace").splitlines()
+                      if "[ipc-cli]" in line or "[eventloop-" in line or "[capnp-dtor]" in line]
+        print(f"diag lines from {debug_log} (last 100 of {len(diag_lines)}):")
+        for line in diag_lines[-100:]:
+            print(line)
+
+    # Stop the node with cookie-auth HTTP RPC (no -rpcpassword override) and
+    # report its exit code: the interface_ipc_mining.py failure mode is this
+    # same heap corruption at node shutdown after serving IPC connections.
+    subprocess.run([str(cli), "-regtest", f"-datadir={datadir}", "stop"], timeout=120, check=False)
+    try:
+        node.wait(timeout=120)
+    except subprocess.TimeoutExpired:
+        node.kill()
+        node.wait(timeout=120)
+    print(f"bitcoind exit code: {node.returncode & 0xFFFFFFFF:#010x}")
+    if crashes:
+        sys.exit(f"{crashes}/{iterations} bitcoin-cli iterations crashed")
+    if node.returncode != 0:
+        sys.exit(f"bitcoind exited with {node.returncode & 0xFFFFFFFF:#010x}")
+
+
 def run_unit_tests():
     workspace = Path.cwd()
     os.environ["DIR_UNIT_TEST_DATA"] = str(workspace / "unit_test_data")
@@ -122,6 +212,7 @@ def main():
         print_version,
         check_manifests,
         prepare_tests,
+        run_ipc_repro,
         run_unit_tests,
         run_functional_tests,
     ]))
