@@ -109,7 +109,8 @@ def run_ipc_repro():
     # produces a symbolized (DWARF) backtrace directly in the CI log, which
     # WinDbg/cdb could not provide for MinGW binaries.
     workspace = Path.cwd()
-    bitcoind = workspace / "bin" / "bitcoind.exe"
+    # bitcoin-node (not bitcoind) is the multiprocess binary accepting -ipcbind.
+    node_exe = workspace / "bin" / "bitcoin-node.exe"
     cli = workspace / "bin" / "bitcoin-cli.exe"
     gdb = Path("C:/msys64/mingw64/bin/gdb.exe")
     if not gdb.exists():
@@ -123,18 +124,23 @@ def run_ipc_repro():
     # the node process go to its debug.log (normally only bitcoin-cli sets it
     # for itself), so a node-side shutdown crash is localized too.
     node_env = {**os.environ, "IPC_DIAG_LOG": str(datadir / "regtest" / "debug.log")}
+    # Run the node under gdb too: the interface_ipc_mining.py failure mode is
+    # this heap corruption at node shutdown, so a node-side crash produces a
+    # backtrace in node-stdout.log (printed below).
+    node_cmd = [str(gdb), "-q", "-batch", "-return-child-result",
+                "-ex", "run", "-ex", "bt", "-ex", "thread apply all bt", "--args",
+                str(node_exe), "-regtest", f"-datadir={datadir}", "-ipcbind=unix",
+                "-listen=0", "-connect=0", "-debug=ipc", "-loglevel=trace"]
+    print("+ " + shlex.join(node_cmd), flush=True)
     with open(node_log_path, "w") as node_log:
-        node = subprocess.Popen(
-            [str(bitcoind), "-regtest", f"-datadir={datadir}", "-ipcbind=unix",
-             "-listen=0", "-connect=0", "-debug=ipc", "-loglevel=trace"],
-            stdout=node_log, stderr=subprocess.STDOUT, env=node_env)
+        node = subprocess.Popen(node_cmd, stdout=node_log, stderr=subprocess.STDOUT, env=node_env)
     sock = datadir / "regtest" / "node.sock"
     for _ in range(300):
         if sock.exists():
             break
         if node.poll() is not None:
             print(node_log_path.read_text(errors="replace"))
-            sys.exit(f"bitcoind exited early with code {node.returncode:#x}")
+            sys.exit(f"bitcoin-node exited early with code {node.returncode:#x}")
         time.sleep(0.2)
     else:
         sys.exit("timed out waiting for node.sock to appear")
@@ -182,11 +188,17 @@ def run_ipc_repro():
     except subprocess.TimeoutExpired:
         node.kill()
         node.wait(timeout=120)
-    print(f"bitcoind exit code: {node.returncode & 0xFFFFFFFF:#010x}")
+    print(f"bitcoin-node exit code: {node.returncode & 0xFFFFFFFF:#010x}")
+    node_out = node_log_path.read_text(errors="replace")
+    if node.returncode != 0:
+        print(node_out)
+    else:
+        print("tail of node-stdout.log:")
+        print("\n".join(node_out.splitlines()[-20:]))
     if crashes:
         sys.exit(f"{crashes}/{iterations} bitcoin-cli iterations crashed")
     if node.returncode != 0:
-        sys.exit(f"bitcoind exited with {node.returncode & 0xFFFFFFFF:#010x}")
+        sys.exit(f"bitcoin-node exited with {node.returncode & 0xFFFFFFFF:#010x}")
 
 
 def run_unit_tests():
