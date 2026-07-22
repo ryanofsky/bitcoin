@@ -929,11 +929,36 @@ void ListenConnections(EventLoop& loop, SocketId fd, InitImpl& init, std::option
     });
 }
 
-//! Return the current thread's ThreadContext, creating it on first use. It is
-//! normally an ordinary function-local thread_local object destroyed at
+//! Return the current thread's ThreadContext, creating it on first use.
+//!
+//! Why per-thread state is needed at all: libmultiprocess has no control over
+//! which threads the C++ application uses to call ProxyClient methods after
+//! the proxy objects are returned to it. The thread-mapping model (see
+//! "Thread Mapping" in doc/design.md) gives each application thread making
+//! IPC calls a dedicated server-side thread that executes its requests, so
+//! thread-local state and recursive mutexes work as expected across the
+//! process boundary and callbacks from the server run on the originating
+//! client thread. The client-side handles for those dedicated server threads
+//! (the ProxyClient<Thread> objects returned by ThreadMap.makeThread, stored
+//! per connection in the request_threads / callback_threads maps below) are
+//! state that must be keyed implicitly by the calling thread, and must be
+//! released when the client thread exits so the corresponding server threads
+//! are freed. A thread_local object is the C++ mechanism that provides both
+//! of these: per-thread storage plus a destructor that runs at thread exit
+//! (the C equivalent would be a pthread key destructor). This is why
+//! ThreadContext is thread_local and why its destructor is nontrivial —
+//! which is what makes the MinGW bug below bite here.
+//!
+//! It is normally an ordinary function-local thread_local object destroyed at
 //! thread exit, except on MinGW, where it is a lazily-created heap object
 //! that is deliberately leaked (held by a trivially-destructible thread_local
-//! pointer, so no destructor is registered at thread exit at all).
+//! pointer, so no destructor is registered at thread exit at all). Note that
+//! on MinGW this skips more than freeing memory: releasing the remote Thread
+//! capabilities at client-thread exit is what lets the server destroy that
+//! thread's dedicated server threads, so with the workaround, server threads
+//! belonging to exited client threads are only freed when the connection
+//! closes (via the disconnect cleanup callbacks registered in SetThread /
+//! ProxyClient<Thread>::m_disconnect_cb).
 //!
 //! The MinGW workaround exists because MinGW-w64's emutls implementation can
 //! free the heap storage backing thread_local variables before the C++
