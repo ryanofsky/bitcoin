@@ -30,7 +30,7 @@
 #include <winsock.h>
 #define sock_errno WSAGetLastError()
 #else
-#include <errno.h>
+#include <cerrno>
 #include <sys/socket.h>
 #define sock_errno errno
 #endif
