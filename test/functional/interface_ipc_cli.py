@@ -33,6 +33,10 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
         self.log.debug(f"bitcoin-cli returncode={result.returncode} stdout={result.stdout!r}")
         if error is None:
             assert_equal(result.stdout, '[\n  "foo"\n]\n')
+        elif isinstance(error, tuple):
+            # Accept any of the alternative error messages.
+            assert any(result.stdout.startswith(e) for e in error), \
+                f"Output didn't start with any expected error {error!r}:\n{result.stdout}"
         else:
             assert result.stdout.startswith(error), f"Output didn't start with the expected error {error!r}:\n{result.stdout}"
         assert_equal(result.stderr, None)
@@ -54,8 +58,11 @@ class TestBitcoinIpcCli(BitcoinTestFramework):
         http_connect_error = f"error: Error while attempting to communicate with server 127.0.0.1:{rpc_port(node.index)} (Could not connect to the server)\n\nMake sure the bitcoind server is running and that you are connecting to the correct RPC port.\nUse \"bitcoin-cli -help\" for more info.\n"
         # The OS error message for ECONNREFUSED (POSIX) vs WSAECONNREFUSED (Windows) differs.
         # Use startswith so the test doesn't need to match the full help text on each platform.
+        # On Windows, node shutdown may delete the socket file so the error is ENOENT
+        # ("No such file or directory") instead of WSAECONNREFUSED; accept either.
         ipc_connect_error = (
-            "error: No connection could be made because the target machine actively refused it."
+            ("error: No connection could be made because the target machine actively refused it.",
+             "error: No such file or directory")
             if sys.platform == 'win32' else
             "error: Connection refused\n\nProbably bitcoin-node is not running or not listening on a unix socket. Can be started with:\n\n    bitcoin-node -chain=regtest -ipcbind=unix\n"
         )
