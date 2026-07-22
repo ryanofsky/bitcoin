@@ -291,13 +291,6 @@ jobs:
         run: |
           py -3 .github/ci-windows.py ${{ matrix.job-type }} run_tests
 
-      # TEMP: SSH debug session when tests fail so hangs can be investigated interactively.
-      # Connect info is printed in the step log. Type 'continue' in the session to finish.
-      - name: Debug with tmate on test failure
-        if: failure()
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
-
   record-frozen-commit:
     # Record frozen commit, so that the native tests on cross-builds can run on
     # the exact same commit id of the build.
@@ -427,13 +420,6 @@ jobs:
           TEST_RUNNER_EXTRA: "--timeout-factor=${{ env.TEST_RUNNER_TIMEOUT_FACTOR }} ${{ case(github.event_name == 'pull_request', '', '--extended') }}"
         run: |
           py -3 .github/ci-windows-cross.py run_functional_tests
-
-      # TEMP: SSH debug session when tests fail so hangs can be investigated interactively.
-      # Connect info is printed in the step log. Type 'continue' in the session to finish.
-      - name: Debug with tmate on test failure
-        if: failure()
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
 
   ci-matrix:
     name: ${{ matrix.name }}

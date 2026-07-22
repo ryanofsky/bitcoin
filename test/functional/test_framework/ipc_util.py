@@ -38,10 +38,11 @@ if sys.platform == 'win32':
     # so getsockaddrarg() falls through to the "bad family" default. Calling
     # ws2_32.connect() via ctypes bypasses this check entirely.
     #
-    # Note: ws2_32.connect() is a blocking call. For a local AF_UNIX socket the
-    # kernel returns immediately, so blocking the event loop thread is acceptable
-    # here. A future improvement could run just the connect step in a thread pool
-    # worker via loop.run_in_executor() if this ever needs to handle slow paths.
+    # Note: socket.socket() and ws2_32.connect() are blocking calls. On Python 3.14+
+    # Windows with ProactorEventLoop, calling socket.socket() from an asyncio callback
+    # caused a >30s hang inside socket.py (deadlock with IOCP). The implementation below
+    # runs both socket creation and connect in a thread pool via loop.run_in_executor().
+    # Observed in CI (windows-native-test, interface_ipc_mining.py run_early_startup_test).
 
     class _SOCKADDR_UN(_ctypes.Structure):
         _fields_ = [("sun_family", _ctypes.c_ushort), ("sun_path", _ctypes.c_char * 108)]
@@ -66,24 +67,32 @@ if sys.platform == 'win32':
             # Fall back to the raw integer constant 1, which is AF_UNIX on all platforms;
             # socket.socket() passes the value through to winsock.socket() directly.
             _af_unix = getattr(_socket, 'AF_UNIX', 1)
-            sock = _socket.socket(_af_unix, _socket.SOCK_STREAM)
-            try:
-                # os.fsencode(os.fspath()) handles str, bytes, and PathLike correctly.
-                # str(path).encode() would mangle bytes paths as "b'...'" strings.
-                _path_bytes = _os.fsencode(_os.fspath(path))
-                if b"\x00" in _path_bytes:
-                    raise ValueError("AF_UNIX path must not contain a NUL byte")
-                if len(_path_bytes) >= 108:
-                    raise ValueError(f"AF_UNIX path too long ({len(_path_bytes)} >= 108 bytes)")
-                _addr = _SOCKADDR_UN(sun_family=1, sun_path=_path_bytes)
-                _ret = _ws2_32.connect(_ctypes.c_size_t(sock.fileno()),
-                                       _ctypes.byref(_addr), _ctypes.sizeof(_addr))
-                if _ret != 0:
-                    _err = _ws2_32.WSAGetLastError()
-                    raise OSError(_err, f"AF_UNIX connect() failed (WSA error {_err})")
-            except:
-                sock.close()
-                raise
+            # os.fsencode(os.fspath()) handles str, bytes, and PathLike correctly.
+            # str(path).encode() would mangle bytes paths as "b'...'" strings.
+            _path_bytes = _os.fsencode(_os.fspath(path))
+            if b"\x00" in _path_bytes:
+                raise ValueError("AF_UNIX path must not contain a NUL byte")
+            if len(_path_bytes) >= 108:
+                raise ValueError(f"AF_UNIX path too long ({len(_path_bytes)} >= 108 bytes)")
+
+            def _create_and_connect():
+                s = _socket.socket(_af_unix, _socket.SOCK_STREAM)
+                try:
+                    addr = _SOCKADDR_UN(sun_family=1, sun_path=_path_bytes)
+                    ret = _ws2_32.connect(_ctypes.c_size_t(s.fileno()),
+                                          _ctypes.byref(addr), _ctypes.sizeof(addr))
+                    if ret != 0:
+                        err = _ws2_32.WSAGetLastError()
+                        if err == 10061:  # WSAECONNREFUSED
+                            raise ConnectionRefusedError(err, "AF_UNIX connect() refused")
+                        raise OSError(err, f"AF_UNIX connect() failed (WSA error {err})")
+                except:
+                    s.close()
+                    raise
+                return s
+
+            loop = asyncio.get_running_loop()
+            sock = await loop.run_in_executor(None, _create_and_connect)
         return await self.create_connection(protocol_factory, sock=sock, ssl=ssl,
                                             server_hostname=server_hostname,
                                             ssl_handshake_timeout=ssl_handshake_timeout,

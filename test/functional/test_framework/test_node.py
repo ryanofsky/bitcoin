@@ -62,6 +62,14 @@ if sys.platform.startswith("linux"):
     UNIX_PATH_MAX = 108          # includes the trailing NUL
 elif sys.platform.startswith(("darwin", "freebsd", "netbsd", "openbsd")):
     UNIX_PATH_MAX = 104
+elif sys.platform == 'win32':
+    # afunix.h UNIX_PATH_MAX is 108. Getting this right matters: if the value is
+    # too conservative, the ipc_tmp_dir fallback below is triggered unnecessarily.
+    # That fallback passes an explicit socket path to -ipcbind=unix:PATH, which
+    # causes STATUS_HEAP_CORRUPTION (0xC0000374) in bitcoin-cli during IPC teardown
+    # on Windows MinGW cross-builds (windows-native-test CI job). CI paths are ~105
+    # bytes, well under 108 when this constant is set correctly.
+    UNIX_PATH_MAX = 108
 else:                            # safest portable value
     UNIX_PATH_MAX = 92
 
