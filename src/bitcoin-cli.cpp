@@ -806,43 +806,6 @@ static std::optional<UniValue> CallIPC(BaseRequestHandler* rh, const std::string
         throw std::runtime_error("-rpcconnect and -ipcconnect options cannot both be enabled");
     }
 
-    // TEMP: step-by-step diagnostics to find which step causes STATUS_HEAP_CORRUPTION
-    // (0xC0000374) in MinGW cross-builds. Observed in CI windows-native-test job
-    // interface_ipc_cli.py: an IPC connection intermittently crashes with empty stdout.
-    // Write to node's debug.log so output appears in the combined test log without
-    // polluting stdout (which would break test assertions via stderr=subprocess.STDOUT).
-    // On Windows each line also reports HeapValidate() status for every heap in the
-    // process, to localize the first step at which a heap reports corruption.
-    static int ipc_call_count = 0;
-    int call_num = ++ipc_call_count;
-    auto diag_log = (gArgs.GetDataDirNet() / "debug.log").generic_string();
-    auto diag = [&](const char* step) {
-        if (FILE* fp = fopen(diag_log.c_str(), "a")) {
-#ifdef WIN32
-            HANDLE heaps[64];
-            DWORD num_heaps = GetProcessHeaps(64, heaps);
-            int bad = 0;
-            for (DWORD i = 0; i < num_heaps && i < 64; ++i) {
-                if (!HeapValidate(heaps[i], 0, nullptr)) ++bad;
-            }
-            fprintf(fp, "[ipc-cli] call#%d %s (heaps=%lu bad=%d)\n", call_num, step, (unsigned long)num_heaps, bad);
-#else
-            fprintf(fp, "[ipc-cli] call#%d %s\n", call_num, step);
-#endif
-            fclose(fp);
-        }
-    };
-    // Expose debug.log path via env var so CapnpProtocol/EventLoop diagnostics
-    // in the IPC code can write to the same file.
-    // Use _putenv_s on Windows (not SetEnvironmentVariableA) so the CRT's
-    // getenv() sees the value, not just the Win32 environment block.
-#ifdef WIN32
-    _putenv_s("IPC_DIAG_LOG", diag_log.c_str());
-#else
-    setenv("IPC_DIAG_LOG", diag_log.c_str(), /*overwrite=*/1);
-#endif
-    diag("start");
-
     std::unique_ptr<interfaces::Init> local_init{interfaces::MakeBasicInit("bitcoin-cli")};
     if (!local_init || !local_init->ipc()) {
         if (ipcconnect == "auto") return {}; // Use HTTP if -ipcconnect=auto is set and there is no IPC support.
@@ -851,7 +814,6 @@ static std::optional<UniValue> CallIPC(BaseRequestHandler* rh, const std::string
 
     std::unique_ptr<interfaces::Init> node_init;
     try {
-        diag("connecting");
         node_init = local_init->ipc()->connectAddress(ipcconnect);
         if (!node_init) return {}; // Fall back to HTTP if -ipcconnect=auto connect failed.
     } catch (const std::exception& e) {
@@ -861,21 +823,11 @@ static std::optional<UniValue> CallIPC(BaseRequestHandler* rh, const std::string
             "    bitcoin-node -chain=%s -ipcbind=unix", e.what(), gArgs.GetChainTypeString())};
     }
 
-    diag("connected, calling makeRpc");
     std::unique_ptr<interfaces::Rpc> rpc{node_init->makeRpc()};
     assert(rpc);
     UniValue request{rh->PrepareRequest(strMethod, args)};
-    diag("calling executeRpc");
     UniValue reply{rpc->executeRpc(std::move(request), endpoint, username)};
-    auto result = rh->ProcessReply(reply);
-    diag("destroying rpc");
-    rpc.reset();
-    diag("destroying node_init");
-    node_init.reset();
-    diag("destroying local_init");
-    local_init.reset();
-    diag("done");
-    return result;
+    return rh->ProcessReply(reply);
 }
 
 /**

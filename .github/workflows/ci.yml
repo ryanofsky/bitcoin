@@ -32,7 +32,7 @@ jobs:
     runs-on: ${{ github.repository == 'bitcoin/bitcoin' && 'warp-ubuntu-latest-x64-8x' || 'ubuntu-latest' }}
     env:
       TEST_RUNNER_PORT_MIN: "14000"  # Use a larger port range to avoid colliding with other CI services.
-    if: false  # TEMP: disabled to speed up Windows IPC debugging
+    if: github.event_name == 'pull_request' && github.event.pull_request.commits != 1
     timeout-minutes: 360  # Use maximum time, see https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes.
     steps:
       - name: Determine fetch depth
@@ -114,7 +114,7 @@ jobs:
     # one for the branch push and one for the pull request.
     # This can be avoided by setting SKIP_BRANCH_PUSH=true as a custom env variable
     # in Github repository settings.
-    if: false  # TEMP: disabled to speed up Windows IPC debugging
+    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
 
     timeout-minutes: 120
 
@@ -201,7 +201,7 @@ jobs:
 
     env:
       PYTHONUTF8: 1
-      TEST_RUNNER_TIMEOUT_FACTOR: 5  # TEMP: reduced from 40 to catch hangs faster during IPC debugging
+      TEST_RUNNER_TIMEOUT_FACTOR: 40
 
     strategy:
       fail-fast: false
@@ -255,8 +255,7 @@ jobs:
 
       - name: Save vcpkg binary cache
         uses: actions/cache/save@v5
-        # TEMP: removed default_branch restriction so caches are saved on win-work pushes too
-        if: github.event_name != 'pull_request' && steps.vcpkg-binary-cache.outputs.cache-hit != 'true' && matrix.job-type == 'standard'
+        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && steps.vcpkg-binary-cache.outputs.cache-hit != 'true' && matrix.job-type == 'standard'
         with:
           path: ~/AppData/Local/vcpkg/archives
           key: ${{ steps.vcpkg-binary-cache.outputs.cache-primary-key }}
@@ -264,8 +263,7 @@ jobs:
       - name: Save vcpkg downloads cache
         uses: actions/cache/save@v5
         # Only save cache from the 'standard' job, as it includes the necessary downloads for other jobs in the matrix. If the matrix is modified, this may need amending.
-        # TEMP: removed default_branch restriction so caches are saved on win-work pushes too
-        if: github.event_name != 'pull_request' && steps.vcpkg-binary-cache.outputs.cache-hit != 'true' && steps.vcpkg-downloads-cache.outputs.cache-hit != 'true' && matrix.job-type == 'standard'
+        if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && steps.vcpkg-binary-cache.outputs.cache-hit != 'true' && steps.vcpkg-downloads-cache.outputs.cache-hit != 'true' && matrix.job-type == 'standard'
         with:
           # Cache the tools once as archives, but not redundantly in extracted form.
           path: |
@@ -385,7 +383,7 @@ jobs:
 
     env:
       PYTHONUTF8: 1
-      TEST_RUNNER_TIMEOUT_FACTOR: 5  # TEMP: reduced from 40 to catch hangs faster during IPC debugging
+      TEST_RUNNER_TIMEOUT_FACTOR: 40
 
     steps:
       - *ANNOTATION_PR_NUMBER
@@ -412,28 +410,18 @@ jobs:
         run: py -3 .github/ci-windows-cross.py prepare_tests
 
       - name: Run unit tests
-        if: false  # TEMP: skipped (they pass) to speed up heap-corruption debug iteration
         run: py -3 .github/ci-windows-cross.py run_unit_tests
-
-      - name: IPC teardown crash repro under gdb
-        # TEMP: standalone STATUS_HEAP_CORRUPTION reproducer; continue-on-error
-        # so the functional tests below still run and give the node-shutdown
-        # crash signal even when the repro catches a bitcoin-cli crash.
-        continue-on-error: true
-        run: py -3 .github/ci-windows-cross.py run_ipc_repro
 
       - name: Run functional tests
         env:
-          # TEMP: only the two tests that reproduce STATUS_HEAP_CORRUPTION, to
-          # speed up debug iteration (was: full suite plus --extended off-PR)
-          TEST_RUNNER_EXTRA: "--timeout-factor=${{ env.TEST_RUNNER_TIMEOUT_FACTOR }} interface_ipc_cli.py interface_ipc_mining.py"
+          TEST_RUNNER_EXTRA: "--timeout-factor=${{ env.TEST_RUNNER_TIMEOUT_FACTOR }} ${{ case(github.event_name == 'pull_request', '', '--extended') }}"
         run: |
           py -3 .github/ci-windows-cross.py run_functional_tests
 
   ci-matrix:
     name: ${{ matrix.name }}
     runs-on: ${{ github.repository == 'bitcoin/bitcoin' && matrix.warp-runner || matrix.fallback-runner }}
-    if: false  # TEMP: disabled to speed up Windows IPC debugging
+    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: ${{ matrix.timeout-minutes }}
 
     env:
@@ -598,7 +586,7 @@ jobs:
   lint:
     name: 'lint'
     runs-on: ${{ github.repository == 'bitcoin/bitcoin' && 'warp-ubuntu-latest-x64-2x' || 'ubuntu-latest' }}
-    if: false  # TEMP: disabled to speed up Windows IPC debugging
+    if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: 20
     env:
       CONTAINER_NAME: "bitcoin-linter"

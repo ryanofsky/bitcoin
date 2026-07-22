@@ -28,8 +28,6 @@
 #include <kj/memory.h>
 #include <kj/string.h>
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 #include <map>
 #include <memory>
 #include <optional>
@@ -39,40 +37,6 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-
-// TEMP: diagnostics for STATUS_HEAP_CORRUPTION (0xC0000374) debugging in MinGW
-// cross-builds. DiagLog() appends a line to the file named by the IPC_DIAG_LOG
-// environment variable (set by bitcoin-cli), and on Windows also runs
-// HeapValidate() over every heap in the process, so the log shows the first
-// step at which a heap reports corruption.
-#ifdef WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#endif
-
-namespace {
-void DiagLog(const char* prefix, const char* step)
-{
-    const char* path = getenv("IPC_DIAG_LOG");
-    if (!path) return;
-    if (FILE* fp = fopen(path, "a")) {
-#ifdef WIN32
-        HANDLE heaps[64];
-        DWORD num_heaps = GetProcessHeaps(64, heaps);
-        int bad = 0;
-        for (DWORD i = 0; i < num_heaps && i < 64; ++i) {
-            if (!HeapValidate(heaps[i], 0, nullptr)) ++bad;
-        }
-        fprintf(fp, "%s %s (heaps=%lu bad=%d)\n", prefix, step, (unsigned long)num_heaps, bad);
-#else
-        fprintf(fp, "%s %s\n", prefix, step);
-#endif
-        fclose(fp);
-    }
-}
-} // namespace
 
 namespace mp {
 
@@ -143,10 +107,6 @@ void EventLoopRef::reset(bool relock) MP_NO_TSA
         loop->m_num_refs -= 1;
         if (loop->done()) {
             loop->m_cv.notify_all();
-            // TEMP: diagnostic. If this line appears after "[eventloop-loop]
-            // resetting task_set" in the log, this write is racing the loop()
-            // teardown that frees m_post_writer.
-            DiagLog("[eventloop-ref]", "done, writing wakeup");
             // Capture loop->m_post_writer pointer before releasing the lock.
             // The pointer can't actually change before the write() call below,
             // but copying it with the lock held instead of accessing it
@@ -164,7 +124,6 @@ void EventLoopRef::reset(bool relock) MP_NO_TSA
             // async thread after the loop has already exited — see the
             // latent-race TODO above EventLoop::startAsyncThread().
             post_writer->write(&buffer, 1);
-            DiagLog("[eventloop-ref]", "wakeup written"); // TEMP: diagnostic
             // By default, do not try to relock `loop_lock` after writing,
             // because the event loop could wake up and destroy itself and the
             // mutex might no longer exist.
@@ -353,9 +312,6 @@ void EventLoop::addAsyncCleanup(std::function<void()> fn)
     // process, otherwise shared pointer counts of the CWallet objects (which
     // inherit from Chain::Notification) will not be 1 when WalletLoader
     // destructor runs and it will wait forever for them to be released.
-    // TEMP: diagnostic. If this line appears after "[eventloop-loop] resetting
-    // task_set", cleanup functions are being queued after the loop exited.
-    DiagLog("[eventloop-async]", "addAsyncCleanup");
     m_async_fns->emplace_back(std::move(fn));
     startAsyncThread();
 }
@@ -383,29 +339,13 @@ EventLoop::EventLoop(const char* exe_name, LogOptions log_opts, void* context)
 
 EventLoop::~EventLoop()
 {
-    // TEMP: step-by-step logging to find STATUS_HEAP_CORRUPTION in MinGW builds.
-    auto diag = [](const char* step) { DiagLog("[eventloop-dtor]", step); };
-    diag("joining async_thread");
     if (m_async_thread.joinable()) m_async_thread.join();
-    diag("async_thread done, checking asserts");
     const Lock lock(m_mutex);
     KJ_ASSERT(m_post_fn == nullptr);
     KJ_ASSERT(!m_async_fns);
     KJ_ASSERT(!m_wait_stream);
     KJ_ASSERT(!m_post_stream);
     KJ_ASSERT(m_num_refs == 0);
-    diag("done (m_io_context about to be destroyed)");
-
-    // TEMP: destroy the kj::AsyncIoContext pieces one at a time instead of
-    // letting the implicit member destructor run, to localize which part of kj
-    // teardown triggers STATUS_HEAP_CORRUPTION. This matches the implicit
-    // destruction order (members destroyed in reverse declaration order:
-    // provider first, then lowLevelProvider). The WaitScope, kj::EventLoop and
-    // Win32 IOCP event port all live inside lowLevelProvider.
-    m_io_context.provider = nullptr;
-    diag("m_io_context.provider destroyed");
-    m_io_context.lowLevelProvider = nullptr;
-    diag("m_io_context.lowLevelProvider destroyed");
 
     // Spin event loop. wait for any promises triggered by RPC shutdown.
     // auto cleanup = kj::evalLater([]{});
@@ -447,22 +387,15 @@ void EventLoop::loop()
             break;
         }
     }
-    // TEMP: step-by-step teardown logging to find STATUS_HEAP_CORRUPTION location.
-    auto loop_diag = [](const char* step) { DiagLog("[eventloop-loop]", step); };
-    loop_diag("resetting task_set");
+    MP_LOG(*this, Log::Info) << "EventLoop::loop done, cancelling event listeners.";
     m_task_set.reset();
-    loop_diag("task_set done, nulling wait_stream");
+    MP_LOG(*this, Log::Info) << "EventLoop::loop bye.";
     wait_stream = nullptr;
     const Lock lock(m_mutex);
-    loop_diag("wait_stream done, nulling post_writer");
     m_post_writer = nullptr;
-    loop_diag("post_writer done, nulling m_wait_stream");
     m_wait_stream = nullptr;
-    loop_diag("m_wait_stream done, nulling post_stream");
     m_post_stream = nullptr;
-    loop_diag("post_stream done, resetting async_fns");
     m_async_fns.reset();
-    loop_diag("bye");
     m_cv.notify_all();
 }
 
@@ -535,7 +468,6 @@ void EventLoop::startAsyncThread()
         // Notify to wake up the async thread if it is already running.
         m_cv.notify_all();
     } else if (!m_async_fns->empty()) {
-        DiagLog("[eventloop-async]", "starting async thread"); // TEMP: diagnostic
         m_async_thread = std::thread([this] {
             Lock lock(m_mutex);
             while (m_async_fns) {
@@ -543,17 +475,14 @@ void EventLoop::startAsyncThread()
                     EventLoopRef ref{*this, &lock};
                     const std::function<void()> fn = std::move(m_async_fns->front());
                     m_async_fns->pop_front();
-                    DiagLog("[eventloop-async]", "running cleanup fn"); // TEMP: diagnostic
                     Unlock(lock, fn);
                     // Important to relock because of the wait() call below.
                     ref.reset(/*relock=*/true);
-                    DiagLog("[eventloop-async]", "cleanup fn done"); // TEMP: diagnostic
                     // Continue without waiting in case there are more async_fns
                     continue;
                 }
                 m_cv.wait(lock.m_lock);
             }
-            DiagLog("[eventloop-async]", "async thread exiting"); // TEMP: diagnostic
         });
     }
 }
