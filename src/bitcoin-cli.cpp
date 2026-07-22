@@ -831,13 +831,24 @@ static std::optional<UniValue> CallIPC(BaseRequestHandler* rh, const std::string
     // TEMP: step-by-step destruction to find which step causes STATUS_HEAP_CORRUPTION
     // (0xC0000374) in MinGW cross-builds. Observed in CI windows-native-test job
     // interface_ipc_cli.py: 4th IPC connection crashes with empty stdout.
-    fprintf(stderr, "[ipc-teardown] destroying rpc\n"); fflush(stderr);
+    // Write to node's debug.log so output appears in the combined test log without
+    // polluting stdout (which would break test assertions via stderr=subprocess.STDOUT).
+    static int ipc_call_count = 0;
+    int call_num = ++ipc_call_count;
+    auto diag_log = (gArgs.GetDataDirNet() / "debug.log").generic_string();
+    auto diag = [&](const char* step) {
+        if (FILE* fp = fopen(diag_log.c_str(), "a")) {
+            fprintf(fp, "[ipc-teardown] call#%d %s\n", call_num, step);
+            fclose(fp);
+        }
+    };
+    diag("destroying rpc");
     rpc.reset();
-    fprintf(stderr, "[ipc-teardown] destroying node_init\n"); fflush(stderr);
+    diag("destroying node_init");
     node_init.reset();
-    fprintf(stderr, "[ipc-teardown] destroying local_init\n"); fflush(stderr);
+    diag("destroying local_init");
     local_init.reset();
-    fprintf(stderr, "[ipc-teardown] done\n"); fflush(stderr);
+    diag("done");
     return result;
 }
 
