@@ -293,10 +293,13 @@ jobs:
 
       # TEMP: SSH debug session when tests fail so hangs can be investigated interactively.
       # Connect info is printed in the step log. Type 'continue' in the session to finish.
+      # limit-access-to-actor: false so no GitHub-registered SSH key is required to connect.
       - name: Debug with tmate on test failure
         if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
+        with:
+          limit-access-to-actor: false
 
   record-frozen-commit:
     # Record frozen commit, so that the native tests on cross-builds can run on
@@ -430,10 +433,13 @@ jobs:
 
       # TEMP: SSH debug session when tests fail so hangs can be investigated interactively.
       # Connect info is printed in the step log. Type 'continue' in the session to finish.
+      # limit-access-to-actor: false so no GitHub-registered SSH key is required to connect.
       - name: Debug with tmate on test failure
         if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 30
+        with:
+          limit-access-to-actor: false
 
   ci-matrix:
     name: ${{ matrix.name }}
