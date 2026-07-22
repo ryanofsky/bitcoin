@@ -930,15 +930,51 @@ void ListenConnections(EventLoop& loop, SocketId fd, InitImpl& init, std::option
 }
 
 //! Return the current thread's ThreadContext, creating it on first use. It is
-//! normally a thread_local object destroyed at thread exit, except on MinGW,
-//! where it is a lazily-created heap object that is deliberately leaked.
-//! MinGW-w64's emutls implementation can free thread_local storage before C++
-//! destructors registered by __cxa_thread_atexit run at thread exit (pthread
-//! key destructor order is unspecified), so any thread_local object with a
-//! nontrivial destructor may be destroyed after its own memory was freed,
-//! corrupting the heap (https://sourceforge.net/p/mingw-w64/bugs/527/).
-//! Observed as intermittent STATUS_HEAP_CORRUPTION (0xC0000374) crashes in
-//! ~ThreadContext at thread exit in MinGW msvcrt builds.
+//! normally an ordinary function-local thread_local object destroyed at
+//! thread exit, except on MinGW, where it is a lazily-created heap object
+//! that is deliberately leaked (held by a trivially-destructible thread_local
+//! pointer, so no destructor is registered at thread exit at all).
+//!
+//! The MinGW workaround exists because MinGW-w64's emutls implementation can
+//! free the heap storage backing thread_local variables before the C++
+//! destructors registered via __cxa_thread_atexit run at thread exit. Both
+//! cleanups are implemented as winpthreads pthread key destructors (run by
+//! _pthread_cleanup_dest in winpthreads src/thread.c), and pthread key
+//! destructor order is unspecified, so gcc's emutls key destructor
+//! (emutls_destroy in libgcc/emutls.c, which frees each thread_local
+//! object's storage and the per-thread array) can run before the key
+//! destructor that invokes the C++ thread_local destructors. When that
+//! happens, any thread_local object with a nontrivial destructor is
+//! destroyed after its own memory was already freed. For this ThreadContext
+//! struct that meant ~ThreadContext walking the request_threads /
+//! callback_threads std::map trees through freed memory and double-freeing
+//! their nodes, corrupting the heap.
+//!
+//! This was observed in Bitcoin Core Windows CI as intermittent
+//! STATUS_HEAP_CORRUPTION (0xC0000374) exit code 3221226356 crashes of both
+//! bitcoin-cli (its EventLoop::loop thread exiting at IPC teardown) and
+//! bitcoin-node (per-request server threads created by
+//! ProxyServer<ThreadMap>::makeThread() exiting after client disconnects) in
+//! x86_64-w64-mingw32 (msvcrt) cross builds, but not in
+//! x86_64-w64-mingw32ucrt builds — presumably pthread-key creation-order
+//! luck, since the underlying bug is CRT-independent and unsafe on all
+//! mingw-posix toolchains. Under gdb the crash appears as SIGSEGV in
+//! ~ThreadContext inside _pthread_cleanup_dest with the object memory
+//! containing the 0xfeeefeee "freed heap" debug fill pattern, matching the
+//! signature described in the upstream reports below. (Without a debugger
+//! there is no fill pattern, so the destructor walks stale-but-intact
+//! pointers and double-frees them, which is why the corruption was
+//! intermittent and often detected later, e.g. in kj::AsyncIoContext
+//! teardown, rather than at the faulting site.)
+//!
+//! Known upstream reports of this mingw-w64 bug:
+//! - https://sourceforge.net/p/mingw-w64/bugs/527/ "thread_local stl object's destructor causing crash"
+//! - https://sourceforge.net/p/mingw-w64/bugs/727/ "Crash during destruction of thread_local objects"
+//! - https://sourceforge.net/p/mingw-w64/bugs/445/ "thread_local destructors broken with posix threading"
+//! - https://sourceforge.net/p/mingw-w64/bugs/859/ "thread_local destructors not called at thread exit"
+//! - https://github.com/msys2/MINGW-packages/issues/2519 "gcc thread_local destructor cause use after free"
+//! - https://www.mail-archive.com/mingw-w64-public@lists.sourceforge.net/msg17975.html
+//!   (proposed fix discussion: "fix __cxa_thread_atexit destructors on GCC")
 ThreadContext& GThreadContext();
 
 } // namespace mp
