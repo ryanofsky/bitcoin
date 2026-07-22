@@ -4,6 +4,10 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the IPC (multiprocess) Mining interface."""
 import asyncio
+import faulthandler
+import os
+import sys
+import threading
 import time
 from contextlib import AsyncExitStack
 from copy import deepcopy
@@ -133,35 +137,48 @@ class IPCMiningTest(BitcoinTestFramework):
         block_hash_size = 32
 
         async def async_routine():
-            # TEMP: 30s timeout so hangs produce a traceback + combined log instead of
-            # waiting forever. Remove once Windows IPC asyncio issues are resolved.
-            async with asyncio.timeout(30):
-                ctx, mining = await make_mining_ctx(self)
-                blockref = await mining.getTip(ctx)
-                current_block_height = self.nodes[0].getchaintips()[0]["height"]
-                assert_equal(blockref.result.height, current_block_height)
+            ctx, mining = await make_mining_ctx(self)
+            blockref = await mining.getTip(ctx)
+            current_block_height = self.nodes[0].getchaintips()[0]["height"]
+            assert_equal(blockref.result.height, current_block_height)
 
-                self.log.debug("Mine a block")
-                newblockref = (await wait_and_do(
-                    mining.waitTipChanged(ctx, blockref.result.hash, self.default_ipc_timeout),
-                    lambda: self.generate(self.nodes[0], 1))).result
-                assert_equal(len(newblockref.hash), block_hash_size)
-                assert_equal(newblockref.height, current_block_height + 1)
-                self.log.debug("Wait for timeout")
-                oldblockref = (await mining.waitTipChanged(ctx, newblockref.hash, self.default_ipc_timeout)).result
-                assert_equal(len(newblockref.hash), block_hash_size)
-                assert_equal(oldblockref.hash, newblockref.hash)
-                assert_equal(oldblockref.height, newblockref.height)
+            self.log.debug("Mine a block")
+            newblockref = (await wait_and_do(
+                mining.waitTipChanged(ctx, blockref.result.hash, self.default_ipc_timeout),
+                lambda: self.generate(self.nodes[0], 1))).result
+            assert_equal(len(newblockref.hash), block_hash_size)
+            assert_equal(newblockref.height, current_block_height + 1)
+            self.log.debug("Wait for timeout")
+            oldblockref = (await mining.waitTipChanged(ctx, newblockref.hash, self.default_ipc_timeout)).result
+            assert_equal(len(newblockref.hash), block_hash_size)
+            assert_equal(oldblockref.hash, newblockref.hash)
+            assert_equal(oldblockref.height, newblockref.height)
 
-                self.log.debug("interrupt() should abort waitTipChanged()")
-                async def wait_for_tip():
-                    long_timeout = max(self.default_ipc_timeout, 60000.0)  # at least 1 minute
-                    result = (await mining.waitTipChanged(ctx, newblockref.hash, long_timeout)).result
-                    # Unlike a timeout, interrupt() returns an empty BlockRef.
-                    assert_equal(len(result.hash), 0)
-                await wait_and_do(wait_for_tip(), mining.interrupt())
+            self.log.debug("interrupt() should abort waitTipChanged()")
+            async def wait_for_tip():
+                long_timeout = max(self.default_ipc_timeout, 60000.0)  # at least 1 minute
+                result = (await mining.waitTipChanged(ctx, newblockref.hash, long_timeout)).result
+                # Unlike a timeout, interrupt() returns an empty BlockRef.
+                assert_equal(len(result.hash), 0)
+            await wait_and_do(wait_for_tip(), mining.interrupt())
 
-        asyncio.run(capnp.run(async_routine()))
+        # TEMP: asyncio.timeout() cannot fire when the ProactorEventLoop is frozen
+        # inside a Windows IOCP syscall (GetQueuedCompletionStatusEx). Use a daemon
+        # thread timer instead: after 30s dump all Python thread stacks so CI logs
+        # show exactly where the event loop is stuck, then exit(1) so test_runner
+        # prints combined logs. Remove once Windows IPC asyncio issues are resolved.
+        def _timeout_dump():
+            faulthandler.dump_traceback(sys.stderr, all_threads=True)
+            sys.stderr.flush()
+            os._exit(1)
+
+        _timer = threading.Timer(30.0, _timeout_dump)
+        _timer.daemon = True
+        _timer.start()
+        try:
+            asyncio.run(capnp.run(async_routine()))
+        finally:
+            _timer.cancel()
 
     def run_early_startup_test(self):
         """Make sure mining.createNewBlock safely returns on early startup as
