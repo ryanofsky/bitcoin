@@ -16,6 +16,7 @@ from typing import Optional
 if sys.platform == 'win32':
     import ctypes as _ctypes
     import os as _os
+    import select as _select
     import socket as _socket
 
     # Windows 10 1803+ supports AF_UNIX via Winsock, but Python's asyncio
@@ -78,14 +79,30 @@ if sys.platform == 'win32':
             def _create_and_connect():
                 s = _socket.socket(_af_unix, _socket.SOCK_STREAM)
                 try:
+                    # Non-blocking connect: unlike Linux, Windows AF_UNIX connect()
+                    # blocks indefinitely when the socket file exists but nobody is
+                    # listening (e.g. if a stale socket file was left by a crashed
+                    # process, or the server has called bind() but not listen() yet).
+                    # Observed in CI (interface_ipc_mining.py run_early_startup_test):
+                    # after node restart the old socket file persists on Windows and
+                    # ws2_32.connect() hangs even inside run_in_executor.
+                    s.setblocking(False)
                     addr = _SOCKADDR_UN(sun_family=1, sun_path=_path_bytes)
                     ret = _ws2_32.connect(_ctypes.c_size_t(s.fileno()),
                                           _ctypes.byref(addr), _ctypes.sizeof(addr))
                     if ret != 0:
-                        err = _ws2_32.WSAGetLastError()
-                        if err == 10061:  # WSAECONNREFUSED
-                            raise ConnectionRefusedError(err, "AF_UNIX connect() refused")
-                        raise OSError(err, f"AF_UNIX connect() failed (WSA error {err})")
+                        wsa_err = _ws2_32.WSAGetLastError()
+                        if wsa_err == 10035:  # WSAEWOULDBLOCK: in progress
+                            # select() returns writable when connection is established or fails.
+                            # Use short timeout (100ms): for a local AF_UNIX socket this
+                            # should complete near-instantly; timeout means server not ready.
+                            _, writable, _ = _select.select([], [s], [], 0.1)
+                            wsa_err = s.getsockopt(_socket.SOL_SOCKET, _socket.SO_ERROR) if writable else 10035
+                        if wsa_err in (10035, 10061):  # WSAEWOULDBLOCK / WSAECONNREFUSED
+                            raise ConnectionRefusedError(wsa_err, "AF_UNIX connect() not ready or refused")
+                        if wsa_err != 0:
+                            raise OSError(wsa_err, f"AF_UNIX connect() failed (WSA error {wsa_err})")
+                    s.setblocking(True)
                 except:
                     s.close()
                     raise

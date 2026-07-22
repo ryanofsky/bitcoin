@@ -97,13 +97,21 @@ def run_functional_tests():
         "interface_ipc_mining.py",
         "tool_bitcoin.py",
     ]
+    # TEMP: use a short tmpdir so test paths stay under UNIX_PATH_MAX (108 bytes).
+    # The default workspace prefix (D:\a\bitcoin\bitcoin\_ _) + test_runner_₿_🏃_TIMESTAMP
+    # + test name gives ~108+ bytes for longer test names like interface_ipc_mining,
+    # triggering the ipc_tmp_dir fallback which uses an explicit socket path and may
+    # cause STATUS_HEAP_CORRUPTION in MinGW bitcoin-cli during IPC teardown.
+    # Using D:\t keeps paths ~88 bytes for all IPC tests.
+    tmpdir = "D:\\t"
+    Path(tmpdir).mkdir(exist_ok=True)
     test_runner_cmd = [
         sys.executable,
         str(workspace / "test" / "functional" / "test_runner.py"),
         "--jobs",
         num_procs,
         # TEMP: no --quiet so per-test results print as they complete (helps identify hangs)
-        f"--tmpdirprefix={workspace / '_ _'}",
+        f"--tmpdirprefix={tmpdir}",
         "--combinedlogslen=99999999",
         *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
         *ipc_tests,
