@@ -206,7 +206,12 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
         std::string exe_path_str{fs::PathToString(exe_path)};
         exec_args[0] = exe_path_str.c_str();
         if (util::ExecVp(exec_args[0], (char*const*)exec_args.data()) == -1) {
+#ifdef WIN32
+            // msvcrt's _wspawnvp returns EINVAL (not ENOENT) when a file is not found.
+            if (allow_notfound && (errno == ENOENT || errno == EINVAL)) return false;
+#else
             if (allow_notfound && errno == ENOENT) return false;
+#endif
             throw std::system_error(errno, std::generic_category(), strprintf("execvp failed to execute '%s'", exec_args[0]));
         }
         throw std::runtime_error("execvp returned unexpectedly");
