@@ -763,14 +763,17 @@ class IPCMiningTest(BitcoinTestFramework):
 
         # TEMP: if the asyncio ProactorEventLoop freezes inside a Windows IOCP
         # syscall, asyncio.timeout() cannot fire. Use a daemon thread timer to dump
-        # all Python thread stacks after 30s (shows where the event loop is blocked)
-        # and exit so test_runner prints the combined log. The first sub-test takes
-        # ~7s, so 30s gives enough headroom before the 60s outer watchdog.
+        # all Python thread stacks (shows where the event loop is blocked) and exit
+        # so test_runner prints the combined log. Scale the delay by timeout_factor:
+        # a fixed 30s killed healthy runs once the temporary HeapValidate
+        # diagnostics slowed the binaries down (CI runs 29897899654/29899773448
+        # showed both MSVC and cross-built runs progressing normally through the
+        # 7th sub-test when the timer fired and os._exit(1) reported failure).
         def _timeout_dump():
             faulthandler.dump_traceback(sys.stderr, all_threads=True)
             sys.stderr.flush()
             os._exit(1)
-        _timer = threading.Timer(30.0, _timeout_dump)
+        _timer = threading.Timer(30.0 * self.options.timeout_factor, _timeout_dump)
         _timer.daemon = True
         _timer.start()
         try:
