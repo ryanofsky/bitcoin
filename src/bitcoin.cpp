@@ -200,17 +200,15 @@ static void ExecCommand(const std::vector<const char*>& args, std::string_view w
     auto try_exec = [&](fs::path exe_path, bool allow_notfound = true) {
 #ifdef WIN32
         // _wspawnvp requires the full filename including ".exe"; unlike POSIX execvp
-        // it does not add the extension automatically. Without ".exe" it returns EINVAL
-        // rather than ENOENT, which bypasses the allow_notfound check below.
-        // TODO: even with ".exe" appended, a missing file may still return EINVAL instead
-        // of ENOENT on Windows, so allow_notfound may not work correctly in that case.
+        // it does not add the extension automatically.
         if (exe_path.extension().empty()) exe_path = fs::PathFromString(fs::PathToString(exe_path) + ".exe");
 #endif
         std::string exe_path_str{fs::PathToString(exe_path)};
         exec_args[0] = exe_path_str.c_str();
         if (util::ExecVp(exec_args[0], (char*const*)exec_args.data()) == -1) {
 #ifdef WIN32
-            // msvcrt's _wspawnvp returns EINVAL (not ENOENT) when a file is not found.
+            // msvcrt's _wspawnvp returns EINVAL (not ENOENT) when a file is not found;
+            // ucrt returns ENOENT correctly. Catch both for msvcrt compatibility.
             if (allow_notfound && (errno == ENOENT || errno == EINVAL)) return false;
 #else
             if (allow_notfound && errno == ENOENT) return false;
