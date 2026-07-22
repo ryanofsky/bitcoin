@@ -78,12 +78,20 @@ namespace mp {
 
 ThreadContext& GThreadContext()
 {
-    // Leaked heap object instead of a plain thread_local variable; see
-    // declaration comment in proxy-io.h. Deliberately never destroyed: the
+#ifdef __MINGW32__
+    // On MinGW only, deliberately leak a heap object instead of using a plain
+    // thread_local variable; see declaration comment in proxy-io.h. The
     // MinGW-w64 emutls/__cxa_thread_atexit ordering bug means a nontrivial
-    // thread_local destructor can run after its storage was freed.
+    // thread_local destructor can run after its storage was freed. The leak
+    // is confined to MinGW because the number of IPC threads a process can
+    // create is unbounded, so leaking per-thread state on platforms with
+    // working thread_local destruction would be a real resource leak.
     thread_local ThreadContext* context{new ThreadContext};
     return *context;
+#else
+    thread_local ThreadContext context; // NOLINT(bitcoin-nontrivial-threadlocal)
+    return context;
+#endif
 }
 
 Stream MakeStream(EventLoop&loop, SocketId socket)

@@ -929,12 +929,12 @@ void ListenConnections(EventLoop& loop, SocketId fd, InitImpl& init, std::option
     });
 }
 
-//! Return the current thread's ThreadContext, creating it on first use. The
-//! context is stored as a leaked, lazily-created heap object instead of a
-//! plain `thread_local ThreadContext` variable because MinGW-w64's emutls
-//! implementation can free thread_local storage before C++ destructors
-//! registered by __cxa_thread_atexit run at thread exit (pthread key
-//! destructor order is unspecified), so any thread_local object with a
+//! Return the current thread's ThreadContext, creating it on first use. It is
+//! normally a thread_local object destroyed at thread exit, except on MinGW,
+//! where it is a lazily-created heap object that is deliberately leaked.
+//! MinGW-w64's emutls implementation can free thread_local storage before C++
+//! destructors registered by __cxa_thread_atexit run at thread exit (pthread
+//! key destructor order is unspecified), so any thread_local object with a
 //! nontrivial destructor may be destroyed after its own memory was freed,
 //! corrupting the heap (https://sourceforge.net/p/mingw-w64/bugs/527/).
 //! Observed as intermittent STATUS_HEAP_CORRUPTION (0xC0000374) crashes in
