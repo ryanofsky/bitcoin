@@ -86,10 +86,22 @@ public:
     {
         // TEMP: step-by-step logging to find where STATUS_HEAP_CORRUPTION (0xC0000374)
         // hits in MinGW cross-builds. Reads IPC_DIAG_LOG env var for debug.log path.
+        // On Windows also validates every process heap so the log shows the first
+        // step at which a heap reports corruption.
         auto diag = [](const char* step) {
             if (const char* path = getenv("IPC_DIAG_LOG")) {
                 if (FILE* fp = fopen(path, "a")) {
+#ifdef WIN32
+                    HANDLE heaps[64];
+                    DWORD num_heaps = GetProcessHeaps(64, heaps);
+                    int bad = 0;
+                    for (DWORD i = 0; i < num_heaps && i < 64; ++i) {
+                        if (!HeapValidate(heaps[i], 0, nullptr)) ++bad;
+                    }
+                    fprintf(fp, "[capnp-dtor] %s (heaps=%lu bad=%d)\n", step, (unsigned long)num_heaps, bad);
+#else
                     fprintf(fp, "[capnp-dtor] %s\n", step);
+#endif
                     fclose(fp);
                 }
             }
