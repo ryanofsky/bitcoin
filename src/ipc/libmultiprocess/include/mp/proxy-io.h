@@ -694,7 +694,7 @@ using ConnThread = ConnThreads::iterator;
 // inserted bool.
 std::tuple<ConnThread, bool> SetThread(GuardedRef<ConnThreads> threads, Connection* connection, const std::function<Thread::Client()>& make_thread);
 
-//! The thread_local ThreadContext g_thread_context struct provides information
+//! The thread_local ThreadContext struct (see GThreadContext()) provides information
 //! about individual threads and a way of communicating between them. Because
 //! it's a thread local struct, each ThreadContext instance is initialized by
 //! the thread that owns it.
@@ -929,10 +929,17 @@ void ListenConnections(EventLoop& loop, SocketId fd, InitImpl& init, std::option
     });
 }
 
-extern thread_local ThreadContext g_thread_context; // NOLINT(bitcoin-nontrivial-threadlocal)
-// Silence nonstandard bitcoin tidy error "Variable with non-trivial destructor
-// cannot be thread_local" which should not be a problem on modern platforms, and
-// could lead to a small memory leak at worst on older ones.
+//! Return the current thread's ThreadContext, creating it on first use. The
+//! context is stored as a leaked, lazily-created heap object instead of a
+//! plain `thread_local ThreadContext` variable because MinGW-w64's emutls
+//! implementation can free thread_local storage before C++ destructors
+//! registered by __cxa_thread_atexit run at thread exit (pthread key
+//! destructor order is unspecified), so any thread_local object with a
+//! nontrivial destructor may be destroyed after its own memory was freed,
+//! corrupting the heap (https://sourceforge.net/p/mingw-w64/bugs/527/).
+//! Observed as intermittent STATUS_HEAP_CORRUPTION (0xC0000374) crashes in
+//! ~ThreadContext at thread exit in MinGW msvcrt builds.
+ThreadContext& GThreadContext();
 
 } // namespace mp
 
