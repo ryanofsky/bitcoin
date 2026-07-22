@@ -79,31 +79,24 @@ void EventLoopRef::reset(bool relock) MP_NO_TSA
         loop->m_num_refs -= 1;
         if (loop->done()) {
             loop->m_cv.notify_all();
-            // Skip the wakeup write when the kj event loop has already exited.
-            // m_loop_exited is set in EventLoop::loop() teardown before
-            // m_post_writer is freed, so checking it here (with the lock held)
-            // prevents a use-after-free: the async thread's EventLoopRef may
-            // call done() after teardown has freed m_post_writer.
-            if (!loop->m_loop_exited) {
-                // Capture loop->m_post_writer pointer before releasing the lock.
-                // The pointer can't actually change before the write() call below,
-                // but copying it with the lock held instead of accessing it
-                // directly below prevents TSAN false positives because TSAN is
-                // unaware of socketpair write() synchronization and might falsely
-                // report the pointer being used in this thread and assigned in the
-                // other thread without synchronization between.
-                kj::OutputStream* post_writer{loop->m_post_writer.get()};
-                loop_lock->unlock();
-                char buffer = 0;
-                // It is safe to access post_writer here because the loop can't
-                // exit until this write takes place. See "Intentionally do not
-                // break..."  comment in EventLoop::loop
-                post_writer->write(&buffer, 1);
-                // By default, do not try to relock `loop_lock` after writing,
-                // because the event loop could wake up and destroy itself and the
-                // mutex might no longer exist.
-                if (relock) loop_lock->lock();
-            }
+            // Capture loop->m_post_writer pointer before releasing the lock.
+            // The pointer can't actually change before the write() call below,
+            // but copying it with the lock held instead of accessing it
+            // directly below prevents TSAN false positives because TSAN is
+            // unaware of socketpair write() synchronization and might falsely
+            // report the pointer being used in this thread and assigned in the
+            // other thread without synchronization between.
+            kj::OutputStream* post_writer{loop->m_post_writer.get()};
+            loop_lock->unlock();
+            char buffer = 0;
+            // It safe to access post_writer here because the loop can't
+            // exit until this write takes place. See "Intentionally do not
+            // break..."  comment in EventLoop::loop
+            post_writer->write(&buffer, 1);
+            // By default, do not try to relock `loop_lock` after writing,
+            // because the event loop could wake up and destroy itself and the
+            // mutex might no longer exist.
+            if (relock) loop_lock->lock();
         }
     }
 }
@@ -391,8 +384,7 @@ void EventLoop::loop()
     loop_diag("task_set done, nulling wait_stream");
     wait_stream = nullptr;
     const Lock lock(m_mutex);
-    loop_diag("wait_stream done, setting m_loop_exited, nulling post_writer");
-    m_loop_exited = true;
+    loop_diag("wait_stream done, nulling post_writer");
     m_post_writer = nullptr;
     loop_diag("post_writer done, nulling m_wait_stream");
     m_wait_stream = nullptr;
@@ -450,7 +442,7 @@ void EventLoop::startAsyncThread()
 bool EventLoop::done() const
 {
     assert(m_num_refs >= 0);
-    return m_num_refs == 0 && (!m_async_fns || m_async_fns->empty());
+    return m_num_refs == 0 && m_async_fns->empty();
 }
 
 std::tuple<ConnThread, bool> SetThread(GuardedRef<ConnThreads> threads, Connection* connection, const std::function<Thread::Client()>& make_thread)
