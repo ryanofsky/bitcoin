@@ -425,6 +425,70 @@ KJ_TEST("Calling async IPC method, with server disconnect after cleanup")
     EXPECT_EXCEPTION(foo->callFnAsync(), "IPC client method call interrupted by disconnect.");
 }
 
+KJ_TEST("Waiting for in-flight server call body to drain")
+{
+    // Regression test for bitcoin/bitcoin#35845. When a connection is
+    // disconnected while a server method-call body is executing on a worker
+    // thread, canceling the call's KJ promise (Connection::m_canceler) does NOT
+    // stop the body -- it runs to completion. Application shutdown code needs to
+    // wait for such bodies to finish before freeing state they access.
+    // Connection::m_pending_calls (PendingServerCalls) tracks in-flight bodies
+    // for this purpose. Verify the count reflects a running body and that
+    // wait() blocks until the body finishes.
+
+    std::promise<void> body_started, release_body;
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+
+    // A server call body that signals when it starts and then blocks until the
+    // test releases it, so the in-flight state can be observed deterministically.
+    setup.server->m_impl->m_fn = [&] {
+        body_started.set_value();
+        release_body.get_future().get();
+    };
+
+    // Invoke the async method on a separate thread so its body blocks there
+    // while this thread makes assertions. callFnAsync() takes an mp.Context, so
+    // it runs on a worker thread, going through ProxyServer<Thread>::post().
+    std::thread call_thread([&] { foo->callFnAsync(); });
+    body_started.get_future().get();
+
+    // Grab the server connection's in-flight-call tracker on the event loop
+    // thread, where the Connection object lives.
+    std::shared_ptr<PendingServerCalls> pending;
+    foo->m_context.loop->sync([&] { pending = setup.server->m_context.connection->m_pending_calls; });
+
+    // The body is executing, so exactly one call is in flight.
+    {
+        std::lock_guard<std::mutex> lock(pending->m_mutex);
+        KJ_EXPECT(pending->m_count == 1);
+    }
+
+    // A drain must block while the body runs and return only once it finishes,
+    // which is exactly what disconnectIncoming() relies on during shutdown.
+    std::atomic<bool> drained{false};
+    std::thread drain_thread([&] {
+        pending->wait();
+        drained = true;
+    });
+
+    // The body is still blocked, so wait() must not have returned.
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    KJ_EXPECT(!drained);
+
+    // Let the body finish; the drain should now complete and the count reach 0.
+    release_body.set_value();
+    drain_thread.join();
+    KJ_EXPECT(drained);
+    {
+        std::lock_guard<std::mutex> lock(pending->m_mutex);
+        KJ_EXPECT(pending->m_count == 0);
+    }
+
+    call_thread.join();
+}
+
 KJ_TEST("Destroying ProxyClient<> with destroy method after peer disconnect")
 {
     // Regression test for bitcoin-core/libmultiprocess#219 where
