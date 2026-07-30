@@ -25,6 +25,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <system_error>
+#include <vector>
 #include <thread>
 
 namespace ipc {
@@ -111,9 +112,33 @@ public:
         // Delete incoming connections, except the connection to a parent
         // process (if there is one), since a parent process should be able to
         // monitor and control this process, even during shutdown.
+        //
+        // Before returning, wait for any server method-call bodies that are
+        // still executing on worker threads for the removed connections to
+        // finish. Removing a connection cancels the KJ promise of an in-flight
+        // call, but that does NOT interrupt a call body already dispatched to a
+        // worker thread -- it runs to completion. Without this wait, such a body
+        // could still be running (and dereferencing node state) after this
+        // function returns and the caller (Shutdown) starts freeing that state,
+        // which is the crash in https://github.com/bitcoin/bitcoin/issues/35845.
+        //
+        // The pending-call trackers are collected before removal and waited on
+        // afterwards, off the event loop thread: the bodies sync() back to the
+        // event loop to deliver their results, so the wait must not block the
+        // loop. They are shared_ptrs, so they stay valid even though the
+        // Connection objects they came from are destroyed by remove_if().
+        //
+        // Note this drains only the connections being removed; a parent
+        // connection that is kept open is not drained here (that would require
+        // pausing new calls on it -- see PendingServerCalls).
+        std::vector<std::shared_ptr<mp::PendingServerCalls>> pending;
         m_loop->sync([&] {
+            for (mp::Connection& c : m_loop->m_incoming_connections) {
+                if (&c != m_parent_connection) pending.push_back(c.m_pending_calls);
+            }
             m_loop->m_incoming_connections.remove_if([this](mp::Connection& c) { return &c != m_parent_connection; });
         });
+        for (const auto& p : pending) p->wait();
     }
     mp::Stream makeStream(mp::SocketId socket) override
     {

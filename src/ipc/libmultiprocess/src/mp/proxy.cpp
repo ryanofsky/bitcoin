@@ -375,7 +375,8 @@ ProxyClient<Thread>::~ProxyClient()
 }
 
 ProxyServer<Thread>::ProxyServer(Connection& connection, ThreadContext& thread_context, std::thread&& thread)
-    : m_loop{*connection.m_loop}, m_thread_context(thread_context), m_thread(std::move(thread))
+    : m_loop{*connection.m_loop}, m_thread_context(thread_context), m_thread(std::move(thread)),
+      m_pending_calls(connection.m_pending_calls)
 {
     assert(m_thread_context.waiter.get() != nullptr);
 }

@@ -20,6 +20,7 @@
 #include <kj/function.h>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -94,6 +95,85 @@ struct ProxyClient<Thread> : public ProxyClientBase<Thread, ::capnp::Void>
     std::optional<CleanupIt> m_disconnect_cb;
 };
 
+//! Tracks the number of server method-call *bodies* currently executing on
+//! worker threads for a single Connection, so shutdown code can wait for
+//! in-flight calls to finish before destroying state those bodies access.
+//!
+//! Why counting the call body (and not the KJ promise) is what matters: when a
+//! connection is disconnected, libmultiprocess cancels the KJ promise of an
+//! in-flight server call (see Connection::m_canceler), but cancellation does
+//! NOT interrupt a C++ server-method body that has already been handed to a
+//! worker thread in ProxyServer<Thread>::post() -- that body runs to completion
+//! regardless. So a caller that needs to guarantee no server body is running
+//! (e.g. before tearing down application objects the bodies dereference) cannot
+//! rely on promise cancellation; it must wait for the body itself to finish.
+//! This is exactly the bug in https://github.com/bitcoin/bitcoin/issues/35845,
+//! where a Mining.checkBlock body kept running and dereferenced node state that
+//! shutdown had already freed.
+//!
+//! The counter is incremented on the event loop thread at the point a call is
+//! handed to a worker thread -- the point of no return, after which cancellation
+//! can no longer prevent the body from running -- and decremented on the worker
+//! thread once the body returns. Because the increment happens on the event loop
+//! thread (serialized with connection teardown, which also runs there), a caller
+//! that removes a connection and then wait()s is guaranteed to observe every
+//! body that will run; bodies that were canceled before reaching the worker
+//! thread never incremented and never run.
+//!
+//! The object is held via shared_ptr by both the Connection and the
+//! ProxyServer<Thread> worker objects, so it outlives the Connection: a body may
+//! still be finishing (and decrementing) after the Connection has been
+//! destroyed.
+//!
+//! Future extensions, intentionally NOT implemented here to keep this minimal
+//! (see issue #35845 discussion):
+//!   - Pausing new calls: to drain a connection that is being KEPT open (e.g.
+//!     the parent-process connection excluded by disconnectIncoming), draining
+//!     alone is insufficient because a new call could start after wait() returns.
+//!     That needs a "stop dispatching new calls" flag checked in serverInvoke,
+//!     which would let this same counter drain a still-connected peer.
+//!   - Graceful results: delivering results to the client for in-flight calls
+//!     instead of the current cancel-with-"Interrupted by disconnect". That would
+//!     defer m_rpc_system teardown until responses flush, and must let
+//!     callback-replies for in-flight calls through to avoid deadlock.
+//!   - Per-call diagnostics or a timeout/deadline on wait().
+struct PendingServerCalls
+{
+    //! Called on the event loop thread before a call body is posted to a worker
+    //! thread.
+    void add()
+    {
+        const std::lock_guard<std::mutex> lock(m_mutex);
+        ++m_count;
+    }
+
+    //! Called on the worker thread after a call body returns.
+    void remove()
+    {
+        {
+            const std::lock_guard<std::mutex> lock(m_mutex);
+            assert(m_count > 0);
+            --m_count;
+        }
+        m_cv.notify_all();
+    }
+
+    //! Block until no call bodies are executing. Must NOT be called from the
+    //! event loop thread: the bodies being waited on sync() back to the event
+    //! loop to deliver their results, so blocking the loop here would deadlock.
+    //! Intended to be called from application shutdown code after the connection
+    //! has been removed, so no new calls can start and the count only decreases.
+    void wait()
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+        m_cv.wait(lock, [this] { return m_count == 0; });
+    }
+
+    std::mutex m_mutex;
+    std::condition_variable m_cv;
+    int m_count{0};
+};
+
 template <>
 struct ProxyServer<Thread> final : public Thread::Server
 {
@@ -112,6 +192,11 @@ public:
     EventLoopRef m_loop;
     ThreadContext& m_thread_context;
     std::thread m_thread;
+    //! In-flight server-call tracker shared with the Connection this worker
+    //! thread belongs to. Held by shared_ptr so it outlives the Connection if a
+    //! call body is still finishing after the Connection is destroyed. See
+    //! PendingServerCalls.
+    std::shared_ptr<PendingServerCalls> m_pending_calls;
     //! Promise signaled when m_thread_context.waiter is ready and there is no
     //! post() callback function waiting to execute.
     kj::Promise<void> m_thread_ready{kj::READY_NOW};
@@ -500,7 +585,19 @@ public:
     //! Canceler for canceling promises that we want to discard when the
     //! connection is destroyed. This is used to interrupt method calls that are
     //! still executing at time of disconnection.
+    //!
+    //! Note that canceling a promise here does NOT stop a server-method body
+    //! that has already been dispatched to a worker thread; such a body runs to
+    //! completion. Callers that need to wait for those bodies to finish (e.g.
+    //! before freeing state the bodies access during shutdown) should use
+    //! m_pending_calls below.
     kj::Canceler m_canceler;
+
+    //! Tracks server-method call bodies dispatched over this connection that are
+    //! currently executing on worker threads, so shutdown code can wait for them
+    //! to finish before destroying state they access. See PendingServerCalls and
+    //! https://github.com/bitcoin/bitcoin/issues/35845.
+    std::shared_ptr<PendingServerCalls> m_pending_calls{std::make_shared<PendingServerCalls>()};
 
     //! Cleanup functions to run if connection is broken unexpectedly.  List
     //! will be empty if all ProxyClient are destroyed cleanly before the
@@ -774,7 +871,16 @@ kj::Promise<T> ProxyServer<Thread>::post(Fn&& fn)
     auto self = thisCap();
     auto ret = m_thread_ready.then([this, self = std::move(self), fn = std::forward<Fn>(fn), ready_fulfiller = kj::mv(ready.fulfiller), cancel_monitor_ptr = kj::mv(cancel_monitor_ptr)]() mutable {
         auto result = kj::newPromiseAndFulfiller<T>(); // Signaled when fn() is called, with its return value.
-        bool posted = m_thread_context.waiter->post([this, self = std::move(self), fn = std::forward<Fn>(fn), ready_fulfiller = kj::mv(ready_fulfiller), result_fulfiller = kj::mv(result.fulfiller), cancel_monitor_ptr = kj::mv(cancel_monitor_ptr)]() mutable {
+        // Register this call as in-flight *before* handing it to the worker
+        // thread. This runs on the event loop thread, so it is ordered before
+        // any connection teardown (which also runs on the event loop thread):
+        // a caller that removes the connection and waits will see this call.
+        // Once the body is posted below, cancellation can no longer stop it, so
+        // the matching remove() must run when the body finishes on the worker
+        // thread, not when the (cancelable) result promise is destroyed. See
+        // PendingServerCalls.
+        m_pending_calls->add();
+        bool posted = m_thread_context.waiter->post([this, self = std::move(self), fn = std::forward<Fn>(fn), pending = m_pending_calls, ready_fulfiller = kj::mv(ready_fulfiller), result_fulfiller = kj::mv(result.fulfiller), cancel_monitor_ptr = kj::mv(cancel_monitor_ptr)]() mutable {
             // Fulfill ready.promise now, as soon as the Waiter starts executing
             // this lambda, so the next ProxyServer<Thread>::post() call can
             // immediately call waiter->post(). It is important to do this
@@ -789,6 +895,12 @@ kj::Promise<T> ProxyServer<Thread>::post(Fn&& fn)
             });
             std::optional<T> result_value;
             kj::Maybe<kj::Exception> exception{kj::runCatchingExceptions([&]{ result_value.emplace(fn(*cancel_monitor_ptr)); })};
+            // The call body has finished executing (whether it returned or
+            // threw). Deregister it now, before delivering the result, so a
+            // caller waiting in PendingServerCalls::wait() is released as soon as
+            // no body is running -- it does not need to wait for result delivery,
+            // which is pure IPC plumbing that does not touch application state.
+            pending->remove();
             m_loop->sync([this, &result_value, &exception, self = kj::mv(self), result_fulfiller = kj::mv(result_fulfiller), cancel_monitor_ptr = kj::mv(cancel_monitor_ptr)]() mutable {
                 // Destroy CancelMonitor here before fulfilling or rejecting the
                 // promise so it doesn't get triggered when the promise is
