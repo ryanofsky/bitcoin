@@ -633,11 +633,15 @@ KJ_TEST("Waiting for in-flight server call to finish after disconnect")
         release_body.get_future().get();
     };
 
-    // Grab the server Connection object on the event loop thread before
-    // disconnecting. It stays valid until server_disconnect() destroys it
-    // below.
-    Connection* connection{nullptr};
-    foo->m_context.loop->sync([&] { connection = setup.server->m_context.connection.get(); });
+    // Grab a shared reference to the server Connection on the event loop thread
+    // before disconnecting, and hold it for the rest of the test. This mirrors
+    // Ipc::disconnectIncoming, which keeps its own reference alive across the
+    // disconnect() + waitDrained() sequence: under shared ownership the last
+    // server proxy (destroyed once the drained body finishes) would otherwise
+    // free the Connection while the test is still observing it. The reference is
+    // released on the event loop thread at the end so ~Connection runs there.
+    std::shared_ptr<Connection> connection;
+    foo->m_context.loop->sync([&] { connection = setup.server->m_context.connection; });
 
     // Invoke the async method on a separate thread so its body blocks there
     // while this thread makes assertions. callFnAsync() takes an mp.Context,
@@ -681,8 +685,12 @@ KJ_TEST("Waiting for in-flight server call to finish after disconnect")
     KJ_EXPECT(connection->tracker()->pendingServerObjects() == 0);
     call_thread.join();
 
-    // Destroy the drained connection. (~Connection notices disconnect() has
-    // already run and does not tear things down twice.)
+    // Drop the test's reference on the event loop thread, mirroring how
+    // Ipc::disconnectIncoming releases the last reference after draining. This
+    // destroys the drained connection (~Connection notices disconnect() has
+    // already run and does not tear things down twice). server_disconnect() is
+    // then a no-op that just lets the loop exit.
+    foo->m_context.loop->sync([&] { connection.reset(); });
     setup.server_disconnect();
 }
 
