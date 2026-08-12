@@ -465,17 +465,123 @@ include(cmake/ccache.cmake)
 add_library(warn_interface INTERFACE)
 target_link_libraries(core_interface INTERFACE warn_interface)
 if(MSVC)
+<<<<<<< HEAD
   # clang-cl maps some options to Clang's internal options as follows:
   #   /W1 or /W2 or /W3 --> -Wall
   #   /W4 --> -Wall and -Wextra
   #   /Wall --> -Weverything
   # See https://clang.llvm.org/docs/UsersManual.html.
   try_append_cxx_flags("/W3" TARGET warn_interface SKIP_LINK)  # Enables Clang's internal -Wall option.
+||||||| parent of f88029f39bc (build: suppress -Wc++23-lambda-attributes in warn_interface)
+  try_append_cxx_flags("/W3" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4018" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4146" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4244" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4267" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4715" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4805" TARGET warn_interface SKIP_LINK)
+=======
+  try_append_cxx_flags("/W3" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4018" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4146" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4244" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4267" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4715" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("/wd4805" TARGET warn_interface SKIP_LINK)
+  # C5283: lambda [[noreturn]] attribute before parameter list requires /std:c++23preview.
+  try_append_cxx_flags("/wd5283" TARGET warn_interface SKIP_LINK)
+>>>>>>> f88029f39bc (build: suppress -Wc++23-lambda-attributes in warn_interface)
   target_compile_definitions(warn_interface INTERFACE
     _CRT_SECURE_NO_WARNINGS
   )
 else()
   try_append_cxx_flags("-Wall" TARGET warn_interface SKIP_LINK)
+<<<<<<< HEAD
+||||||| parent of f88029f39bc (build: suppress -Wc++23-lambda-attributes in warn_interface)
+  try_append_cxx_flags("-Wextra" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wgnu" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wcovered-switch-default" TARGET warn_interface SKIP_LINK)
+  # Some compilers will ignore -Wformat-security without -Wformat, so just combine the two here.
+  try_append_cxx_flags("-Wformat -Wformat-security" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wvla" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wshadow-field" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wthread-safety" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wthread-safety-pointer" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wloop-analysis" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wredundant-decls" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wunused-member-function" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wunused-const-variable" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wdate-time" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wconditional-uninitialized" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wduplicated-branches" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wduplicated-cond" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wlogical-op" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Woverloaded-virtual" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wsuggest-override" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wimplicit-fallthrough" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wunreachable-code" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wdocumentation" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wself-assign" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wbidi-chars=any" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wundef" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wleading-whitespace=spaces" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wtrailing-whitespace=any" TARGET warn_interface SKIP_LINK)
+
+  # Some compilers (gcc) ignore unknown -Wno-* options, but warn about all
+  # unknown options if any other warning is produced. Test the -Wfoo case, and
+  # set the -Wno-foo case if it works.
+  try_append_cxx_flags("-Wunused-parameter" TARGET warn_interface SKIP_LINK
+    IF_CHECK_PASSED "-Wno-unused-parameter"
+  )
+=======
+  try_append_cxx_flags("-Wextra" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wgnu" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wcovered-switch-default" TARGET warn_interface SKIP_LINK)
+  # Some compilers will ignore -Wformat-security without -Wformat, so just combine the two here.
+  try_append_cxx_flags("-Wformat -Wformat-security" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wvla" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wshadow-field" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wthread-safety" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wthread-safety-pointer" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wloop-analysis" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wredundant-decls" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wunused-member-function" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wunused-const-variable" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wdate-time" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wconditional-uninitialized" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wduplicated-branches" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wduplicated-cond" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wlogical-op" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Woverloaded-virtual" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wsuggest-override" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wimplicit-fallthrough" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wunreachable-code" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wdocumentation" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wself-assign" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wbidi-chars=any" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wundef" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wleading-whitespace=spaces" TARGET warn_interface SKIP_LINK)
+  try_append_cxx_flags("-Wtrailing-whitespace=any" TARGET warn_interface SKIP_LINK)
+
+  # Some compilers (gcc) ignore unknown -Wno-* options, but warn about all
+  # unknown options if any other warning is produced. Test the -Wfoo case, and
+  # set the -Wno-foo case if it works.
+  try_append_cxx_flags("-Wunused-parameter" TARGET warn_interface SKIP_LINK
+    IF_CHECK_PASSED "-Wno-unused-parameter"
+  )
+  # Lambda attributes (e.g. [[noreturn]]) before the parameter list are a C++23
+  # extension intentionally used in C++20 builds for compatibility with
+  # -Wmissing-noreturn. Suppress the extension warning rather than removing the
+  # attributes or working around them.
+  try_append_cxx_flags("-Wc++23-lambda-attributes" TARGET warn_interface SKIP_LINK
+    IF_CHECK_PASSED "-Wno-c++23-lambda-attributes"
+  )
+  # Older clang versions (e.g. clang-17) do not recognize -Wc++23-lambda-attributes
+  # but emit the same diagnostic under the broader -Wc++23-extensions flag instead.
+  try_append_cxx_flags("-Wc++23-extensions" TARGET warn_interface SKIP_LINK
+    IF_CHECK_PASSED "-Wno-c++23-extensions"
+  )
+>>>>>>> f88029f39bc (build: suppress -Wc++23-lambda-attributes in warn_interface)
 endif()
 try_append_cxx_flags("-Wextra" TARGET warn_interface SKIP_LINK)
 try_append_cxx_flags("-Wgnu" TARGET warn_interface SKIP_LINK)
