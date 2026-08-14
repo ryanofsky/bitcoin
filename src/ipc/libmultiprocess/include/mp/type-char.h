@@ -7,6 +7,10 @@
 
 #include <mp/util.h>
 
+#include <algorithm>
+#include <ranges>
+#include <stdexcept>
+
 namespace mp {
 template <typename Output, size_t size>
 void CustomBuildField(TypeList<const unsigned char*>,
@@ -16,7 +20,7 @@ void CustomBuildField(TypeList<const unsigned char*>,
     Output&& output)
 {
     auto result = output.init(size);
-    memcpy(result.begin(), value, size);
+    std::ranges::copy(value, result.begin());
 }
 
 template <size_t size, typename Input, typename ReadDest>
@@ -26,9 +30,15 @@ decltype(auto) CustomReadField(TypeList<unsigned char[size]>,
     Input&& input,
     ReadDest&& read_dest)
 {
+    // This overload only handles fixed-size arrays, so the Cap'n Proto Data
+    // field is expected to hold exactly `size` bytes. A different length
+    // means the sender and receiver disagree about the type: refuse rather
+    // than over-read the source or leave the destination partly filled.
+    auto data = input.get();
+    if (data.size() != size) throw std::range_error("unexpected Data field size");
+
     return read_dest.update([&](auto& value) {
-        auto data = input.get();
-        memcpy(value, data.begin(), size);
+        std::ranges::copy(input.get(), std::ranges::begin(value));
     });
 }
 } // namespace mp
