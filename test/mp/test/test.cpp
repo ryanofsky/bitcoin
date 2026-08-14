@@ -6,7 +6,10 @@
 #include <mp/test/foo.capnp.proxy.h>
 
 #include <atomic>
+#include <capnp/blob.h>
 #include <capnp/capability.h>
+#include <capnp/message.h>
+#include <capnp/orphan.h>
 #include <capnp/rpc.h>
 #include <cassert>
 #include <chrono>
@@ -25,9 +28,11 @@
 #include <kj/test.h>
 #include <map>
 #include <memory>
+#include <mp/config.h>
 #include <mp/proxy.h>
 #include <mp/proxy.capnp.h>
 #include <mp/proxy-io.h>
+#include <mp/type-char.h>
 #include <mp/util.h>
 #include <mp/version.h>
 #include <optional>
@@ -233,9 +238,11 @@ KJ_TEST("Call FooInterface methods")
     FooCustom custom_in;
     custom_in.v1 = "v1";
     custom_in.v2 = 5;
+    custom_in.v3 = {10, 20, 30};
     FooCustom custom_out = foo->passCustom(custom_in);
     KJ_EXPECT(custom_in.v1 == custom_out.v1);
     KJ_EXPECT(custom_in.v2 == custom_out.v2);
+    KJ_EXPECT(custom_in.v3 == custom_out.v3);
 
     foo->passEmpty(FooEmpty{});
 
@@ -269,6 +276,68 @@ KJ_TEST("Call FooInterface methods")
     KJ_REQUIRE(data_out[0] != nullptr);
     KJ_EXPECT(*data_out[0] == *data_in[0]);
     KJ_EXPECT(!data_out[1]);
+
+    // Test returning vector<unique_ptr<interface>> from server. This exercises
+    // BuildList with interface element types, which requires non-const iteration
+    // so unique_ptr::release() can transfer ownership to the proxy server.
+    std::vector<std::unique_ptr<Bar>> bars{foo->listBars(3)};
+    KJ_REQUIRE(bars.size() == 3u);
+    for (int i = 0; i < 3; ++i) {
+        KJ_REQUIRE(bars[i] != nullptr);
+        KJ_EXPECT(bars[i]->value() == i);
+    }
+}
+
+//! Output adapter that satisfies the minimal interface the fixed-size-array
+//! CustomBuildField overload uses (init(size) returning a builder with begin()),
+//! backed by a Cap'n Proto Data orphan so the built field can be read back.
+namespace {
+struct FixedDataOutput
+{
+    capnp::Orphanage orphanage;
+    capnp::Orphan<capnp::Data> orphan{};
+    capnp::Data::Builder init(std::size_t size)
+    {
+        orphan = orphanage.newOrphan<capnp::Data>(size);
+        return orphan.get();
+    }
+};
+} // namespace
+
+//! Exercise the fixed-size unsigned char array hooks in type-char.h. These build
+//! and read a Cap'n Proto Data field of exactly `size` bytes, and the read hook
+//! rejects a Data field whose length does not match the array size.
+KJ_TEST("Build and read fixed-size char array field")
+{
+    // Borrow a real InvokeContext from a live connection. The type-char.h hooks
+    // ignore it, but the signatures require one.
+    TestSetup setup;
+    InvokeContext invoke_context{*setup.client->m_context.connection};
+
+    // Build a Data field from a fixed-size array and confirm it holds exactly the
+    // array bytes (Data has no null-termination, so all `size` bytes round-trip).
+    const unsigned char src[4] = {0xde, 0xad, 0xbe, 0xef};
+    capnp::MallocMessageBuilder message;
+    FixedDataOutput output{message.getOrphanage()};
+    CustomBuildField(TypeList<const unsigned char*>(), Priority<3>(), invoke_context, src, output);
+    capnp::Data::Reader built = output.orphan.getReader();
+    KJ_REQUIRE(built.size() == sizeof(src));
+
+    // Read it back into a same-size array: bytes are preserved.
+    unsigned char dest[4] = {};
+    CustomReadField(TypeList<unsigned char[4]>(), Priority<1>(), invoke_context,
+        Make<ValueField>(built), ReadDestUpdate<unsigned char[4]>(dest));
+    KJ_EXPECT(std::memcmp(src, dest, sizeof(src)) == 0);
+
+    // Reading a Data field whose length differs from the array size is refused
+    // rather than over-reading the source or partly filling the destination.
+    capnp::Orphan<capnp::Data> wrong_size = message.getOrphanage().newOrphan<capnp::Data>(sizeof(src) - 1);
+    capnp::Data::Reader wrong_reader = wrong_size.getReader();
+    unsigned char dest2[4] = {};
+    EXPECT_EXCEPTION(
+        CustomReadField(TypeList<unsigned char[4]>(), Priority<1>(), invoke_context,
+            Make<ValueField>(wrong_reader), ReadDestUpdate<unsigned char[4]>(dest2)),
+        "unexpected Data field size");
 }
 
 KJ_TEST("Call IPC method after client connection is closed")
@@ -288,7 +357,16 @@ KJ_TEST("Calling IPC method after server connection is closed")
     KJ_EXPECT(foo->add(1, 2) == 3);
     setup.server_disconnect();
 
-    EXPECT_EXCEPTION(foo->add(1, 2), "IPC client method call interrupted by disconnect.");
+    try {
+        foo->add(1, 2);
+        KJ_EXPECT(false);
+    } catch (const std::runtime_error& e) {
+        std::string_view reason{e.what()};
+
+        // The disconnect handler may delete the connection before the
+        // call is processed or while the call is in flight, both errors are possible.
+        KJ_EXPECT(reason == "IPC client method called after disconnect." || reason == "IPC client method call interrupted by disconnect.");
+    }
 }
 
 KJ_TEST("Calling IPC method and disconnecting during the call")
@@ -462,7 +540,7 @@ KJ_TEST("Make simultaneous IPC calls on single remote thread")
     // that will be used for the test.
     setup.server->m_impl->m_fn = [&] {};
     foo->callFnAsync();
-    ThreadContext& tc{g_thread_context};
+    ThreadContext& tc{CurrentThread()};
     Thread::Client *callback_thread, *request_thread;
     foo->m_context.loop->sync([&] {
         Lock lock(tc.waiter->m_mutex);
@@ -516,7 +594,7 @@ KJ_TEST("Call async IPC method dispatched to pool thread")
     foo->initThreadMap();
     setup.server->m_impl->m_int_fn = [](int n) { return n * 2; };
 
-    ThreadContext& tc{g_thread_context};
+    ThreadContext& tc{CurrentThread()};
     std::atomic<size_t> running{3};
     std::promise<void> pool_ready;
     foo->m_context.loop->sync([&] {
@@ -549,6 +627,68 @@ KJ_TEST("Call async IPC method dispatched to pool thread")
         tc.waiter->wait(lock, [&running] { return running == 0; });
     }
 }
+
+#ifdef HAVE_PTHREAD_GETNAME_NP
+KJ_TEST("Worker thread has OS thread name")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+
+    std::promise<std::string> thread_name;
+    setup.server->m_impl->m_fn = [&] { thread_name.set_value(ThreadName("")); };
+    foo->callFnAsync();
+
+    const std::string name{thread_name.get_future().get()};
+    KJ_EXPECT(name.find("/capnp-worker-") != std::string::npos, name);
+}
+
+KJ_TEST("Pool thread has OS thread name")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+
+    std::promise<std::string> thread_name;
+    setup.server->m_impl->m_fn = [&] { thread_name.set_value(ThreadName("")); };
+
+    std::promise<void> pool_ready;
+    foo->m_context.loop->sync([&] {
+        auto pool_req = foo->m_context.connection->m_thread_map.makePoolRequest();
+        pool_req.setCount(1);
+        foo->m_context.loop->m_task_set->add(
+            pool_req.send().then([&](auto&&) { pool_ready.set_value(); }));
+    });
+    pool_ready.get_future().get();
+
+    std::promise<void> done;
+    foo->m_context.loop->sync([&] {
+        auto request{foo->m_client.callFnAsyncRequest()};
+        foo->m_context.loop->m_task_set->add(
+            request.send().then([&](auto&&) { done.set_value(); }));
+    });
+    // Wait for the reply before returning, so the connection is not torn down
+    // while the request is still in flight.
+    done.get_future().get();
+
+    const std::string name{thread_name.get_future().get()};
+    KJ_EXPECT(name.find("/capnp-pool-0-") != std::string::npos, name);
+}
+
+KJ_TEST("Async cleanup thread has OS thread name")
+{
+    std::promise<std::string> thread_name;
+    {
+        TestSetup setup;
+        // FooInterface has no destroy method, so the server ProxyServer runs
+        // its cleanup functions on the async thread when it is destroyed.
+        setup.server->m_context.cleanup_fns.emplace_front(
+            [&] { thread_name.set_value(ThreadName("")); });
+    }
+    const std::string name{thread_name.get_future().get()};
+    KJ_EXPECT(name.find("/capnp-async-") != std::string::npos, name);
+}
+#endif // HAVE_PTHREAD_GETNAME_NP
 
 KJ_TEST("Call async IPC method without thread or pool errors correctly")
 {
