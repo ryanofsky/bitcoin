@@ -11,6 +11,7 @@
 #include <optional>
 #include <set>
 #include <typeindex>
+#include <utility>
 #include <vector>
 
 // KJ exception support is required, or exceptions thrown in serverInvoke below go uncaught
@@ -453,6 +454,29 @@ struct IterateFields : IterateFieldsHelper<IterateFields, 0>
     }
 };
 
+//! Type returned by the fallback CustomMakeParamState overload, meaning there
+//! is no overload for the parameter type.
+struct NoParamState
+{
+};
+
+//! Fallback CustomMakeParamState overload, chosen when there is no overload
+//! for a client parameter's type. CustomMakeParamState overloads are called
+//! on the client side with each parameter value before the request is sent.
+//! Library overloads use Priority<1>, and applications can override them with
+//! Priority<2> overloads.
+template <typename LocalType, typename Value>
+NoParamState CustomMakeParamState(TypeList<LocalType>, Priority<0>, ClientInvokeContext&, const Value&)
+{
+    return {};
+}
+
+//! Type returned by the CustomMakeParamState overload chosen for a parameter
+//! type.
+template <typename Type>
+using MakeParamStateResult = decltype(CustomMakeParamState(TypeList<RemoveCvRef<Type>>(), Priority<2>(),
+    std::declval<ClientInvokeContext&>(), std::declval<const RemoveCvRef<Type>&>()));
+
 template <typename Exception, typename Accessor>
 struct ClientException
 {
@@ -540,12 +564,71 @@ ClientParam<Accessor, Types...> MakeClientParam(Types&&... values)
     return {std::forward<Types>(values)...};
 }
 
+//! Fallback CustomReadExtraParam overload, chosen when there is no overload
+//! for an extra parameter's type.
+template <typename LocalType, typename ServerContext>
+LocalType CustomReadExtraParam(TypeList<LocalType>, Priority<0>, ServerContext&)
+{
+    // Dependent false condition, since static_assert(false) in a template
+    // needs GCC 13 or Clang 17 (P2593).
+    static_assert(!std::is_same_v<LocalType, LocalType>,
+                  "Wrapped C++ method has more parameters than its corresponding Cap'n Proto method has fields. "
+                  "Declare extra parameters with $Proxy.extraParam in the Cap'n Proto schema and add a matching "
+                  "`CustomReadExtraParam` overload.");
+}
+
+//! Client parameter with no capnp field, generated for each method parameter
+//! declared with `$Proxy.extraParam`. Its value is not built into the request,
+//! only passed to a CustomMakeParamState overload, which must exist.
+template <typename Type>
+struct ClientParam<void, Type>
+{
+    using Value = RemoveCvRef<Type>;
+    using State = MakeParamStateResult<Type>;
+
+    ClientParam(Type&& value) : m_value{std::forward<Type>(value)} {}
+
+    struct BuildParams : IterateFieldsHelper<BuildParams, 1>
+    {
+        template <typename Params, typename ParamList>
+        void handleField(ClientInvokeContext& invoke_context, Params&, ParamList)
+        {
+            static_assert(!std::is_same_v<State, NoParamState>,
+                          "Wrapped C++ method has more parameters than its corresponding Cap'n Proto method has fields. "
+                          "Declare extra parameters with $Proxy.extraParam in the Cap'n Proto schema and add a matching "
+                          "`CustomMakeParamState` overload.");
+            CustomMakeParamState(TypeList<Value>(), Priority<2>(), invoke_context, std::as_const(m_client_param->m_value));
+        }
+        BuildParams(ClientParam* client_param) : m_client_param(client_param) {}
+        ClientParam* m_client_param;
+    };
+
+    struct ReadResults : IterateFieldsHelper<ReadResults, 1>
+    {
+        template <typename Results, typename ParamList>
+        void handleField(ClientInvokeContext&, Results&, ParamList)
+        {
+        }
+        ReadResults(ClientParam*) {}
+    };
+
+    Type&& m_value;
+};
+
 struct ServerCall
 {
     // FIXME: maybe call call_context.releaseParams()
-    template <typename ServerContext, typename... Args>
-    decltype(auto) invoke(ServerContext& server_context, TypeList<>, Args&&... args) const
+    //! Extra holds the types of C++ parameters that no ServerField consumed,
+    //! which are the extra parameters declared with $Proxy.extraParam. They
+    //! are constructed here with CustomReadExtraParam and passed last.
+    template <typename ServerContext, typename... Extra, typename... Args>
+    decltype(auto) invoke(ServerContext& server_context, TypeList<Extra...>, Args&&... args) const
     {
+        // Construct the extra parameters before cancel_lock is released below.
+        // CustomReadExtraParam overloads build values from the request being
+        // executed, so they need the same protection as normal capnp fields
+        // from the event loop deleting request state on cancellation.
+        std::tuple<RemoveCvRef<Extra>...> extra{CustomReadExtraParam(TypeList<RemoveCvRef<Extra>>(), Priority<2>(), server_context)...};
         // If cancel_lock is set, release it while executing the method, and
         // reacquire it afterwards. The lock is needed to prevent params and
         // response structs from being deleted by the event loop thread if the
@@ -556,10 +639,14 @@ struct ServerCall
         if (server_context.cancel_lock) server_context.cancel_lock->m_lock.unlock();
         return TryFinally(
             [&]() -> decltype(auto) {
-                return ProxyServerMethodTraits<
-                    typename std::remove_reference_t<decltype(server_context.proxy_server)>::Interface,
-                    typename decltype(server_context.call_context.getParams())::Reads
-                >::invoke(server_context, std::forward<Args>(args)...);
+                return std::apply(
+                    [&](RemoveCvRef<Extra>&... extra_args) -> decltype(auto) {
+                        return ProxyServerMethodTraits<
+                            typename std::remove_reference_t<decltype(server_context.proxy_server)>::Interface,
+                            typename decltype(server_context.call_context.getParams())::Reads
+                        >::invoke(server_context, std::forward<Args>(args)..., std::move(extra_args)...);
+                    },
+                    extra);
             },
             [&] {
                 if (server_context.cancel_lock) server_context.cancel_lock->m_lock.lock();
@@ -594,10 +681,14 @@ struct ServerRet : Parent
 {
     ServerRet(Parent parent) : Parent(parent) {}
 
-    template <typename ServerContext, typename... Args>
-    void invoke(ServerContext& server_context, TypeList<>, Args&&... args) const
+    //! arg_types holds the types of C++ parameters no ServerField consumed,
+    //! which are the extra parameters declared with $Proxy.extraParam (an empty
+    //! list for methods without them). They are passed through to ServerCall,
+    //! which constructs them.
+    template <typename ServerContext, typename ArgTypes, typename... Args>
+    void invoke(ServerContext& server_context, ArgTypes arg_types, Args&&... args) const
     {
-        auto&& result = Parent::invoke(server_context, TypeList<>(), std::forward<Args>(args)...);
+        auto&& result = Parent::invoke(server_context, arg_types, std::forward<Args>(args)...);
         auto&& results = server_context.call_context.getResults();
         InvokeContext& invoke_context = server_context;
         BuildField(TypeList<decltype(result)>(), invoke_context, Make<StructField, Accessor>(results),
@@ -610,11 +701,12 @@ struct ServerExcept : Parent
 {
     ServerExcept(Parent parent) : Parent(parent) {}
 
-    template <typename ServerContext, typename... Args>
-    void invoke(ServerContext& server_context, TypeList<>, Args&&... args) const
+    //! See ServerRet::invoke for arg_types.
+    template <typename ServerContext, typename ArgTypes, typename... Args>
+    void invoke(ServerContext& server_context, ArgTypes arg_types, Args&&... args) const
     {
         try {
-            return Parent::invoke(server_context, TypeList<>(), std::forward<Args>(args)...);
+            return Parent::invoke(server_context, arg_types, std::forward<Args>(args)...);
         } catch (const Exception& exception) {
             auto&& results = server_context.call_context.getResults();
             BuildField(TypeList<Exception>(), server_context, Make<StructField, Accessor>(results), exception);

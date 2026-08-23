@@ -40,6 +40,20 @@ annotation name(field, method): Text;
 annotation skip(field): Void;
 # Synonym for count(0).
 
+annotation extraParam(method): Text;
+# Adds an extra C++-only parameter to the generated method signature.
+#
+# This parameter has no corresponding capnp parameter and is not serialized or
+# sent over RPC. The annotation value names the parameter in generated C++ code.
+# The annotation can be repeated, and the extra parameters are added after all
+# other C++ parameters, in the order the annotations are listed.
+#
+# Each extra parameter type needs a `CustomMakeParamState` overload, called on
+# the client side with the parameter value on the event loop thread before the
+# request is sent, so it should not block or make IPC calls, and a
+# `CustomReadExtraParam` overload, called on the server side before the method
+# is called to construct the value passed to it.
+
 interface ThreadMap $count(0) {
     # Interface letting clients control which thread a method call should
     # execute on. Clients create and name threads and pass the thread handle as

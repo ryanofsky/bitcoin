@@ -54,6 +54,14 @@ struct FooEmpty
 {
 };
 
+//! Value of an extra parameter, declared with `$Proxy.extraParam`, so it is
+//! not sent over IPC. A dedicated type, so the CustomMakeParamState and
+//! CustomReadExtraParam overloads for it only apply to extra parameters.
+struct FooExtra
+{
+    int value;
+};
+
 struct FooMessage
 {
     std::string message;
@@ -137,6 +145,7 @@ public:
     FooEnum passEnum(FooEnum foo) { return foo; }
     double passDouble(double value) { return value; }
     int passFn(std::function<int()> fn) { return fn(); }
+    int passExtra(int arg, FooExtra extra) { return arg + extra.value; }
     std::vector<FooDataRef> passDataPointers(std::vector<FooDataRef> values) { return values; }
     std::vector<std::unique_ptr<Bar>> listBars(int n)
     {

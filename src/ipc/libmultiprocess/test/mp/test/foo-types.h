@@ -113,6 +113,18 @@ inline void CustomPassMessage(InvokeContext&,
     fn(mut);
     builder.setMessage(mut.message + " return");
 }
+
+inline void CustomMakeParamState(TypeList<test::FooExtra>, Priority<1>, ClientInvokeContext& invoke_context, const test::FooExtra& extra)
+{
+    auto& loop = *invoke_context.connection.m_loop;
+    if (loop.testing_hook_misc) loop.testing_hook_misc(extra.value);
+}
+
+template <typename ServerContext>
+test::FooExtra CustomReadExtraParam(TypeList<test::FooExtra>, Priority<1>, ServerContext&)
+{
+    return {1};
+}
 } // namespace mp
 
 #endif // MP_TEST_FOO_TYPES_H
