@@ -21,15 +21,6 @@ class ToolBitcoinTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 1
 
-    def skip_test_if_missing_module(self):
-        # Skip test on windows because currently when `bitcoin node -version` is
-        # run on windows, python doesn't capture output from the child
-        # `bitcoind` and `bitcoin-node` process started with _wexecvp, and
-        # stdout/stderr are always empty. See
-        # https://github.com/bitcoin/bitcoin/pull/33229#issuecomment-3265524908
-        if platform.system() == "Windows":
-            raise SkipTest("Test does not currently work on windows")
-
     def setup_network(self):
         """Set up nodes normally, but save a copy of their arguments before starting them."""
         self.add_nodes(self.num_nodes, self.extra_args)
