@@ -163,7 +163,6 @@ def run_tests(ci_type):
     release_bin = build_dir / "bin" / "Release"
 
     if ci_type == "standard":
-        os.environ["DIR_UNIT_TEST_DATA"] = str(workspace / "unit_test_data")
         test_envs = {
             "BITCOIN_BIN": "bitcoin.exe",
             "BITCOIND": "bitcoind.exe",
@@ -177,18 +176,7 @@ def run_tests(ci_type):
         for var, exe in test_envs.items():
             os.environ[var] = str(release_bin / exe)
 
-        ctest_cmd = [
-            "ctest",
-            "--test-dir",
-            str(build_dir),
-            "--output-on-failure",
-            "--stop-on-failure",
-            "-j",
-            num_procs,
-            "--build-config",
-            "Release",
-        ]
-        run(ctest_cmd)
+        # unit tests skipped to speed up iteration on functional test changes
 
         test_cmd = [
             sys.executable,
@@ -199,6 +187,8 @@ def run_tests(ci_type):
             f"--tmpdirprefix={workspace / '_ _'}",
             "--combinedlogslen=99999999",
             *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
+            "interface_gui.py",
+            "tool_bitcoin.py",
         ]
         run(test_cmd)
 

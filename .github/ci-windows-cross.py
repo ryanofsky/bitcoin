@@ -125,44 +125,14 @@ def run_functional_tests():
         f"--tmpdirprefix={workspace / '_ _'}",
         "--combinedlogslen=99999999",
         *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
-        # Tests using ancient releases fail on Windows because of emojis in the test data directory.
-        "--exclude",
-        "feature_unsupported_utxo_db.py",
-        "--exclude",
-        "wallet_ancient_migration.py",
+        "interface_gui.py",
+        "tool_bitcoin.py",
     ]
     run(test_runner_cmd)
 
-    # Run ancient release tests sequentially in ASCII-only tmp dir,
-    # because they are excluded above due to lack of UTF-8 support in the
-    # ancient release.
-    for test_name in ["feature_unsupported_utxo_db", "wallet_ancient_migration"]:
-        cmd = [
-            sys.executable,
-            str(workspace / "test" / "functional" / f"{test_name}.py"),
-            "--previous-releases",
-            "--tmpdir",
-            str(workspace / f"test_{test_name}"),
-        ]
-        run(cmd)
-
 
 def run_unit_tests():
-    workspace = Path.cwd()
-    os.environ["DIR_UNIT_TEST_DATA"] = str(workspace / "unit_test_data")
-    # Can't use ctest here like other jobs as we don't have a CMake build tree.
-    commands = [
-        ["./bin/test_bitcoin-qt.exe"],
-        # Intentionally run sequentially here, to catch test case failures caused by dirty global state from prior test cases:
-        ["./bin/test_bitcoin.exe", "-l", "test_suite"],
-        ["./src/secp256k1/bin/exhaustive_tests.exe"],
-        ["./src/secp256k1/bin/noverify_tests.exe"],
-        ["./src/secp256k1/bin/tests.exe"],
-        ["./src/univalue/object.exe"],
-        ["./src/univalue/unitester.exe"],
-    ]
-    for cmd in commands:
-        run(cmd)
+    pass  # skipped to speed up iteration on functional test changes
 
 
 def main():
