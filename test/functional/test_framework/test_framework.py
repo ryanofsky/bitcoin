@@ -1175,10 +1175,6 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         """Checks whether the GUI was compiled."""
         return self.config.getboolean("components", "BUILD_GUI")
 
-    def is_qt_static(self):
-        """Checks whether the GUI was compiled with statically linked Qt plugins."""
-        return self.config.getboolean("components", "BUILD_QT_STATIC")
-
     def is_qt_vcpkg(self):
         """Checks whether Qt was built with vcpkg on Windows (WIN32 AND VCPKG_TARGET_TRIPLET)."""
         return self.config.getboolean("components", "BUILD_QT_VCPKG")
