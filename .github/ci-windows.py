@@ -187,6 +187,7 @@ def run_tests(ci_type):
             f"--tmpdirprefix={workspace / '_ _'}",
             "--combinedlogslen=99999999",
             *shlex.split(os.environ.get("TEST_RUNNER_EXTRA", "").strip()),
+            "--timeout-factor=2",  # override CI default (40); 2 min is enough when only running 2 fast tests
             "interface_gui.py",
             "tool_bitcoin.py",
         ]
