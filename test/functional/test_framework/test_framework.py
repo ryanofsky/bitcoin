@@ -1179,6 +1179,10 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         """Checks whether the GUI was compiled with statically linked Qt plugins."""
         return self.config.getboolean("components", "BUILD_QT_STATIC")
 
+    def is_qt_vcpkg(self):
+        """Checks whether Qt was built with vcpkg on Windows (WIN32 AND VCPKG_TARGET_TRIPLET)."""
+        return self.config.getboolean("components", "BUILD_QT_VCPKG")
+
     def has_blockfile(self, node, filenum: str):
         return (node.blocks_path/ f"blk{filenum}.dat").is_file()
 

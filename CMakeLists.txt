@@ -285,6 +285,14 @@ else()
   set(BUILD_QT_STATIC OFF)
 endif()
 
+# True when WIN32 AND VCPKG_TARGET_TRIPLET — the same condition used in
+# src/qt/test/CMakeLists.txt to override QT_QPA_PLATFORM for test_bitcoin-qt.
+if(WIN32 AND VCPKG_TARGET_TRIPLET)
+  set(BUILD_QT_VCPKG ON)
+else()
+  set(BUILD_QT_VCPKG OFF)
+endif()
+
 include(TryAppendCXXFlags)
 include(TryAppendLinkerFlag)
 

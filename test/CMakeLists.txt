@@ -31,6 +31,7 @@ function(create_test_config)
   set_configure_variable(ENABLE_IPC ENABLE_IPC)
   set_configure_variable(BUILD_GUI BUILD_GUI)
   set_configure_variable(BUILD_QT_STATIC BUILD_QT_STATIC)
+  set_configure_variable(BUILD_QT_VCPKG BUILD_QT_VCPKG)
 
   configure_file(config.ini.in config.ini USE_SOURCE_PERMISSIONS @ONLY)
 endfunction()
