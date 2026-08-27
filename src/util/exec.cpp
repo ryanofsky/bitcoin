@@ -35,7 +35,20 @@ int ExecVp(const char* file, char* const argv[])
     new_argv.reserve(escaped_args.size() + 1);
     for (const auto& s : escaped_args) new_argv.push_back(s.c_str());
     new_argv.push_back(nullptr);
-    return _execvp(file, new_argv.data());
+    // Use _spawnvp(_P_WAIT) instead of _execvp because on Windows all _exec*
+    // variants work by calling CreateProcess to start the child then immediately
+    // calling ExitProcess(0) on the parent. Unlike POSIX execvp, which replaces
+    // the calling process image (the parent's PID becomes the child), the
+    // Windows parent exits before the child finishes. Any shell or test
+    // framework waiting on bitcoin.exe sees it exit with code 0 while
+    // bitcoind.exe or bitcoin-qt.exe continues running as an orphan.
+    //
+    // _spawnvp(_P_WAIT) blocks until the child exits, then returns the child's
+    // exit code. We forward it via _exit() so ExecVp still never returns on
+    // success, matching POSIX behavior from the caller's perspective.
+    intptr_t result{_spawnvp(_P_WAIT, file, new_argv.data())};
+    if (result == -1) return -1;
+    _exit(static_cast<int>(result)); // forward child exit code; never returns
 #endif
 }
 
