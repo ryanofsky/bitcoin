@@ -18,12 +18,11 @@ class GuiTest(BitcoinTestFramework):
     def skip_test_if_missing_module(self):
         self.skip_if_no_gui()
         if self.is_qt_vcpkg():
-            # On Windows, vcpkg builds Qt with -opengl dynamic, making the
-            # "minimal" platform plugin unusable due to internal Qt bugs.
-            # This mirrors the WIN32 AND VCPKG_TARGET_TRIPLET condition in
-            # src/qt/test/CMakeLists.txt that sets QT_QPA_PLATFORM=windows for
-            # test_bitcoin-qt. Keep these two conditions in sync.
-            raise SkipTest("minimal Qt platform plugin unusable with vcpkg Qt on Windows")
+            # vcpkg builds Qt with -opengl dynamic, making the "minimal"
+            # platform plugin unusable due to internal Qt bugs. This matches
+            # the VCPKG_TARGET_TRIPLET condition in src/qt/test/CMakeLists.txt
+            # that sets QT_QPA_PLATFORM=windows for test_bitcoin-qt.
+            raise SkipTest("minimal Qt platform plugin unusable with vcpkg Qt")
 
     def setup_nodes(self):
         self.extra_init = [{"use_gui": True}]
