@@ -1175,6 +1175,10 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         """Checks whether the GUI was compiled."""
         return self.config.getboolean("components", "BUILD_GUI")
 
+    def is_qt_static(self):
+        """Checks whether the GUI was compiled with statically linked Qt plugins."""
+        return self.config.getboolean("components", "BUILD_QT_STATIC")
+
     def has_blockfile(self, node, filenum: str):
         return (node.blocks_path/ f"blk{filenum}.dat").is_file()
 
