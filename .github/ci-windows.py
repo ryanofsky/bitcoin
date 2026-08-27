@@ -178,6 +178,19 @@ def run_tests(ci_type):
 
         # unit tests skipped to speed up iteration on functional test changes
 
+        # Enable verbose Qt plugin loading diagnostics so CI logs show whether
+        # platforms/qminimal.dll is found and loaded correctly.
+        os.environ["QT_DEBUG_PLUGINS"] = "1"
+
+        # List deployed Qt platform plugins so failures are diagnosable.
+        platforms_dir = release_bin / "platforms"
+        print(f"Qt platform plugins ({platforms_dir}):")
+        if platforms_dir.is_dir():
+            for entry in sorted(platforms_dir.iterdir()):
+                print(f"  {entry.name}")
+        else:
+            print("  (directory not found)")
+
         test_cmd = [
             sys.executable,
             str(build_dir / "test" / "functional" / "test_runner.py"),
