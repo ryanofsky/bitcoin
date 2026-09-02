@@ -146,10 +146,26 @@ typedef struct btck_TransactionOutput btck_TransactionOutput;
 /**
  * Opaque data structure for holding a logging connection.
  *
+<<<<<<< HEAD
  * Log entries are delivered to the connection's callback for as long as the
  * connection exists. Entries logged before a connection is created are not
  * delivered. Functions changing the logging settings are global and change
  * the settings for all existing btck_LoggingConnection instances.
+||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
+ * The logging connection can be used to manually stop logging.
+ *
+ * Messages that were logged before a connection is created are buffered in a
+ * 1MB buffer. Logging can alternatively be permanently disabled by calling
+ * @ref btck_logging_disable. Functions changing the logging settings are
+ * global and change the settings for all existing btck_LoggingConnection
+ * instances.
+=======
+ * The logging connection can be used to manually stop logging.
+ *
+ * Messages that were logged before a connection is created are buffered in a
+ * 1MB buffer. Functions changing the logging settings are global and change
+ * the settings for all existing btck_LoggingConnection instances.
+>>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
  */
 typedef struct btck_LoggingConnection btck_LoggingConnection;
 
@@ -630,6 +646,7 @@ typedef struct {
 /**
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 3a72f3040c2 (kernel: add missing log levels and categories)
  * A collection of logging categories that may be encountered by kernel code.
  */
@@ -742,6 +759,22 @@ typedef struct {
 
 /**
 >>>>>>> 3a72f3040c2 (kernel: add missing log levels and categories)
+||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
+ * Options controlling the format of log messages.
+ *
+ * Set fields as non-zero to indicate true.
+ */
+typedef struct {
+    int log_timestamps;               //!< Prepend a timestamp to log messages.
+    int log_time_micros;              //!< Log timestamps in microsecond precision.
+    int log_threadnames;              //!< Prepend the name of the thread to log messages.
+    int log_sourcelocations;          //!< Prepend the source location to log messages.
+    int always_print_category_levels; //!< Prepend the log category and level to log messages.
+} btck_LoggingOptions;
+
+/**
+=======
+>>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
  * A collection of status codes that may be issued by the script verify function.
  */
 typedef uint8_t btck_ScriptVerifyStatus;
@@ -1129,6 +1162,7 @@ BITCOINKERNEL_API void btck_transaction_output_destroy(btck_TransactionOutput* t
 ///@{
 
 /**
+<<<<<<< HEAD
  * @brief Set the minimum log level. Messages below this level are not delivered
  * to logging callbacks. Defaults to Info.
  *
@@ -1141,6 +1175,38 @@ BITCOINKERNEL_API void btck_logging_set_min_level(btck_LogLevel level);
 
 /**
  * @brief Start logging messages through the provided callback.
+||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
+ * @brief This disables the global internal logger. No log messages will be
+ * buffered internally anymore once this is called and the buffer is cleared.
+ * This function should only be called once and is not thread or re-entry safe.
+ * Log messages will be buffered until this function is called, or a logging
+ * connection is created. This must not be called while a logging connection
+ * already exists.
+ */
+BITCOINKERNEL_API void btck_logging_disable();
+
+/**
+ * @brief Set some options for the global internal logger. This changes global
+ * settings and will override settings for all existing @ref
+ * btck_LoggingConnection instances.
+ *
+ * @param[in] options Sets formatting options of the log messages.
+ */
+BITCOINKERNEL_API void btck_logging_set_options(btck_LoggingOptions options);
+
+/**
+ * @brief Set the log level of the global internal logger. This does not
+ * enable the selected categories. Use @ref btck_logging_enable_category to
+ * start logging from a specific, or all categories. This changes a global
+ * setting and will override settings for all existing
+ * @ref btck_LoggingConnection instances.
+=======
+ * @brief Set the log level of the global internal logger. This does not
+ * enable the selected categories. Use @ref btck_logging_enable_category to
+ * start logging from a specific, or all categories. This changes a global
+ * setting and will override settings for all existing
+ * @ref btck_LoggingConnection instances.
+>>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
  *
  * @param[in] log_callback               Non-null, function through which log entries will be delivered.
  * @param[in] user_data                  Nullable, holds a user-defined opaque structure. Is passed back

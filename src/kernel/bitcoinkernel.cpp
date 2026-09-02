@@ -1071,6 +1071,7 @@ void btck_wtxid_destroy(btck_Wtxid* wtxid)
     delete wtxid;
 }
 
+<<<<<<< HEAD
 namespace {
 //! The process-wide kernel logger. Intentionally leaked to avoid static destruction order issues,
 //! matching the node's LogInstance().
@@ -1090,6 +1091,21 @@ bool ShouldDebugLog(Category /*category*/)
 }
 
 bool ShouldTraceLog(Category /*category*/)
+||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
+void btck_logging_set_options(const btck_LoggingOptions options)
+{
+    LOCK(cs_main);
+    LogInstance().m_log_timestamps = options.log_timestamps;
+    LogInstance().m_log_time_micros = options.log_time_micros;
+    LogInstance().m_log_threadnames = options.log_threadnames;
+    LogInstance().m_log_sourcelocations = options.log_sourcelocations;
+    LogInstance().m_always_print_category_level = options.always_print_category_levels;
+}
+
+void btck_logging_set_level_category(btck_LogCategory category, btck_LogLevel level)
+=======
+void btck_logging_set_level_category(btck_LogCategory category, btck_LogLevel level)
+>>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
 {
     return GetKernelLogger().ShouldLog(Level::Trace);
 }
@@ -1103,11 +1119,20 @@ void Log(Entry entry)
 } // namespace util::log
 
 
+<<<<<<< HEAD
 void btck_logging_set_min_level(btck_LogLevel level)
 {
     GetKernelLogger().SetMinLevel(level);
 }
 
+||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
+void btck_logging_disable()
+{
+    LogInstance().DisableLogging();
+}
+
+=======
+>>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
 btck_LoggingConnection* btck_logging_connection_create(btck_LogCallback callback, void* user_data, btck_DestroyCallback user_data_destroy_callback)
 {
     assert(callback);

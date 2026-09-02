@@ -1056,6 +1056,7 @@ public:
     }
 };
 
+<<<<<<< HEAD
 inline void logging_set_min_level(LogLevel level)
 {
     btck_logging_set_min_level(static_cast<btck_LogLevel>(level));
@@ -1071,6 +1072,27 @@ private:
 
 public:
     explicit LogEntry(const btck_LogEntry& entry) : m_entry{&entry} {}
+||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
+inline void logging_disable()
+{
+    btck_logging_disable();
+}
+
+inline void logging_set_options(const btck_LoggingOptions& logging_options)
+{
+    btck_logging_set_options(logging_options);
+}
+
+inline void logging_set_level_category(LogCategory category, LogLevel level)
+{
+    btck_logging_set_level_category(static_cast<btck_LogCategory>(category), static_cast<btck_LogLevel>(level));
+}
+=======
+inline void logging_set_level_category(LogCategory category, LogLevel level)
+{
+    btck_logging_set_level_category(static_cast<btck_LogCategory>(category), static_cast<btck_LogLevel>(level));
+}
+>>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
 
     std::string_view Message() const { return {m_entry->message, m_entry->message_len}; }
     std::string_view ThreadName() const { return {m_entry->thread_name, m_entry->thread_name_len}; }
