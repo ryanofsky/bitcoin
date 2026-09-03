@@ -422,6 +422,7 @@ KJ_TEST("Calling async IPC method with a remote disconnect while results are bui
     //   per-granule shadow history before a late reader comes along.
     //
     // The server Connection object is deliberately kept alive during all this
+<<<<<<< HEAD
     // by constructing TestSetup with server_owns_connection=false: destroying
     // it would cancel the in-flight request (Connection::~Connection calls
     // m_canceler.cancel(), setting request_canceled) and the worker would
@@ -430,6 +431,22 @@ KJ_TEST("Calling async IPC method with a remote disconnect while results are bui
     // worker races with capnp's own internal teardown, which runs before any
     // onDisconnect notification. The connection is destroyed explicitly at the
     // end of the test instead.
+||||||| parent of 6280cf7be16 (doc: Improve disconnect callback comments)
+    // by overriding server_on_disconnect: destroying it would cancel the
+    // in-flight request (Connection::~Connection calls m_canceler.cancel(),
+    // setting request_canceled) and the worker would throw InterruptException
+    // instead of proceeding into getResults(). Keeping it alive matches the
+    // window in the original report, where the worker races with capnp's own
+    // internal teardown, which runs before any onDisconnect notification.
+=======
+    // by overriding server_on_disconnect: destroying it would cancel the
+    // in-flight request (Connection::~Connection calls m_canceler.cancel(),
+    // setting request_canceled) and the worker would throw InterruptException
+    // instead of proceeding into getResults(). Keeping it alive matches the
+    // window in the original report, where the worker races with capnp's own
+    // internal teardown, which runs before any TwoPartyVatNetwork::onDisconnect
+    // notification.
+>>>>>>> 6280cf7be16 (doc: Improve disconnect callback comments)
 
     TestSetup setup{/*client_owns_connection=*/false, /*server_owns_connection=*/false};
     ProxyClient<messages::FooInterface>* foo = setup.client.get();
