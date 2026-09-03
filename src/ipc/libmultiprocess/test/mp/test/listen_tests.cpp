@@ -18,6 +18,7 @@
 #include <kj/debug.h>
 #include <kj/memory.h>
 #include <kj/test.h>
+#include <list>
 #include <memory>
 #include <mp/proxy.h>
 #include <mp/proxy-io.h>
