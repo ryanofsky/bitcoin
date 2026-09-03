@@ -944,10 +944,31 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
     auto it = loop.m_incoming_connections.begin();
     MP_LOG(loop, Log::Info) << "IPC server: socket connected.";
     if (loop.testing_hook_connected) loop.testing_hook_connected();
+<<<<<<< HEAD
     it->onDisconnect([&loop, it, on_disconnect = std::forward<OnDisconnect>(on_disconnect), destroy_connection]() mutable {
+||||||| parent of bc9c7d96f7d (proxy-io: fix listener stuck at capacity after a local disconnect)
+    it->onDisconnect([&loop, it, on_disconnect = std::forward<OnDisconnect>(on_disconnect)]() mutable {
+=======
+    // Run on_disconnect (e.g. the listener's active-connection counter
+    // decrement) on any disconnect. It is registered with addSyncCleanup rather
+    // than placed in the onDisconnect handler below because that handler
+    // only fires on a remote disconnect and is canceled when a connection is
+    // closed locally; if on_disconnect lived there, closing a connection
+    // locally would leave the listener's slot count stuck and stop it from
+    // accepting again.
+    it->addSyncCleanup(std::forward<OnDisconnect>(on_disconnect));
+    it->onDisconnect([&loop, it]() mutable {
+>>>>>>> bc9c7d96f7d (proxy-io: fix listener stuck at capacity after a local disconnect)
         MP_LOG(loop, Log::Info) << "IPC server: socket disconnected.";
+<<<<<<< HEAD
         if (destroy_connection) loop.m_incoming_connections.erase(it);
         on_disconnect();
+||||||| parent of bc9c7d96f7d (proxy-io: fix listener stuck at capacity after a local disconnect)
+        loop.m_incoming_connections.erase(it);
+        on_disconnect();
+=======
+        loop.m_incoming_connections.erase(it);
+>>>>>>> bc9c7d96f7d (proxy-io: fix listener stuck at capacity after a local disconnect)
         if (loop.testing_hook_disconnected) loop.testing_hook_disconnected();
     });
     return {server, it};
