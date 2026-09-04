@@ -1151,7 +1151,21 @@ std::pair<ProxyServer<InitInterface>*, std::shared_ptr<Connection>> _Serve(Event
         // still on the incoming-connection list and must be disconnected and
         // removed.
         if (!conn || conn->disconnected()) return;
-        MP_LOG(loop, Log::Info) << "IPC server: socket disconnected.";
+        // Distinguish a graceful client shutdown from an unclean drop by
+        // whether the client left server objects behind: a graceful client
+        // releases its handles (freeing the ProxyServer objects) before closing,
+        // so pendingServerObjects() is 0 here; a crashed or killed client leaves
+        // them held. Checked before disconnect() below, which garbage-collects
+        // those objects. Caveat: best-effort -- capnp release messages race the
+        // socket EOF and in-flight call bodies also count, so a clean shutdown
+        // can momentarily still show objects and be reported as unclean. It
+        // never misses a real crash (which always leaves objects), only
+        // occasionally over-reports.
+        if (const size_t held{conn->tracker()->pendingServerObjects()}; held > 0) {
+            MP_LOG(loop, Log::Warning) << "IPC server: unexpected client disconnect, " << held << " object(s) still held.";
+        } else {
+            MP_LOG(loop, Log::Info) << "IPC server: socket disconnected.";
+        }
         if (destroy_connection) {
             // Remove by value, not through a captured iterator: other code may
             // have reordered the list between this handler being queued and
