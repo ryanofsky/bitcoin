@@ -46,6 +46,14 @@ CASES = [
     ("bare-exe-onpath", "child.exe", "bare"),
     ("bare-noext-missing", "nothere", "bare"),
     ("bare-noext-offpath", "child", "bare-offpath"),
+    # Same as the abs cases but with PATH set to empty, to test whether the
+    # EINVAL/ERROR_INVALID_NAME from msvcrt _spawnvp comes from a PATH search
+    # that concatenates PATH entries with a name that already has a directory.
+    ("abs-noext-exists-emptypath", "dir/child", "abs-emptypath"),
+    ("abs-noext-missing-emptypath", "dir/nothere", "abs-emptypath"),
+    ("absdir-missing-exe-emptypath", "nodir/child.exe", "abs-emptypath"),
+    # PATH with a single entry, to see which name the search builds.
+    ("abs-noext-missing-onepath", "dir/nothere", "abs-onepath"),
 ]
 
 CHILD_ARGS = ["-version"]
@@ -170,7 +178,11 @@ def run_matrix(runner, child_exe, out_path):
         env = dict(env_base)
         pathvar = "WINEPATH" if runner.wine else "PATH"
         cur = env.get(pathvar, "")
-        if kind == "bare-offpath":
+        if kind == "abs-emptypath":
+            env[pathvar] = ""
+        elif kind == "abs-onepath":
+            env[pathvar] = runner.win(d)
+        elif kind == "bare-offpath":
             # make sure dir is not on PATH
             parts = [p for p in cur.split(sep) if os.path.normcase(p) != os.path.normcase(runner.win(d))]
             env[pathvar] = sep.join(parts)
@@ -182,7 +194,7 @@ def run_matrix(runner, child_exe, out_path):
     rows = []
     for api, mode in APIS:
         for case, rel, kind in CASES:
-            if kind == "abs":
+            if kind.startswith("abs"):
                 file = runner.win(os.path.join(tmp, rel))
             elif kind == "rel":
                 file = rel.replace("/", "\\")
