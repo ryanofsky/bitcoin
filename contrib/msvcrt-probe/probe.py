@@ -29,6 +29,8 @@ APIS = [
     ("spawnvp", "overlay"),
     ("wspawnvp", "wait"),
     ("spawnv", "wait"),
+    ("createprocess", "-"),      # exe runner only: CreateProcessA, lpApplicationName=NULL
+    ("createprocess-app", "-"),  # exe runner only: CreateProcessA, lpApplicationName=FILE
 ]
 
 # (case name, path relative to the probe temp dir or bare name, kind)
@@ -54,6 +56,11 @@ CASES = [
     ("absdir-missing-exe-emptypath", "nodir/child.exe", "abs-emptypath"),
     # PATH with a single entry, to see which name the search builds.
     ("abs-noext-missing-onepath", "dir/nothere", "abs-onepath"),
+    # Target exists only at $T\pathdir\sub\child.exe, PATH=$T\pathdir, cwd=$T (no
+    # $T\sub). A function that launches "sub\child" is joining PATH entries to a
+    # name that already has a directory component.
+    ("subdir-via-path-noext", "sub/child", "subdir-path"),
+    ("subdir-via-path-exe", "sub/child.exe", "subdir-path"),
 ]
 
 CHILD_ARGS = ["-version"]
@@ -166,6 +173,9 @@ def run_matrix(runner, child_exe, out_path):
     d = os.path.join(tmp, "dir")
     os.makedirs(d)
     shutil.copy(child_exe, os.path.join(d, "child.exe"))
+    pathdir = os.path.join(tmp, "pathdir")
+    os.makedirs(os.path.join(pathdir, "sub"))
+    shutil.copy(child_exe, os.path.join(pathdir, "sub", "child.exe"))
     marker = os.path.join(tmp, "marker.txt")
 
     env_base = dict(os.environ)
@@ -178,7 +188,9 @@ def run_matrix(runner, child_exe, out_path):
         env = dict(env_base)
         pathvar = "WINEPATH" if runner.wine else "PATH"
         cur = env.get(pathvar, "")
-        if kind == "abs-emptypath":
+        if kind == "subdir-path":
+            env[pathvar] = runner.win(pathdir)
+        elif kind == "abs-emptypath":
             env[pathvar] = ""
         elif kind == "abs-onepath":
             env[pathvar] = runner.win(d)
@@ -193,8 +205,12 @@ def run_matrix(runner, child_exe, out_path):
     header = []
     rows = []
     for api, mode in APIS:
+        if runner.kind == "ctypes" and api.startswith("createprocess"):
+            continue
         for case, rel, kind in CASES:
-            if kind.startswith("abs"):
+            if kind == "subdir-path":
+                file = rel.replace("/", "\\")
+            elif kind.startswith("abs"):
                 file = runner.win(os.path.join(tmp, rel))
             elif kind == "rel":
                 file = rel.replace("/", "\\")
@@ -227,6 +243,8 @@ def run_matrix(runner, child_exe, out_path):
                 ret = e = dos = None
             if m is None:
                 outcome = "launched(exec)" if launched else f"no RESULT line (rc={rc})"
+            elif api.startswith("createprocess"):
+                outcome = "launched" if (ret == CHILD_EXIT and launched) else f"fail winerr={dos}"
             elif ret == -1:
                 outcome = f"fail {errno_name(e)}" + (" but child ran!" if launched else "")
             elif mode == "wait":

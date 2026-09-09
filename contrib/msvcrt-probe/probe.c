@@ -3,6 +3,9 @@
 //   probe.exe API MODE FILE [ARGS...]
 //
 // API:  execvp | wexecvp | execv | spawnvp | wspawnvp | spawnv
+//       createprocess      (CreateProcessA with lpApplicationName=NULL and
+//                           FILE as the first command line token)
+//       createprocess-app  (CreateProcessA with lpApplicationName=FILE)
 // MODE: wait | nowait | overlay   (spawn APIs)   or   -   (exec APIs)
 // FILE: passed as the CRT function's file name argument and as argv[0]
 //
@@ -33,6 +36,34 @@ static void print_module_of(const char* name, const void* addr)
         GetModuleFileNameA(h, path, sizeof(path));
     }
     printf("MODULE %s=%s\n", name, path);
+}
+
+// Run FILE through CreateProcessA directly, wait for it, and return its exit
+// code, or -1 with the Win32 error in *err. Mirrors what the CRT functions do
+// underneath, minus any CRT-side lookup.
+static intptr_t do_createprocess(const char* file, char** args, int use_app, unsigned long* err)
+{
+    char cmdline[4096] = "";
+    for (char** a = args; *a; ++a) {
+        if (a != args) strcat(cmdline, " ");
+        if (strchr(*a, ' ')) { strcat(cmdline, "\""); strcat(cmdline, *a); strcat(cmdline, "\""); }
+        else strcat(cmdline, *a);
+    }
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    memset(&si, 0, sizeof(si));
+    si.cb = sizeof(si);
+    *err = 0;
+    if (!CreateProcessA(use_app ? file : NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+        *err = GetLastError();
+        return -1;
+    }
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD code = (DWORD)-1;
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return (intptr_t)code;
 }
 
 int main(int argc, char** argv)
@@ -100,6 +131,14 @@ int main(int argc, char** argv)
     else if (!strcmp(api, "spawnvp")) ret = _spawnvp(mode, file, (const char* const*)args);
     else if (!strcmp(api, "wspawnvp")) ret = _wspawnvp(mode, wfile, (const wchar_t* const*)wargs);
     else if (!strcmp(api, "spawnv")) ret = _spawnv(mode, file, (const char* const*)args);
+    else if (!strcmp(api, "createprocess") || !strcmp(api, "createprocess-app")) {
+        unsigned long err = 0;
+        ret = do_createprocess(file, args, !strcmp(api, "createprocess-app"), &err);
+        printf("RESULT api=%s mode=%s ret=%lld errno=0 doserrno=%lu strerror=\"winerr %lu\"\n",
+               api, mode_s, (long long)ret, err, err);
+        fflush(stdout);
+        return 99;
+    }
     else {
         fprintf(stderr, "bad api %s\n", api);
         return 2;

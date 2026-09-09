@@ -112,11 +112,28 @@ jobs:
         shell: pwsh
         run: py -3 contrib/msvcrt-probe/probe.py run --runner exe:contrib/msvcrt-probe/probe.exe --child contrib/msvcrt-probe/child.exe --out results-msvc.md
 
+      - name: Dump UCRT exec/spawn sources from the Windows SDK
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $root = "C:\Program Files (x86)\Windows Kits\10\Source"
+          Get-ChildItem $root -Directory | ForEach-Object { $_.FullName }
+          $src = Get-ChildItem $root -Directory | Sort-Object Name | Select-Object -Last 1
+          "Using $($src.FullName)"
+          Get-ChildItem "$($src.FullName)\ucrt\exec"
+          New-Item -ItemType Directory -Force ucrt-src | Out-Null
+          foreach ($f in 'execvp.cpp','execvpe.cpp','execv.cpp','execve.cpp','spawnvp.cpp','spawnvpe.cpp','spawnv.cpp','spawnve.cpp','cenvarg.cpp','dospawn.cpp') {
+            $path = "$($src.FullName)\ucrt\exec\$f"
+            if (Test-Path $path) { "===== $f"; Get-Content $path; Copy-Item $path ucrt-src/ }
+          }
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: results-msvc
-          path: results-*.md
+          path: |
+            results-*.md
+            ucrt-src/
 
   nix-mingw:
     # Binaries cross-compiled on Linux with the nix x86_64-w64-mingw32-gcc 15.2 /
