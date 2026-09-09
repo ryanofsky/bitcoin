@@ -1,0 +1,142 @@
+name: msvcrt-probe
+
+# Throwaway workflow: measure how the Windows CRT exec/spawn functions treat
+# extensionless and missing paths in msvcrt.dll vs ucrtbase.dll. See
+# contrib/msvcrt-probe/README.md.
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  ctypes:
+    name: 'ctypes, ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Environment
+        shell: pwsh
+        run: |
+          [System.Environment]::OSVersion.VersionString
+          Get-Item C:\Windows\System32\msvcrt.dll, C:\Windows\System32\ucrtbase.dll |
+            Select-Object FullName, Length, @{n='FileVersion';e={$_.VersionInfo.FileVersion}}, @{n='ProductVersion';e={$_.VersionInfo.ProductVersion}} |
+            Format-List
+          py -3 --version
+
+      - name: Build child.exe (MSVC)
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build child.exe (MSVC) - compile
+        shell: cmd
+        run: |
+          cd contrib\msvcrt-probe
+          cl /nologo /W3 /Fe:child.exe child.c || exit /b 1
+
+      - name: Probe msvcrt.dll via ctypes
+        shell: pwsh
+        run: py -3 contrib/msvcrt-probe/probe.py run --runner ctypes:msvcrt.dll --child contrib/msvcrt-probe/child.exe --out results-ctypes-msvcrt-${{ matrix.os }}.md
+
+      - name: Probe ucrtbase.dll via ctypes
+        shell: pwsh
+        run: py -3 contrib/msvcrt-probe/probe.py run --runner ctypes:ucrtbase.dll --child contrib/msvcrt-probe/child.exe --out results-ctypes-ucrtbase-${{ matrix.os }}.md
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-ctypes-${{ matrix.os }}
+          path: results-*.md
+
+  mingw:
+    name: 'MSYS2 ${{ matrix.msystem }}'
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - msystem: MINGW64
+            package: mingw-w64-x86_64-gcc
+          - msystem: UCRT64
+            package: mingw-w64-ucrt-x86_64-gcc
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: false
+          install: ${{ matrix.package }}
+
+      - name: Build
+        run: |
+          cd contrib/msvcrt-probe
+          gcc --version | head -1
+          gcc -O1 -Wall -Wextra -static -o probe.exe probe.c
+          gcc -O1 -Wall -Wextra -static -o child.exe child.c
+          objdump -p probe.exe | grep -A40 'DLL Name' | grep -i 'DLL Name\|spawn\|exec\|cwait'
+
+      - name: Probe
+        shell: pwsh
+        run: py -3 contrib/msvcrt-probe/probe.py run --runner exe:contrib/msvcrt-probe/probe.exe --child contrib/msvcrt-probe/child.exe --out results-mingw-${{ matrix.msystem }}.md
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-mingw-${{ matrix.msystem }}
+          path: results-*.md
+
+  msvc:
+    name: 'MSVC native'
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build
+        shell: cmd
+        run: |
+          cd contrib\msvcrt-probe
+          cl /nologo /W3 /Fe:probe.exe probe.c shell32.lib || exit /b 1
+          cl /nologo /W3 /Fe:child.exe child.c || exit /b 1
+          dumpbin /imports probe.exe | findstr /i "dll spawn exec cwait"
+
+      - name: Probe
+        shell: pwsh
+        run: py -3 contrib/msvcrt-probe/probe.py run --runner exe:contrib/msvcrt-probe/probe.exe --child contrib/msvcrt-probe/child.exe --out results-msvc.md
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-msvc
+          path: results-*.md
+
+  nix-mingw:
+    # Binaries cross-compiled on Linux with the nix x86_64-w64-mingw32-gcc 15.2 /
+    # mingw-w64 13.0 (msvcrt) toolchain, the same kind of toolchain Bitcoin
+    # Core's depends msvcrt build uses. Checked in under prebuilt/.
+    name: 'nix MinGW msvcrt (prebuilt), ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Probe
+        shell: pwsh
+        run: py -3 contrib/msvcrt-probe/probe.py run --runner exe:contrib/msvcrt-probe/prebuilt/probe.exe --child contrib/msvcrt-probe/prebuilt/child.exe --out results-nixmingw-${{ matrix.os }}.md
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-nixmingw-${{ matrix.os }}
+          path: results-*.md
