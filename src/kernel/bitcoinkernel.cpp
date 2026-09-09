@@ -48,11 +48,16 @@
 #include <cstring>
 #include <exception>
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include <iterator>
 ||||||| parent of 95e63e954af (kernel: add KernelLogger)
 #include <functional>
 =======
 #include <functional>
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+#include <functional>
+=======
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 #include <iterator>
 >>>>>>> 95e63e954af (kernel: add KernelLogger)
 #include <limits>
@@ -178,8 +183,14 @@ constexpr util::log::Level to_util(btck_LogLevel level)
         return BCLog::Level::Info;
 =======
     case btck_LogLevel_TRACE: {
+<<<<<<< HEAD
         return BCLog::Level::Trace;
 >>>>>>> 3a72f3040c2 (kernel: add missing log levels and categories)
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+        return BCLog::Level::Trace;
+=======
+        return util::log::Level::Trace;
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
     }
     case btck_LogLevel_DEBUG: {
         return util::log::Level::Debug;
@@ -192,12 +203,13 @@ constexpr util::log::Level to_util(btck_LogLevel level)
         return BCLog::Level::Trace;
 =======
     case btck_LogLevel_INFO: {
-        return BCLog::Level::Info;
+        return util::log::Level::Info;
     }
     case btck_LogLevel_WARNING: {
-        return BCLog::Level::Warning;
+        return util::log::Level::Warning;
     }
     case btck_LogLevel_ERROR: {
+<<<<<<< HEAD
         return BCLog::Level::Error;
 >>>>>>> 3a72f3040c2 (kernel: add missing log levels and categories)
     }
@@ -294,6 +306,59 @@ BCLog::LogFlags get_bclog_flag(btck_LogCategory category)
     case btck_LogCategory_ALL: {
         return BCLog::LogFlags::ALL;
 >>>>>>> 3a72f3040c2 (kernel: add missing log levels and categories)
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+        return BCLog::Level::Error;
+    }
+    }
+    assert(false);
+}
+
+BCLog::LogFlags get_bclog_flag(btck_LogCategory category)
+{
+    switch (category) {
+    case btck_LogCategory_BENCH: {
+        return BCLog::LogFlags::BENCH;
+    }
+    case btck_LogCategory_BLOCKSTORAGE: {
+        return BCLog::LogFlags::BLOCKSTORAGE;
+    }
+    case btck_LogCategory_COINDB: {
+        return BCLog::LogFlags::COINDB;
+    }
+    case btck_LogCategory_LEVELDB: {
+        return BCLog::LogFlags::LEVELDB;
+    }
+    case btck_LogCategory_MEMPOOL: {
+        return BCLog::LogFlags::MEMPOOL;
+    }
+    case btck_LogCategory_PRUNE: {
+        return BCLog::LogFlags::PRUNE;
+    }
+    case btck_LogCategory_RAND: {
+        return BCLog::LogFlags::RAND;
+    }
+    case btck_LogCategory_REINDEX: {
+        return BCLog::LogFlags::REINDEX;
+    }
+    case btck_LogCategory_VALIDATION: {
+        return BCLog::LogFlags::VALIDATION;
+    }
+    case btck_LogCategory_KERNEL: {
+        return BCLog::LogFlags::KERNEL;
+    }
+    case btck_LogCategory_TXPACKAGES: {
+        return BCLog::LogFlags::TXPACKAGES;
+    }
+#ifdef DEBUG_LOCKCONTENTION
+    case btck_LogCategory_LOCK: {
+        return BCLog::LogFlags::LOCK;
+    }
+#endif
+    case btck_LogCategory_ALL: {
+        return BCLog::LogFlags::ALL;
+=======
+        return util::log::Level::Error;
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
     }
     }
     assert(false);
@@ -433,6 +498,7 @@ constexpr btck_LogCategory to_btck(BCLog::LogFlags flag)
     }
 }
 
+<<<<<<< HEAD
 struct LoggingConnection {
     std::unique_ptr<std::list<std::function<void(const std::string&)>>::iterator> m_connection;
     void* m_user_data;
@@ -531,6 +597,57 @@ constexpr btck_LogCategory to_btck(BCLog::LogFlags flag)
     }
 }
 
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+struct LoggingConnection {
+    std::unique_ptr<std::list<std::function<void(const std::string&)>>::iterator> m_connection;
+    void* m_user_data;
+    std::function<void(void* user_data)> m_deleter;
+
+    LoggingConnection(btck_LogCallback callback, void* user_data, btck_DestroyCallback user_data_destroy_callback)
+    {
+        LOCK(cs_main);
+
+        auto connection{LogInstance().PushBackCallback([callback, user_data](const std::string& str) { callback(user_data, str.c_str(), str.length()); })};
+
+        // Only start logging if we just added the connection.
+        if (LogInstance().NumConnections() == 1 && !LogInstance().StartLogging()) {
+            LogError("Logger start failed.");
+            LogInstance().DeleteCallback(connection);
+            if (user_data && user_data_destroy_callback) {
+                user_data_destroy_callback(user_data);
+            }
+            throw std::runtime_error("Failed to start logging");
+        }
+
+        m_connection = std::make_unique<std::list<std::function<void(const std::string&)>>::iterator>(connection);
+        m_user_data = user_data;
+        m_deleter = user_data_destroy_callback;
+
+        LogDebug(BCLog::KERNEL, "Logger connected.");
+    }
+
+    ~LoggingConnection()
+    {
+        LOCK(cs_main);
+        LogDebug(BCLog::KERNEL, "Logger disconnecting.");
+
+        // Switch back to buffering by calling DisconnectTestLogger if the
+        // connection that we are about to remove is the last one.
+        if (LogInstance().NumConnections() == 1) {
+            LogInstance().DisconnectTestLogger();
+        } else {
+            LogInstance().DeleteCallback(*m_connection);
+        }
+
+        m_connection.reset();
+        if (m_user_data && m_deleter) {
+            m_deleter(m_user_data);
+        }
+    }
+};
+
+=======
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 class KernelNotifications final : public kernel::Notifications
 {
 private:
@@ -734,6 +851,7 @@ struct ChainMan {
         : m_chainman(std::move(chainman)), m_context(std::move(context)) {}
 };
 
+<<<<<<< HEAD
 struct UserDataDeleter {
     btck_DestroyCallback destroy;
     void operator()(void* user_data) const
@@ -873,6 +991,11 @@ void KernelLogger::Log(const util::log::Entry& entry) const
 
 } // namespace
 
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+} // namespace
+
+=======
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 struct UserDataDeleter {
     btck_DestroyCallback destroy;
     void operator()(void* user_data) const
@@ -887,15 +1010,9 @@ using UserData = std::unique_ptr<void, UserDataDeleter>;
 //! Shared by all btck_LoggingConnection instances.
 class KernelLogger
 {
-public:
-    //! Signature of a logging callback. Matches btck_LogCallback once the C API delivers
-    //! btck_LogEntry instead of a string.
-    using LogCallback = void (*)(void* user_data, const btck_LogEntry* entry);
-
-private:
-    //! A registered logging callback. Owns user_data.
+    //! A registered btck_LogCallback. Owns user_data.
     struct Callback {
-        LogCallback fn;
+        btck_LogCallback fn;
         UserData user_data;
 
         void operator()(const btck_LogEntry* entry) const { fn(user_data.get(), entry); }
@@ -932,11 +1049,11 @@ public:
     };
 
     //! Registers a logging callback. Takes ownership of user_data, also when registration fails.
-    [[nodiscard]] CallbackHandle RegisterCallback(LogCallback fn, UserData user_data) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    [[nodiscard]] CallbackHandle RegisterCallback(btck_LogCallback fn, UserData user_data) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
     //! Set the minimum log level.
     void SetMinLevel(btck_LogLevel level)
     {
-        m_min_level.store(get_bclog_level(level), std::memory_order_relaxed);
+        m_min_level.store(to_util(level), std::memory_order_relaxed);
     }
 
     //! Whether an entry at this level is at or above the minimum level.
@@ -956,7 +1073,7 @@ public:
     }
 };
 
-KernelLogger::CallbackHandle KernelLogger::RegisterCallback(LogCallback fn, UserData user_data)
+KernelLogger::CallbackHandle KernelLogger::RegisterCallback(btck_LogCallback fn, UserData user_data)
 {
     // Construct before locking so that a failed push_back destroys user_data outside m_mutex.
     Callback cb{fn, std::move(user_data)};
@@ -1012,6 +1129,8 @@ void KernelLogger::Log(const util::log::Entry& entry) const
         }
     }
 }
+
+} // namespace
 
 struct btck_Transaction : Handle<btck_Transaction, std::shared_ptr<const CTransaction>> {};
 struct btck_TransactionOutput : Handle<btck_TransactionOutput, CTxOut> {};
@@ -1351,6 +1470,7 @@ void btck_wtxid_destroy(btck_Wtxid* wtxid)
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 namespace {
 //! The process-wide kernel logger. Intentionally leaked to avoid static destruction order issues,
 //! matching the node's LogInstance().
@@ -1372,25 +1492,61 @@ bool ShouldDebugLog(Category /*category*/)
 bool ShouldTraceLog(Category /*category*/)
 ||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
 void btck_logging_set_options(const btck_LoggingOptions options)
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+void btck_logging_set_level_category(btck_LogCategory category, btck_LogLevel level)
+=======
+namespace {
+//! The process-wide kernel logger. Intentionally leaked to avoid static destruction order issues,
+//! matching the node's LogInstance().
+KernelLogger& GetKernelLogger()
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 {
+<<<<<<< HEAD
     LOCK(cs_main);
     LogInstance().m_log_timestamps = options.log_timestamps;
     LogInstance().m_log_time_micros = options.log_time_micros;
     LogInstance().m_log_threadnames = options.log_threadnames;
     LogInstance().m_log_sourcelocations = options.log_sourcelocations;
     LogInstance().m_always_print_category_level = options.always_print_category_levels;
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+    LOCK(cs_main);
+    if (category == btck_LogCategory_ALL) {
+        LogInstance().SetLogLevel(get_bclog_level(level));
+    }
+
+    LogInstance().AddCategoryLogLevel(get_bclog_flag(category), get_bclog_level(level));
+=======
+    static KernelLogger* logger{new KernelLogger};
+    return *logger;
+}
+} // namespace
+
+namespace util::log {
+// Kernel filters on level only. The category is delivered as part of the entry, so consumers can
+// filter on it in their callback.
+bool ShouldDebugLog(Category /*category*/)
+{
+    return GetKernelLogger().ShouldLog(Level::Debug);
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 }
 
+<<<<<<< HEAD
 void btck_logging_set_level_category(btck_LogCategory category, btck_LogLevel level)
 =======
 void btck_logging_set_level_category(btck_LogCategory category, btck_LogLevel level)
 >>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+void btck_logging_enable_category(btck_LogCategory category)
+=======
+bool ShouldTraceLog(Category /*category*/)
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 {
     return GetKernelLogger().ShouldLog(Level::Trace);
 }
 
 void Log(Entry entry)
 {
+<<<<<<< HEAD
     // Conditional logging, because the util::log framework doesn't allow us to check if the
     // minimum level exceeds Info.
     GetKernelLogger().MaybeLog(entry);
@@ -1402,6 +1558,20 @@ void Log(Entry entry)
 void btck_logging_set_min_level(btck_LogLevel level)
 {
     GetKernelLogger().SetMinLevel(level);
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+    LogInstance().DisableCategory(get_bclog_flag(category));
+=======
+    // Conditional logging, because the util::log framework doesn't allow us to check if the
+    // minimum level exceeds Info.
+    GetKernelLogger().MaybeLog(entry);
+}
+} // namespace util::log
+
+
+void btck_logging_set_min_level(btck_LogLevel level)
+{
+    GetKernelLogger().SetMinLevel(level);
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 }
 
 ||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
@@ -1416,12 +1586,22 @@ btck_LoggingConnection* btck_logging_connection_create(btck_LogCallback callback
 {
     assert(callback);
     try {
+<<<<<<< HEAD
         // Take ownership before anything can throw, so that user_data is always freed on error.
         UserData data{user_data, {user_data_destroy_callback}};
         auto handle{GetKernelLogger().RegisterCallback(callback, std::move(data))};
         LogDebug(BCLog::KERNEL, "Logger connected.");
         return btck_LoggingConnection::create(std::move(handle));
     } catch (...) {
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+        return btck_LoggingConnection::create(callback, user_data, user_data_destroy_callback);
+    } catch (const std::exception&) {
+=======
+        auto handle{GetKernelLogger().RegisterCallback(callback, UserData{user_data, {user_data_destroy_callback}})};
+        LogDebug(BCLog::KERNEL, "Logger connected.");
+        return btck_LoggingConnection::create(std::move(handle));
+    } catch (...) {
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
         return nullptr;
     }
 }

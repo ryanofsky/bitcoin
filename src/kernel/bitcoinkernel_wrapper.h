@@ -1059,6 +1059,7 @@ public:
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 inline void logging_set_min_level(LogLevel level)
 {
     btck_logging_set_min_level(static_cast<btck_LogLevel>(level));
@@ -1086,7 +1087,13 @@ inline void logging_set_options(const btck_LoggingOptions& logging_options)
 }
 
 inline void logging_set_level_category(LogCategory category, LogLevel level)
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+inline void logging_set_level_category(LogCategory category, LogLevel level)
+=======
+inline void logging_set_min_level(LogLevel level)
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 {
+<<<<<<< HEAD
     btck_logging_set_level_category(static_cast<btck_LogCategory>(category), static_cast<btck_LogLevel>(level));
 }
 =======
@@ -1113,6 +1120,23 @@ inline void logging_set_level_category(LogCategory category, LogLevel level)
     LogLevel Level() const { return static_cast<LogLevel>(m_entry->level); }
     LogCategory Category() const { return static_cast<LogCategory>(m_entry->category); }
 };
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+    btck_logging_set_level_category(static_cast<btck_LogCategory>(category), static_cast<btck_LogLevel>(level));
+}
+
+inline void logging_enable_category(LogCategory category)
+{
+    btck_logging_enable_category(static_cast<btck_LogCategory>(category));
+}
+
+inline void logging_disable_category(LogCategory category)
+{
+    btck_logging_disable_category(static_cast<btck_LogCategory>(category));
+}
+=======
+    btck_logging_set_min_level(static_cast<btck_LogLevel>(level));
+}
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 
 //! Non-owning view over a btck_LogEntry. The referenced entry is only valid for the duration of the
 //! logging callback, so a LogEntry (and any string_view obtained from it) must not be stored or

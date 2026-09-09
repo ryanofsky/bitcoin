@@ -704,6 +704,7 @@ BOOST_AUTO_TEST_CASE(btck_script_verify_tests)
 class CountingLog
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
     std::map<std::string, int>& m_messages;
     int& m_destroyed;
 
@@ -741,6 +742,30 @@ BOOST_AUTO_TEST_CASE(logging_connection_tests)
     logging_enable_category(LogCategory::VALIDATION);
     logging_disable_category(LogCategory::VALIDATION);
 >>>>>>> b4edc987456 (kernel: remove API to format and disable logging)
+||||||| parent of cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+    logging_set_level_category(LogCategory::BENCH, LogLevel::TRACE_LEVEL);
+    logging_disable_category(LogCategory::BENCH);
+    logging_enable_category(LogCategory::VALIDATION);
+    logging_disable_category(LogCategory::VALIDATION);
+=======
+    std::map<std::string, int>& m_messages;
+    int& m_destroyed;
+
+public:
+    CountingLog(std::map<std::string, int>& messages, int& destroyed)
+        : m_messages{messages}, m_destroyed{destroyed} {}
+    ~CountingLog() { ++m_destroyed; }
+
+    void LogMessage(const LogEntry& entry) { ++m_messages[std::string{entry.Message()}]; }
+};
+
+//! This test is focused on the public kernel logging interface, to the extent it is testable.
+BOOST_AUTO_TEST_CASE(logging_connection_tests)
+{
+    std::map<std::string, int> messages;
+    int destroyed{0};
+    logging_set_min_level(LogLevel::INFO_LEVEL);
+>>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
 
     {
         // At the default minimum level (INFO), the DEBUG entries are not delivered.
