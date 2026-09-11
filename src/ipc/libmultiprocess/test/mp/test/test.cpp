@@ -9,10 +9,15 @@
 #include <atomic>
 #include <capnp/capability.h>
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 12517401fb0 (proxy-io: fix race deleting a disconnected Connection twice)
 #include <capnp/rpc.h>
 =======
 #include <capnp/rpc.h>
+||||||| parent of ccbe824983e (test: simplify TestSetup using ServeStream/ConnectStream)
+#include <capnp/rpc.h>
+=======
+>>>>>>> ccbe824983e (test: simplify TestSetup using ServeStream/ConnectStream)
 #include <capnp/rpc-twoparty.h>
 >>>>>>> 12517401fb0 (proxy-io: fix race deleting a disconnected Connection twice)
 #include <cassert>
@@ -430,6 +435,7 @@ KJ_TEST("Calling async IPC method with a remote disconnect while results are bui
     //
     // The server Connection object is deliberately kept alive during all this
 <<<<<<< HEAD
+<<<<<<< HEAD
     // by constructing TestSetup with server_owns_connection=false: destroying
     // it would cancel the in-flight request (Connection::~Connection calls
     // m_canceler.cancel(), setting request_canceled) and the worker would
@@ -454,6 +460,24 @@ KJ_TEST("Calling async IPC method with a remote disconnect while results are bui
     // internal teardown, which runs before any TwoPartyVatNetwork::onDisconnect
     // notification.
 >>>>>>> 6280cf7be16 (doc: Improve disconnect callback comments)
+||||||| parent of ccbe824983e (test: simplify TestSetup using ServeStream/ConnectStream)
+    // by overriding server_on_disconnect: destroying it would cancel the
+    // in-flight request (Connection::~Connection calls m_canceler.cancel(),
+    // setting request_canceled) and the worker would throw InterruptException
+    // instead of proceeding into getResults(). Keeping it alive matches the
+    // window in the original report, where the worker races with capnp's own
+    // internal teardown, which runs before any TwoPartyVatNetwork::onDisconnect
+    // notification.
+=======
+    // by constructing TestSetup with server_owns_connection=false: destroying
+    // it would cancel the in-flight request (Connection::~Connection calls
+    // m_canceler.cancel(), setting request_canceled) and the worker would
+    // throw InterruptException instead of proceeding into getResults().
+    // Keeping it alive matches the window in the original report, where the
+    // worker races with capnp's own internal teardown, which runs before any
+    // TwoPartyVatNetwork::onDisconnect notification. The connection is
+    // destroyed explicitly at the end of the test instead.
+>>>>>>> ccbe824983e (test: simplify TestSetup using ServeStream/ConnectStream)
 
     TestSetup setup{/*client_owns_connection=*/false, /*server_owns_connection=*/false};
     ProxyClient<messages::FooInterface>* foo = setup.client.get();
