@@ -1061,6 +1061,7 @@ std::unique_ptr<ProxyClient<InitInterface>> ConnectStream(EventLoop& loop, Strea
 //! Given stream and init objects, construct a new ProxyServer object that
 //! handles requests from the stream by calling the init object. Embed the
 <<<<<<< HEAD
+<<<<<<< HEAD
 //! ProxyServer in a Connection object that is stored in
 //! loop.m_incoming_connections. This should be called from the event loop
 //! thread. Returns the new ProxyServer along with an iterator to its
@@ -1079,7 +1080,24 @@ std::unique_ptr<ProxyClient<InitInterface>> ConnectStream(EventLoop& loop, Strea
 //! the new ProxyServer along with an iterator to its Connection in
 //! loop.m_incoming_connections.
 >>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+//! ProxyServer in a Connection object that is stored and erased if
+//! disconnected. This should be called from the event loop thread. Returns
+//! the new ProxyServer along with an iterator to its Connection in
+//! loop.m_incoming_connections.
+=======
+//! ProxyServer in a Connection object that is stored in
+//! loop.m_incoming_connections. This should be called from the event loop
+//! thread. Returns the new ProxyServer along with an iterator to its
+//! Connection.
+//!
+//! If destroy_connection is false, the connection is not erased
+//! automatically when the peer disconnects, and the caller is responsible
+//! for erasing loop.m_incoming_connections at the returned iterator
+//! whenever it is done with the connection.
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
 template <typename InitInterface, typename InitImpl, typename OnDisconnect>
+<<<<<<< HEAD
 <<<<<<< HEAD
 std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(EventLoop& loop,
     kj::Own<kj::AsyncIoStream>&& stream,
@@ -1092,6 +1110,16 @@ void _Serve(EventLoop& loop, kj::Own<kj::AsyncIoStream>&& stream, InitImpl& init
 std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
     EventLoop& loop, kj::Own<kj::AsyncIoStream>&& stream, std::shared_ptr<InitImpl> init, OnDisconnect&& on_disconnect)
 >>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
+    EventLoop& loop, kj::Own<kj::AsyncIoStream>&& stream, std::shared_ptr<InitImpl> init, OnDisconnect&& on_disconnect)
+=======
+std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(EventLoop& loop,
+    kj::Own<kj::AsyncIoStream>&& stream,
+    std::shared_ptr<InitImpl> init,
+    OnDisconnect&& on_disconnect,
+    bool destroy_connection = true)
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
 {
     ProxyServer<InitInterface>* server = nullptr;
     loop.m_incoming_connections.emplace_front(loop, kj::mv(stream), [&](Connection& connection) {
@@ -1115,9 +1143,16 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
     // locally would leave the listener's slot count stuck and stop it from
     // accepting again.
     it->addSyncCleanup(std::forward<OnDisconnect>(on_disconnect));
+<<<<<<< HEAD
     it->onDisconnect([&loop, it]() mutable {
 >>>>>>> bc9c7d96f7d (proxy-io: fix listener stuck at capacity after a local disconnect)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+    it->onDisconnect([&loop, it]() mutable {
+=======
+    it->onDisconnect([&loop, it, destroy_connection]() mutable {
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
         MP_LOG(loop, Log::Info) << "IPC server: socket disconnected.";
+<<<<<<< HEAD
 <<<<<<< HEAD
         if (destroy_connection) loop.m_incoming_connections.erase(it);
         on_disconnect();
@@ -1127,6 +1162,11 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
 =======
         loop.m_incoming_connections.erase(it);
 >>>>>>> bc9c7d96f7d (proxy-io: fix listener stuck at capacity after a local disconnect)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+        loop.m_incoming_connections.erase(it);
+=======
+        if (destroy_connection) loop.m_incoming_connections.erase(it);
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
         if (loop.testing_hook_disconnected) loop.testing_hook_disconnected();
     });
 <<<<<<< HEAD
@@ -1166,12 +1206,23 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
 //! the ProxyServer object from deleting the init object when the client is
 //! disconnected.
 template <typename InitInterface, typename InitImpl, typename OnDisconnect>
-std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
-    EventLoop& loop, kj::Own<kj::AsyncIoStream>&& stream, InitImpl& init, OnDisconnect&& on_disconnect)
+std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(EventLoop& loop,
+    kj::Own<kj::AsyncIoStream>&& stream,
+    InitImpl& init,
+    OnDisconnect&& on_disconnect,
+    bool destroy_connection = true)
 {
+<<<<<<< HEAD
     return _Serve<InitInterface>(
         loop, kj::mv(stream), std::shared_ptr<InitImpl>(&init, [](InitImpl*){}), std::forward<OnDisconnect>(on_disconnect));
 >>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+    return _Serve<InitInterface>(
+        loop, kj::mv(stream), std::shared_ptr<InitImpl>(&init, [](InitImpl*){}), std::forward<OnDisconnect>(on_disconnect));
+=======
+    return _Serve<InitInterface>(loop, kj::mv(stream), std::shared_ptr<InitImpl>(&init, [](InitImpl*){}),
+        std::forward<OnDisconnect>(on_disconnect), destroy_connection);
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
 }
 
 struct Listener
@@ -1210,6 +1261,7 @@ void _Listen(const std::shared_ptr<Listener>& listener, EventLoop& loop, InitImp
 
 //! Given a stream and an init object, handle requests on the stream by calling
 <<<<<<< HEAD
+<<<<<<< HEAD
 //! methods on the Init object. See _Serve for details on the return value and
 //! the destroy_connection parameter.
 ||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
@@ -1217,6 +1269,12 @@ void _Listen(const std::shared_ptr<Listener>& listener, EventLoop& loop, InitImp
 =======
 //! methods on the Init object. See _Serve for details on the return value.
 >>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+//! methods on the Init object. See _Serve for details on the return value.
+=======
+//! methods on the Init object. See _Serve for details on the return value and
+//! the destroy_connection parameter.
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
 template <typename InitInterface, typename InitImpl>
 <<<<<<< HEAD
 std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> ServeStream(
@@ -1225,9 +1283,16 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> ServeSt
 void ServeStream(EventLoop& loop, Stream stream, InitImpl& init)
 =======
 std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> ServeStream(
+<<<<<<< HEAD
     EventLoop& loop, Stream stream, InitImpl&& init)
 >>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+    EventLoop& loop, Stream stream, InitImpl&& init)
+=======
+    EventLoop& loop, Stream stream, InitImpl&& init, bool destroy_connection = true)
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
     return _Serve<InitInterface>(loop, kj::mv(stream), std::forward<InitImpl>(init), /*on_disconnect=*/ [] {}, destroy_connection);
 ||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
@@ -1235,6 +1300,11 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> ServeSt
 =======
     return _Serve<InitInterface>(loop, kj::mv(stream), std::forward<InitImpl>(init), /*on_disconnect=*/ [] {});
 >>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+||||||| parent of 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
+    return _Serve<InitInterface>(loop, kj::mv(stream), std::forward<InitImpl>(init), /*on_disconnect=*/ [] {});
+=======
+    return _Serve<InitInterface>(loop, kj::mv(stream), std::forward<InitImpl>(init), /*on_disconnect=*/ [] {}, destroy_connection);
+>>>>>>> 80a19e23f93 (proxy-io: add destroy_connection parameter to ServeStream and ConnectStream)
 }
 
 //! Given listening socket identifier and an init object, handle incoming
