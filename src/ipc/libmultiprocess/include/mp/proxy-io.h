@@ -1060,6 +1060,7 @@ std::unique_ptr<ProxyClient<InitInterface>> ConnectStream(EventLoop& loop, Strea
 
 //! Given stream and init objects, construct a new ProxyServer object that
 //! handles requests from the stream by calling the init object. Embed the
+<<<<<<< HEAD
 //! ProxyServer in a Connection object that is stored in
 //! loop.m_incoming_connections. This should be called from the event loop
 //! thread. Returns the new ProxyServer along with an iterator to its
@@ -1069,12 +1070,28 @@ std::unique_ptr<ProxyClient<InitInterface>> ConnectStream(EventLoop& loop, Strea
 //! automatically when the peer disconnects, and the caller is responsible
 //! for erasing loop.m_incoming_connections at the returned iterator
 //! whenever it is done with the connection.
+||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+//! ProxyServer in a Connection object that is stored and erased if
+//! disconnected. This should be called from the event loop thread.
+=======
+//! ProxyServer in a Connection object that is stored and erased if
+//! disconnected. This should be called from the event loop thread. Returns
+//! the new ProxyServer along with an iterator to its Connection in
+//! loop.m_incoming_connections.
+>>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
 template <typename InitInterface, typename InitImpl, typename OnDisconnect>
+<<<<<<< HEAD
 std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(EventLoop& loop,
     kj::Own<kj::AsyncIoStream>&& stream,
     std::shared_ptr<InitImpl> init,
     OnDisconnect&& on_disconnect,
     bool destroy_connection = true)
+||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+void _Serve(EventLoop& loop, kj::Own<kj::AsyncIoStream>&& stream, InitImpl& init, OnDisconnect&& on_disconnect)
+=======
+std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
+    EventLoop& loop, kj::Own<kj::AsyncIoStream>&& stream, std::shared_ptr<InitImpl> init, OnDisconnect&& on_disconnect)
+>>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
 {
     ProxyServer<InitInterface>* server = nullptr;
     loop.m_incoming_connections.emplace_front(loop, kj::mv(stream), [&](Connection& connection) {
@@ -1112,6 +1129,7 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
 >>>>>>> bc9c7d96f7d (proxy-io: fix listener stuck at capacity after a local disconnect)
         if (loop.testing_hook_disconnected) loop.testing_hook_disconnected();
     });
+<<<<<<< HEAD
     return {server, it};
 }
 
@@ -1133,6 +1151,27 @@ std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
 {
     return _Serve<InitInterface>(loop, kj::mv(stream), std::shared_ptr<InitImpl>(&init, [](InitImpl*){}),
         std::forward<OnDisconnect>(on_disconnect), destroy_connection);
+||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+=======
+    return {server, it};
+}
+
+//! Overload of _Serve that takes a reference to the init object instead of a
+//! shared_ptr. ProxyServer objects use shared_ptr's internally to optionally
+//! take ownership of interfaces being served, and free them when clients are
+//! no longer using them. Some libmultiprocess callers take advantage of this
+//! and pass shared_ptr's directly. But other callers that do not give away
+//! ownership are not required to use shared_ptr, so this overload converts
+//! references they pass into shared_ptr's with empty deleters. This prevents
+//! the ProxyServer object from deleting the init object when the client is
+//! disconnected.
+template <typename InitInterface, typename InitImpl, typename OnDisconnect>
+std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> _Serve(
+    EventLoop& loop, kj::Own<kj::AsyncIoStream>&& stream, InitImpl& init, OnDisconnect&& on_disconnect)
+{
+    return _Serve<InitInterface>(
+        loop, kj::mv(stream), std::shared_ptr<InitImpl>(&init, [](InitImpl*){}), std::forward<OnDisconnect>(on_disconnect));
+>>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
 }
 
 struct Listener
@@ -1170,13 +1209,32 @@ void _Listen(const std::shared_ptr<Listener>& listener, EventLoop& loop, InitImp
 }
 
 //! Given a stream and an init object, handle requests on the stream by calling
+<<<<<<< HEAD
 //! methods on the Init object. See _Serve for details on the return value and
 //! the destroy_connection parameter.
+||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+//! methods on the Init object.
+=======
+//! methods on the Init object. See _Serve for details on the return value.
+>>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
 template <typename InitInterface, typename InitImpl>
+<<<<<<< HEAD
 std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> ServeStream(
     EventLoop& loop, Stream stream, InitImpl&& init, bool destroy_connection = true)
+||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+void ServeStream(EventLoop& loop, Stream stream, InitImpl& init)
+=======
+std::pair<ProxyServer<InitInterface>*, EventLoop::Connections::iterator> ServeStream(
+    EventLoop& loop, Stream stream, InitImpl&& init)
+>>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
 {
+<<<<<<< HEAD
     return _Serve<InitInterface>(loop, kj::mv(stream), std::forward<InitImpl>(init), /*on_disconnect=*/ [] {}, destroy_connection);
+||||||| parent of f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
+    _Serve<InitInterface>(loop, kj::mv(stream), init, [] {});
+=======
+    return _Serve<InitInterface>(loop, kj::mv(stream), std::forward<InitImpl>(init), /*on_disconnect=*/ [] {});
+>>>>>>> f9e99268fc3 (proxy-io: let ServeStream take ownership of init object)
 }
 
 //! Given listening socket identifier and an init object, handle incoming
