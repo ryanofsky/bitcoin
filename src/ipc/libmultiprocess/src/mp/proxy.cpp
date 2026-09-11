@@ -105,7 +105,7 @@ void EventLoopRef::reset(bool relock) MP_NO_TSA
     }
 }
 
-ProxyContext::ProxyContext(Connection* connection) : connection(connection), loop{*connection->m_loop} {}
+ProxyContext::ProxyContext(Connection* connection) : connection(connection->shared_from_this()), loop{*connection->m_loop} {}
 
 Connection::~Connection() noexcept(false)
 {
@@ -128,15 +128,6 @@ void Connection::disconnect()
     // as the "already disconnected" state: a second call (including the one
     // from the destructor) is a no-op.
     if (!m_network) return;
-
-    // Expire m_alive before severing the connection below so onDisconnect
-    // handlers will not trigger and delete this Connection object. The
-    // onDisconnect handlers trigger on remote disconnects and automatically
-    // delete Connection objects. But on local disconnects, they should not
-    // trigger, because local code that disconnects is responsible for freeing
-    // Connection objects, and it may want to wait for in-flight calls to finish
-    // before destroying them.
-    m_alive.reset();
 
     // Try to cancel any calls that may be executing.
     m_canceler.cancel("Interrupted by disconnect");
@@ -253,7 +244,7 @@ void Connection::disconnect()
     m_stream = nullptr;
 }
 
-CleanupIt Connection::addSyncCleanup(std::function<void()> fn)
+CleanupIt Connection::onDisconnect(std::function<void()> fn)
 {
     const Lock lock(m_loop->m_mutex);
     // Add cleanup callbacks to the front of list, so sync cleanup functions run
@@ -268,7 +259,7 @@ CleanupIt Connection::addSyncCleanup(std::function<void()> fn)
     return m_sync_cleanup_fns.emplace(m_sync_cleanup_fns.begin(), std::move(fn));
 }
 
-void Connection::removeSyncCleanup(CleanupIt it)
+void Connection::cancelOnDisconnect(CleanupIt it)
 {
     // Require cleanup functions to be removed on the event loop thread to avoid
     // needing to deal with them being removed in the middle of a disconnect.
@@ -440,7 +431,7 @@ std::tuple<ConnThread, bool> SetThread(GuardedRef<ConnThreads> threads, Connecti
     }
     if (inserted) {
         thread->second.emplace(make_thread(), connection, /* destroy_connection= */ false);
-        thread->second->m_disconnect_cb = connection->addSyncCleanup([threads, connection] {
+        thread->second->m_disconnect_cb = connection->onDisconnect([threads, connection] {
             // Remove and destroy this connection's map entry, unless the
             // thread owning the map is exiting and ~ThreadContext already took
             // the entry, in which case that thread destroys it. Look the entry
@@ -488,7 +479,7 @@ ProxyClient<Thread>::~ProxyClient()
             // map, so if ~ThreadContext took the entry first, m_disconnect_cb
             // is still set here.)
             if (m_disconnect_cb && m_context.connection) {
-                m_context.connection->removeSyncCleanup(*m_disconnect_cb);
+                m_context.connection->cancelOnDisconnect(*m_disconnect_cb);
             }
         });
     }
