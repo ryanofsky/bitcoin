@@ -5,7 +5,7 @@
 #ifndef BITCOIN_UTIL_BTCSIGNALS_H
 #define BITCOIN_UTIL_BTCSIGNALS_H
 
-#include <sync.h>
+#include <util/stdmutex.h>
 
 #include <algorithm>
 #include <atomic>
@@ -221,7 +221,10 @@ class signal
         const function_type* m_callback;
     };
 
-    mutable Mutex m_mutex;
+    //! A StdMutex rather than a sync.h Mutex, so signals can be used from the logging path: with
+    //! DEBUG_LOCKORDER, a detected lock order problem is logged while lock tracking state is locked,
+    //! and a tracked mutex here would deadlock on that state.
+    mutable StdMutex m_mutex;
 
     std::vector<std::shared_ptr<connection_holder>> m_connections GUARDED_BY(m_mutex){};
 
@@ -259,7 +262,7 @@ public:
     {
         std::vector<std::shared_ptr<connection_holder>> connections;
         {
-            LOCK(m_mutex);
+            STDLOCK(m_mutex);
             connections = m_connections;
         }
         if constexpr (std::is_void_v<result_type>) {
@@ -295,7 +298,7 @@ public:
     template <typename Callable>
     connection connect(Callable&& func) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
     {
-        LOCK(m_mutex);
+        STDLOCK(m_mutex);
 
         // Garbage-collect disconnected connections to prevent unbounded growth
         std::erase_if(m_connections, [](const auto& holder) { return !holder->connected(); });
@@ -309,7 +312,7 @@ public:
      */
     [[nodiscard]] bool empty() const EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
     {
-        LOCK(m_mutex);
+        STDLOCK(m_mutex);
         return std::ranges::none_of(m_connections, [](const auto& holder) {
             return holder->connected();
         });
