@@ -496,6 +496,8 @@ public:
                 0,
                 0,
             };
+            // TODO: Pass a log context here. Without one, libbitcoinkernel drops this message instead of
+            // delivering it to the logging connection of the context that caused it.
             LogInfo("Signet with challenge %s", HexStr(bin));
         }
 

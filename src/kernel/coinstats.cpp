@@ -136,6 +136,8 @@ static std::optional<CCoinsStats> ComputeUTXOStats(T hash_obj, const CCoinsViewD
             outputs[key.n] = std::move(coin);
             stats.coins_count++;
         } else {
+            // TODO: Pass a log context here. Without one, libbitcoinkernel drops this message instead of
+            // delivering it to the logging connection of the context that caused it.
             LogError("%s: unable to read value\n", __func__);
             return std::nullopt;
         }

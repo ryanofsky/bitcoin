@@ -173,6 +173,8 @@ void ValidationSignals::SyncWithValidationInterfaceQueue()
 #define LOG_MSG(fmt, ...) \
     (util::log::ShouldDebugLog(BCLog::VALIDATION) ? tfm::format((fmt), __VA_ARGS__) : std::string{})
 
+// TODO: Pass a log context here. Without one, libbitcoinkernel drops this message instead of
+// delivering it to the logging connection of the context that caused it.
 #define LOG_EVENT(fmt, ...) \
     LogDebug(BCLog::VALIDATION, fmt, __VA_ARGS__)
 

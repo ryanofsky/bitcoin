@@ -17,6 +17,8 @@ Context::Context()
     static std::once_flag globals_initialized{};
     std::call_once(globals_initialized, []() {
         std::string sha256_algo = SHA256AutoDetect();
+        // TODO: Pass a log context here. Without one, libbitcoinkernel drops this message instead of
+        // delivering it to the logging connection of the context that caused it.
         LogInfo("Using the '%s' SHA256 implementation\n", sha256_algo);
         RandomInit();
     });
