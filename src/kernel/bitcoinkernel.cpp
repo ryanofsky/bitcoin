@@ -43,6 +43,7 @@
 #include <validation.h>
 #include <validationinterface.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstring>
@@ -753,8 +754,13 @@ protected:
     }
 };
 
+//! Count a context using the logging connection (delta 1), or no longer using it (delta -1).
+//! Defined below, after KernelLogger.
+void AddContextUse(btck_LoggingConnection* connection, int delta);
+
 struct ContextOptions {
     mutable Mutex m_mutex;
+    btck_LoggingConnection* m_log_connection GUARDED_BY(m_mutex){nullptr};
     std::unique_ptr<const CChainParams> m_chainparams GUARDED_BY(m_mutex);
     std::shared_ptr<KernelNotifications> m_notifications GUARDED_BY(m_mutex);
     std::shared_ptr<KernelValidationInterface> m_validation_interface GUARDED_BY(m_mutex);
@@ -775,12 +781,16 @@ public:
 
     std::shared_ptr<KernelValidationInterface> m_validation_interface;
 
+    //! Logging connection from the context options, if any. It must outlive the context.
+    btck_LoggingConnection* m_log_connection{nullptr};
+
     Context(const ContextOptions* options, bool& sane)
         : m_context{std::make_unique<kernel::Context>()},
           m_interrupt{std::make_unique<util::SignalInterrupt>()}
     {
         if (options) {
             LOCK(options->m_mutex);
+            m_log_connection = options->m_log_connection;
             if (options->m_chainparams) {
                 m_chainparams = std::make_unique<const CChainParams>(*options->m_chainparams);
             }
@@ -805,10 +815,14 @@ public:
         if (!kernel::SanityChecks(*m_context)) {
             sane = false;
         }
+
+        // Last, so the destructor always undoes it.
+        if (m_log_connection) AddContextUse(m_log_connection, 1);
     }
 
     ~Context()
     {
+        if (m_log_connection) AddContextUse(m_log_connection, -1);
         if (m_signals) {
             m_signals->UnregisterSharedValidationInterface(m_validation_interface);
         }
@@ -1006,7 +1020,7 @@ struct UserDataDeleter {
 //! Owns a caller-provided user_data pointer and frees it with its destroy callback.
 using UserData = std::unique_ptr<void, UserDataDeleter>;
 
-//! Holds state for kernel logging subscribers: the registered callbacks and the minimum level.
+//! Holds state for kernel logging subscribers: the registered callbacks and their minimum levels.
 //! Shared by all btck_LoggingConnection instances.
 class KernelLogger
 {
@@ -1014,6 +1028,11 @@ class KernelLogger
     struct Callback {
         btck_LogCallback fn;
         UserData user_data;
+        //! Entries below this level are not delivered to this callback. Guarded by m_mutex.
+        util::log::Level min_level{util::log::Level::Info};
+        //! Number of contexts using this connection. Entries are only delivered to connections used
+        //! by at least one context. Guarded by m_mutex.
+        int contexts{0};
 
         void operator()(const btck_LogEntry* entry) const { fn(user_data.get(), entry); }
     };
@@ -1021,8 +1040,21 @@ class KernelLogger
     mutable StdMutex m_mutex;
     //! All registered callbacks that are executed through Log.
     std::list<Callback> m_callbacks GUARDED_BY(m_mutex);
-    //! Entries below this level are not delivered.
-    std::atomic<util::log::Level> m_min_level{util::log::Level::Info};
+    //! Value of m_min_level when no callbacks are registered: above every level, so nothing is logged.
+    static constexpr util::log::Level NO_CALLBACKS{static_cast<int>(util::log::Level::Error) + 1};
+    //! Lowest min_level of any registered callback. Lets ShouldLog() skip formatting entries, and
+    //! Log() skip locking m_mutex, when no callback would accept the entry.
+    std::atomic<util::log::Level> m_min_level{NO_CALLBACKS};
+
+    //! Recompute m_min_level after m_callbacks or a callback's min_level changes.
+    void UpdateMinLevel() EXCLUSIVE_LOCKS_REQUIRED(m_mutex)
+    {
+        auto level{NO_CALLBACKS};
+        for (const auto& callback : m_callbacks) {
+            if (callback.contexts > 0) level = std::min(level, callback.min_level);
+        }
+        m_min_level.store(level, std::memory_order_relaxed);
+    }
 
     //! Unregisters and destroys the callback. Waits for an in-flight Log to finish, then destroys
     //! the callback (and its user_data) outside m_mutex.
@@ -1046,23 +1078,46 @@ public:
         {
             if (m_logger) m_logger->UnregisterCallback(m_it);
         }
+
+        //! Set the minimum level of entries delivered to this callback.
+        void SetMinLevel(util::log::Level level) const
+        {
+            m_logger->SetMinLevel(m_it, level);
+        }
+
+        //! Count a context using this connection (delta 1), or no longer using it (delta -1).
+        void AddContextUse(int delta) const
+        {
+            m_logger->AddContextUse(m_it, delta);
+        }
     };
 
     //! Registers a logging callback. Takes ownership of user_data, also when registration fails.
     [[nodiscard]] CallbackHandle RegisterCallback(btck_LogCallback fn, UserData user_data) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
-    //! Set the minimum log level.
-    void SetMinLevel(btck_LogLevel level)
+    //! Set the minimum log level of a registered callback.
+    void SetMinLevel(std::list<Callback>::iterator it, util::log::Level level) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
     {
-        m_min_level.store(to_util(level), std::memory_order_relaxed);
+        STDLOCK(m_mutex);
+        it->min_level = level;
+        UpdateMinLevel();
     }
 
-    //! Whether an entry at this level is at or above the minimum level.
+    //! Count a context using a registered callback's connection (delta 1), or no longer using it
+    //! (delta -1).
+    void AddContextUse(std::list<Callback>::iterator it, int delta) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    {
+        STDLOCK(m_mutex);
+        it->contexts += delta;
+        UpdateMinLevel();
+    }
+
+    //! Whether any registered callback accepts entries at this level.
     bool ShouldLog(util::log::Level level) const
     {
         return level >= m_min_level.load(std::memory_order_relaxed);
     }
-    //! Deliver the entry to every registered callback while holding m_mutex, regardless of its
-    //! level. Exceptions from callbacks are swallowed.
+    //! Deliver the entry to every registered callback that accepts its level, while holding
+    //! m_mutex. Exceptions from callbacks are swallowed.
     void Log(const util::log::Entry& entry) const EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
     //! Log() the entry if ShouldLog() passes for its level.
     void MaybeLog(const util::log::Entry& entry) const EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
@@ -1079,6 +1134,7 @@ KernelLogger::CallbackHandle KernelLogger::RegisterCallback(btck_LogCallback fn,
     Callback cb{fn, std::move(user_data)};
     STDLOCK(m_mutex);
     m_callbacks.push_back(std::move(cb));
+    UpdateMinLevel();
     return {*this, std::prev(m_callbacks.end())};
 }
 
@@ -1088,7 +1144,11 @@ void KernelLogger::UnregisterCallback(std::list<Callback>::iterator it)
     std::list<Callback> dying;
     {
         STDLOCK(m_mutex);
+        // Contexts refer to the connection they use, so it must outlive them (see
+        // btck_context_options_set_logger). Abort instead of leaving them with a dangling pointer.
+        assert(it->contexts == 0);
         dying.splice(dying.begin(), m_callbacks, it);
+        UpdateMinLevel();
     }
 }
 
@@ -1121,6 +1181,7 @@ void KernelLogger::Log(const util::log::Entry& entry) const
     };
 
     for (const auto& callback : m_callbacks) {
+        if (callback.contexts == 0 || entry.level < callback.min_level) continue;
         try {
             callback(&btck_entry);
         } catch (...) {
@@ -1479,6 +1540,11 @@ KernelLogger& GetKernelLogger()
     static KernelLogger* logger{new KernelLogger};
     return *logger;
 }
+
+void AddContextUse(btck_LoggingConnection* connection, int delta)
+{
+    btck_LoggingConnection::get(connection).AddContextUse(delta);
+}
 } // namespace
 
 namespace util::log {
@@ -1568,10 +1634,16 @@ void btck_logging_set_min_level(btck_LogLevel level)
 } // namespace util::log
 
 
-void btck_logging_set_min_level(btck_LogLevel level)
+void btck_logging_set_min_level(btck_LoggingConnection* connection, btck_LogLevel level)
 {
+<<<<<<< HEAD
     GetKernelLogger().SetMinLevel(level);
 >>>>>>> cfd2312f0fd (kernel: make logging struct-based and simplify configuration)
+||||||| parent of 8e379446ec3 (kernel: Set log level per connection and attach connections to contexts)
+    GetKernelLogger().SetMinLevel(level);
+=======
+    btck_LoggingConnection::get(connection).SetMinLevel(to_util(level));
+>>>>>>> 8e379446ec3 (kernel: Set log level per connection and attach connections to contexts)
 }
 
 ||||||| parent of b4edc987456 (kernel: remove API to format and disable logging)
@@ -1670,6 +1742,12 @@ void btck_context_options_set_chainparams(btck_ContextOptions* options, const bt
     // Copy the chainparams, so the caller can free it again
     LOCK(btck_ContextOptions::get(options).m_mutex);
     btck_ContextOptions::get(options).m_chainparams = std::make_unique<const CChainParams>(btck_ChainParameters::get(chain_parameters));
+}
+
+void btck_context_options_set_logger(btck_ContextOptions* options, btck_LoggingConnection* logging_connection)
+{
+    LOCK(btck_ContextOptions::get(options).m_mutex);
+    btck_ContextOptions::get(options).m_log_connection = logging_connection;
 }
 
 void btck_context_options_set_notifications(btck_ContextOptions* options, btck_NotificationInterfaceCallbacks notifications)
