@@ -30,6 +30,7 @@
 #include <sync.h>
 #include <uint256.h>
 #include <undo.h>
+#include <util/btcsignals.h>
 #include <util/check.h>
 #include <util/fs.h>
 #include <util/log.h>
@@ -47,9 +48,7 @@
 #include <cstddef>
 #include <cstring>
 #include <exception>
-#include <iterator>
 #include <limits>
-#include <list>
 #include <memory>
 #include <optional>
 #include <span>
@@ -495,50 +494,30 @@ struct UserDataDeleter {
 //! Owns a caller-provided user_data pointer and frees it with its destroy callback.
 using UserData = std::unique_ptr<void, UserDataDeleter>;
 
-//! Holds state for kernel logging subscribers: the registered callbacks and the minimum level.
-//! Shared by all btck_LoggingConnection instances.
+//! Delivers kernel log entries to the registered callbacks, and holds the minimum level. Shared by
+//! all btck_LoggingConnection instances.
 class KernelLogger
 {
-    //! A registered btck_LogCallback. Owns user_data.
-    struct Callback {
-        btck_LogCallback fn;
-        UserData user_data;
-
-        void operator()(const btck_LogEntry* entry) const { fn(user_data.get(), entry); }
-    };
-
-    mutable StdMutex m_mutex;
-    //! All registered callbacks that are executed through Log.
-    std::list<Callback> m_callbacks GUARDED_BY(m_mutex);
+    btcsignals::signal<void(const btck_LogEntry&)> m_signal;
     //! Entries below this level are not delivered.
     std::atomic<util::log::Level> m_min_level{util::log::Level::Info};
 
-    //! Unregisters and destroys the callback. Waits for an in-flight Log to finish, then destroys
-    //! the callback (and its user_data) outside m_mutex.
-    void UnregisterCallback(std::list<Callback>::iterator it) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
-
 public:
-    //! Owns a registered logging callback. Unregisters it on destruction. A moved-from handle
-    //! owns nothing and does not unregister.
-    class CallbackHandle
+    //! Registers a logging callback, which is unregistered when the returned connection is
+    //! destroyed. user_data is freed at that point, or when an invocation that is still running
+    //! returns. Takes ownership of user_data, also when registration fails.
+    [[nodiscard]] btcsignals::scoped_connection Connect(btck_LogCallback fn, UserData user_data)
     {
-        KernelLogger* m_logger;
-        std::list<Callback>::iterator m_it;
+        return btcsignals::scoped_connection{m_signal.connect(
+            [fn, user_data = std::shared_ptr<void>{std::move(user_data)}, mutex = std::make_shared<StdMutex>()](const btck_LogEntry& entry) {
+                STDLOCK(*mutex); // serialize invocations of this callback
+                try {
+                    fn(user_data.get(), &entry);
+                } catch (...) {
+                }
+            })};
+    }
 
-    public:
-        CallbackHandle(KernelLogger& logger LIFETIMEBOUND, std::list<Callback>::iterator it)
-            : m_logger{&logger}, m_it{it} {}
-        CallbackHandle(CallbackHandle&& other) noexcept
-            : m_logger{std::exchange(other.m_logger, nullptr)}, m_it{other.m_it} {}
-        CallbackHandle& operator=(CallbackHandle&&) = delete;
-        ~CallbackHandle()
-        {
-            if (m_logger) m_logger->UnregisterCallback(m_it);
-        }
-    };
-
-    //! Registers a logging callback. Takes ownership of user_data, also when registration fails.
-    [[nodiscard]] CallbackHandle RegisterCallback(btck_LogCallback fn, UserData user_data) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
     //! Set the minimum log level.
     void SetMinLevel(btck_LogLevel level)
     {
@@ -550,81 +529,42 @@ public:
     {
         return level >= m_min_level.load(std::memory_order_relaxed);
     }
-    //! Deliver the entry to every registered callback while holding m_mutex, regardless of its
-    //! level. Exceptions from callbacks are swallowed.
-    void Log(const util::log::Entry& entry) const EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
-    //! Log() the entry if ShouldLog() passes for its level.
-    void MaybeLog(const util::log::Entry& entry) const EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+
+    //! Deliver the entry to every registered callback if ShouldLog() passes for its level.
+    void MaybeLog(const util::log::Entry& entry) const
     {
-        if (ShouldLog(entry.level)) {
-            Log(entry);
-        }
+        if (!ShouldLog(entry.level)) return;
+
+        // Some log statements are manually suffixed with a newline.
+        std::string_view message{util::RemoveSuffixView(entry.message, "\n")};
+        std::string_view thread_name{entry.thread_name};
+        std::string_view file_name{entry.source_loc.file_name()};
+        std::string_view function_name{entry.source_loc.function_name_short()};
+
+        m_signal(btck_LogEntry{
+            .message = message.data(),
+            .message_len = message.size(),
+            .thread_name = thread_name.data(),
+            .thread_name_len = thread_name.size(),
+            .timestamp_ns = TicksSinceEpoch<std::chrono::nanoseconds>(entry.timestamp),
+            .mocktime = entry.mocktime.count(),
+            .file_name = file_name.data(),
+            .file_name_len = file_name.size(),
+            .function_name = function_name.data(),
+            .function_name_len = function_name.size(),
+            .line = entry.source_loc.line(),
+            .level = to_btck(entry.level),
+            .category = to_btck(static_cast<BCLog::LogFlags>(entry.category)),
+        });
     }
 };
-
-KernelLogger::CallbackHandle KernelLogger::RegisterCallback(btck_LogCallback fn, UserData user_data)
-{
-    // Construct before locking so that a failed push_back destroys user_data outside m_mutex.
-    Callback cb{fn, std::move(user_data)};
-    STDLOCK(m_mutex);
-    m_callbacks.push_back(std::move(cb));
-    return {*this, std::prev(m_callbacks.end())};
-}
-
-void KernelLogger::UnregisterCallback(std::list<Callback>::iterator it)
-{
-    // Avoid running the callback destructor while holding m_mutex.
-    std::list<Callback> dying;
-    {
-        STDLOCK(m_mutex);
-        dying.splice(dying.begin(), m_callbacks, it);
-    }
-}
-
-void KernelLogger::Log(const util::log::Entry& entry) const
-{
-    STDLOCK(m_mutex);
-    if (m_callbacks.empty()) return;
-
-    // Some log statements are manually suffixed with a newline.
-    std::string_view message{util::RemoveSuffixView(entry.message, "\n")};
-    std::string_view thread_name{entry.thread_name};
-    const auto timestamp_ns{TicksSinceEpoch<std::chrono::nanoseconds>(entry.timestamp)};
-    std::string_view file_name{entry.source_loc.file_name()};
-    std::string_view function_name{entry.source_loc.function_name_short()};
-
-    btck_LogEntry btck_entry{
-        .message = message.data(),
-        .message_len = message.size(),
-        .thread_name = thread_name.data(),
-        .thread_name_len = thread_name.size(),
-        .timestamp_ns = timestamp_ns,
-        .mocktime = entry.mocktime.count(),
-        .file_name = file_name.data(),
-        .file_name_len = file_name.size(),
-        .function_name = function_name.data(),
-        .function_name_len = function_name.size(),
-        .line = entry.source_loc.line(),
-        .level = to_btck(entry.level),
-        .category = to_btck(static_cast<BCLog::LogFlags>(entry.category)),
-    };
-
-    for (const auto& callback : m_callbacks) {
-        try {
-            callback(&btck_entry);
-        } catch (...) {
-            // Can't log the error here because we're already inside the logging path (would
-            // deadlock on m_mutex).
-        }
-    }
-}
 
 } // namespace
 
 struct btck_Transaction : Handle<btck_Transaction, std::shared_ptr<const CTransaction>> {};
 struct btck_TransactionOutput : Handle<btck_TransactionOutput, CTxOut> {};
 struct btck_ScriptPubkey : Handle<btck_ScriptPubkey, CScript> {};
-struct btck_LoggingConnection : Handle<btck_LoggingConnection, KernelLogger::CallbackHandle> {};
+struct btck_LoggingConnection : Handle<btck_LoggingConnection, btcsignals::scoped_connection> {};
 struct btck_ContextOptions : Handle<btck_ContextOptions, ContextOptions> {};
 struct btck_Context : Handle<btck_Context, std::shared_ptr<const Context>> {};
 struct btck_ChainParameters : Handle<btck_ChainParameters, CChainParams> {};
@@ -994,9 +934,9 @@ btck_LoggingConnection* btck_logging_connection_create(btck_LogCallback callback
 {
     assert(callback);
     try {
-        auto handle{GetKernelLogger().RegisterCallback(callback, UserData{user_data, {user_data_destroy_callback}})};
+        auto connection{GetKernelLogger().Connect(callback, UserData{user_data, {user_data_destroy_callback}})};
         LogDebug(BCLog::KERNEL, "Logger connected.");
-        return btck_LoggingConnection::create(std::move(handle));
+        return btck_LoggingConnection::create(std::move(connection));
     } catch (...) {
         return nullptr;
     }

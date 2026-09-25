@@ -424,11 +424,13 @@ typedef struct {
  * Function signature for the global logging callback. All bitcoin kernel
  * internal logs will pass through this callback.
  *
- * The callback may be invoked from any thread. Invocations are serialized: no
- * two invocations run at the same time, and destroying a btck_LoggingConnection
- * waits for an in-flight invocation of its callback to return. The callback
+ * The callback may be invoked from any thread. Invocations of one connection's
+ * callback are serialized, but callbacks of different connections may run at
+ * the same time. After a btck_LoggingConnection is destroyed its callback is
+ * not invoked again, but an invocation already running on another thread may
+ * still be finishing; the user data is destroyed once it returns. The callback
  * must not call any kernel API function (this may deadlock), and should return
- * quickly since it blocks every kernel thread that logs.
+ * quickly since it blocks the kernel thread that logged the entry.
  *
  * @param[in] user_data User-defined opaque structure.
  * @param[in] entry     Log entry. Valid only for the duration of the callback.
