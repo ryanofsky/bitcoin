@@ -15,8 +15,9 @@ import http.client
 import json
 import urllib.parse
 
-# RPC_METHOD_NOT_PERMITTED from src/rpc/protocol.h
+# Error codes from src/rpc/protocol.h
 RPC_METHOD_NOT_PERMITTED = -38
+RPC_REQUEST_NOT_EXECUTED = -39
 
 
 def rpcpost(node, user, body):
@@ -42,6 +43,11 @@ def rpccall_v2(node, user, method, *, notification=False):
     if not notification:
         request["id"] = 1
     return rpcpost(node, user, json.dumps(request))
+
+
+def rpcbatch(node, user, methods):
+    batch = [{"method": method, "id": i, "jsonrpc": "2.0"} for i, method in enumerate(methods)]
+    return rpcpost(node, user, json.dumps(batch))
 
 
 def get_permissions(whitelist):
@@ -131,6 +137,35 @@ class RPCWhitelistTest(BitcoinTestFramework):
         cli = self.nodes[0].cli(f"-rpcuser={self.users[0][0]}", f"-rpcpassword={self.users[0][3]}")
         assert_raises_rpc_error(RPC_METHOD_NOT_PERMITTED, "User is not permitted to call method getblockchaininfo", cli.getblockchaininfo)
 
+        self.log.info("A denied batch reports an error against every request and runs none of them")
+        # user1 may call getblockcount but not getblockchaininfo or getnetworkinfo.
+        resp = rpcbatch(self.nodes[0], self.users[0],
+                        ["getblockcount", "getblockchaininfo", "getblockcount", "getnetworkinfo"])
+        assert_equal(200, resp.status)
+        batch = json.loads(resp.body)
+        assert_equal(4, len(batch))
+        assert_equal([0, 1, 2, 3], [item["id"] for item in batch])
+        for index in (0, 2):
+            assert_equal(RPC_REQUEST_NOT_EXECUTED, batch[index]["error"]["code"])
+            assert "result" not in batch[index]
+        assert_equal(RPC_METHOD_NOT_PERMITTED, batch[1]["error"]["code"])
+        assert "getblockchaininfo" in batch[1]["error"]["message"]
+        assert_equal(RPC_METHOD_NOT_PERMITTED, batch[3]["error"]["code"])
+        assert "getnetworkinfo" in batch[3]["error"]["message"]
+
+        self.log.info("bitcoin-cli -getinfo, which sends a batch, reports the denial")
+        assert_raises_rpc_error(RPC_METHOD_NOT_PERMITTED, "User is not permitted to call method", cli("-getinfo").send_cli)
+
+        self.log.info("A batch with a malformed request is reported per request, not rejected whole")
+        resp = rpcpost(self.nodes[0], self.users[0],
+                       '[{"method": "getblockcount", "id": 0}, {"id": 1}]')
+        assert_equal(200, resp.status)
+        batch = json.loads(resp.body)
+        assert_equal(2, len(batch))
+        assert_equal(None, batch[0]["error"])
+        assert_equal(self.nodes[0].getblockcount(), batch[0]["result"])
+        assert batch[1]["error"] is not None
+
         self.test_users_permissions()
         self.test_rpcwhitelistdefault_permissions(0, 200)
         self.test_rejected_method_logging()
@@ -160,7 +195,8 @@ class RPCWhitelistTest(BitcoinTestFramework):
         for rejected_method in [f"getblock\n{forged_log_line}", 'getblock!"#$%&\'*+<=>[\\]^`{|}~']:
             for batch in [False, True]:
                 with self.nodes[0].assert_debug_log([f"not allowed to call method {rejected_method}".replace("\n", "\\x0a")]):
-                    assert_equal(403, rpccall(self.nodes[0], self.users[0], rejected_method, batch=batch).status)
+                    # A refused batch gets HTTP 200, like any other batch.
+                    assert_equal(200 if batch else 403, rpccall(self.nodes[0], self.users[0], rejected_method, batch=batch).status)
 
     def test_users_permissions(self):
         """
