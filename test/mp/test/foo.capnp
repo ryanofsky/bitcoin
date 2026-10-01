@@ -37,6 +37,13 @@ interface FooInterface $Proxy.wrap("mp::test::FooImplementation") {
     callFnAsync @18 (context :Proxy.Context) -> ();
     callIntFnAsync @21 (context :Proxy.Context, arg :Int32) -> (result :Int32);
     passDataPointers @22 (arg :List(Data)) -> (result :List(Data));
+    listBars @25 (context :Proxy.Context, n :Int32) -> (result :List(BarInterface));
+    callMessageAsync @26 (context :Proxy.Context) -> (result :FooMessage);
+    callbackFlat @27 (context :Proxy.Context, callback :FlatCallback, arg: Int32) -> (result :Int32);
+}
+
+interface FooInit $Proxy.wrap("mp::test::FooInit") {
+    construct @0 () -> ();
 }
 
 interface FooCallback $Proxy.wrap("mp::test::FooCallback") {
@@ -46,6 +53,22 @@ interface FooCallback $Proxy.wrap("mp::test::FooCallback") {
 
 interface ExtendedCallback extends(FooCallback) $Proxy.wrap("mp::test::ExtendedCallback") {
     callExtended @0 (context :Proxy.Context, arg :Int32) -> (result :Int32);
+}
+
+# Interface without a $Proxy.wrap annotation, so no C++ class corresponds to
+# it. Its methods are handled by C++ classes wrapping derived interfaces.
+interface CallbackBase {
+    destroy @0 (context :Proxy.Context) -> ();
+    call @1 (context :Proxy.Context, arg :Int32) -> (result :Int32);
+}
+
+interface FlatCallback extends(CallbackBase) $Proxy.wrap("mp::test::FlatCallback") {
+    callExtended @0 (context :Proxy.Context, arg :Int32) -> (result :Int32);
+}
+
+interface BarInterface $Proxy.wrap("mp::test::Bar") {
+    destroy @0 (context :Proxy.Context) -> ();
+    value @1 (context :Proxy.Context) -> (result :Int32);
 }
 
 interface FooFn $Proxy.wrap("ProxyCallback<std::function<int()>>") {
@@ -66,6 +89,7 @@ struct FooStruct $Proxy.wrap("mp::test::FooStruct") {
 struct FooCustom $Proxy.wrap("mp::test::FooCustom") {
     v1 @0 :Text;
     v2 @1 :Int32;
+    v3 @2 :List(Int32);
 }
 
 struct FooEmpty $Proxy.wrap("mp::test::FooEmpty") {
