@@ -1,0 +1,199 @@
+name: afunix-probe
+
+# Throwaway workflow: how do Win32 and std::filesystem see a stale AF_UNIX
+# socket file, per toolchain and Windows version? See contrib/afunix-probe/README.md.
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  msvc:
+    name: 'MSVC, ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025, windows-2025-vs2026]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build
+        shell: cmd
+        run: |
+          cd contrib\afunix-probe
+          cl /nologo /std:c++20 /EHsc /O1 /W3 /Fe:probe.exe probe.cpp ws2_32.lib || exit /b 1
+          echo VCToolsVersion=%VCToolsVersion%
+
+      - name: Probe
+        shell: cmd
+        run: contrib\afunix-probe\probe.exe results-msvc-${{ matrix.os }}.md
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-msvc-${{ matrix.os }}
+          path: results-*.md
+
+  cross-build-2404:
+    # Cross-compiled on Ubuntu like the Bitcoin Core "Windows-cross to x86_64"
+    # job (which uses a nix gcc14 + mingw-w64 13 UCRT toolchain). The apt
+    # packages give GCC 13 + mingw-w64 11 on 24.04.
+    name: 'cross-build, ubuntu-24.04'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install mingw-w64 toolchains
+        run: |
+          set -ex
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends g++-mingw-w64-ucrt64 g++-mingw-w64-x86-64-posix
+          x86_64-w64-mingw32ucrt-g++ --version | head -1
+          x86_64-w64-mingw32-g++-posix --version | head -1
+          dpkg -l | grep -i mingw
+
+      - name: Build
+        run: |
+          set -ex
+          cd contrib/afunix-probe
+          mkdir -p ../../cross-exes
+          x86_64-w64-mingw32ucrt-g++ -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-24.04-ucrt.exe probe.cpp -lws2_32
+          x86_64-w64-mingw32-g++-posix -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-24.04-msvcrt.exe probe.cpp -lws2_32
+          ls -la ../../cross-exes
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cross-exes-ubuntu-24.04
+          path: cross-exes/*.exe
+
+  cross-build-2604:
+    # Same, inside the ubuntu:26.04 image the Bitcoin Core cross job uses.
+    name: 'cross-build, ubuntu-26.04 container'
+    runs-on: ubuntu-24.04
+    container: mirror.gcr.io/ubuntu:26.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install mingw-w64 toolchains
+        shell: bash
+        run: |
+          set -ex
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends g++-mingw-w64-ucrt64 g++-mingw-w64-x86-64-posix
+          x86_64-w64-mingw32ucrt-g++ --version | head -1
+          x86_64-w64-mingw32-g++-posix --version | head -1
+          dpkg -l | grep -i mingw
+
+      - name: Build
+        shell: bash
+        run: |
+          set -ex
+          cd contrib/afunix-probe
+          mkdir -p ../../cross-exes
+          x86_64-w64-mingw32ucrt-g++ -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-26.04-ucrt.exe probe.cpp -lws2_32
+          x86_64-w64-mingw32-g++-posix -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-26.04-msvcrt.exe probe.cpp -lws2_32
+          ls -la ../../cross-exes
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cross-exes-ubuntu-26.04
+          path: cross-exes/*.exe
+
+  cross-run:
+    name: 'cross-run, ${{ matrix.os }}'
+    needs: [cross-build-2404, cross-build-2604]
+    if: always()
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cross-exes-*
+          merge-multiple: true
+          path: cross-exes
+
+      - name: Probe (apt mingw-w64 cross builds and nix prebuilt)
+        shell: pwsh
+        run: |
+          Get-ChildItem cross-exes, contrib/afunix-probe/prebuilt
+          foreach ($exe in (Get-ChildItem cross-exes/*.exe) + (Get-ChildItem contrib/afunix-probe/prebuilt/*.exe)) {
+            $name = $exe.BaseName -replace '^probe-',''
+            "===== $($exe.FullName)"
+            & $exe.FullName "results-$name-${{ matrix.os }}.md"
+            "exit code: $LASTEXITCODE"
+          }
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-cross-${{ matrix.os }}
+          path: results-*.md
+
+  msys2:
+    name: 'MSYS2 ${{ matrix.msystem }}, ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+        msystem: [UCRT64, MINGW64]
+        include:
+          - msystem: UCRT64
+            package: mingw-w64-ucrt-x86_64-gcc
+          - msystem: MINGW64
+            package: mingw-w64-x86_64-gcc
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: false
+          install: ${{ matrix.package }}
+
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          cd contrib/afunix-probe
+          g++ --version | head -1
+          g++ -std=c++20 -O1 -Wall -Wextra -static -o probe.exe probe.cpp -lws2_32
+
+      - name: Probe
+        shell: cmd
+        run: contrib\afunix-probe\probe.exe results-msys2-${{ matrix.msystem }}-${{ matrix.os }}.md
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-msys2-${{ matrix.msystem }}-${{ matrix.os }}
+          path: results-*.md
+
+  collect:
+    name: 'collect results'
+    needs: [msvc, cross-run, msys2]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: results-*
+          merge-multiple: true
+          path: results
+
+      - name: Print all results
+        run: |
+          for f in results/*.md; do echo "########## $f"; cat "$f"; echo; done
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: all-results
+          path: results/*.md
