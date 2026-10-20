@@ -10,52 +10,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  cross-apt:
-    # Ubuntu 26.04 (same image as ci/test/00_setup_env_win64.sh) with the
-    # distro mingw-w64 UCRT g++.
-    name: 'cross-build, ubuntu:26.04 apt mingw-w64 ucrt'
-    runs-on: ubuntu-latest
-    container: mirror.gcr.io/ubuntu:26.04
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install
-        run: |
-          apt-get update
-          apt-get install -y g++-mingw-w64-ucrt64
-          dpkg -l | grep -i mingw
-          find / -xdev -name '*mingw32ucrt*g++*' 2>/dev/null
-      - name: Build
-        run: |
-          CXX=$(find / -xdev -name 'x86_64-w64-mingw32ucrt-g++*' 2>/dev/null | sort | head -1)
-          echo "CXX=$CXX"
-          $CXX -v 2>&1 | tail -3
-          mkdir -p out
-          $CXX -std=c++20 -O2 -Wall -static -o out/probe-apt-ucrt.exe contrib/afunix-probe-o55/probe.cpp -lws2_32 -lversion
-      - uses: actions/upload-artifact@v7
-        with:
-          name: exe-apt-ucrt
-          path: out/*.exe
-
-  cross-nix:
-    # The exact Bitcoin Core cross toolchain (contrib/devtools/shell-win64-cross.nix,
-    # GCC 14 ucrt64, posix threads). Builds GCC from source, so it is slow.
-    name: 'cross-build, nix shell-win64-cross.nix'
-    runs-on: ubuntu-latest
-    timeout-minutes: 300
-    steps:
-      - uses: actions/checkout@v6
-      - uses: cachix/install-nix-action@v31
-      - name: Build
-        run: |
-          mkdir -p out
-          NIX_BUILD_SHELL=bash nix-shell contrib/devtools/shell-win64-cross.nix --run '
-            $CXX -v 2>&1 | tail -3
-            $CXX -std=c++20 -O2 -Wall -static -o out/probe-nix-ucrt.exe contrib/afunix-probe-o55/probe.cpp -lws2_32 -lversion'
-      - uses: actions/upload-artifact@v7
-        with:
-          name: exe-nix-ucrt
-          path: out/*.exe
-
   msvc:
     name: 'MSVC, ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
@@ -117,42 +71,22 @@ jobs:
           name: results-msys2-${{ matrix.os }}
           path: results-*.md
 
-  run-apt:
-    name: 'run apt-ucrt exe, ${{ matrix.os }}'
-    needs: cross-apt
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-2022, windows-2025]
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: exe-apt-ucrt
-      - name: Probe
-        shell: pwsh
-        run: .\probe-apt-ucrt.exe "ubuntu:26.04 apt mingw-w64 ucrt g++ on ${{ matrix.os }}" | Tee-Object -FilePath results-apt-${{ matrix.os }}.md
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: results-apt-${{ matrix.os }}
-          path: results-*.md
-
   run-nix:
-    name: 'run nix-ucrt exe, ${{ matrix.os }}'
-    needs: cross-nix
+    # probe-nix-ucrt.exe is cross-compiled locally with the exact Bitcoin Core
+    # cross toolchain (contrib/devtools/shell-win64-cross.nix: GCC 14.3.0 ucrt64,
+    # posix threads, mingw-w64 13.0.0), checked in under prebuilt/ because
+    # building that GCC in CI takes too long.
+    name: 'nix cross g++ (prebuilt), ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-2022, windows-2025]
     steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: exe-nix-ucrt
+      - uses: actions/checkout@v6
       - name: Probe
         shell: pwsh
-        run: .\probe-nix-ucrt.exe "bitcoin nix shell-win64-cross g++ on ${{ matrix.os }}" | Tee-Object -FilePath results-nix-${{ matrix.os }}.md
+        run: .\contrib\afunix-probe-o55\prebuilt\probe-nix-ucrt.exe "bitcoin nix shell-win64-cross g++ 14.3.0 on ${{ matrix.os }}" | Tee-Object -FilePath results-nix-${{ matrix.os }}.md
       - uses: actions/upload-artifact@v7
         if: always()
         with:

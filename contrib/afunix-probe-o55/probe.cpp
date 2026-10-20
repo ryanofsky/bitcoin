@@ -328,6 +328,22 @@ static std::vector<Row> query_rows()
             return std::string(r ? "true (would remove)" : "false (would not remove)");
         });
     });
+    add("connect() to path", [](const std::string& p) {
+        SOCKET s = ::socket(AF_UNIX, SOCK_STREAM, 0);
+        if (s == INVALID_SOCKET) return "socket() failed WSA " + std::to_string(WSAGetLastError());
+        sockaddr_un addr{};
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, p.c_str(), sizeof(addr.sun_path) - 1);
+        std::string r;
+        if (::connect(s, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0) {
+            r = "connected";
+        } else {
+            int e = WSAGetLastError();
+            r = "FAIL WSA " + std::to_string(e) + " \"" + win_err_msg(e) + "\"";
+        }
+        closesocket(s);
+        return r;
+    });
     add("CAND: FindFirstFileW REPARSE && tag==AF_UNIX", [](const std::string& p) { return std::string(is_afunix_reparse(p) ? "true" : "false"); });
     add("CAND: symlink_status(p,ec)==socket || (status(p,ec) fails 1920 && symlink_status exists)", [](const std::string& p) {
         return cell([&] {
