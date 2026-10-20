@@ -234,6 +234,13 @@ static SOCKET bind_socket(const fs::path& p, std::string* desc, bool do_listen =
 
 static int child_main(const char* mode, const char* path)
 {
+    if (strcmp(mode, "--child-remove-all") == 0) {
+        std::error_code ec;
+        auto n = fs::remove_all(fs::path(path), ec);
+        printf("remove_all returned %llu %s\n", (unsigned long long)n, ec_str(ec).c_str());
+        fflush(stdout);
+        ExitProcess(0);
+    }
     WSADATA wd;
     WSAStartup(MAKEWORD(2, 2), &wd);
     std::string desc;
@@ -303,6 +310,73 @@ static std::string spawn_child(const fs::path& p, bool kill)
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
     return result;
+}
+
+// Run this exe with the given mode and argument, capture its first output line,
+// kill it if it takes longer than timeout_ms.
+static std::string run_child_with_timeout(const wchar_t* mode, const fs::path& arg, DWORD timeout_ms)
+{
+    SECURITY_ATTRIBUTES sa{sizeof sa, nullptr, TRUE};
+    HANDLE rd = nullptr, wr = nullptr;
+    if (!CreatePipe(&rd, &wr, &sa, 0)) return "CreatePipe failed " + win_err(GetLastError());
+    SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
+    std::wstring cmd = L"\"" + g_exe + L"\" " + mode + L" \"" + arg.wstring() + L"\"";
+    STARTUPINFOW si{};
+    si.cb = sizeof si;
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdOutput = wr;
+    si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    PROCESS_INFORMATION pi{};
+    std::vector<wchar_t> cmdbuf(cmd.begin(), cmd.end());
+    cmdbuf.push_back(0);
+    if (!CreateProcessW(nullptr, cmdbuf.data(), nullptr, nullptr, TRUE, 0, nullptr, nullptr, &si, &pi)) {
+        std::string e = "CreateProcessW failed " + win_err(GetLastError());
+        CloseHandle(rd);
+        CloseHandle(wr);
+        return e;
+    }
+    CloseHandle(wr);
+    DWORD w = WaitForSingleObject(pi.hProcess, timeout_ms);
+    std::string result;
+    if (w == WAIT_TIMEOUT) {
+        TerminateProcess(pi.hProcess, 9);
+        WaitForSingleObject(pi.hProcess, 10000);
+        result = fmt("HUNG: no exit after %lu ms, killed", (unsigned long)timeout_ms);
+    } else {
+        DWORD code = 0;
+        GetExitCodeProcess(pi.hProcess, &code);
+        result = fmt("exit code %lu", (unsigned long)code);
+    }
+    // Drain whatever the child printed (non-blocking: the write end is closed now).
+    std::string outp;
+    char buf[512];
+    DWORD n;
+    DWORD avail = 0;
+    while (PeekNamedPipe(rd, nullptr, 0, nullptr, &avail, nullptr) && avail > 0 && ReadFile(rd, buf, sizeof buf, &n, nullptr) && n > 0) outp.append(buf, n);
+    CloseHandle(rd);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    if (!outp.empty()) result += "; output: " + trim(outp);
+    return result;
+}
+
+// Delete everything in dir with Win32 calls only (fs::remove_all can hang, see part 4).
+static std::string win32_cleanup(const fs::path& dir)
+{
+    std::string s;
+    WIN32_FIND_DATAW d{};
+    HANDLE h = FindFirstFileW((dir / L"*").c_str(), &d);
+    if (h == INVALID_HANDLE_VALUE) return "FindFirstFileW failed " + win_err(GetLastError());
+    do {
+        if (wcscmp(d.cFileName, L".") == 0 || wcscmp(d.cFileName, L"..") == 0) continue;
+        fs::path f = dir / d.cFileName;
+        BOOL ok = (d.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? RemoveDirectoryW(f.c_str()) : DeleteFileW(f.c_str());
+        if (!ok) s += narrow(d.cFileName) + ": " + win_err(GetLastError()) + "; ";
+    } while (FindNextFileW(h, &d));
+    FindClose(h);
+    if (!RemoveDirectoryW(dir.c_str())) s += "RemoveDirectoryW: " + win_err(GetLastError());
+    return s.empty() ? "ok" : s;
 }
 
 // ---------------------------------------------------------------- leftover kinds
@@ -538,7 +612,7 @@ static Table inspect(const fs::path& p)
 
 // ---------------------------------------------------------------- removal
 
-enum class Removal { None, FsRemove, FsRemoveEc, DeleteFile, WRemove };
+enum class Removal { None, FsRemove, FsRemoveEc, DeleteFile, WRemove, Candidate };
 
 static const char* removal_name(Removal r)
 {
@@ -548,6 +622,7 @@ static const char* removal_name(Removal r)
     case Removal::FsRemoveEc: return "fs::remove(p, ec)";
     case Removal::DeleteFile: return "DeleteFileW(p)";
     case Removal::WRemove: return "_wremove(p)";
+    case Removal::Candidate: return "candidate: FindFirstFileW tag==AF_UNIX then DeleteFileW";
     }
     return "?";
 }
@@ -566,6 +641,17 @@ static std::string do_removal(Removal r, const fs::path& p)
         errno = 0;
         int rc = _wremove(p.c_str());
         return rc == 0 ? std::string("ret=0") : fmt("ret=%d ", rc) + errno_str(errno);
+    }
+    case Removal::Candidate: {
+        // The IsSocketFile() + DeleteFileW() code from bitcoin pr/ipc-win.
+        WIN32_FIND_DATAW data;
+        HANDLE find{FindFirstFileW(p.c_str(), &data)};
+        if (find == INVALID_HANDLE_VALUE) return "FindFirstFileW failed " + win_err(GetLastError()) + " -> not a socket, skipped";
+        FindClose(find);
+        bool is_sock = (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) && data.dwReserved0 == IO_REPARSE_TAG_AF_UNIX;
+        if (!is_sock) return "not a socket (" + attrs_str(data.dwFileAttributes) + "), skipped";
+        if (DeleteFileW(p.c_str())) return "is socket, DeleteFileW ok";
+        return "is socket, DeleteFileW FAIL " + win_err(GetLastError());
     }
     }
     return "?";
@@ -670,7 +756,7 @@ static void print_table(const Table& t)
 
 int main(int argc, char** argv)
 {
-    if (argc == 3 && (strcmp(argv[1], "--child-sleep") == 0 || strcmp(argv[1], "--child-exit") == 0)) {
+    if (argc == 3 && (strcmp(argv[1], "--child-sleep") == 0 || strcmp(argv[1], "--child-exit") == 0 || strcmp(argv[1], "--child-remove-all") == 0)) {
         return child_main(argv[1], argv[2]);
     }
     const char* outfile = argc >= 2 ? argv[1] : nullptr;
@@ -739,7 +825,7 @@ int main(int argc, char** argv)
     for (Leftover k : kinds) { hdr += std::string(" ") + leftover_name(k) + " |"; sep += "---|"; }
     out(hdr);
     out(sep);
-    for (Removal r : {Removal::None, Removal::FsRemove, Removal::FsRemoveEc, Removal::DeleteFile, Removal::WRemove}) {
+    for (Removal r : {Removal::None, Removal::FsRemove, Removal::FsRemoveEc, Removal::DeleteFile, Removal::WRemove, Removal::Candidate}) {
         std::string line = std::string("| ") + removal_name(r) + " |";
         for (Leftover k : kinds) {
             fs::path p = fresh(leftover_name(k));
@@ -785,8 +871,23 @@ int main(int argc, char** argv)
         out("");
     }
 
-    fs::remove_all(base, ec);
-    out(fmt("cleanup remove_all: %s", ec_str(ec).c_str()));
+    // Part 4: fs::remove_all on a directory holding a stale socket file, in a
+    // child process with a timeout (round 1 hung here on windows-2022 + UCRT).
+    out("## 4. fs::remove_all(dir) with a stale socket file inside (child process, 20 s timeout)");
+    out("");
+    {
+        fs::path dir = base / "rmall";
+        fs::create_directories(dir, ec);
+        std::string setup = make_leftover(Leftover::CloseSocket, dir / "stale.sock");
+        out("setup: " + setup + "  ");
+        out("result: " + run_child_with_timeout(L"--child-remove-all", dir, 20000) + "  ");
+        out("dir afterwards: " + exists_now(dir) + "  ");
+        out("socket afterwards: " + exists_now(dir / "stale.sock"));
+        out("");
+        win32_cleanup(dir);
+    }
+
+    out(fmt("cleanup (Win32): %s", win32_cleanup(base).c_str()));
 
     if (outfile) {
         FILE* f = fopen(outfile, "wb");

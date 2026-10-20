@@ -11,6 +11,7 @@ jobs:
   msvc:
     name: 'MSVC, ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -125,6 +126,7 @@ jobs:
     needs: [cross-build-2404, cross-build-2604]
     if: always()
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -161,6 +163,7 @@ jobs:
   msys2:
     name: 'MSYS2 ${{ matrix.msystem }}, ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
