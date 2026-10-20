@@ -18,6 +18,7 @@ struct sockaddr_un { ADDRESS_FAMILY sun_family; char sun_path[UNIX_PATH_MAX]; };
 #endif
 #include <sys/stat.h>
 #include <io.h>
+#include <winver.h>
 #include <stdio.h>
 
 #include <filesystem>
@@ -156,8 +157,6 @@ static int child_main(const std::string& path, const std::string& mode)
     WSAStartup(MAKEWORD(2, 2), &wsa);
     SOCKET s;
     int r = wsa_bind(path, &s, true);
-    printf("child bind: %s\n", bind_result(r).c_str());
-    fflush(stdout);
     if (mode == "kill") Sleep(INFINITE);
     // Exit without closesocket() or WSACleanup().
     ExitProcess(r == 0 ? 0 : 1);
@@ -199,7 +198,7 @@ struct Leftover {
     std::string note;
 };
 
-static const std::vector<std::string> SCENARIOS = {"closed", "child-exit", "child-killed", "still-open"};
+static const std::vector<std::string> SCENARIOS = {"closed", "child-exit", "child-killed", "still-open", "empty-regular-file", "missing"};
 
 // Create a fresh leftover socket path for SCENARIO.
 static Leftover make_leftover(const std::string& scenario)
@@ -219,6 +218,12 @@ static Leftover make_leftover(const std::string& scenario)
                 l.open_sock = s;
             }
         }
+    } else if (scenario == "empty-regular-file") {
+        HANDLE h = CreateFileA(l.path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+        l.note = h == INVALID_HANDLE_VALUE ? "create FAIL " + std::to_string(GetLastError()) : "created empty regular file";
+        if (h != INVALID_HANDLE_VALUE) CloseHandle(h);
+    } else if (scenario == "missing") {
+        l.note = "nothing created";
     } else {
         l.note = run_child(l.path, scenario == "child-exit" ? "exit" : "kill");
     }
@@ -229,6 +234,16 @@ static void finish_leftover(Leftover& l)
 {
     if (l.open_sock != INVALID_SOCKET) closesocket(l.open_sock);
     l.open_sock = INVALID_SOCKET;
+}
+
+// Candidate fix: is P an AF_UNIX socket reparse point?
+static bool is_afunix_reparse(const std::string& p)
+{
+    WIN32_FIND_DATAW fd;
+    HANDLE h = FindFirstFileW(widen(p).c_str(), &fd);
+    if (h == INVALID_HANDLE_VALUE) return false;
+    FindClose(h);
+    return (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) && fd.dwReserved0 == (DWORD)IO_REPARSE_TAG_AF_UNIX;
 }
 
 using Row = std::pair<std::string, std::function<std::string(const std::string&)>>;
@@ -313,6 +328,16 @@ static std::vector<Row> query_rows()
             return std::string(r ? "true (would remove)" : "false (would not remove)");
         });
     });
+    add("CAND: FindFirstFileW REPARSE && tag==AF_UNIX", [](const std::string& p) { return std::string(is_afunix_reparse(p) ? "true" : "false"); });
+    add("CAND: symlink_status(p,ec)==socket || (status(p,ec) fails 1920 && symlink_status exists)", [](const std::string& p) {
+        return cell([&] {
+            std::error_code ec1, ec2;
+            auto st = fs::symlink_status(fs::path(p), ec1);
+            fs::status(fs::path(p), ec2);
+            bool r = st.type() == fs::file_type::socket || (fs::exists(st) && ec2.value() == 1920 && ec2.category() == std::system_category());
+            return std::string(r ? "true" : "false");
+        });
+    });
     return rows;
 }
 
@@ -329,6 +354,8 @@ static std::vector<Row> removal_rows()
         DWORD e = GetLastError();
         return "FAIL err=" + std::to_string(e) + " \"" + win_err_msg(e) + "\"";
     });
+    add("CAND: if FindFirstFileW AF_UNIX tag -> fs::remove(p)", [](const std::string& p) { return cell([&] { if (!is_afunix_reparse(p)) return std::string("not detected"); return std::string(fs::remove(fs::path(p)) ? "removed true" : "removed false"); }); });
+    add("CAND: if FindFirstFileW AF_UNIX tag -> DeleteFileW", [](const std::string& p) { if (!is_afunix_reparse(p)) return std::string("not detected"); return std::string(DeleteFileW(widen(p).c_str()) ? "OK" : "FAIL " + std::to_string(GetLastError())); });
     add("_wunlink", [](const std::string& p) {
         if (_wunlink(widen(p).c_str()) == 0) return std::string("OK");
         int e = errno;
@@ -347,6 +374,21 @@ static std::string os_version()
     DWORD ubr = 0, sz = sizeof(ubr);
     RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR", RRF_RT_REG_DWORD, nullptr, &ubr, &sz);
     return std::to_string(v.dwMajorVersion) + "." + std::to_string(v.dwMinorVersion) + "." + std::to_string(v.dwBuildNumber) + "." + std::to_string(ubr);
+}
+
+static std::string module_version(const char* name)
+{
+    HMODULE m = GetModuleHandleA(name);
+    if (!m) return std::string(name) + " not loaded";
+    char path[MAX_PATH];
+    GetModuleFileNameA(m, path, MAX_PATH);
+    DWORD dummy;
+    DWORD sz = GetFileVersionInfoSizeA(path, &dummy);
+    std::vector<char> buf(sz);
+    VS_FIXEDFILEINFO* fi = nullptr;
+    UINT len = 0;
+    if (!sz || !GetFileVersionInfoA(path, 0, sz, buf.data()) || !VerQueryValueA(buf.data(), "\\", reinterpret_cast<void**>(&fi), &len)) return std::string(path) + " (no version)";
+    return std::string(path) + " " + std::to_string(HIWORD(fi->dwFileVersionMS)) + "." + std::to_string(LOWORD(fi->dwFileVersionMS)) + "." + std::to_string(HIWORD(fi->dwFileVersionLS)) + "." + std::to_string(LOWORD(fi->dwFileVersionLS));
 }
 
 static std::string toolchain()
@@ -395,7 +437,7 @@ int main(int argc, char** argv)
     WSAStartup(MAKEWORD(2, 2), &wsa);
 
     printf("## %s\n\n", label.c_str());
-    printf("- OS: %s\n- Toolchain: %s\n- Root: %s\n\n", os_version().c_str(), toolchain().c_str(), g_root.c_str());
+    printf("- OS: %s\n- Toolchain: %s\n- CRT DLL: %s; %s\n- Root: %s\n\n", os_version().c_str(), toolchain().c_str(), module_version("ucrtbase.dll").c_str(), module_version("msvcrt.dll").c_str(), g_root.c_str());
 
     // Table 1: queries on a fresh leftover for each scenario.
     auto qrows = query_rows();
