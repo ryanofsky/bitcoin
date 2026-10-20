@@ -21,11 +21,13 @@ jobs:
       - name: Install
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends g++-mingw-w64-ucrt64 g++-mingw-w64-ucrt64-posix
-          ls /usr/bin/ | grep mingw32ucrt
+          apt-get install -y g++-mingw-w64-ucrt64
+          dpkg -l | grep -i mingw
+          find / -xdev -name '*mingw32ucrt*g++*' 2>/dev/null
       - name: Build
         run: |
-          CXX=$(command -v x86_64-w64-mingw32ucrt-g++-posix || command -v x86_64-w64-mingw32ucrt-g++)
+          CXX=$(find / -xdev -name 'x86_64-w64-mingw32ucrt-g++*' 2>/dev/null | sort | head -1)
+          echo "CXX=$CXX"
           $CXX -v 2>&1 | tail -3
           mkdir -p out
           $CXX -std=c++20 -O2 -Wall -static -o out/probe-apt-ucrt.exe contrib/afunix-probe-o55/probe.cpp -lws2_32 -lversion
