@@ -1,0 +1,155 @@
+name: afunix-probe-o55
+
+# Throwaway workflow: how std::filesystem and Win32 APIs see a stale AF_UNIX
+# socket file on Windows, per toolchain and runner image. Probe source:
+# contrib/afunix-probe-o55/probe.cpp. Each run prints markdown tables and
+# uploads them as artifacts.
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  cross-apt:
+    # Ubuntu 26.04 (same image as ci/test/00_setup_env_win64.sh) with the
+    # distro mingw-w64 UCRT g++.
+    name: 'cross-build, ubuntu:26.04 apt mingw-w64 ucrt'
+    runs-on: ubuntu-latest
+    container: mirror.gcr.io/ubuntu:26.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends g++-mingw-w64-ucrt64
+          ls /usr/bin/x86_64-w64-mingw32ucrt-g* || true
+      - name: Build
+        run: |
+          CXX=$(command -v x86_64-w64-mingw32ucrt-g++-posix || command -v x86_64-w64-mingw32ucrt-g++)
+          $CXX -v 2>&1 | tail -3
+          mkdir -p out
+          $CXX -std=c++20 -O2 -Wall -static -o out/probe-apt-ucrt.exe contrib/afunix-probe-o55/probe.cpp -lws2_32
+      - uses: actions/upload-artifact@v7
+        with:
+          name: exe-apt-ucrt
+          path: out/*.exe
+
+  cross-nix:
+    # The exact Bitcoin Core cross toolchain (contrib/devtools/shell-win64-cross.nix,
+    # GCC 14 ucrt64, posix threads). Builds GCC from source, so it is slow.
+    name: 'cross-build, nix shell-win64-cross.nix'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@v31
+      - name: Build
+        run: |
+          mkdir -p out
+          NIX_BUILD_SHELL=bash nix-shell contrib/devtools/shell-win64-cross.nix --run '
+            $CXX -v 2>&1 | tail -3
+            $CXX -std=c++20 -O2 -Wall -static -o out/probe-nix-ucrt.exe contrib/afunix-probe-o55/probe.cpp -lws2_32'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: exe-nix-ucrt
+          path: out/*.exe
+
+  msvc:
+    name: 'MSVC, ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025, windows-2025-vs2026]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Import Visual Studio env vars
+        run: py -3 .github/ci-windows.py "standard" github_import_vs_env
+      - name: Environment
+        shell: pwsh
+        run: |
+          [System.Environment]::OSVersion.VersionString
+          cmd /c ver
+          "VCToolsVersion=$env:VCToolsVersion"
+      - name: Build
+        shell: cmd
+        run: |
+          cl /nologo /std:c++20 /EHsc /W3 /O2 /Fe:probe-msvc.exe contrib\afunix-probe-o55\probe.cpp ws2_32.lib advapi32.lib || exit /b 1
+      - name: Probe
+        shell: pwsh
+        run: .\probe-msvc.exe "MSVC $env:VCToolsVersion on ${{ matrix.os }}" | Tee-Object -FilePath results-msvc-${{ matrix.os }}.md
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-msvc-${{ matrix.os }}
+          path: results-*.md
+
+  msys2:
+    name: 'MSYS2 UCRT64, ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: false
+          install: mingw-w64-ucrt-x86_64-gcc
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          g++ --version | head -1
+          g++ -std=c++20 -O2 -Wall -static -o probe-msys2.exe contrib/afunix-probe-o55/probe.cpp -lws2_32
+      - name: Probe
+        shell: pwsh
+        run: .\probe-msys2.exe "MSYS2 UCRT64 g++ on ${{ matrix.os }}" | Tee-Object -FilePath results-msys2-${{ matrix.os }}.md
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-msys2-${{ matrix.os }}
+          path: results-*.md
+
+  run-apt:
+    name: 'run apt-ucrt exe, ${{ matrix.os }}'
+    needs: cross-apt
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: exe-apt-ucrt
+      - name: Probe
+        shell: pwsh
+        run: .\probe-apt-ucrt.exe "ubuntu:26.04 apt mingw-w64 ucrt g++ on ${{ matrix.os }}" | Tee-Object -FilePath results-apt-${{ matrix.os }}.md
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-apt-${{ matrix.os }}
+          path: results-*.md
+
+  run-nix:
+    name: 'run nix-ucrt exe, ${{ matrix.os }}'
+    needs: cross-nix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: exe-nix-ucrt
+      - name: Probe
+        shell: pwsh
+        run: .\probe-nix-ucrt.exe "bitcoin nix shell-win64-cross g++ on ${{ matrix.os }}" | Tee-Object -FilePath results-nix-${{ matrix.os }}.md
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: results-nix-${{ matrix.os }}
+          path: results-*.md
