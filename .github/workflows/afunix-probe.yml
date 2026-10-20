@@ -28,6 +28,8 @@ jobs:
           echo VCToolsVersion=%VCToolsVersion% UCRTVersion=%UCRTVersion%
           cl /nologo /std:c++20 /EHsc /O1 /W3 /MT /Fe:probe-mt.exe probe.cpp ws2_32.lib version.lib || exit /b 1
           cl /nologo /std:c++20 /EHsc /O1 /W3 /MD /Fe:probe-md.exe probe.cpp ws2_32.lib version.lib || exit /b 1
+          cl /nologo /std:c++20 /EHsc /O1 /W3 /MT /Fe:errprobe-mt.exe errprobe.cpp ws2_32.lib || exit /b 1
+          cl /nologo /std:c++20 /EHsc /O1 /W3 /MD /Fe:errprobe-md.exe errprobe.cpp ws2_32.lib || exit /b 1
 
       - name: Probe (static UCRT, /MT)
         shell: cmd
@@ -36,6 +38,12 @@ jobs:
       - name: Probe (ucrtbase.dll, /MD)
         shell: cmd
         run: contrib\afunix-probe\probe-md.exe results-msvc-md-${{ matrix.os }}.md
+
+      - name: Error-string probe (/MT and /MD)
+        shell: cmd
+        run: |
+          contrib\afunix-probe\errprobe-mt.exe errors-msvc-mt-${{ matrix.os }}.md || exit /b 1
+          contrib\afunix-probe\errprobe-md.exe errors-msvc-md-${{ matrix.os }}.md || exit /b 1
 
       - name: Dump UCRT stat sources from the Windows SDK
         shell: pwsh
@@ -57,6 +65,7 @@ jobs:
           name: results-msvc-${{ matrix.os }}
           path: |
             results-*.md
+            errors-*.md
             ucrt-src/
 
   cross-build-2404:
@@ -144,7 +153,13 @@ jobs:
       - name: Probe (apt mingw-w64 cross builds and nix prebuilt)
         shell: pwsh
         run: |
-          $exes = @(Get-ChildItem contrib/afunix-probe/prebuilt/*.exe)
+          foreach ($exe in Get-ChildItem contrib/afunix-probe/prebuilt/errprobe-*.exe) {
+            $name = $exe.BaseName -replace '^errprobe-',''
+            "===== $($exe.FullName)"
+            & $exe.FullName "errors-$name-${{ matrix.os }}.md"
+            "exit code: $LASTEXITCODE"
+          }
+          $exes = @(Get-ChildItem contrib/afunix-probe/prebuilt/probe-*.exe)
           if (Test-Path cross-exes) { $exes += @(Get-ChildItem cross-exes/*.exe) }
           $exes | ForEach-Object { $_.FullName }
           foreach ($exe in $exes) {
@@ -158,7 +173,9 @@ jobs:
         if: always()
         with:
           name: results-cross-${{ matrix.os }}
-          path: results-*.md
+          path: |
+            results-*.md
+            errors-*.md
 
   msys2:
     name: 'MSYS2 ${{ matrix.msystem }}, ${{ matrix.os }}'
@@ -189,16 +206,23 @@ jobs:
           cd contrib/afunix-probe
           g++ --version | head -1
           g++ -std=c++20 -O1 -Wall -Wextra -static -o probe.exe probe.cpp -lws2_32 -lversion
+          g++ -std=c++20 -O1 -Wall -Wextra -static -o errprobe.exe errprobe.cpp -lws2_32
 
       - name: Probe
         shell: cmd
         run: contrib\afunix-probe\probe.exe results-msys2-${{ matrix.msystem }}-${{ matrix.os }}.md
 
+      - name: Error-string probe
+        shell: cmd
+        run: contrib\afunix-probe\errprobe.exe errors-msys2-${{ matrix.msystem }}-${{ matrix.os }}.md
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: results-msys2-${{ matrix.msystem }}-${{ matrix.os }}
-          path: results-*.md
+          path: |
+            results-*.md
+            errors-*.md
 
   collect:
     name: 'collect results'
@@ -214,7 +238,7 @@ jobs:
 
       - name: Print all results
         run: |
-          for f in results/*.md; do echo "########## $f"; cat "$f"; echo; done
+          for f in results/errors-*.md results/results-*.md; do echo "########## $f"; cat "$f"; echo; done
 
       - uses: actions/upload-artifact@v7
         with:

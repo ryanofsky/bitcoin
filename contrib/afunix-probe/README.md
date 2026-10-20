@@ -39,3 +39,10 @@ Reproduce locally on Windows:
 cl /std:c++20 /EHsc /Fe:probe.exe probe.cpp ws2_32.lib version.lib
 probe.exe results.md
 ```
+
+`errprobe.cpp` (`errprobe.exe [RESULTS.md]`) prints the exact `std::errc`
+`message()`/`what()` strings, the `system_category` string for `WSAECONNREFUSED`,
+`GetFileAttributesW` and `connect()` results for a stale socket file, a live
+listener, a missing file and paths whose parent directory is missing. Built and
+run by every job; `prebuilt/errprobe-*.exe` are the nix UCRT (GCC 14.3) and
+msvcrt (GCC 15.2) cross builds.
