@@ -23,9 +23,9 @@ Files:
   Internally re-executes itself as `--child-sleep`/`--child-exit` children.
 - `prebuilt/`: binaries cross-compiled on Linux with nix `x86_64-w64-mingw32-g++`
   15.2.0 and 14.3.0 (mingw-w64 13.0, **msvcrt**), via
-  `x86_64-w64-mingw32-g++ -std=c++20 -O1 -static -o probe.exe probe.cpp -lws2_32`.
+  `x86_64-w64-mingw32-g++ -std=c++20 -O1 -static -o probe.exe probe.cpp -lws2_32 -lversion`.
 - `.github/workflows/afunix-probe.yml`: MSVC on windows-2022 / windows-2025 /
-  windows-2025-vs2026; apt mingw-w64 UCRT and msvcrt cross builds from
+  windows-2025-vs2026; apt mingw-w64 msvcrt cross builds (Ubuntu has no UCRT mingw-w64 package) from
   ubuntu-24.04 and an ubuntu:26.04 container, run on windows-2022 and
   windows-2025 together with the prebuilt nix binaries; MSYS2 UCRT64 and
   MINGW64 on both Windows versions. The `collect` job prints every results file.
@@ -33,6 +33,6 @@ Files:
 Reproduce locally on Windows:
 
 ```
-cl /std:c++20 /EHsc /Fe:probe.exe probe.cpp ws2_32.lib
+cl /std:c++20 /EHsc /Fe:probe.exe probe.cpp ws2_32.lib version.lib
 probe.exe results.md
 ```

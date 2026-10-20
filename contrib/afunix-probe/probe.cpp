@@ -433,6 +433,29 @@ static Table inspect(const fs::path& p)
                    (st.st_mode & _S_IFREG) ? " S_IFREG" : "", (st.st_mode & _S_IFDIR) ? " S_IFDIR" : "",
                    (long long)st.st_size);
     });
+    // _wstat64 resolved at run time from each CRT DLL, independent of which CRT
+    // this binary was linked against (static UCRT, ucrtbase.dll or msvcrt.dll).
+    for (const wchar_t* dll : {L"ucrtbase.dll", L"api-ms-win-crt-filesystem-l1-1-0.dll", L"msvcrt.dll"}) {
+        t.add("_wstat64 via GetProcAddress(" + narrow(dll) + ")", [&, dll] {
+            HMODULE m = LoadLibraryW(dll);
+            if (!m) return "LoadLibraryW failed " + win_err(GetLastError());
+            typedef int(__cdecl * Fn)(const wchar_t*, struct __stat64*);
+            Fn fn = (Fn)(void*)GetProcAddress(m, "_wstat64");
+            if (!fn) return "GetProcAddress failed " + win_err(GetLastError());
+            struct __stat64 st{};
+            int r = fn(p.c_str(), &st);
+            if (r != 0) {
+                // errno lives in the DLL's CRT, not necessarily ours; read it there.
+                typedef int*(__cdecl * ErrnoFn)();
+                ErrnoFn ef = (ErrnoFn)(void*)GetProcAddress(m, "_errno");
+                int e = ef ? *ef() : -1;
+                return fmt("ret=%d ", r) + (e >= 0 ? errno_str(e) : std::string("errno=? (no _errno export)")) + fmt(" GetLastError=%lu", (unsigned long)GetLastError());
+            }
+            return fmt("ret=0 st_mode=0%o%s%s st_size=%lld", (unsigned)st.st_mode,
+                       (st.st_mode & _S_IFREG) ? " S_IFREG" : "", (st.st_mode & _S_IFDIR) ? " S_IFDIR" : "",
+                       (long long)st.st_size);
+        });
+    }
     t.add("_waccess(0)", [&] {
         errno = 0;
         int r = _waccess(p.c_str(), 0);
@@ -610,6 +633,22 @@ static std::string compiler_desc()
     return s;
 }
 
+static std::string dll_version(const wchar_t* name)
+{
+    wchar_t sysdir[MAX_PATH];
+    GetSystemDirectoryW(sysdir, MAX_PATH);
+    std::wstring path = std::wstring(sysdir) + L"\\" + name;
+    DWORD dummy = 0;
+    DWORD n = GetFileVersionInfoSizeW(path.c_str(), &dummy);
+    if (!n) return narrow(name) + ": " + win_err(GetLastError());
+    std::vector<char> buf(n);
+    if (!GetFileVersionInfoW(path.c_str(), 0, n, buf.data())) return narrow(name) + ": " + win_err(GetLastError());
+    VS_FIXEDFILEINFO* ffi = nullptr;
+    UINT len = 0;
+    if (!VerQueryValueW(buf.data(), L"\\", (void**)&ffi, &len) || !ffi) return narrow(name) + ": no VS_FIXEDFILEINFO";
+    return narrow(name) + fmt(" %u.%u.%u.%u", HIWORD(ffi->dwFileVersionMS), LOWORD(ffi->dwFileVersionMS), HIWORD(ffi->dwFileVersionLS), LOWORD(ffi->dwFileVersionLS));
+}
+
 static std::string loaded_crts()
 {
     std::string s;
@@ -655,6 +694,7 @@ int main(int argc, char** argv)
     out("|---|---|");
     out("| compiler | " + compiler_desc() + " |");
     out("| CRT DLLs loaded | " + loaded_crts() + " |");
+    out("| system CRT DLL versions | " + dll_version(L"ucrtbase.dll") + "; " + dll_version(L"msvcrt.dll") + " |");
     out("| Windows | " + os_version() + " |");
     out(fmt("| WSAStartup | %d |", wsa));
     out("| base dir | " + base.string() + " |");
@@ -708,11 +748,14 @@ int main(int argc, char** argv)
             if (setup.find("fail") != std::string::npos || setup.find("not bind") != std::string::npos) {
                 cell = "SETUP FAILED: " + setup;
             } else {
-                cell = "remove: " + do_removal(r, p) + "; then: " + exists_now(p) + "; rebind: ";
+                // Separate statements: operands of + are unsequenced, and MSVC
+                // evaluated exists_now() before do_removal() in round 1.
+                std::string rem = do_removal(r, p);
+                std::string after = exists_now(p);
                 std::string d;
                 SOCKET s = bind_socket(p, &d, true);
-                cell += d;
                 if (s != INVALID_SOCKET) closesocket(s);
+                cell = "remove: " + rem + "; then: " + after + "; rebind: " + d;
             }
             // cleanup for next cell
             DeleteFileW(p.c_str());

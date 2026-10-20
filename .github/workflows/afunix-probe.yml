@@ -24,23 +24,44 @@ jobs:
         shell: cmd
         run: |
           cd contrib\afunix-probe
-          cl /nologo /std:c++20 /EHsc /O1 /W3 /Fe:probe.exe probe.cpp ws2_32.lib || exit /b 1
-          echo VCToolsVersion=%VCToolsVersion%
+          echo VCToolsVersion=%VCToolsVersion% UCRTVersion=%UCRTVersion%
+          cl /nologo /std:c++20 /EHsc /O1 /W3 /MT /Fe:probe-mt.exe probe.cpp ws2_32.lib version.lib || exit /b 1
+          cl /nologo /std:c++20 /EHsc /O1 /W3 /MD /Fe:probe-md.exe probe.cpp ws2_32.lib version.lib || exit /b 1
 
-      - name: Probe
+      - name: Probe (static UCRT, /MT)
         shell: cmd
-        run: contrib\afunix-probe\probe.exe results-msvc-${{ matrix.os }}.md
+        run: contrib\afunix-probe\probe-mt.exe results-msvc-mt-${{ matrix.os }}.md
+
+      - name: Probe (ucrtbase.dll, /MD)
+        shell: cmd
+        run: contrib\afunix-probe\probe-md.exe results-msvc-md-${{ matrix.os }}.md
+
+      - name: Dump UCRT stat sources from the Windows SDK
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $root = "C:\Program Files (x86)\Windows Kits\10\Source"
+          Get-ChildItem $root -Directory | ForEach-Object { $_.FullName }
+          $src = Get-ChildItem $root -Directory | Sort-Object Name | Select-Object -Last 1
+          "Using $($src.FullName)"
+          New-Item -ItemType Directory -Force ucrt-src | Out-Null
+          foreach ($f in 'filesystem\stat.cpp','filesystem\access.cpp','filesystem\remove.cpp','misc\errno.cpp') {
+            $path = "$($src.FullName)\ucrt\$f"
+            if (Test-Path $path) { "===== $f"; Get-Content $path; Copy-Item $path ucrt-src/ }
+          }
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: results-msvc-${{ matrix.os }}
-          path: results-*.md
+          path: |
+            results-*.md
+            ucrt-src/
 
   cross-build-2404:
     # Cross-compiled on Ubuntu like the Bitcoin Core "Windows-cross to x86_64"
-    # job (which uses a nix gcc14 + mingw-w64 13 UCRT toolchain). The apt
-    # packages give GCC 13 + mingw-w64 11 on 24.04.
+    # job (which uses a nix gcc14 + mingw-w64 13 UCRT toolchain). Ubuntu has no
+    # UCRT mingw-w64 package, so this is GCC 13 + mingw-w64 11 (24.04) msvcrt.
     name: 'cross-build, ubuntu-24.04'
     runs-on: ubuntu-24.04
     steps:
@@ -50,8 +71,7 @@ jobs:
         run: |
           set -ex
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends g++-mingw-w64-ucrt64 g++-mingw-w64-x86-64-posix
-          x86_64-w64-mingw32ucrt-g++ --version | head -1
+          sudo apt-get install -y --no-install-recommends g++-mingw-w64-x86-64-posix
           x86_64-w64-mingw32-g++-posix --version | head -1
           dpkg -l | grep -i mingw
 
@@ -60,8 +80,7 @@ jobs:
           set -ex
           cd contrib/afunix-probe
           mkdir -p ../../cross-exes
-          x86_64-w64-mingw32ucrt-g++ -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-24.04-ucrt.exe probe.cpp -lws2_32
-          x86_64-w64-mingw32-g++-posix -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-24.04-msvcrt.exe probe.cpp -lws2_32
+          x86_64-w64-mingw32-g++-posix -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-24.04-msvcrt.exe probe.cpp -lws2_32 -lversion
           ls -la ../../cross-exes
 
       - uses: actions/upload-artifact@v7
@@ -83,8 +102,7 @@ jobs:
           set -ex
           export DEBIAN_FRONTEND=noninteractive
           apt-get update
-          apt-get install -y --no-install-recommends g++-mingw-w64-ucrt64 g++-mingw-w64-x86-64-posix
-          x86_64-w64-mingw32ucrt-g++ --version | head -1
+          apt-get install -y --no-install-recommends g++-mingw-w64-x86-64-posix
           x86_64-w64-mingw32-g++-posix --version | head -1
           dpkg -l | grep -i mingw
 
@@ -94,8 +112,7 @@ jobs:
           set -ex
           cd contrib/afunix-probe
           mkdir -p ../../cross-exes
-          x86_64-w64-mingw32ucrt-g++ -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-26.04-ucrt.exe probe.cpp -lws2_32
-          x86_64-w64-mingw32-g++-posix -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-26.04-msvcrt.exe probe.cpp -lws2_32
+          x86_64-w64-mingw32-g++-posix -std=c++20 -O1 -Wall -Wextra -static -o ../../cross-exes/probe-apt-ubuntu-26.04-msvcrt.exe probe.cpp -lws2_32 -lversion
           ls -la ../../cross-exes
 
       - uses: actions/upload-artifact@v7
@@ -116,6 +133,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: actions/download-artifact@v8
+        continue-on-error: true
         with:
           pattern: cross-exes-*
           merge-multiple: true
@@ -124,8 +142,10 @@ jobs:
       - name: Probe (apt mingw-w64 cross builds and nix prebuilt)
         shell: pwsh
         run: |
-          Get-ChildItem cross-exes, contrib/afunix-probe/prebuilt
-          foreach ($exe in (Get-ChildItem cross-exes/*.exe) + (Get-ChildItem contrib/afunix-probe/prebuilt/*.exe)) {
+          $exes = @(Get-ChildItem contrib/afunix-probe/prebuilt/*.exe)
+          if (Test-Path cross-exes) { $exes += @(Get-ChildItem cross-exes/*.exe) }
+          $exes | ForEach-Object { $_.FullName }
+          foreach ($exe in $exes) {
             $name = $exe.BaseName -replace '^probe-',''
             "===== $($exe.FullName)"
             & $exe.FullName "results-$name-${{ matrix.os }}.md"
@@ -165,7 +185,7 @@ jobs:
         run: |
           cd contrib/afunix-probe
           g++ --version | head -1
-          g++ -std=c++20 -O1 -Wall -Wextra -static -o probe.exe probe.cpp -lws2_32
+          g++ -std=c++20 -O1 -Wall -Wextra -static -o probe.exe probe.cpp -lws2_32 -lversion
 
       - name: Probe
         shell: cmd
