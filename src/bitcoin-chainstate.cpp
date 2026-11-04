@@ -18,6 +18,7 @@
 #include <filesystem>
 #include <iostream>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -46,10 +47,13 @@ class KernelLog
 public:
     void LogMessage(const LogEntry& entry)
     {
-        std::cout << "kernel: " << entry.Timestamp().time_since_epoch().count()
-                  << " [" << Name(entry.Category()) << ":"
-                  << Name(entry.Level()) << "] "
-                  << entry.Message() << "\n";
+        // Write each line in one call, since LogMessage() can run on several threads at once.
+        std::ostringstream line;
+        line << "kernel: " << entry.Timestamp().time_since_epoch().count()
+             << " [" << Name(entry.Category()) << ":"
+             << Name(entry.Level()) << "] "
+             << entry.Message() << "\n";
+        std::cout << line.str();
     }
 };
 
