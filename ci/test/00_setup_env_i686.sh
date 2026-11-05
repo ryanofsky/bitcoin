@@ -18,6 +18,7 @@ export CI_LIMIT_STACK_SIZE=1
 printf -v BITCOIN_CONFIG "%q " \
  --preset=dev-mode \
  -DCMAKE_BUILD_TYPE=Debug \
- -DAPPEND_CPPFLAGS=-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE
+ -DAPPEND_CPPFLAGS=-DBOOST_MULTI_INDEX_ENABLE_SAFE_MODE \
+ -DCMAKE_CXX_FLAGS="-Wno-error=maybe-uninitialized"
 export BITCOIN_CONFIG
 export BITCOIN_CMD="bitcoin -m" # Used in functional tests
