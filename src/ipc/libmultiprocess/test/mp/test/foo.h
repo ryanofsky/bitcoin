@@ -14,7 +14,9 @@
 #include <optional>
 #include <string>
 #include <set>
+#include <stop_token>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace mp {
@@ -159,8 +161,10 @@ public:
     void callFnAsync() { assert(m_fn); m_fn(); }
     int callIntFnAsync(int arg) { assert(m_int_fn); return m_int_fn(arg); }
     FooMessage callMessageAsync() { assert(m_fn); m_fn(); return {}; }
+    void waitStop(std::stop_token stop_token) { assert(m_stop_fn); m_stop_fn(std::move(stop_token)); }
     std::function<void()> m_fn;
     std::function<int(int)> m_int_fn;
+    std::function<void(std::stop_token)> m_stop_fn;
 };
 
 } // namespace test

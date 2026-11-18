@@ -27,6 +27,7 @@
 #include <list> // IWYU pragma: keep
 #include <map>
 #include <memory>
+#include <mutex>
 #include <mp/config.h>
 #include <mp/proxy.h>
 #include <mp/proxy.capnp.h>
@@ -37,6 +38,7 @@
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -971,6 +973,137 @@ KJ_TEST("Calling IPC method after destroy and destroy during a call")
 
     // Release bar2.
     loop.sync([&] { bar2.reset(); });
+}
+
+//! Server method implementation for the std::stop_token tests below that
+//! blocks until stop is requested on its token, so cancellation is the only
+//! way for it to return.
+class WaitForStop
+{
+public:
+    void operator()(std::stop_token stop_token)
+    {
+        std::mutex mutex;
+        std::condition_variable cv;
+        bool stopped{false};
+        const std::stop_callback on_stop{stop_token, [&] {
+            const std::lock_guard<std::mutex> lock{mutex};
+            stopped = true;
+            cv.notify_all();
+        }};
+        std::unique_lock<std::mutex> lock{mutex};
+        m_waiting.set_value();
+        cv.wait(lock, [&] { return stopped; });
+        m_done.set_value();
+    }
+
+    std::promise<void> m_waiting;
+    std::promise<void> m_done;
+};
+
+KJ_TEST("Requesting stop cancels an in-flight IPC call")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    auto wait_for_stop{std::make_shared<WaitForStop>()};
+    auto waiting{wait_for_stop->m_waiting.get_future()};
+    auto done{wait_for_stop->m_done.get_future()};
+    setup.server->m_impl->m_stop_fn = [wait_for_stop](std::stop_token stop_token) { (*wait_for_stop)(std::move(stop_token)); };
+
+    std::stop_source stop_source;
+    std::thread stopper([&] {
+        waiting.wait();
+        stop_source.request_stop();
+    });
+    bool interrupted{false};
+    try {
+        foo->waitStop(stop_source.get_token());
+    } catch (const InterruptException&) {
+        interrupted = true;
+    }
+    stopper.join();
+    KJ_EXPECT(interrupted);
+    KJ_EXPECT(done.wait_for(std::chrono::minutes{5}) == std::future_status::ready);
+
+    // Connection should be unaffected.
+    KJ_EXPECT(foo->add(1, 2) == 3);
+}
+
+KJ_TEST("Requesting stop before an IPC call cancels it")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    // The server method may or may not start before the request is canceled,
+    // so use a method that returns as soon as stop is requested.
+    setup.server->m_impl->m_stop_fn = [](std::stop_token stop_token) {
+        std::mutex mutex;
+        std::condition_variable_any cv;
+        std::unique_lock<std::mutex> lock{mutex};
+        cv.wait(lock, stop_token, [] { return false; });
+    };
+
+    std::stop_source stop_source;
+    stop_source.request_stop();
+    bool interrupted{false};
+    try {
+        foo->waitStop(stop_source.get_token());
+    } catch (const InterruptException&) {
+        interrupted = true;
+    }
+    KJ_EXPECT(interrupted);
+    KJ_EXPECT(foo->add(1, 2) == 3);
+}
+
+KJ_TEST("Requesting stop after an IPC call returns has no effect")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    int calls{0};
+    setup.server->m_impl->m_stop_fn = [&](std::stop_token) { ++calls; };
+
+    // A default-constructed token can't be stopped, so the call is made
+    // without a canceler.
+    foo->waitStop({});
+
+    std::stop_source stop_source;
+    foo->waitStop(stop_source.get_token());
+    stop_source.request_stop();
+    KJ_EXPECT(calls == 2);
+    KJ_EXPECT(foo->add(1, 2) == 3);
+}
+
+KJ_TEST("Dropping the client promise requests stop on an executing method")
+{
+    TestSetup setup;
+    constexpr std::chrono::seconds timeout{30};
+    auto wait_for_stop{std::make_shared<WaitForStop>()};
+    auto waiting{wait_for_stop->m_waiting.get_future()};
+    auto done{wait_for_stop->m_done.get_future()};
+    setup.server->m_impl->m_stop_fn = [wait_for_stop](std::stop_token stop_token) { (*wait_for_stop)(std::move(stop_token)); };
+    ProxyClient<messages::FooInterface>* foo{setup.client.get()};
+    foo->initThreadMap();
+
+    // Build the request by hand, the way a non-libmultiprocess client would. A
+    // normal proxy call cannot be abandoned because clientInvoke blocks on it.
+    std::optional<capnp::RemotePromise<messages::FooInterface::WaitStopResults>> remote;
+    foo->m_context.loop->sync([&] {
+        auto request{foo->m_client.waitStopRequest()};
+        request.initContext().setThread(
+            foo->m_context.connection->m_thread_map.makeThreadRequest().send().getResult());
+        remote.emplace(request.send());
+    });
+    KJ_REQUIRE(waiting.wait_for(timeout) == std::future_status::ready);
+    KJ_EXPECT(done.wait_for(std::chrono::seconds{0}) == std::future_status::timeout);
+
+    // Abandon the call without disconnecting.
+    foo->m_context.loop->sync([&] { remote.reset(); });
+    KJ_EXPECT(done.wait_for(timeout) == std::future_status::ready);
+
+    // Connection should be unaffected.
+    KJ_EXPECT(foo->add(1, 2) == 3);
 }
 
 } // namespace test
