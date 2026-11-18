@@ -34,6 +34,9 @@
 #include <type_traits>
 // IWYU pragma: end_exports
 
+#include <kj/async.h>
+#include <memory>
+
 namespace mp {
 namespace test {
 namespace messages {
@@ -119,6 +122,35 @@ inline void CustomMakeParamState(TypeList<test::FooExtra>, Priority<1>, ClientIn
 {
     auto& loop = *invoke_context.connection.m_loop;
     if (loop.testing_hook_misc) loop.testing_hook_misc(extra.value);
+}
+
+template <typename Value, typename Output>
+void CustomBuildField(TypeList<test::FooStateValue>, Priority<1>, InvokeContext&, Value&& value, Output&& output)
+{
+    output.set(value.value);
+}
+
+template <typename Input, typename ReadDest>
+decltype(auto) CustomReadField(TypeList<test::FooStateValue>, Priority<1>, InvokeContext&, Input&& input, ReadDest&& read_dest)
+{
+    return read_dest.construct(test::FooStateValue{input.get()});
+}
+
+//! Client state for FooStateValue parameters, reporting setCanceler calls
+//! through testing_hook_misc.
+struct FooStateValueState
+{
+    EventLoop& loop;
+    void setCanceler(kj::Canceler* canceler)
+    {
+        if (loop.testing_hook_misc) loop.testing_hook_misc(canceler != nullptr);
+    }
+};
+
+inline std::unique_ptr<FooStateValueState> CustomMakeParamState(TypeList<test::FooStateValue>, Priority<1>,
+                                                                ClientInvokeContext& invoke_context, const test::FooStateValue&)
+{
+    return std::make_unique<FooStateValueState>(*invoke_context.connection.m_loop);
 }
 
 template <typename ServerContext>

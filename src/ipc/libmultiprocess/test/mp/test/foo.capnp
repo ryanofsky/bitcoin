@@ -42,6 +42,9 @@ interface FooInterface $Proxy.wrap("mp::test::FooImplementation") {
     callbackFlat @27 (context :Proxy.Context, callback :FlatCallback, arg: Int32) -> (result :Int32);
     passExtra @28 (arg :Int32) -> (result :Int32) $Proxy.extraParam("extra");
     waitStop @29 (context :Proxy.Context) -> () $Proxy.extraParam("stop_token") $Cxx.allowCancellation;
+    passExtras @30 (arg :Int32) -> (result :Int32) $Proxy.extraParam("first") $Proxy.extraParam("");
+    passStopToken @31 () -> (result :Bool) $Proxy.extraParam("stop_token");
+    passStateValue @32 (context :Proxy.Context, value :Int32) -> (result :Int32);
 }
 
 interface FooInit $Proxy.wrap("mp::test::FooInit") {

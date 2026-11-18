@@ -1075,6 +1075,148 @@ KJ_TEST("Requesting stop after an IPC call returns has no effect")
     KJ_EXPECT(foo->add(1, 2) == 3);
 }
 
+KJ_TEST("Methods can have several extra parameters, which can be unnamed")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    std::vector<int> client_extras;
+    foo->m_context.loop->testing_hook_misc = [&](std::any value) { client_extras.push_back(std::any_cast<int>(value)); };
+    // The client passes 2 and 3 to the CustomMakeParamState overload in
+    // order, and the server receives the value CustomReadExtraParam
+    // constructs, 1, for both extra parameters.
+    KJ_EXPECT(foo->passExtras(1, {2}, {3}) == 12);
+    KJ_EXPECT((client_extras == std::vector<int>{2, 3}));
+    foo->m_context.loop->testing_hook_misc = nullptr;
+}
+
+KJ_TEST("Parameters with Cap'n Proto fields can have cancellation state")
+{
+    // FooStateValue is sent as a normal Int32 field, and its CustomMakeParamState
+    // overload returns state with a setCanceler method, so the call is wrapped
+    // in a kj::Canceler and the state receives it after the request is sent,
+    // and null before the call returns.
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    std::vector<bool> set_canceler_calls;
+    foo->m_context.loop->testing_hook_misc = [&](std::any value) { set_canceler_calls.push_back(std::any_cast<bool>(value)); };
+    KJ_EXPECT(foo->passStateValue({7}) == 7);
+    foo->m_context.loop->testing_hook_misc = nullptr;
+    KJ_EXPECT((set_canceler_calls == std::vector<bool>{true, false}));
+}
+
+KJ_TEST("Exception thrown while building an IPC request is passed to the caller")
+{
+    // EventLoop::sync() logs and discards exceptions, so before clientInvoke
+    // caught exceptions thrown while building parameters, this call would
+    // hang forever.
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->m_context.loop->testing_hook_misc = [](std::any) { throw std::runtime_error("build failed"); };
+    EXPECT_EXCEPTION(foo->passExtra(1, {2}), "build failed");
+    foo->m_context.loop->testing_hook_misc = nullptr;
+    KJ_EXPECT(foo->add(1, 2) == 3);
+}
+
+KJ_TEST("Methods running on the event loop thread receive a token that is never stopped")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    KJ_EXPECT(!foo->passStopToken({}));
+    std::stop_source stop_source;
+    KJ_EXPECT(!foo->passStopToken(stop_source.get_token()));
+}
+
+KJ_TEST("Requesting stop on one IPC call does not affect other calls")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    std::atomic<int> waiting{0};
+    setup.server->m_impl->m_stop_fn = [&](std::stop_token stop_token) {
+        std::mutex mutex;
+        std::condition_variable_any cv;
+        std::unique_lock<std::mutex> lock{mutex};
+        ++waiting;
+        waiting.notify_all();
+        cv.wait(lock, stop_token, [] { return false; });
+    };
+
+    // Calls from different client threads run on different server threads.
+    auto call = [&](std::stop_source& stop_source, std::promise<void>& interrupted) {
+        try {
+            foo->waitStop(stop_source.get_token());
+        } catch (const InterruptException&) {
+            interrupted.set_value();
+        }
+    };
+    std::stop_source stop1, stop2;
+    std::promise<void> interrupted1, interrupted2;
+    std::thread thread1{call, std::ref(stop1), std::ref(interrupted1)};
+    std::thread thread2{call, std::ref(stop2), std::ref(interrupted2)};
+    for (int n{waiting}; n < 2; n = waiting) waiting.wait(n);
+
+    stop1.request_stop();
+    KJ_EXPECT(interrupted1.get_future().wait_for(std::chrono::minutes{5}) == std::future_status::ready);
+    auto interrupted2_future{interrupted2.get_future()};
+    KJ_EXPECT(interrupted2_future.wait_for(std::chrono::milliseconds{100}) == std::future_status::timeout);
+
+    stop2.request_stop();
+    KJ_EXPECT(interrupted2_future.wait_for(std::chrono::minutes{5}) == std::future_status::ready);
+    thread1.join();
+    thread2.join();
+    KJ_EXPECT(foo->add(1, 2) == 3);
+}
+
+KJ_TEST("Requesting stop while IPC calls complete")
+{
+    // Race requesting stop against calls that return right away, to exercise
+    // the canceler being set and cleared while stop is requested from
+    // another thread. Each call either returns or is interrupted.
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    setup.server->m_impl->m_stop_fn = [](std::stop_token) {};
+    constexpr int calls{200};
+    int returned{0};
+    int interrupted{0};
+    for (int i = 0; i < calls; ++i) {
+        std::stop_source stop_source;
+        std::thread stopper{[&] { stop_source.request_stop(); }};
+        try {
+            foo->waitStop(stop_source.get_token());
+            ++returned;
+        } catch (const InterruptException&) {
+            ++interrupted;
+        }
+        stopper.join();
+    }
+    KJ_EXPECT(returned + interrupted == calls);
+    KJ_EXPECT(foo->add(1, 2) == 3);
+}
+
+KJ_TEST("Disconnecting during an IPC call requests stop on the server")
+{
+    TestSetup setup;
+    ProxyClient<messages::FooInterface>* foo = setup.client.get();
+    foo->initThreadMap();
+    auto wait_for_stop{std::make_shared<WaitForStop>()};
+    auto waiting{wait_for_stop->m_waiting.get_future()};
+    auto done{wait_for_stop->m_done.get_future()};
+    setup.server->m_impl->m_stop_fn = [wait_for_stop](std::stop_token stop_token) { (*wait_for_stop)(std::move(stop_token)); };
+
+    std::thread disconnecter{[&] {
+        waiting.wait();
+        setup.server_disconnect();
+    }};
+    // The client did not request stop, so the call fails like any call
+    // interrupted by a disconnect, not with InterruptException.
+    std::stop_source stop_source;
+    EXPECT_EXCEPTION(foo->waitStop(stop_source.get_token()), "IPC client method call interrupted by disconnect.");
+    disconnecter.join();
+    KJ_EXPECT(done.wait_for(std::chrono::minutes{5}) == std::future_status::ready);
+}
+
 KJ_TEST("Dropping the client promise requests stop on an executing method")
 {
     TestSetup setup;
@@ -1104,6 +1246,69 @@ KJ_TEST("Dropping the client promise requests stop on an executing method")
 
     // Connection should be unaffected.
     KJ_EXPECT(foo->add(1, 2) == 3);
+}
+
+KJ_TEST("Canceling a queued IPC call does not affect later calls on the same thread")
+{
+    // Regression test for a canceled call waiting for the previous call on its
+    // server thread to start: destroying it destroyed the fulfiller that
+    // signals the next call it can run, so the next call failed with
+    // "PromiseFulfiller was destroyed without fulfilling the promise".
+    //
+    // Send calls A, B, C and D on one server thread with raw requests, the way a
+    // non-libmultiprocess client could. A executes and blocks until it is
+    // canceled, B is posted to the thread behind it, and C waits for B to
+    // start. Dropping C cancels it while it waits, then D must still succeed
+    // after A is canceled and B runs.
+    TestSetup setup;
+    constexpr std::chrono::seconds timeout{30};
+    ProxyClient<messages::FooInterface>* foo{setup.client.get()};
+    foo->initThreadMap();
+    std::atomic<int> calls{0};
+    std::promise<void> first_waiting;
+    setup.server->m_impl->m_stop_fn = [&](std::stop_token stop_token) {
+        if (++calls > 1) return;
+        std::promise<void> stopped;
+        const std::stop_callback on_stop{stop_token, [&] { stopped.set_value(); }};
+        first_waiting.set_value();
+        stopped.get_future().wait();
+    };
+
+    using Promise = capnp::RemotePromise<messages::FooInterface::WaitStopResults>;
+    std::optional<Thread::Client> thread;
+    std::optional<Promise> call_a, call_c;
+    std::promise<std::string> b_result, d_result;
+    EventLoop& loop{*foo->m_context.loop};
+    auto send = [&] {
+        auto request{foo->m_client.waitStopRequest()};
+        request.initContext().setThread(*thread);
+        return request.send();
+    };
+    auto track = [&](Promise promise, std::promise<std::string>& result) {
+        loop.m_task_set->add(promise.then(
+            [&result](auto&&) { result.set_value("ok"); },
+            [&result](kj::Exception&& e) { result.set_value(e.getDescription().cStr()); }));
+    };
+    loop.sync([&] {
+        thread.emplace(foo->m_context.connection->m_thread_map.makeThreadRequest().send().getResult());
+        call_a.emplace(send());
+    });
+    KJ_REQUIRE(first_waiting.get_future().wait_for(timeout) == std::future_status::ready);
+    loop.sync([&] {
+        track(send(), b_result);
+        call_c.emplace(send());
+    });
+    loop.sync([&] { call_c.reset(); });
+    loop.sync([&] { track(send(), d_result); });
+    loop.sync([&] { call_a.reset(); });
+
+    auto b_future{b_result.get_future()};
+    auto d_future{d_result.get_future()};
+    KJ_REQUIRE(b_future.wait_for(timeout) == std::future_status::ready);
+    KJ_REQUIRE(d_future.wait_for(timeout) == std::future_status::ready);
+    KJ_EXPECT(b_future.get() == "ok");
+    KJ_EXPECT(d_future.get() == "ok");
+    loop.sync([&] { thread.reset(); });
 }
 
 } // namespace test

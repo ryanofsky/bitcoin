@@ -64,6 +64,13 @@ struct FooExtra
     int value;
 };
 
+//! Parameter sent over IPC as an Int32 field, whose CustomMakeParamState
+//! overload returns client state, to test state on parameters with fields.
+struct FooStateValue
+{
+    int value;
+};
+
 struct FooMessage
 {
     std::string message;
@@ -148,6 +155,9 @@ public:
     double passDouble(double value) { return value; }
     int passFn(std::function<int()> fn) { return fn(); }
     int passExtra(int arg, FooExtra extra) { return arg + extra.value; }
+    int passExtras(int arg, FooExtra first, FooExtra second) { return arg + first.value * 10 + second.value; }
+    bool passStopToken(std::stop_token stop_token) { return stop_token.stop_possible(); }
+    int passStateValue(FooStateValue value) { return value.value; }
     std::vector<FooDataRef> passDataPointers(std::vector<FooDataRef> values) { return values; }
     std::vector<std::unique_ptr<Bar>> listBars(int n)
     {
