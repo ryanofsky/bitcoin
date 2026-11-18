@@ -846,7 +846,20 @@ void clientInvoke(ProxyClient& proxy_client, const GetRequest& get_request, Fiel
         using Request = CapRequestTraits<decltype(request)>;
         using FieldList = typename ProxyClientMethodTraits<typename ProxyClient::Interface, typename Request::Params>::Fields;
         invoke_context.emplace(*proxy_client.m_context.connection, thread_context);
-        IterateFields().handleChain(*invoke_context, request, FieldList(), typename FieldObjs::BuildParams{&fields}...);
+        try {
+            IterateFields().handleChain(*invoke_context, request, FieldList(), typename FieldObjs::BuildParams{&fields}...);
+        } catch (...) {
+            // Pass exceptions thrown while building parameters to the caller.
+            // Letting them escape would not work because EventLoop::sync()
+            // logs and discards exceptions, so the request would never be
+            // sent, done would never be set, and the caller would wait
+            // forever.
+            const Lock lock(thread_context.waiter->m_mutex);
+            exception = std::current_exception();
+            done = true;
+            thread_context.waiter->m_cv.notify_all();
+            return;
+        }
         MP_LOGPLAIN(*proxy_client.m_context.loop, Log::Debug)
             << "{" << thread_context.thread_name << "} IPC client send "
             << TypeName<typename Request::Params>();
