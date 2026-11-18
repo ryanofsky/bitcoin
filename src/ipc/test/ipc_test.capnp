@@ -21,4 +21,6 @@ interface FooInterface $Proxy.wrap("FooImplementation") {
     passTransactions @6 (arg :List(Data)) -> (result :List(Data));
     passVectorChar @4 (arg :Data) -> (result :Data);
     passScript @5 (arg :Data) -> (result :Data);
+    initThreadMap @7 (threadMap: Proxy.ThreadMap) -> (threadMap :Proxy.ThreadMap);
+    waitStop @8 (context :Proxy.Context) -> () $Proxy.extraParam("stop_token") $Cxx.allowCancellation;
 }

@@ -22,6 +22,7 @@
 
 #include <future>
 #include <optional>
+#include <stop_token>
 #include <thread>
 #include <kj/common.h>
 #include <kj/memory.h>
@@ -124,6 +125,18 @@ void IpcPipeTest()
     auto script1{CScript() << OP_11};
     auto script2{foo->passScript(script1)};
     BOOST_CHECK_EQUAL(HexStr(script1), HexStr(script2));
+
+    // Test: requesting stop on a std::stop_token from another thread cancels
+    // the call, which throws InterruptException, and stops the server method,
+    // which would otherwise wait forever. Calls made afterwards from this
+    // thread run on the same server thread, so the add() call only returns if
+    // the server method stopped.
+    foo->initThreadMap();
+    std::stop_source stop_source;
+    std::thread stopper{[&] { stop_source.request_stop(); }};
+    BOOST_CHECK_THROW(foo->waitStop(stop_source.get_token()), mp::InterruptException);
+    stopper.join();
+    BOOST_CHECK_EQUAL(foo->add(1, 2), 3);
 
     // Test cleanup: disconnect and join thread
     foo.reset();
