@@ -31,6 +31,7 @@
 #include <mp/proxy.h>
 #include <mp/proxy.capnp.h>
 #include <mp/proxy-io.h>
+#include <mp/type-threadmap.h>
 #include <mp/util.h>
 #include <mp/version.h>
 #include <optional>
@@ -550,6 +551,83 @@ KJ_TEST("Calling async IPC method, with server disconnect after cleanup")
     };
 
     EXPECT_EXCEPTION(foo->callFnAsync(), "IPC client method call interrupted by disconnect.");
+}
+
+KJ_TEST("Canceling a call queued on a server thread does not fail later calls")
+{
+    // Regression test for a call canceled while it waits for the previous call
+    // on its server thread to start. Canceling it destroyed the fulfiller that
+    // signals the next call it can run, so the next call failed with
+    // "PromiseFulfiller was destroyed without fulfilling the promise".
+    //
+    // Calls A, B, C and D are posted to one server thread. A executes and
+    // blocks, B is posted to the thread behind it, and C waits for B to start.
+    // C is canceled while it waits, then D must still succeed after A and B
+    // run. Requests are only canceled like this when a client drops a call to a
+    // method with the `$Cxx.allowCancellation` annotation, so the test calls
+    // ProxyServer<Thread>::post() directly.
+    TestSetup setup;
+    constexpr std::chrono::seconds timeout{30};
+    Connection& connection{*setup.server->m_context.connection};
+    EventLoop& loop{*connection.m_loop};
+
+    std::optional<ThreadMap::Client> thread_map;
+    std::optional<Thread::Client> thread_client;
+    std::promise<ProxyServer<Thread>*> thread_server;
+    loop.sync([&] {
+        thread_map.emplace(kj::heap<ProxyServer<ThreadMap>>(connection));
+        thread_client.emplace(thread_map->makeThreadRequest().send().getResult());
+        loop.m_task_set->add(connection.m_threads.getLocalServer(*thread_client).then([&](kj::Maybe<Thread::Server&> server) {
+            ProxyServer<Thread>* thread{nullptr};
+            KJ_IF_MAYBE(s, server) thread = static_cast<ProxyServer<Thread>*>(s);
+            thread_server.set_value(thread);
+        }));
+    });
+    auto thread_future{thread_server.get_future()};
+    KJ_REQUIRE(thread_future.wait_for(timeout) == std::future_status::ready);
+    ProxyServer<Thread>* thread_ptr{thread_future.get()};
+    KJ_REQUIRE(thread_ptr);
+    ProxyServer<Thread>& thread{*thread_ptr};
+
+    std::promise<void> a_started, a_release;
+    std::shared_future<void> a_released{a_release.get_future()};
+    auto post = [&](char name) {
+        return thread.post<char>([&, name](CancelMonitor&) {
+            if (name == 'A') {
+                a_started.set_value();
+                a_released.wait();
+            }
+            return name;
+        });
+    };
+    std::optional<kj::Promise<char>> call_a, call_c;
+    std::promise<std::string> b_result, d_result;
+    auto track = [&](kj::Promise<char> promise, std::promise<std::string>& result) {
+        loop.m_task_set->add(promise.then(
+            [&result](char) { result.set_value("ok"); },
+            [&result](kj::Exception&& e) { result.set_value(e.getDescription().cStr()); }));
+    };
+    loop.sync([&] { call_a.emplace(post('A')); });
+    KJ_REQUIRE(a_started.get_future().wait_for(timeout) == std::future_status::ready);
+    loop.sync([&] {
+        track(post('B'), b_result);
+        call_c.emplace(post('C'));
+    });
+    loop.sync([&] { call_c.reset(); });
+    loop.sync([&] { track(post('D'), d_result); });
+    a_release.set_value();
+
+    auto b_future{b_result.get_future()};
+    auto d_future{d_result.get_future()};
+    KJ_REQUIRE(b_future.wait_for(timeout) == std::future_status::ready);
+    KJ_REQUIRE(d_future.wait_for(timeout) == std::future_status::ready);
+    KJ_EXPECT(b_future.get() == "ok");
+    KJ_EXPECT(d_future.get() == "ok");
+    loop.sync([&] {
+        call_a.reset();
+        thread_client.reset();
+        thread_map.reset();
+    });
 }
 
 KJ_TEST("Destroying ProxyClient<> with destroy method after peer disconnect")

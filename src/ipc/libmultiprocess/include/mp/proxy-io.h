@@ -820,7 +820,10 @@ kj::Promise<T> ProxyServer<Thread>::post(Fn&& fn)
     // the thread finishes executing. The self variable needs to be destroyed on
     // the event loop thread so it is freed in a sync() call below.
     auto self = thisCap();
-    auto ret = m_thread_ready.then([this, self = std::move(self), fn = std::forward<Fn>(fn), ready_fulfiller = kj::mv(ready.fulfiller), cancel_monitor_ptr = kj::mv(cancel_monitor_ptr)]() mutable {
+    // Fork the previous call's ready signal, so if this call is canceled before
+    // it is posted, the next call can still wait for it below.
+    auto prev_ready = kj::mv(m_thread_ready).fork();
+    auto ret = prev_ready.addBranch().then([this, self = std::move(self), fn = std::forward<Fn>(fn), ready_fulfiller = kj::mv(ready.fulfiller), cancel_monitor_ptr = kj::mv(cancel_monitor_ptr)]() mutable {
         auto result = kj::newPromiseAndFulfiller<T>(); // Signaled when fn() is called, with its return value.
         bool posted = m_thread_context.waiter->post([this, self = std::move(self), fn = std::forward<Fn>(fn), ready_fulfiller = kj::mv(ready_fulfiller), result_fulfiller = kj::mv(result.fulfiller), cancel_monitor_ptr = kj::mv(cancel_monitor_ptr)]() mutable {
             // Fulfill ready.promise now, as soon as the Waiter starts executing
@@ -868,7 +871,16 @@ kj::Promise<T> ProxyServer<Thread>::post(Fn&& fn)
         assert(posted);
         return kj::mv(result.promise);
     }).attach(kj::heap<CancelProbe>(cancel_monitor));
-    m_thread_ready = kj::mv(ready.promise);
+    // If this call is canceled while it is waiting for the previous call to
+    // start, the lambda above is destroyed along with ready_fulfiller, which
+    // rejects ready.promise. In that case the thread is still running or about
+    // to run the previous call, so make the next call wait for the previous
+    // call's ready signal instead. Letting the rejection through would fail the
+    // next call, and treating it as ready could post the next call while the
+    // thread is busy.
+    m_thread_ready = kj::mv(ready.promise).catch_([prev_ready = prev_ready.addBranch()](kj::Exception&&) mutable {
+        return kj::mv(prev_ready);
+    });
     return ret;
 }
 
