@@ -125,6 +125,7 @@ auto PassField(Priority<1>, TypeList<>, ServerContext& server_context, const Fn&
                 // as well before accessing the structs.
                 Lock request_lock{request_mutex};
                 server_context.request_canceled = true;
+                if (server_context.cancel_fn) server_context.cancel_fn();
             };
             // Update requests_threads map if not canceled. We know
             // the request is not canceled currently because

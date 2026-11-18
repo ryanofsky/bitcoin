@@ -8,6 +8,10 @@
 #include <mp/proxy-io.h>
 
 #include <exception>
+#include <kj/async.h>
+#include <kj/common.h>
+#include <kj/exception.h>
+#include <kj/memory.h>
 #include <optional>
 #include <set>
 #include <typeindex>
@@ -477,8 +481,85 @@ template <typename Type>
 using MakeParamStateResult = decltype(CustomMakeParamState(TypeList<RemoveCvRef<Type>>(), Priority<2>(),
     std::declval<ClientInvokeContext&>(), std::declval<const RemoveCvRef<Type>&>()));
 
+//! Base class for client field objects, holding the state returned by a
+//! CustomMakeParamState overload until the IPC call returns, and forwarding
+//! the cancellation hooks clientInvoke calls to it.
+//!
+//! The overload can return a `std::unique_ptr<State>` (or another pointer to a
+//! state object). A null pointer means the call doesn't need the state. These
+//! State methods are called if they exist:
+//!
+//! - `void setCanceler(kj::Canceler*)`: If this method exists, clientInvoke
+//!   wraps the request in a kj::Canceler and calls it on the event loop thread
+//!   with a pointer to the canceler after the request is sent, and with null
+//!   after the request finishes, before the IPC call returns. Calling
+//!   `kj::Canceler::cancel()` on the event loop thread in between cancels the
+//!   request.
+//!
+//! - `void handleError(const kj::Exception&)`: Called on the event loop thread
+//!   if the request fails, before clientInvoke handles the error itself. If it
+//!   throws, the exception is rethrown to the caller. A request canceled with
+//!   kj::Canceler fails with a DISCONNECTED exception, like a request
+//!   interrupted by a disconnect, so this is where a cancellation parameter can
+//!   throw a more specific exception.
+//!
+//! Methods with no parameter whose state has a setCanceler method are compiled
+//! without the cancellation code, so they pay no cost for cancellation support.
+template <typename State>
+struct ClientParamState
+{
+    //! Call fn() to make the state and keep it until the IPC call returns.
+    template <typename Fn>
+    void makeState(Fn&& fn) { m_state.emplace(std::forward<Fn>(fn)); }
+
+    //! Whether the state has a setCanceler method, so calls may need to be
+    //! wrapped in a kj::Canceler.
+    static constexpr bool cancelable = requires(State& state, kj::Canceler* canceler) { state->setCanceler(canceler); };
+
+    //! Whether this call needs a kj::Canceler. Called after BuildParams.
+    bool wantsCanceler() const
+    {
+        if constexpr (cancelable) {
+            return m_state.m_value && *m_state.m_value;
+        } else {
+            return false;
+        }
+    }
+
+    void setCanceler(kj::Canceler* canceler)
+    {
+        if constexpr (cancelable) {
+            if (wantsCanceler()) (*m_state.m_value)->setCanceler(canceler);
+        }
+    }
+
+    void handleError(const kj::Exception& e)
+    {
+        if constexpr (requires(State& state) { state->handleError(e); }) {
+            if (m_state.m_value && *m_state.m_value) (*m_state.m_value)->handleError(e);
+        }
+    }
+
+    MaybeResult<std::conditional_t<std::is_same_v<State, NoParamState>, void, State>> m_state;
+};
+
+//! State type for a ClientParam: the type returned by the CustomMakeParamState
+//! overload for input parameters with one value, NoParamState otherwise.
+template <typename Accessor, typename... Types>
+struct ClientParamStateType
+{
+    using type = NoParamState;
+};
+
+template <typename Accessor, typename Type>
+    requires(Accessor::in)
+struct ClientParamStateType<Accessor, Type>
+{
+    using type = MakeParamStateResult<Type>;
+};
+
 template <typename Exception, typename Accessor>
-struct ClientException
+struct ClientException : ClientParamState<NoParamState>
 {
     struct BuildParams : IterateFieldsHelper<BuildParams, 0>
     {
@@ -508,8 +589,10 @@ struct ClientException
 };
 
 template <typename Accessor, typename... Types>
-struct ClientParam
+struct ClientParam : ClientParamState<typename ClientParamStateType<Accessor, Types...>::type>
 {
+    using State = typename ClientParamStateType<Accessor, Types...>::type;
+
     ClientParam(Types&&... values) : m_values{std::forward<Types>(values)...} {}
 
     struct BuildParams : IterateFieldsHelper<BuildParams, sizeof...(Types)>
@@ -523,6 +606,15 @@ struct ClientParam
                 MaybeBuildField(std::integral_constant<bool, Accessor::in>(), ParamList(), invoke_context,
                     Make<StructField, Accessor>(params), std::forward<Values>(values)...);
             };
+
+            // Make the parameter state, if any, before the value is built into
+            // the request and possibly moved from.
+            if constexpr (!std::is_same_v<State, NoParamState>) {
+                m_client_param->makeState([&]() -> State {
+                    return CustomMakeParamState(TypeList<RemoveCvRef<Types>...>(), Priority<2>(), invoke_context,
+                                                std::as_const(std::get<0>(m_client_param->m_values)));
+                });
+            }
 
             // Note: The m_values tuple just consists of lvalue and rvalue
             // references, so calling std::move doesn't change the tuple, it
@@ -581,7 +673,7 @@ LocalType CustomReadExtraParam(TypeList<LocalType>, Priority<0>, ServerContext&)
 //! declared with `$Proxy.extraParam`. Its value is not built into the request,
 //! only passed to a CustomMakeParamState overload, which must exist.
 template <typename Type>
-struct ClientParam<void, Type>
+struct ClientParam<void, Type> : ClientParamState<MakeParamStateResult<Type>>
 {
     using Value = RemoveCvRef<Type>;
     using State = MakeParamStateResult<Type>;
@@ -597,7 +689,9 @@ struct ClientParam<void, Type>
                           "Wrapped C++ method has more parameters than its corresponding Cap'n Proto method has fields. "
                           "Declare extra parameters with $Proxy.extraParam in the Cap'n Proto schema and add a matching "
                           "`CustomMakeParamState` overload.");
-            CustomMakeParamState(TypeList<Value>(), Priority<2>(), invoke_context, std::as_const(m_client_param->m_value));
+            m_client_param->makeState([&]() -> State {
+                return CustomMakeParamState(TypeList<Value>(), Priority<2>(), invoke_context, std::as_const(m_client_param->m_value));
+            });
         }
         BuildParams(ClientParam* client_param) : m_client_param(client_param) {}
         ClientParam* m_client_param;
@@ -650,6 +744,9 @@ struct ServerCall
             },
             [&] {
                 if (server_context.request_lock) server_context.request_lock->m_lock.lock();
+                // The method returned, so its cancellation callback, if any,
+                // no longer applies.
+                server_context.cancel_fn = nullptr;
                 // If the IPC request was canceled, throw InterruptException
                 // because there is no point continuing and trying to fill the
                 // call_context.getResults() struct. It's also important to stop
@@ -866,8 +963,30 @@ void clientInvoke(ProxyClient& proxy_client, const GetRequest& get_request, Fiel
         MP_LOGPLAIN(*proxy_client.m_context.loop, Log::Trace)
             << "send data: " << LogEscape(request.toString(), proxy_client.m_context.loop->m_log_opts.max_chars);
 
-        proxy_client.m_context.loop->m_task_set->add(request.send().then(
-            [&](::capnp::Response<typename Request::Results>&& response) {
+        kj::Promise<::capnp::Response<typename Request::Results>> promise{request.send()};
+
+        // If any parameter supports cancellation, wrap the request promise in
+        // a kj::Canceler and pass the canceler to the parameter. This code is
+        // only compiled for methods with cancellation parameters.
+        constexpr bool cancelable{(std::remove_reference_t<FieldObjs>::cancelable || ...)};
+        kj::Own<kj::Canceler> canceler;
+        if constexpr (cancelable) {
+            if ((fields.wantsCanceler() || ...)) {
+                canceler = kj::heap<kj::Canceler>();
+                promise = canceler->wrap(kj::mv(promise));
+                (fields.setCanceler(canceler.get()), ...);
+            }
+        }
+        // The continuations below run after this lambda returns, so they
+        // capture this by value rather than referring to the canceler.
+        const bool has_canceler{canceler.get() != nullptr};
+
+        kj::Promise<void> task{promise.then(
+            [&, has_canceler](::capnp::Response<typename Request::Results>&& response) {
+                // Tell parameters the canceler is no longer usable before
+                // setting done, so they are never called after clientInvoke
+                // returns.
+                if (has_canceler) (fields.setCanceler(nullptr), ...);
                 MP_LOGPLAIN(*proxy_client.m_context.loop, Log::Debug)
                     << "{" << thread_context.thread_name << "} IPC client recv "
                     << TypeName<typename Request::Results>();
@@ -883,8 +1002,16 @@ void clientInvoke(ProxyClient& proxy_client, const GetRequest& get_request, Fiel
                 done = true;
                 thread_context.waiter->m_cv.notify_all();
             },
-            [&](const ::kj::Exception& e) {
-                if (e.getType() == ::kj::Exception::Type::DISCONNECTED) {
+            [&, has_canceler](const ::kj::Exception& e) {
+                if (has_canceler) (fields.setCanceler(nullptr), ...);
+                try {
+                    (fields.handleError(e), ...);
+                } catch (...) {
+                    exception = std::current_exception();
+                }
+                if (exception) {
+                    // Rethrown below.
+                } else if (e.getType() == ::kj::Exception::Type::DISCONNECTED) {
                     disconnected = "IPC client method call interrupted by disconnect.";
                 } else {
                     kj_exception = kj::str("kj::Exception: ", e).cStr();
@@ -894,7 +1021,11 @@ void clientInvoke(ProxyClient& proxy_client, const GetRequest& get_request, Fiel
                 const Lock lock(thread_context.waiter->m_mutex);
                 done = true;
                 thread_context.waiter->m_cv.notify_all();
-            }));
+            })};
+        // kj::Canceler must outlive the promise it wraps, and the promise is
+        // destroyed after the continuations run, so attach it to the task.
+        if (canceler) task = task.attach(kj::mv(canceler));
+        proxy_client.m_context.loop->m_task_set->add(kj::mv(task));
     });
 
     Lock lock(thread_context.waiter->m_mutex);

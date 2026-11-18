@@ -16,6 +16,7 @@
 #include <kj/memory.h>
 #include <kj/string-tree.h>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <typeinfo>
@@ -349,6 +350,24 @@ std::string CxxTypeName(const T& /*unused*/)
     return "<type information unavailable without rtti>";
 #endif
 }
+
+//! Optional storage for the result of a function that may return void.
+//! emplace(fn) calls fn() and keeps its result, or just calls it if it returns
+//! void, so generic code can hold on to results without special-casing void.
+template <typename T>
+struct MaybeResult
+{
+    template <typename Fn>
+    void emplace(Fn&& fn) { m_value.emplace(std::forward<Fn>(fn)()); }
+    std::optional<T> m_value;
+};
+
+template <>
+struct MaybeResult<void>
+{
+    template <typename Fn>
+    void emplace(Fn&& fn) { std::forward<Fn>(fn)(); }
+};
 
 //! Exception thrown from code executing an IPC call that is interrupted.
 struct InterruptException final : std::exception {
