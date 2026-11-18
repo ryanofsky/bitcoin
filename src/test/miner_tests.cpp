@@ -48,7 +48,9 @@
 #include <optional>
 #include <span>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace util::hex_literals;
@@ -168,6 +170,21 @@ void MinerTestingSetup::TestPackageSelection(const CScript& scriptPubKey, const 
     // Unless fee_threshold is 0
     block_template = block_template->waitNext({.timeout = MillisecondsDouble{0}, .fee_threshold = 0});
     BOOST_REQUIRE(block_template);
+
+    // Requesting stop interrupts waits that would otherwise not return, whether
+    // stop is requested before the call or from another thread during it.
+    {
+        std::stop_source stop_source;
+        stop_source.request_stop();
+        BOOST_CHECK(block_template->waitNext({.fee_threshold = 1}, stop_source.get_token()) == nullptr);
+        BOOST_CHECK(!mining->waitTipChanged(block_template->getBlockHeader().hashPrevBlock, MillisecondsDouble::max(), stop_source.get_token()));
+    }
+    {
+        std::stop_source stop_source;
+        std::thread stopper{[&] { stop_source.request_stop(); }};
+        BOOST_CHECK(block_template->waitNext({.fee_threshold = 1}, stop_source.get_token()) == nullptr);
+        stopper.join();
+    }
 
     // Test the ancestor feerate transaction selection.
     TestMemPoolEntryHelper entry;

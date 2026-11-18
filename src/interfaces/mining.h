@@ -17,6 +17,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <vector>
 
@@ -86,18 +87,25 @@ public:
     /**
      * Waits for fees in the next block to rise, a new tip or the timeout.
      *
-     * @param[in] options   Control the timeout (default forever) and by how much total fees
-     *                      for the next block should rise (default infinite).
+     * @param[in] options    Control the timeout (default forever) and by how much total fees
+     *                       for the next block should rise (default infinite).
+     * @param[in] stop_token Requesting stop on this token interrupts the wait.
+     *                       Over IPC, the call throws InterruptException instead
+     *                       of returning.
      *
-     * @returns a new BlockTemplate or nothing if the timeout occurs.
+     * @returns a new BlockTemplate or nothing if the timeout occurs or the wait
+     *          is interrupted.
      *
      * On testnet this will additionally return a template with difficulty 1 if
      * the tip is more than 20 minutes old.
      */
-    virtual std::unique_ptr<BlockTemplate> waitNext(node::BlockWaitOptions options = {}) = 0;
+    virtual std::unique_ptr<BlockTemplate> waitNext(node::BlockWaitOptions options = {}, std::stop_token stop_token = {}) = 0;
 
     /**
      * Interrupts the current wait for the next block template.
+     *
+     * Deprecated: pass a std::stop_token to waitNext() instead, or, over IPC,
+     * cancel the waitNext() request.
     */
     virtual void interruptWait() = 0;
 };
@@ -125,11 +133,14 @@ public:
      * @param[in] current_tip block hash of the current chain tip. Function waits
      *                        for the chain tip to differ from this.
      * @param[in] timeout     how long to wait for a new tip (default is forever)
+     * @param[in] stop_token  Requesting stop on this token interrupts the wait.
+     *                        Over IPC, the call throws InterruptException instead
+     *                        of returning.
      *
      * @retval BlockRef hash and height of the current chain tip after this call.
-     * @retval std::nullopt if the node is shut down or interrupt() is called.
+     * @retval std::nullopt if the node is shut down or the wait is interrupted.
      */
-    virtual std::optional<BlockRef> waitTipChanged(uint256 current_tip, MillisecondsDouble timeout = MillisecondsDouble::max()) = 0;
+    virtual std::optional<BlockRef> waitTipChanged(uint256 current_tip, MillisecondsDouble timeout = MillisecondsDouble::max(), std::stop_token stop_token = {}) = 0;
 
    /**
      * Construct a new block template.
@@ -140,13 +151,19 @@ public:
      *                     tip to catch up. It's recommended to disable this on
      *                     regtest and signets with only one miner, as these
      *                     could stall.
+     * @param[in] stop_token Requesting stop on this token interrupts waiting
+     *                       during cooldown. Over IPC, the call throws
+     *                       InterruptException instead of returning.
      * @retval BlockTemplate a block template.
-     * @retval std::nullptr if the node is shut down or interrupt() is called.
+     * @retval std::nullptr if the node is shut down or the wait is interrupted.
      */
-    virtual std::unique_ptr<BlockTemplate> createNewBlock(const node::BlockCreateOptions& options = {}, bool cooldown = true) = 0;
+    virtual std::unique_ptr<BlockTemplate> createNewBlock(const node::BlockCreateOptions& options = {}, bool cooldown = true, std::stop_token stop_token = {}) = 0;
 
     /**
      * Interrupts createNewBlock and waitTipChanged.
+     *
+     * Deprecated: pass a std::stop_token to createNewBlock() and
+     * waitTipChanged() instead, or, over IPC, cancel the request.
      */
     virtual void interrupt() = 0;
 

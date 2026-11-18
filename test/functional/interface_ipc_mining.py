@@ -166,6 +166,15 @@ class IPCMiningTest(BitcoinTestFramework):
                 assert_equal(len(result.hash), 0)
             await wait_and_do(wait_for_tip(), mining.interrupt())
 
+            self.log.debug("Canceling waitTipChanged() should stop it on the node")
+            promise = mining.waitTipChanged(ctx, newblockref.hash, self.long_ipc_timeout)
+            await asyncio.sleep(0.1)
+            promise.cancel()
+            # Calls made with the same ctx run on the same node thread, so this
+            # call only returns before the waitTipChanged() timeout if the
+            # canceled call stopped waiting.
+            await asyncio.wait_for(mining.getTip(ctx), timeout=self.long_ipc_timeout / 2000)
+
         asyncio.run(capnp.run(async_routine()))
 
     def run_early_startup_test(self):
@@ -339,6 +348,16 @@ class IPCMiningTest(BitcoinTestFramework):
                     template7 = await mining_wait_next_template(template6, stack, ctx, new_waitoptions)
                     assert template7 is None
                 await wait_and_do(wait_for_block(), template6.interruptWait())
+
+                self.log.debug("Canceling waitNext() should stop it on the node")
+                new_waitoptions = self.capnp_modules['mining'].BlockWaitOptions()
+                new_waitoptions.timeout = self.long_ipc_timeout
+                new_waitoptions.feeThreshold = 1
+                promise = template6.waitNext(ctx, new_waitoptions)
+                await asyncio.sleep(0.1)
+                promise.cancel()
+                # As above, this only returns early if the canceled call stopped.
+                await asyncio.wait_for(template6.getBlockHeader(ctx), timeout=self.long_ipc_timeout / 2000)
 
         asyncio.run(capnp.run(async_routine()))
 

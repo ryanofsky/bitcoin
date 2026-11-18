@@ -36,7 +36,7 @@ Bitcoin Core requires one of the following compilers.
 
 | Dependency | Releases | Minimum required |
 | --- | --- | --- |
-| [Cap'n Proto](../depends/packages/native_capnp.mk) ([IPC](multiprocess.md)) | [link](https://capnproto.org/) | [0.9.2](https://github.com/bitcoin/bitcoin/pull/36747) (1.0 with Clang) |
+| [Cap'n Proto](../depends/packages/native_capnp.mk) ([IPC](multiprocess.md)) | [link](https://capnproto.org/) | 1.0 |
 | [libmultiprocess](../depends/packages/native_libmultiprocess.mk) ([IPC](multiprocess.md)) | [link](https://github.com/bitcoin-core/libmultiprocess/tags) | [v14.0](https://github.com/bitcoin/bitcoin/pull/36817) |
 | Python (scripts, tests) | [link](https://www.python.org) | [3.10](https://github.com/bitcoin/bitcoin/pull/30527) |
 | [Qt](../depends/packages/qt.mk) (gui) | [link](https://download.qt.io/archive/qt/) | [6.2](https://github.com/bitcoin/bitcoin/pull/30997) |

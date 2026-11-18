@@ -23,6 +23,7 @@
 #include <mp/type-number.h>
 #include <mp/type-optional.h>
 #include <mp/type-pointer.h>
+#include <mp/type-stop-token.h>
 #include <mp/type-string.h>
 #include <mp/type-struct.h>
 #include <mp/type-threadmap.h>

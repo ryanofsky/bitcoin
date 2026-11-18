@@ -81,6 +81,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <stop_token>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -921,8 +922,9 @@ public:
         return block_template_manager().SubmitBlock(std::make_shared<const CBlock>(m_block_template->block), reason, debug);
     }
 
-    std::unique_ptr<BlockTemplate> waitNext(BlockWaitOptions options) override
+    std::unique_ptr<BlockTemplate> waitNext(BlockWaitOptions options, std::stop_token stop_token) override
     {
+        const std::stop_callback on_stop{stop_token, [this] { interruptWait(); }};
         auto new_template = block_template_manager().WaitAndCreateNewBlock(
             *m_block_template, options, m_create_options, m_interrupt_wait);
         if (new_template) return std::make_unique<BlockTemplateImpl>(m_create_options, util::NotNull{std::move(new_template)}, m_node);
@@ -963,15 +965,17 @@ public:
         return block_template_manager().GetTip();
     }
 
-    std::optional<BlockRef> waitTipChanged(uint256 current_tip, MillisecondsDouble timeout) override
+    std::optional<BlockRef> waitTipChanged(uint256 current_tip, MillisecondsDouble timeout, std::stop_token stop_token) override
     {
+        const std::stop_callback on_stop{stop_token, [this] { interrupt(); }};
         return block_template_manager().WaitTipChanged(current_tip, timeout, m_interrupt_mining);
     }
 
-    std::unique_ptr<BlockTemplate> createNewBlock(const BlockCreateOptions& options, bool cooldown) override
+    std::unique_ptr<BlockTemplate> createNewBlock(const BlockCreateOptions& options, bool cooldown, std::stop_token stop_token) override
     {
+        const std::stop_callback on_stop{stop_token, [this] { interrupt(); }};
         // Ensure m_tip_block is set so consumers of BlockTemplate can rely on that.
-        std::optional<BlockRef> maybe_tip{waitTipChanged(uint256::ZERO, MillisecondsDouble::max())};
+        std::optional<BlockRef> maybe_tip{waitTipChanged(uint256::ZERO, MillisecondsDouble::max(), /*stop_token=*/{})};
 
         if (!maybe_tip) return {};
 
@@ -982,7 +986,7 @@ public:
             // because on regtest and single miner signets this would wait
             // forever if no block was mined in the past day.
             while (chainman().IsInitialBlockDownload()) {
-                maybe_tip = waitTipChanged(maybe_tip->hash, MillisecondsDouble{1000});
+                maybe_tip = waitTipChanged(maybe_tip->hash, MillisecondsDouble{1000}, /*stop_token=*/{});
                 if (!maybe_tip || chainman().m_interrupt || WITH_LOCK(notifications().m_tip_block_mutex, return m_interrupt_mining)) return {};
             }
 
